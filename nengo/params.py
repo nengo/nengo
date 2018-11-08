@@ -5,8 +5,17 @@ import numpy as np
 
 from nengo.exceptions import (
     ConfigError, ObsoleteError, ReadonlyError, ValidationError)
-from nengo.utils.compat import (int_types, is_array, is_array_like, is_integer,
-                                is_number, is_string, itervalues, string_types)
+from nengo.utils.compat import (
+    getfullargspec,
+    int_types,
+    is_array,
+    is_array_like,
+    is_integer,
+    is_number,
+    is_string,
+    itervalues,
+    string_types,
+)
 from nengo.utils.numpy import array_hash, compare
 from nengo.utils.stdlib import WeakKeyIDDictionary, checked_call
 
@@ -512,6 +521,8 @@ class FrozenObject(object):
                 msg = "All parameters of a FrozenObject must be readonly"
                 raise ReadonlyError(attr=p, obj=self, msg=msg)
 
+        self._argrepr_params_defaults = None
+
     @property
     def _params(self):
         return list(itervalues(self._paramdict))
@@ -545,5 +556,43 @@ class FrozenObject(object):
         self.__dict__.update(state)
 
     def __repr__(self):
-        return "%s(%s)" % (type(self).__name__, ', '.join(
-            "%s=%r" % (k, getattr(self, k)) for k in self._paramdict))
+        return "%s(%s)" % (type(self).__name__, ", ".join(self._argreprs))
+
+    @property
+    def _argreprs(self):
+        if self._argrepr_params_defaults is None:
+            self._argrepr_params_defaults = self._argrepr_params()
+
+        return [
+            "%s=%s" % (k, getattr(self, k))
+            for k, default in self._argrepr_params_defaults
+            if getattr(self, k) != default
+        ]
+
+    def _argrepr_params(self):
+        """Params and defaults to be listed in this object's ``repr``."""
+
+        # get default values from __init__'s
+        arg_order = []
+        arg_defaults = []
+        for t in type(self).__mro__[:-1]:
+            spec = getfullargspec(t.__init__)
+            arg_order.extend(spec.args)
+            if spec.defaults is not None:
+                arg_defaults.extend(zip(spec.args[-len(spec.defaults):],
+                                        spec.defaults))
+
+        # note: added in reverse order so that if there were duplicates
+        # the superclass defaults get overridden
+        arg_defaults = dict(arg_defaults[::-1])
+
+        # sort parameter attributes by their order in constructor
+        members = sorted(inspect.getmembers(type(self)), key=lambda x: (
+            arg_order.index(x[0]) if x[0] in arg_order
+            else np.iinfo(np.int32).max, x[0]))
+
+        return [
+            (k, arg_defaults[v.name] if v.default is Unconfigurable
+             else v.default)
+            for k, v in members if isinstance(v, Parameter)
+        ]

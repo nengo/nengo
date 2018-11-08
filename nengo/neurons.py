@@ -24,13 +24,6 @@ class NeuronType(FrozenObject):
 
     probeable = ()
 
-    def __repr__(self):
-        return "%s(%s)" % (type(self).__name__, ", ".join(self._argreprs))
-
-    @property
-    def _argreprs(self):
-        return []
-
     def current(self, x, gain, bias):
         """Compute current injected in each neuron given input, gain and bias.
 
@@ -220,6 +213,7 @@ class Direct(NeuronType):
         """
         raise SimulationError("Direct mode neurons shouldn't be simulated.")
 
+
 # TODO: class BasisFunctions or Population or Express;
 #       uses non-neural basis functions to emulate neuron saturation,
 #       but still simulate very fast
@@ -240,6 +234,8 @@ class RectifiedLinear(NeuronType):
     """
 
     probeable = ('rates',)
+
+    amplitude = NumberParam('amplitude', low=0, low_open=True)
 
     def __init__(self, amplitude=1):
         super(RectifiedLinear, self).__init__()
@@ -315,10 +311,6 @@ class Sigmoid(NeuronType):
         super(Sigmoid, self).__init__()
         self.tau_ref = tau_ref
 
-    @property
-    def _argreprs(self):
-        return [] if self.tau_ref == 0.0025 else ["tau_ref=%s" % self.tau_ref]
-
     def gain_bias(self, max_rates, intercepts):
         """Analytically determine gain, bias."""
         max_rates = np.array(max_rates, dtype=float, copy=False, ndmin=1)
@@ -369,15 +361,6 @@ class LIFRate(NeuronType):
         self.tau_rc = tau_rc
         self.tau_ref = tau_ref
         self.amplitude = amplitude
-
-    @property
-    def _argreprs(self):
-        args = []
-        if self.tau_rc != 0.02:
-            args.append("tau_rc=%s" % self.tau_rc)
-        if self.tau_ref != 0.002:
-            args.append("tau_ref=%s" % self.tau_ref)
-        return args
 
     def gain_bias(self, max_rates, intercepts):
         """Analytically determine gain, bias."""
@@ -506,6 +489,9 @@ class AdaptiveLIFRate(LIFRate):
     tau_ref : float
         Absolute refractory period, in seconds. This is how long the
         membrane voltage is held at zero after a spike.
+    amplitude : float
+        Scaling factor on the neuron output. Corresponds to the relative
+        amplitude of the output spikes of the neuron.
 
     References
     ----------
@@ -523,15 +509,6 @@ class AdaptiveLIFRate(LIFRate):
         super(AdaptiveLIFRate, self).__init__(**lif_args)
         self.tau_n = tau_n
         self.inc_n = inc_n
-
-    @property
-    def _argreprs(self):
-        args = super(AdaptiveLIFRate, self)._argreprs
-        if self.tau_n != 1:
-            args.append("tau_n=%s" % self.tau_n)
-        if self.inc_n != 0.01:
-            args.append("inc_n=%s" % self.inc_n)
-        return args
 
     def step_math(self, dt, J, output, adaptation):
         """Implement the AdaptiveLIFRate nonlinearity."""
@@ -564,6 +541,12 @@ class AdaptiveLIF(AdaptiveLIFRate, LIF):
     tau_ref : float
         Absolute refractory period, in seconds. This is how long the
         membrane voltage is held at zero after a spike.
+    min_voltage : float
+        Minimum value for the membrane voltage. If ``-np.inf``, the voltage
+        is never clipped.
+    amplitude : float
+        Scaling factor on the neuron output. Corresponds to the relative
+        amplitude of the output spikes of the neuron.
 
     References
     ----------
@@ -635,19 +618,6 @@ class Izhikevich(NeuronType):
         self.coupling = coupling
         self.reset_voltage = reset_voltage
         self.reset_recovery = reset_recovery
-
-    @property
-    def _argreprs(self):
-        args = []
-
-        def add(attr, default):
-            if getattr(self, attr) != default:
-                args.append("%s=%s" % (attr, getattr(self, attr)))
-        add("tau_recovery", 0.02)
-        add("coupling", 0.2)
-        add("reset_voltage", -65.)
-        add("reset_recovery", 8.)
-        return args
 
     def rates(self, x, gain, bias):
         """Estimates steady-state firing rate given gain and bias."""
