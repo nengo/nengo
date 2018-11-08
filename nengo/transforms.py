@@ -11,13 +11,6 @@ from nengo.utils.compat import is_array_like
 class Transform(FrozenObject):
     """A base class for connection transforms."""
 
-    def __repr__(self):
-        return "%s(%s)" % (type(self).__name__, ", ".join(self._argreprs))
-
-    @property
-    def _argreprs(self):
-        return []
-
     def sample(self, rng=np.random):
         """Returns concrete weights to implement the specified transform.
 

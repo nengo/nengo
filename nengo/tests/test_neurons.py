@@ -476,6 +476,95 @@ def test_frozen():
         d.coupling = 8
 
 
+def test_argreprs():
+    """Test repr() for each neuron type."""
+    assert repr(nengo.Direct()) == "Direct()"
+
+    assert repr(nengo.RectifiedLinear()) == "RectifiedLinear()"
+    assert (repr(nengo.RectifiedLinear(amplitude=2))
+            == "RectifiedLinear(amplitude=2)")
+
+    assert repr(nengo.SpikingRectifiedLinear()) == "SpikingRectifiedLinear()"
+    assert (repr(nengo.SpikingRectifiedLinear(amplitude=2))
+            == "SpikingRectifiedLinear(amplitude=2)")
+
+    assert repr(nengo.Sigmoid()) == "Sigmoid()"
+    assert repr(nengo.Sigmoid(tau_ref=0.1)) == "Sigmoid(tau_ref=0.1)"
+
+    assert repr(nengo.LIFRate()) == "LIFRate()"
+    assert repr(nengo.LIFRate(tau_rc=0.1)) == "LIFRate(tau_rc=0.1)"
+    assert repr(nengo.LIFRate(tau_ref=0.1)) == "LIFRate(tau_ref=0.1)"
+    assert repr(nengo.LIFRate(amplitude=2)) == "LIFRate(amplitude=2)"
+    assert (repr(nengo.LIFRate(tau_rc=0.05, tau_ref=0.02))
+            == "LIFRate(tau_rc=0.05, tau_ref=0.02)")
+    assert (repr(nengo.LIFRate(tau_rc=0.05, amplitude=2))
+            == "LIFRate(tau_rc=0.05, amplitude=2)")
+    assert (repr(nengo.LIFRate(tau_ref=0.02, amplitude=2))
+            == "LIFRate(tau_ref=0.02, amplitude=2)")
+    assert (repr(nengo.LIFRate(tau_rc=0.05, tau_ref=0.02, amplitude=2))
+            == "LIFRate(tau_rc=0.05, tau_ref=0.02, amplitude=2)")
+
+    assert repr(nengo.LIF()) == "LIF()"
+    assert repr(nengo.LIF(tau_rc=0.1)) == "LIF(tau_rc=0.1)"
+    assert repr(nengo.LIF(tau_ref=0.1)) == "LIF(tau_ref=0.1)"
+    assert repr(nengo.LIF(amplitude=2)) == "LIF(amplitude=2)"
+    assert repr(nengo.LIF(min_voltage=-0.5)) == "LIF(min_voltage=-0.5)"
+    assert (repr(nengo.LIF(tau_rc=0.05, tau_ref=0.02))
+            == "LIF(tau_rc=0.05, tau_ref=0.02)")
+    assert (repr(nengo.LIF(tau_rc=0.05, amplitude=2))
+            == "LIF(tau_rc=0.05, amplitude=2)")
+    assert (repr(nengo.LIF(tau_ref=0.02, amplitude=2))
+            == "LIF(tau_ref=0.02, amplitude=2)")
+    assert (repr(nengo.LIF(tau_rc=0.05, tau_ref=0.02, amplitude=2))
+            == "LIF(tau_rc=0.05, tau_ref=0.02, amplitude=2)")
+    assert (repr(nengo.LIF(tau_rc=0.05, tau_ref=0.02,
+                           min_voltage=-0.5, amplitude=2))
+            == "LIF(tau_rc=0.05, tau_ref=0.02, min_voltage=-0.5, amplitude=2)")
+
+    assert repr(nengo.AdaptiveLIFRate()) == "AdaptiveLIFRate()"
+    assert (repr(nengo.AdaptiveLIFRate(tau_n=0.1))
+            == "AdaptiveLIFRate(tau_n=0.1)")
+    assert (repr(nengo.AdaptiveLIFRate(inc_n=0.5))
+            == "AdaptiveLIFRate(inc_n=0.5)")
+    assert (repr(nengo.AdaptiveLIFRate(tau_rc=0.1))
+            == "AdaptiveLIFRate(tau_rc=0.1)")
+    assert (repr(nengo.AdaptiveLIFRate(tau_ref=0.1))
+            == "AdaptiveLIFRate(tau_ref=0.1)")
+    assert (repr(nengo.AdaptiveLIFRate(amplitude=2))
+            == "AdaptiveLIFRate(amplitude=2)")
+    assert (repr(nengo.AdaptiveLIFRate(tau_n=0.1, inc_n=0.5, tau_rc=0.05,
+                                       tau_ref=0.02, amplitude=2))
+            == "AdaptiveLIFRate(tau_n=0.1, inc_n=0.5, tau_rc=0.05, "
+               "tau_ref=0.02, amplitude=2)")
+
+    assert repr(nengo.AdaptiveLIF()) == "AdaptiveLIF()"
+    assert repr(nengo.AdaptiveLIF(tau_n=0.1)) == "AdaptiveLIF(tau_n=0.1)"
+    assert repr(nengo.AdaptiveLIF(inc_n=0.5)) == "AdaptiveLIF(inc_n=0.5)"
+    assert repr(nengo.AdaptiveLIF(tau_rc=0.1)) == "AdaptiveLIF(tau_rc=0.1)"
+    assert repr(nengo.AdaptiveLIF(tau_ref=0.1)) == "AdaptiveLIF(tau_ref=0.1)"
+    assert (repr(nengo.AdaptiveLIF(min_voltage=-0.5))
+            == "AdaptiveLIF(min_voltage=-0.5)")
+    assert (repr(nengo.AdaptiveLIF(tau_n=0.1, inc_n=0.5, tau_rc=0.05,
+                                   tau_ref=0.02, min_voltage=-0.5,
+                                   amplitude=2))
+            == "AdaptiveLIF(tau_n=0.1, inc_n=0.5, tau_rc=0.05, tau_ref=0.02, "
+               "min_voltage=-0.5, amplitude=2)")
+
+    assert repr(nengo.Izhikevich()) == "Izhikevich()"
+    assert (repr(nengo.Izhikevich(tau_recovery=0.1))
+            == "Izhikevich(tau_recovery=0.1)")
+    assert (repr(nengo.Izhikevich(coupling=0.3))
+            == "Izhikevich(coupling=0.3)")
+    assert (repr(nengo.Izhikevich(reset_voltage=-1))
+            == "Izhikevich(reset_voltage=-1)")
+    assert (repr(nengo.Izhikevich(reset_recovery=5))
+            == "Izhikevich(reset_recovery=5)")
+    assert (repr(nengo.Izhikevich(tau_recovery=0.1, coupling=0.3,
+                                  reset_voltage=-1, reset_recovery=5))
+            == "Izhikevich(tau_recovery=0.1, coupling=0.3, "
+               "reset_voltage=-1, reset_recovery=5)")
+
+
 @pytest.mark.filterwarnings('ignore:divide by zero')
 def test_direct_mode_nonfinite_value(Simulator):
     with nengo.Network() as model:
