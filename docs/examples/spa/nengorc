@@ -1,5 +1,0 @@
-[progress]
-progress_bar = False
-
-[decoder_cache]
-enabled = False

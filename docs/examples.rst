@@ -115,21 +115,6 @@ Networks
    examples/networks/basal_ganglia
    examples/networks/integrator_network
 
-Semantic Pointer Architecture
-=============================
-
-.. toctree::
-   :maxdepth: 1
-
-   examples/spa/associative_memory
-   examples/spa/convolution
-   examples/spa/question
-   examples/spa/question_control
-   examples/spa/question_memory
-   examples/spa/spa_parser
-   examples/spa/spa_sequence
-   examples/spa/spa_sequence_routed
-
 Under the hood
 ==============
 
