@@ -30,7 +30,7 @@ testing = "test" in sys.argv or "pytest" in sys.argv
 
 install_requires = ["numpy>=1.8"]
 docs_require = [
-    "sphinx<1.7",
+    "sphinx>=1.8",
     "jupyter",
     "matplotlib>=1.4",
     "nbsphinx",
