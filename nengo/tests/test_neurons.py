@@ -565,3 +565,29 @@ def test_numbalif_benchmark(plt):
     plt.figure()
     sns.lineplot(data=DataFrame(data),
                  x="# Neurons", y="Time (ms)", hue="Neuron Type")
+
+
+@pytest.mark.parametrize("dt", [0.0005, 0.001, 0.002])
+def test_numbalif_correctness(Simulator, seed, dt):
+    # Test spike-trains for numerical precision, using a
+    # sine wave covering one period across the simulation time
+    n_neurons = 500
+    sim_t = 2.0
+    with nengo.Network() as model:
+        u = nengo.Node(output=lambda t: np.sin(2*np.pi*t/sim_t))
+
+        x_numba = nengo.Ensemble(n_neurons, 1, seed=seed,
+                                 neuron_type=NumbaLIF())
+        x_lif = nengo.Ensemble(n_neurons, 1, seed=seed,
+                               neuron_type=nengo.LIF())
+
+        nengo.Connection(u, x_numba, synapse=None)
+        nengo.Connection(u, x_lif, synapse=None)
+
+        p_numba = nengo.Probe(x_numba.neurons, 'spikes', synapse=None)
+        p_lif = nengo.Probe(x_lif.neurons, 'spikes', synapse=None)
+
+    with Simulator(model, dt=dt) as sim:
+        sim.run(sim_t)
+
+    assert np.allclose(sim.data[p_numba], sim.data[p_lif])
