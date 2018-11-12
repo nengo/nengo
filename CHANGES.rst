@@ -38,6 +38,8 @@ Release History
   ``dt`` is now an alias for ``sample_every`` and will be removed in the future.
   (`#1368 <https://github.com/nengo/nengo/issues/1368>`_,
   `#1384 <https://github.com/nengo/nengo/pull/1384>`_)
+- Switched documentation to new
+  `nengo-sphinx-theme <https://github.com/nengo/nengo-sphinx-theme>`_.
 
 2.8.0 (June 9, 2018)
 ====================
