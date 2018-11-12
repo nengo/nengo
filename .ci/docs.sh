@@ -14,17 +14,35 @@ function usage {
 
 if [[ "$COMMAND" == "install" ]]; then
     conda install --quiet jupyter matplotlib scipy
-    pip install "sphinx<1.7" nbsphinx numpydoc guzzle_sphinx_theme ghp-import
+    pip install -e .[docs]
 elif [[ "$COMMAND" == "check" ]]; then
     sphinx-build -b linkcheck -vW -D nbsphinx_execute=never docs docs/_build
 elif [[ "$COMMAND" == "run" ]]; then
-    sphinx-build -vW docs docs/_build
+    git clone -b gh-pages-release https://github.com/nengo/nengo.git ../nengo-docs
+    RELEASES=$(find ../nengo-docs -maxdepth 1 -type d -name "v[0-9].*" -printf "%f,")
+
+    if [[ "$TRAVIS_BRANCH" == "$TRAVIS_TAG" ]]; then
+        RELEASES="$RELEASES$TRAVIS_TAG"
+        sphinx-build -b html docs ../nengo-docs/"$TRAVIS_TAG" -vW -A building_version="$TRAVIS_TAG" -A releases="$RELEASES"
+    else
+        sphinx-build -b html docs ../nengo-docs -vW -A building_version=latest -A releases="$RELEASES"
+    fi
 elif [[ "$COMMAND" == "upload" ]]; then
-    DATE=$(date '+%Y-%m-%d %T')
+    cd ../nengo-docs
     git config --global user.email "travis@travis-ci.org"
     git config --global user.name "TravisCI"
-    ghp-import -m "Last update at $DATE" -b gh-pages docs/_build
-    git push -fq "https://$GH_TOKEN@github.com/nengo/nengo.git" gh-pages
+    git add --all
+
+    if [[ "$TRAVIS_BRANCH" == "$TRAVIS_TAG" ]]; then
+        git commit -m "Documentation for release $TRAVIS_TAG"
+        git push -q "https://$GH_TOKEN@github.com/nengo/nengo.git" gh-pages-release
+    elif [[ "$TRAVIS_BRANCH" == "master" ]]; then
+        git commit -m "Last update at $(date '+%Y-%m-%d %T')"
+        git push -fq "https://$GH_TOKEN@github.com/nengo/nengo.git" gh-pages-release:gh-pages
+    else
+        git commit -m "Documentation for branch $TRAVIS_BRANCH"
+        git push -fq "https://$GH_TOKEN@github.com/nengo/nengo.git" gh-pages-release:gh-pages-test
+    fi
 else
     if [[ -z "$COMMAND" ]]; then
         echo "Command required"

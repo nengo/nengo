@@ -30,6 +30,7 @@ Release History
 - We now warn that the progress bar is not supported in Jupyter Notebook <5.
   (`#1428 <https://github.com/nengo/nengo/pull/1428>`__,
   `#1426 <https://github.com/nengo/nengo/issues/1426>`__)
+- Added version tracking to documentation
 
 **Changed**
 
