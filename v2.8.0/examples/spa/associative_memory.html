@@ -1,0 +1,906 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  
+  <!-- Licensed under the Apache 2.0 License -->
+  <link rel="stylesheet" type="text/css" href="../../_static/fonts/open-sans/stylesheet.css" />
+  <!-- Licensed under the SIL Open Font License -->
+  <link rel="stylesheet" type="text/css" href="../../_static/fonts/source-serif-pro/source-serif-pro.css" />
+  <link rel="stylesheet" type="text/css" href="../../_static/css/bootstrap.min.css" />
+  <link rel="stylesheet" type="text/css" href="../../_static/css/bootstrap-theme.min.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+    <title>Associative memory &#8212; Nengo core 2.8.0 docs</title>
+    <link rel="stylesheet" href="../../_static/guzzle.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '2.8.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Adding new objects to Nengo" href="../usage/rectified_linear.html" />
+    <link rel="prev" title="Integrator" href="../networks/integrator_network.html" />
+<link rel="stylesheet" type="text/css" href="../../_static/custom.css">
+
+
+  
+   
+
+  </head>
+  <body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../usage/rectified_linear.html" title="Adding new objects to Nengo"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../networks/integrator_network.html" title="Integrator"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../examples.html" accesskey="U">Examples</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="container-wrapper">
+
+      <div id="mobile-toggle">
+        <a href="#"><span class="glyphicon glyphicon-align-justify" aria-hidden="true"></span></a>
+      </div>
+  <div id="left-column">
+    <div class="sphinxsidebar">
+        <a href="
+    ../../index.html" class="text-logo">Nengo core 2.8</a>
+        <div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <h2>Table Of Contents</h2>
+  </div>
+  <div class="sidebar-toc">
+    
+    
+      <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide.html">User guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../examples.html">Examples</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../advanced/nef_summary.html">NEF summary</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#principle-1-representation">Principle 1: Representation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#principle-2-transformation">Principle 2: Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#principle-3-dynamics">Principle 3: Dynamics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#nodes">Nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#processes">Processes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#ensembles">Ensembles</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#connections">Connections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#learning">Learning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#networks">Networks</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../examples.html#semantic-pointer-architecture">Semantic Pointer Architecture</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Associative memory</a></li>
+<li class="toctree-l3"><a class="reference internal" href="convolution.html">Convolution network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="question.html">Simple question answering</a></li>
+<li class="toctree-l3"><a class="reference internal" href="question_control.html">Controlled question answering</a></li>
+<li class="toctree-l3"><a class="reference internal" href="question_memory.html">Simple question answering with memory</a></li>
+<li class="toctree-l3"><a class="reference internal" href="spa_parser.html">Parsing simple commands</a></li>
+<li class="toctree-l3"><a class="reference internal" href="spa_sequence.html">Routing through a sequence</a></li>
+<li class="toctree-l3"><a class="reference internal" href="spa_sequence_routed.html">Routed sequencing</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#under-the-hood">Under the hood</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#reference">Reference</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing to Nengo</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://www.nengo.ai/projects.html">Nengo ecosystem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../license.html">Nengo license</a></li>
+</ul>
+
+    
+  </div>
+</div>
+        
+<div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <div id="main-search">
+      <form class="form-inline" action="../../search.html" method="GET" role="form">
+        <div class="input-group">
+          <input name="q" type="text" class="form-control" placeholder="Search...">
+        </div>
+        <input type="hidden" name="check_keywords" value="yes" />
+        <input type="hidden" name="area" value="default" />
+      </form>
+    </div>
+  </div>
+</div>
+    </div>
+  </div>
+        <div id="right-column">
+          
+  <div class="header">
+    
+          <div role="navigation" aria-label="breadcrumbs navigation">
+            <ol class="breadcrumb">
+              <li><a href="../../index.html">Docs</a></li>
+              
+                <li><a href="../../examples.html">Examples</a></li>
+              
+              <li>Associative memory</li>
+            </ol>
+          </div>
+          
+    
+      <div style="float: right;">
+        <ol class="breadcrumb">
+          <li><a href="../../_downloads/examples/spa/associative_memory.ipynb" download>Download example as Jupyter Notebook</a></li>
+        </ol>
+      </div>
+    
+  </div>
+
+          <div class="document clearer body">
+            
+  
+<style>
+/* CSS for nbsphinx extension */
+
+/* remove conflicting styling from Sphinx themes */
+div.nbinput,
+div.nbinput div.prompt,
+div.nbinput div.input_area,
+div.nbinput div[class*=highlight],
+div.nbinput div[class*=highlight] pre,
+div.nboutput,
+div.nbinput div.prompt,
+div.nbinput div.output_area,
+div.nboutput div[class*=highlight],
+div.nboutput div[class*=highlight] pre {
+    background: none;
+    border: none;
+    padding: 0 0;
+    margin: 0;
+    box-shadow: none;
+}
+
+/* avoid gaps between output lines */
+div.nboutput div[class*=highlight] pre {
+    line-height: normal;
+}
+
+/* input/output containers */
+div.nbinput,
+div.nboutput {
+    display: -webkit-flex;
+    display: flex;
+    align-items: flex-start;
+    margin: 0;
+    width: 100%;
+}
+@media (max-width: 540px) {
+    div.nbinput,
+    div.nboutput {
+        flex-direction: column;
+    }
+}
+
+/* input container */
+div.nbinput {
+    padding-top: 5px;
+}
+
+/* last container */
+div.nblast {
+    padding-bottom: 5px;
+}
+
+/* input prompt */
+div.nbinput div.prompt pre {
+    color: #303F9F;
+}
+
+/* output prompt */
+div.nboutput div.prompt pre {
+    color: #D84315;
+}
+
+/* all prompts */
+div.nbinput div.prompt,
+div.nboutput div.prompt {
+    min-width: 9ex;
+    padding-top: 0.4em;
+    padding-right: 0.4em;
+    text-align: right;
+    flex: 0;
+}
+@media (max-width: 540px) {
+    div.nbinput div.prompt,
+    div.nboutput div.prompt {
+        text-align: left;
+        padding: 0.4em;
+    }
+    div.nboutput div.prompt.empty {
+        padding: 0;
+    }
+}
+
+/* disable scrollbars on prompts */
+div.nbinput div.prompt pre,
+div.nboutput div.prompt pre {
+    overflow: hidden;
+}
+
+/* input/output area */
+div.nbinput div.input_area,
+div.nboutput div.output_area {
+    padding: 0.4em;
+    -webkit-flex: 1;
+    flex: 1;
+    overflow: auto;
+}
+@media (max-width: 540px) {
+    div.nbinput div.input_area,
+    div.nboutput div.output_area {
+        width: 100%;
+    }
+}
+
+/* input area */
+div.nbinput div.input_area {
+    border: 1px solid #cfcfcf;
+    border-radius: 2px;
+    background: #f7f7f7;
+}
+
+/* override MathJax center alignment in output cells */
+div.nboutput div[class*=MathJax] {
+    text-align: left !important;
+}
+
+/* override sphinx.ext.pngmath center alignment in output cells */
+div.nboutput div.math p {
+    text-align: left;
+}
+
+/* standard error */
+div.nboutput div.output_area.stderr {
+    background: #fdd;
+}
+
+/* ANSI colors */
+.ansi-black-fg { color: #3E424D; }
+.ansi-black-bg { background-color: #3E424D; }
+.ansi-black-intense-fg { color: #282C36; }
+.ansi-black-intense-bg { background-color: #282C36; }
+.ansi-red-fg { color: #E75C58; }
+.ansi-red-bg { background-color: #E75C58; }
+.ansi-red-intense-fg { color: #B22B31; }
+.ansi-red-intense-bg { background-color: #B22B31; }
+.ansi-green-fg { color: #00A250; }
+.ansi-green-bg { background-color: #00A250; }
+.ansi-green-intense-fg { color: #007427; }
+.ansi-green-intense-bg { background-color: #007427; }
+.ansi-yellow-fg { color: #DDB62B; }
+.ansi-yellow-bg { background-color: #DDB62B; }
+.ansi-yellow-intense-fg { color: #B27D12; }
+.ansi-yellow-intense-bg { background-color: #B27D12; }
+.ansi-blue-fg { color: #208FFB; }
+.ansi-blue-bg { background-color: #208FFB; }
+.ansi-blue-intense-fg { color: #0065CA; }
+.ansi-blue-intense-bg { background-color: #0065CA; }
+.ansi-magenta-fg { color: #D160C4; }
+.ansi-magenta-bg { background-color: #D160C4; }
+.ansi-magenta-intense-fg { color: #A03196; }
+.ansi-magenta-intense-bg { background-color: #A03196; }
+.ansi-cyan-fg { color: #60C6C8; }
+.ansi-cyan-bg { background-color: #60C6C8; }
+.ansi-cyan-intense-fg { color: #258F8F; }
+.ansi-cyan-intense-bg { background-color: #258F8F; }
+.ansi-white-fg { color: #C5C1B4; }
+.ansi-white-bg { background-color: #C5C1B4; }
+.ansi-white-intense-fg { color: #A1A6B2; }
+.ansi-white-intense-bg { background-color: #A1A6B2; }
+
+.ansi-default-inverse-fg { color: #FFFFFF; }
+.ansi-default-inverse-bg { background-color: #000000; }
+
+.ansi-bold { font-weight: bold; }
+.ansi-underline { text-decoration: underline; }
+</style>
+<div class="section" id="Associative-memory">
+<h1>Associative memory<a class="headerlink" href="#Associative-memory" title="Permalink to this headline">¶</a></h1>
+<p>This tutorial introduces the Associative Memory (AM) module in the SPA.</p>
+<p>An associative memory is a neural network used to store and recall
+patterns. When the network receives a partial or noisy pattern at the
+input, it can either recover the same pattern or recall another stored
+pattern. If the recovered pattern is the same as the input pattern, the
+memory is said to be autoassociative or a <em>clean-up</em> memory. Otherwise,
+if the recovered pattern is different from the presented one, the
+network is heteroassociative.</p>
+<p>Patterns stored by the AM module in the SPA are semantic pointers
+organised in a SPA vocabulary. The examples in this tutorial demonstrate
+how to use the AM module to store and recall patterns. Advanced
+functionality of the module, such as the recall of multiple memories
+similar to the input, is also presented.</p>
+<p>A theoretical explanation on how the associative memory is implemented
+in NEF is available in <a class="reference external" href="http://compneuro.uwaterloo.ca/files/publications/stewart.2011.pdf">Stewart et
+al.&nbsp;2010</a>.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="o">%</span><span class="k">matplotlib</span> inline
+
+<span class="kn">import</span> <span class="nn">nengo</span>
+<span class="kn">from</span> <span class="nn">nengo</span> <span class="k">import</span> <span class="n">spa</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="Step-1:-Creating-an-Associative-Memory">
+<h2>Step 1: Creating an Associative Memory<a class="headerlink" href="#Step-1:-Creating-an-Associative-Memory" title="Permalink to this headline">¶</a></h2>
+<p>We start by creating a set of patterns the AM will store. The vocabulary
+in this example contains five words:
+<code class="docutils literal"><span class="pre">ORANGE,</span> <span class="pre">APRICOT,</span> <span class="pre">CHERRY,</span> <span class="pre">STRAWBERRY</span></code> and <code class="docutils literal"><span class="pre">APPLE</span></code>. Each word is
+represented as a semantic pointer, an <span class="math">\(n\)</span>-dimensional vector. When
+creating a vocabulary, we specify the number of dimensions for all
+semantic pointers. Then, we add the words to the vocabulary with
+<code class="docutils literal"><span class="pre">parse</span></code>:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="n">dim</span> <span class="o">=</span> <span class="mi">32</span>
+<span class="n">vocab</span> <span class="o">=</span> <span class="n">spa</span><span class="o">.</span><span class="n">Vocabulary</span><span class="p">(</span><span class="n">dimensions</span><span class="o">=</span><span class="n">dim</span><span class="p">)</span>
+
+<span class="n">words</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ORANGE&#39;</span><span class="p">,</span> <span class="s1">&#39;APRICOT&#39;</span><span class="p">,</span> <span class="s1">&#39;CHERRY&#39;</span><span class="p">,</span> <span class="s1">&#39;STRAWBERRY&#39;</span><span class="p">,</span> <span class="s1">&#39;APPLE&#39;</span><span class="p">]</span>
+
+<span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">words</span><span class="p">:</span>
+    <span class="n">vocab</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>Next, we create an autoassociative memory with a corresponding set of
+stored patterns. To check the functionality of the memory module, we
+want to test whether the pattern at the input has been successfully
+retrieved at the output.</p>
+<p>The memory is created within a <code class="docutils literal"><span class="pre">spa.SPA</span></code> module. Using the
+<code class="docutils literal"><span class="pre">spa.Input</span></code> module we set the name of the semantic pointer <code class="docutils literal"><span class="pre">APPLE</span></code>
+as the input to the associative memory. <code class="docutils literal"><span class="pre">nengo.Probe</span></code>s have been
+added to record inputs and outputs of the module, which we plot for
+visual inspection. Finally, we run the simulation for the 0.2 seconds
+simulation time.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">with</span> <span class="n">spa</span><span class="o">.</span><span class="n">SPA</span><span class="p">(</span><span class="s1">&#39;AssociativeMemory&#39;</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="k">as</span> <span class="n">model_1</span><span class="p">:</span>
+    <span class="c1"># create the AM module</span>
+    <span class="n">model_1</span><span class="o">.</span><span class="n">assoc_mem</span> <span class="o">=</span> <span class="n">spa</span><span class="o">.</span><span class="n">AssociativeMemory</span><span class="p">(</span><span class="n">input_vocab</span><span class="o">=</span><span class="n">vocab</span><span class="p">)</span>
+
+    <span class="c1"># present input to the AM</span>
+    <span class="n">model_1</span><span class="o">.</span><span class="n">am_input</span> <span class="o">=</span> <span class="n">spa</span><span class="o">.</span><span class="n">Input</span><span class="p">(</span><span class="n">assoc_mem</span><span class="o">=</span><span class="s1">&#39;APPLE&#39;</span><span class="p">)</span>
+
+    <span class="c1"># record the inputs and outputs during the simulation</span>
+    <span class="n">input_probe</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">model_1</span><span class="o">.</span><span class="n">assoc_mem</span><span class="o">.</span><span class="n">input</span><span class="p">)</span>
+    <span class="n">output_probe</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">model_1</span><span class="o">.</span><span class="n">assoc_mem</span><span class="o">.</span><span class="n">output</span><span class="p">,</span> <span class="n">synapse</span><span class="o">=</span><span class="mf">0.03</span><span class="p">)</span>
+
+<span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Simulator</span><span class="p">(</span><span class="n">model_1</span><span class="p">)</span> <span class="k">as</span> <span class="n">sim</span><span class="p">:</span>
+    <span class="n">sim</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="mf">0.2</span><span class="p">)</span>
+<span class="n">t</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<p>We gather the simulation data:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="n">input_data</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">input_probe</span><span class="p">]</span>
+<span class="n">output_data</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">output_probe</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Input dimensions: (</span><span class="si">%d</span><span class="s2">, </span><span class="si">%d</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="n">input_data</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Output dimensions: (</span><span class="si">%d</span><span class="s2">, </span><span class="si">%d</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="n">output_data</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Input dimensions: (200, 32)
+Output dimensions: (200, 32)
+</pre></div></div>
+</div>
+<p>We use a dot product (implemented in <code class="docutils literal"><span class="pre">nengo.spa.similarity</span></code>) to
+compare the similarity of inputs and outputs to all patterns in the
+vocabulary at every time step. Recall that the first dimension
+corresponds to the number of time steps and the second dimension to the
+32-dimensional pattern represented in the associative memory. If the
+similarity between the output vector and the input vector is close to
+one, we can say that the associative memory successfully retrieved the
+pattern (or cleaned up the input).</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">def</span> <span class="nf">plot_similarities</span><span class="p">(</span><span class="n">input_data</span><span class="p">,</span>
+                      <span class="n">output_data</span><span class="p">,</span>
+                      <span class="n">vocab1</span><span class="p">,</span>
+                      <span class="n">vocab2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                      <span class="n">autoscale</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">vocab2</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">vocab2</span> <span class="o">=</span> <span class="n">vocab1</span>
+
+    <span class="n">ymin</span><span class="p">,</span> <span class="n">ymax</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.2</span><span class="p">,</span> <span class="mf">1.2</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="n">ymin</span><span class="p">,</span> <span class="n">ymax</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">autoscale</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">autoscale</span><span class="p">(</span><span class="n">autoscale</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="s1">&#39;y&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">spa</span><span class="o">.</span><span class="n">similarity</span><span class="p">(</span><span class="n">input_data</span><span class="p">,</span> <span class="n">vocab1</span><span class="p">))</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Input similarity&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Time&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="n">right</span><span class="o">=</span><span class="n">t</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span>
+        <span class="n">vocab1</span><span class="o">.</span><span class="n">keys</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s1">&#39;upper center&#39;</span><span class="p">,</span> <span class="n">bbox_to_anchor</span><span class="o">=</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.13</span><span class="p">),</span> <span class="n">ncol</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">spa</span><span class="o">.</span><span class="n">similarity</span><span class="p">(</span><span class="n">output_data</span><span class="p">,</span> <span class="n">vocab2</span><span class="p">))</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Output similarity&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Time&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="n">right</span><span class="o">=</span><span class="n">t</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="n">ymin</span><span class="p">,</span> <span class="n">ymax</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">autoscale</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">autoscale</span><span class="p">(</span><span class="n">autoscale</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="s1">&#39;y&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span>
+        <span class="n">vocab2</span><span class="o">.</span><span class="n">keys</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s1">&#39;upper center&#39;</span><span class="p">,</span> <span class="n">bbox_to_anchor</span><span class="o">=</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.13</span><span class="p">),</span> <span class="n">ncol</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="n">plot_similarities</span><span class="p">(</span><span class="n">input_data</span><span class="p">,</span> <span class="n">output_data</span><span class="p">,</span> <span class="n">vocab</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_spa_associative_memory_10_0.png" src="../../_images/examples_spa_associative_memory_10_0.png" />
+</div>
+</div>
+<p>We see that the network input has been constant throughout the
+simulation (<code class="docutils literal"><span class="pre">APPLE=1</span></code>). Notice that there might be some small
+similarity between the pattern <code class="docutils literal"><span class="pre">APPLE</span></code> and some other patterns. This
+is because the semantic pointers are not perfectly orthogonal and the
+dot product will amount to some value different from zero. This can be
+improved by increasing the dimensionality of vectors, yielding more
+orthogonal representations. At the output, the similarity of the
+represented semantic pointer with the semantic pointer <code class="docutils literal"><span class="pre">APPLE</span></code>
+increases until it reaches the maximal value (<code class="docutils literal"><span class="pre">=1</span></code>). This means that
+the associative memory successfully retrieved the input pattern. The
+exponential increase is due to the synaptic filtering in
+<code class="docutils literal"><span class="pre">nengo.Probe</span></code>. This is used to show how the input to another group of
+neurons connected to the output of this particular AM module would look
+like.</p>
+</div>
+<div class="section" id="Step-2:-Clean-up-Memory">
+<h2>Step 2: Clean-up Memory<a class="headerlink" href="#Step-2:-Clean-up-Memory" title="Permalink to this headline">¶</a></h2>
+<p>In the next example, we show the ability of the associative memory to
+retrieve a clean pattern from a noisy input. This is a very common use
+of autoassociative memories, also called <em>clean-up</em> as the AM removes
+the noise in the input.</p>
+<p>Now, we construct a noisy semantic pointer using a combination of
+several semantic pointers. This is done by passing the expression
+<code class="docutils literal"><span class="pre">0.9*APPLE+0.5*CHERRY+0.4*APRICOT</span></code> as the input to the the network.
+The resulting input vector will still be mostly similar to one semantic
+pointer (<code class="docutils literal"><span class="pre">APPLE</span></code>) but is also somewhat similar to other semantic
+pointers in the vocabulary. Therefore, the task of the network will be
+to clean up the vector <code class="docutils literal"><span class="pre">APPLE</span></code>. One way to achieve this in SPA is by
+using the thresholding mechanism in the AM module. By default, the
+threshold in <code class="docutils literal"><span class="pre">spa.AssociativeMemory</span></code> is set to 0.3, assuming that
+random noise fluctuations in the input should not be contained at the
+output of the network. By specifying the threshold, the output will be
+similar only to those inputs whose similarity with a vocabulary item is
+above a certain value. In this example we will increase the selectivity
+of the AM by setting the threshold to to a higher value:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">with</span> <span class="n">spa</span><span class="o">.</span><span class="n">SPA</span><span class="p">(</span><span class="s1">&#39;CleanupThreshold&#39;</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="k">as</span> <span class="n">model_3</span><span class="p">:</span>
+    <span class="n">model_3</span><span class="o">.</span><span class="n">assoc_mem</span> <span class="o">=</span> <span class="n">spa</span><span class="o">.</span><span class="n">AssociativeMemory</span><span class="p">(</span><span class="n">input_vocab</span><span class="o">=</span><span class="n">vocab</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.7</span><span class="p">)</span>
+
+    <span class="n">input_expr</span> <span class="o">=</span> <span class="s1">&#39;0.9*APPLE + 0.5*CHERRY + 0.4*APRICOT&#39;</span>
+    <span class="n">model_3</span><span class="o">.</span><span class="n">am_input</span> <span class="o">=</span> <span class="n">spa</span><span class="o">.</span><span class="n">Input</span><span class="p">(</span><span class="n">assoc_mem</span><span class="o">=</span><span class="n">input_expr</span><span class="p">)</span>
+
+    <span class="n">input_probe</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">model_3</span><span class="o">.</span><span class="n">assoc_mem</span><span class="o">.</span><span class="n">input</span><span class="p">)</span>
+    <span class="n">output_probe</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">model_3</span><span class="o">.</span><span class="n">assoc_mem</span><span class="o">.</span><span class="n">output</span><span class="p">,</span> <span class="n">synapse</span><span class="o">=</span><span class="mf">0.03</span><span class="p">)</span>
+
+<span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Simulator</span><span class="p">(</span><span class="n">model_3</span><span class="p">)</span> <span class="k">as</span> <span class="n">sim</span><span class="p">:</span>
+    <span class="n">sim</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="mf">0.2</span><span class="p">)</span>
+<span class="n">t</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">()</span>
+
+<span class="n">input_data</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">input_probe</span><span class="p">]</span>
+<span class="n">output_data</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">output_probe</span><span class="p">]</span>
+
+<span class="n">plot_similarities</span><span class="p">(</span><span class="n">input_data</span><span class="p">,</span> <span class="n">output_data</span><span class="p">,</span> <span class="n">vocab</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_spa_associative_memory_13_0.png" src="../../_images/examples_spa_associative_memory_13_0.png" />
+</div>
+</div>
+<p>We see that the vector at the input is mostly similar to the semantic
+pointer <code class="docutils literal"><span class="pre">APPLE</span></code> and somewhat similar to the semantic pointer
+<code class="docutils literal"><span class="pre">CHERRY</span></code>. The vector at the output is very similar to the <code class="docutils literal"><span class="pre">APPLE</span></code>,
+indicating that the memory successfully cleaned up the noisy pattern. We
+can indicate that we want to completely recover the pattern at the
+output by setting the parameter <code class="docutils literal"><span class="pre">threshold_output</span></code> to <code class="docutils literal"><span class="pre">True</span></code>. This
+will produce a vector at the output which has similarity one with the
+semantic pointer <code class="docutils literal"><span class="pre">APPLE</span></code>.</p>
+<p>In some modelling scenarios we might have an input vector which is very
+similar to several other vectors in the vocabulary:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">with</span> <span class="n">spa</span><span class="o">.</span><span class="n">SPA</span><span class="p">(</span><span class="s1">&#39;Cleanup&#39;</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="k">as</span> <span class="n">model_2</span><span class="p">:</span>
+    <span class="n">model_2</span><span class="o">.</span><span class="n">assoc_mem</span> <span class="o">=</span> <span class="n">spa</span><span class="o">.</span><span class="n">AssociativeMemory</span><span class="p">(</span><span class="n">input_vocab</span><span class="o">=</span><span class="n">vocab</span><span class="p">)</span>
+
+    <span class="c1"># noisy input</span>
+    <span class="n">input_expr</span> <span class="o">=</span> <span class="s1">&#39;0.9*APPLE + 0.85*CHERRY + 0.7*APRICOT&#39;</span>
+    <span class="n">model_2</span><span class="o">.</span><span class="n">am_input</span> <span class="o">=</span> <span class="n">spa</span><span class="o">.</span><span class="n">Input</span><span class="p">(</span><span class="n">assoc_mem</span><span class="o">=</span><span class="n">input_expr</span><span class="p">)</span>
+
+    <span class="n">input_probe</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">model_2</span><span class="o">.</span><span class="n">assoc_mem</span><span class="o">.</span><span class="n">input</span><span class="p">)</span>
+    <span class="n">output_probe</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">model_2</span><span class="o">.</span><span class="n">assoc_mem</span><span class="o">.</span><span class="n">output</span><span class="p">,</span> <span class="n">synapse</span><span class="o">=</span><span class="mf">0.03</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Simulator</span><span class="p">(</span><span class="n">model_2</span><span class="p">)</span> <span class="k">as</span> <span class="n">sim</span><span class="p">:</span>
+    <span class="n">sim</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="mf">0.2</span><span class="p">)</span>
+<span class="n">t</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">()</span>
+
+<span class="n">input_data</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">input_probe</span><span class="p">]</span>
+<span class="n">output_data</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">output_probe</span><span class="p">]</span>
+
+<span class="n">plot_similarities</span><span class="p">(</span><span class="n">input_data</span><span class="p">,</span> <span class="n">output_data</span><span class="p">,</span> <span class="n">vocab</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_spa_associative_memory_17_0.png" src="../../_images/examples_spa_associative_memory_17_0.png" />
+</div>
+</div>
+<p>We see that the input is very similar to semantic pointers <code class="docutils literal"><span class="pre">APPLE</span></code>,
+<code class="docutils literal"><span class="pre">CHERRY</span></code> and somewhat similar to <code class="docutils literal"><span class="pre">APRICOT</span></code>. In this situation, it
+might be difficult to determine a fixed threshold which will clean up
+the input and differentiate between the vectors <code class="docutils literal"><span class="pre">APPLE</span></code> and
+<code class="docutils literal"><span class="pre">CHERRY</span></code>. To ensure that only one vector at the output is similar to
+the strongest input, we can set the parameter <code class="docutils literal"><span class="pre">wta_output</span></code> to
+<code class="docutils literal"><span class="pre">True</span></code>. <code class="docutils literal"><span class="pre">WTA</span></code> is a computational principle called winner-take-all,
+stating that one, mostly active element should be regarded as the winner
+among possible, less similar alternatives. Again, we set
+<code class="docutils literal"><span class="pre">threshold_output</span></code> to <code class="docutils literal"><span class="pre">True</span></code> to fully recover the pattern:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">with</span> <span class="n">spa</span><span class="o">.</span><span class="n">SPA</span><span class="p">(</span><span class="s1">&#39;CleanupThreshold&#39;</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="k">as</span> <span class="n">model_3</span><span class="p">:</span>
+    <span class="n">model_3</span><span class="o">.</span><span class="n">assoc_mem</span> <span class="o">=</span> <span class="n">spa</span><span class="o">.</span><span class="n">AssociativeMemory</span><span class="p">(</span>
+        <span class="n">input_vocab</span><span class="o">=</span><span class="n">vocab</span><span class="p">,</span> <span class="n">wta_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">threshold_output</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">input_expr</span> <span class="o">=</span> <span class="s1">&#39;0.9*APPLE + 0.85*CHERRY + 0.7*APRICOT&#39;</span>
+    <span class="n">model_3</span><span class="o">.</span><span class="n">am_input</span> <span class="o">=</span> <span class="n">spa</span><span class="o">.</span><span class="n">Input</span><span class="p">(</span><span class="n">assoc_mem</span><span class="o">=</span><span class="n">input_expr</span><span class="p">)</span>
+
+    <span class="n">input_probe</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">model_3</span><span class="o">.</span><span class="n">assoc_mem</span><span class="o">.</span><span class="n">input</span><span class="p">)</span>
+    <span class="n">output_probe</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">model_3</span><span class="o">.</span><span class="n">assoc_mem</span><span class="o">.</span><span class="n">output</span><span class="p">,</span> <span class="n">synapse</span><span class="o">=</span><span class="mf">0.03</span><span class="p">)</span>
+
+<span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Simulator</span><span class="p">(</span><span class="n">model_3</span><span class="p">)</span> <span class="k">as</span> <span class="n">sim</span><span class="p">:</span>
+    <span class="n">sim</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="mf">0.2</span><span class="p">)</span>
+<span class="n">t</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">()</span>
+
+<span class="n">input_data</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">input_probe</span><span class="p">]</span>
+<span class="n">output_data</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">output_probe</span><span class="p">]</span>
+
+<span class="n">plot_similarities</span><span class="p">(</span><span class="n">input_data</span><span class="p">,</span> <span class="n">output_data</span><span class="p">,</span> <span class="n">vocab</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_spa_associative_memory_19_0.png" src="../../_images/examples_spa_associative_memory_19_0.png" />
+</div>
+</div>
+<p>Although the input vector is very similar to both <code class="docutils literal"><span class="pre">APPLE</span></code> and
+<code class="docutils literal"><span class="pre">CHERRY</span></code>, the memory manages to recover the <code class="docutils literal"><span class="pre">APPLE</span></code> at the output.</p>
+</div>
+<div class="section" id="Step-3:-Heteroassociative-relationships">
+<h2>Step 3: Heteroassociative relationships<a class="headerlink" href="#Step-3:-Heteroassociative-relationships" title="Permalink to this headline">¶</a></h2>
+<p>To model a variety of interesting memory phenomena, it is often useful
+to store relationships between different sets of patterns. For example,
+to simulate number counting from 1 to 5, the memory needs to store the
+relationships between patterns representing numbers:
+<span class="math">\(1\rightarrow2,\ 2\rightarrow3,\ 3\rightarrow4,\ 4\rightarrow5\)</span></p>
+<p>In this example we show how to use <code class="docutils literal"><span class="pre">spa.AssociativeMemory</span></code> to this
+task. In order to achieve the number counting, we will split the task
+into two parts:</p>
+<ol class="arabic simple">
+<li>Present a number at the input and recall a number greater by one
+(e.g.&nbsp;for <code class="docutils literal"><span class="pre">1</span></code> recall <code class="docutils literal"><span class="pre">2</span></code>, for <code class="docutils literal"><span class="pre">2</span></code> recall <code class="docutils literal"><span class="pre">3</span></code> etc.)</li>
+<li>Feed the output of the associative memory back to its input</li>
+</ol>
+<p>As in the previous example, we start by defining a vocabulary that
+stores semantic pointes representing five numbers. This will be used as
+the input and as the output vocabulary. In case of hetero-associative
+memories the input and the output vocabulary can differ.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="n">dim</span> <span class="o">=</span> <span class="mi">16</span>
+<span class="n">vocab_numbers</span> <span class="o">=</span> <span class="n">spa</span><span class="o">.</span><span class="n">Vocabulary</span><span class="p">(</span><span class="n">dimensions</span><span class="o">=</span><span class="n">dim</span><span class="p">)</span>
+
+<span class="c1"># a quicker way to add words to a vocabulary</span>
+<span class="n">vocab_numbers</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="s1">&#39;ONE + TWO + THREE + FOUR + FIVE&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>Out[11]:
+</pre></div>
+</div>
+<div class="output_area highlight-none"><div class="highlight"><pre>
+<span></span>&lt;nengo.spa.pointer.SemanticPointer at 0x260a7985be0&gt;
+</pre></div>
+</div>
+</div>
+<p>Now, in function <code class="docutils literal"><span class="pre">input_fun</span></code> we define which semantic pointer is going
+to be present at the input at certain simulation time. Because we want
+to achieve a heteroassociative mapping, we need to specify which input
+patterns map to which output patterns. The desired mapping in specified
+by providing <code class="docutils literal"><span class="pre">input_keys</span></code> and <code class="docutils literal"><span class="pre">output_keys</span></code> arguments when creating
+the AM module:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">def</span> <span class="nf">input_fun</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">t</span> <span class="o">&lt;</span> <span class="mf">0.2</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">&#39;ONE&#39;</span>
+    <span class="k">elif</span> <span class="n">t</span> <span class="o">&lt;</span> <span class="mf">0.4</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">&#39;TWO&#39;</span>
+    <span class="k">elif</span> <span class="n">t</span> <span class="o">&lt;</span> <span class="mf">0.6</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">&#39;THREE&#39;</span>
+    <span class="k">elif</span> <span class="n">t</span> <span class="o">&lt;</span> <span class="mf">0.8</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">&#39;FOUR&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">&#39;0&#39;</span>
+
+
+<span class="c1"># from patterns</span>
+<span class="n">input_keys</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ONE&#39;</span><span class="p">,</span> <span class="s1">&#39;TWO&#39;</span><span class="p">,</span> <span class="s1">&#39;THREE&#39;</span><span class="p">,</span> <span class="s1">&#39;FOUR&#39;</span><span class="p">]</span>
+
+<span class="c1"># to patterns</span>
+<span class="n">output_keys</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;TWO&#39;</span><span class="p">,</span> <span class="s1">&#39;THREE&#39;</span><span class="p">,</span> <span class="s1">&#39;FOUR&#39;</span><span class="p">,</span> <span class="s1">&#39;FIVE&#39;</span><span class="p">]</span>
+
+<span class="k">with</span> <span class="n">spa</span><span class="o">.</span><span class="n">SPA</span><span class="p">(</span><span class="s1">&#39;Counting&#39;</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="k">as</span> <span class="n">model_4</span><span class="p">:</span>
+    <span class="n">model_4</span><span class="o">.</span><span class="n">assoc_mem</span> <span class="o">=</span> <span class="n">spa</span><span class="o">.</span><span class="n">AssociativeMemory</span><span class="p">(</span>
+        <span class="n">input_vocab</span><span class="o">=</span><span class="n">vocab_numbers</span><span class="p">,</span>
+        <span class="n">output_vocab</span><span class="o">=</span><span class="n">vocab_numbers</span><span class="p">,</span>
+        <span class="n">input_keys</span><span class="o">=</span><span class="n">input_keys</span><span class="p">,</span>
+        <span class="n">output_keys</span><span class="o">=</span><span class="n">output_keys</span><span class="p">,</span>
+        <span class="n">wta_output</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">model_4</span><span class="o">.</span><span class="n">am_input</span> <span class="o">=</span> <span class="n">spa</span><span class="o">.</span><span class="n">Input</span><span class="p">(</span><span class="n">assoc_mem</span><span class="o">=</span><span class="n">input_fun</span><span class="p">)</span>
+
+    <span class="n">input_probe</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">model_4</span><span class="o">.</span><span class="n">assoc_mem</span><span class="o">.</span><span class="n">input</span><span class="p">)</span>
+    <span class="n">output_probe</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">model_4</span><span class="o">.</span><span class="n">assoc_mem</span><span class="o">.</span><span class="n">output</span><span class="p">,</span> <span class="n">synapse</span><span class="o">=</span><span class="mf">0.03</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Simulator</span><span class="p">(</span><span class="n">model_4</span><span class="p">)</span> <span class="k">as</span> <span class="n">sim</span><span class="p">:</span>
+    <span class="n">sim</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="mf">1.</span><span class="p">)</span>
+<span class="n">t</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">()</span>
+
+<span class="n">input_data</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">input_probe</span><span class="p">]</span>
+<span class="n">output_data</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">output_probe</span><span class="p">]</span>
+
+<span class="n">plot_similarities</span><span class="p">(</span><span class="n">input_data</span><span class="p">,</span> <span class="n">output_data</span><span class="p">,</span> <span class="n">vocab_numbers</span><span class="p">,</span> <span class="n">autoscale</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_spa_associative_memory_25_0.png" src="../../_images/examples_spa_associative_memory_25_0.png" />
+</div>
+</div>
+<p>So far we have created a model which realises increments by one. The
+next step is to automatise this, so that when the model sees <code class="docutils literal"><span class="pre">ONE</span></code> it
+will produce <code class="docutils literal"><span class="pre">TWO,</span> <span class="pre">THREE,</span> <span class="pre">FOUR,</span> <span class="pre">FIVE</span></code>. To achieve counting, we need to
+introduce a feedback connection. That is, the network output needs to be
+fed into its input at the next time step. This can be easily done in
+Nengo by adding just one additional connection. Now, we initialise the
+simulation by presenting the semantic pointer <code class="docutils literal"><span class="pre">ONE</span></code> at the input for
+the duration of 0.2 simulation time.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">def</span> <span class="nf">input_fun</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+    <span class="k">if</span> <span class="mi">0</span> <span class="o">&lt;</span> <span class="n">t</span> <span class="o">&lt;</span> <span class="mf">0.2</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">&#39;ONE&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">&#39;0&#39;</span>
+
+
+<span class="k">with</span> <span class="n">spa</span><span class="o">.</span><span class="n">SPA</span><span class="p">(</span><span class="s1">&#39;Counting&#39;</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="k">as</span> <span class="n">model_5</span><span class="p">:</span>
+    <span class="n">model_5</span><span class="o">.</span><span class="n">assoc_mem</span> <span class="o">=</span> <span class="n">spa</span><span class="o">.</span><span class="n">AssociativeMemory</span><span class="p">(</span>
+        <span class="n">input_vocab</span><span class="o">=</span><span class="n">vocab_numbers</span><span class="p">,</span>
+        <span class="n">output_vocab</span><span class="o">=</span><span class="n">vocab_numbers</span><span class="p">,</span>
+        <span class="n">input_keys</span><span class="o">=</span><span class="n">input_keys</span><span class="p">,</span>
+        <span class="n">output_keys</span><span class="o">=</span><span class="n">output_keys</span><span class="p">,</span>
+        <span class="n">wta_output</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">model_5</span><span class="o">.</span><span class="n">am_input</span> <span class="o">=</span> <span class="n">spa</span><span class="o">.</span><span class="n">Input</span><span class="p">(</span><span class="n">assoc_mem</span><span class="o">=</span><span class="n">input_fun</span><span class="p">)</span>
+
+    <span class="c1"># added feedback connection</span>
+    <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span>
+        <span class="n">model_5</span><span class="o">.</span><span class="n">assoc_mem</span><span class="o">.</span><span class="n">output</span><span class="p">,</span>
+        <span class="n">model_5</span><span class="o">.</span><span class="n">assoc_mem</span><span class="o">.</span><span class="n">input</span><span class="p">,</span>
+        <span class="n">synapse</span><span class="o">=.</span><span class="mi">18</span><span class="p">,</span>
+        <span class="n">transform</span><span class="o">=</span><span class="mf">3.3</span><span class="p">)</span>
+
+    <span class="n">input_probe</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">model_5</span><span class="o">.</span><span class="n">assoc_mem</span><span class="o">.</span><span class="n">input</span><span class="p">)</span>
+    <span class="n">output_probe</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">model_5</span><span class="o">.</span><span class="n">assoc_mem</span><span class="o">.</span><span class="n">output</span><span class="p">,</span> <span class="n">synapse</span><span class="o">=</span><span class="mf">0.03</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [15]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Simulator</span><span class="p">(</span><span class="n">model_5</span><span class="p">)</span> <span class="k">as</span> <span class="n">sim</span><span class="p">:</span>
+    <span class="n">sim</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="mf">1.</span><span class="p">)</span>
+<span class="n">t</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">()</span>
+
+<span class="n">input_data</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">input_probe</span><span class="p">]</span>
+<span class="n">output_data</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">output_probe</span><span class="p">]</span>
+
+<span class="n">plot_similarities</span><span class="p">(</span><span class="n">input_data</span><span class="p">,</span> <span class="n">output_data</span><span class="p">,</span> <span class="n">vocab_numbers</span><span class="p">,</span> <span class="n">autoscale</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_spa_associative_memory_28_0.png" src="../../_images/examples_spa_associative_memory_28_0.png" />
+</div>
+</div>
+<p>The only input our model receives is <code class="docutils literal"><span class="pre">ONE</span></code> at the beginning of the
+simulation. After that, it produces a sequence of consecutive numbers up
+to five. If the sequence of numbers at the output decays too quickly,
+try re-running all the cells in Step 3. The connection parameters
+<code class="docutils literal"><span class="pre">synapse</span></code> and <code class="docutils literal"><span class="pre">transform</span></code> have been set to arbitrary values which
+produce the desired sequence. Try modifying them to see how they affect
+the behaviour.</p>
+</div>
+</div>
+
+
+          </div>
+            
+  <div class="footer-relations">
+    
+      <div class="pull-left">
+        <a class="btn btn-default" href="../networks/integrator_network.html" title="previous chapter (use the left arrow)">Integrator</a>
+      </div>
+    
+      <div class="pull-right">
+        <a class="btn btn-default" href="../usage/rectified_linear.html" title="next chapter (use the right arrow)">Adding new objects to Nengo</a>
+      </div>
+    </div>
+    <div class="clearer"></div>
+  
+        </div>
+        <div class="clearfix"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../usage/rectified_linear.html" title="Adding new objects to Nengo"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../networks/integrator_network.html" title="Integrator"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../examples.html" >Examples</a> &#187;</li> 
+      </ul>
+    </div>
+<script type="text/javascript">
+  $("#mobile-toggle a").click(function () {
+    $("#left-column").toggle();
+  });
+</script>
+<script type="text/javascript" src="../../_static/js/bootstrap.js"></script>
+  <div class="footer">
+    &copy; Copyright 2013-2017, Applied Brain Research. Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+  </div>
+  </body>
+</html>

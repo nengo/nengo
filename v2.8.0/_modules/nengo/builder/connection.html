@@ -1,0 +1,466 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  
+  <!-- Licensed under the Apache 2.0 License -->
+  <link rel="stylesheet" type="text/css" href="../../../_static/fonts/open-sans/stylesheet.css" />
+  <!-- Licensed under the SIL Open Font License -->
+  <link rel="stylesheet" type="text/css" href="../../../_static/fonts/source-serif-pro/source-serif-pro.css" />
+  <link rel="stylesheet" type="text/css" href="../../../_static/css/bootstrap.min.css" />
+  <link rel="stylesheet" type="text/css" href="../../../_static/css/bootstrap-theme.min.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+    <title>nengo.builder.connection &#8212; Nengo core 2.8.0 docs</title>
+    <link rel="stylesheet" href="../../../_static/guzzle.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '2.8.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+<link rel="stylesheet" type="text/css" href="../../../_static/custom.css">
+
+
+  
+   
+
+  </head>
+  <body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="container-wrapper">
+
+      <div id="mobile-toggle">
+        <a href="#"><span class="glyphicon glyphicon-align-justify" aria-hidden="true"></span></a>
+      </div>
+  <div id="left-column">
+    <div class="sphinxsidebar">
+        <a href="
+    ../../../index.html" class="text-logo">Nengo core 2.8</a>
+        <div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <h2>Table Of Contents</h2>
+  </div>
+  <div class="sidebar-toc">
+    
+    
+      <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../user_guide.html">User guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">Contributing to Nengo</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://www.nengo.ai/projects.html">Nengo ecosystem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../license.html">Nengo license</a></li>
+</ul>
+
+    
+  </div>
+</div>
+        
+<div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <div id="main-search">
+      <form class="form-inline" action="../../../search.html" method="GET" role="form">
+        <div class="input-group">
+          <input name="q" type="text" class="form-control" placeholder="Search...">
+        </div>
+        <input type="hidden" name="check_keywords" value="yes" />
+        <input type="hidden" name="area" value="default" />
+      </form>
+    </div>
+  </div>
+</div>
+    </div>
+  </div>
+        <div id="right-column">
+          
+  <div class="header">
+    
+          <div role="navigation" aria-label="breadcrumbs navigation">
+            <ol class="breadcrumb">
+              <li><a href="../../../index.html">Docs</a></li>
+              
+                <li><a href="../../index.html">Module code</a></li>
+              
+              <li>nengo.builder.connection</li>
+            </ol>
+          </div>
+          
+    
+  </div>
+
+          <div class="document clearer body">
+            
+  <h1>Source code for nengo.builder.connection</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">collections</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">nengo.builder</span> <span class="k">import</span> <span class="n">Builder</span><span class="p">,</span> <span class="n">Signal</span>
+<span class="kn">from</span> <span class="nn">nengo.builder.ensemble</span> <span class="k">import</span> <span class="n">gen_eval_points</span><span class="p">,</span> <span class="n">get_activities</span>
+<span class="kn">from</span> <span class="nn">nengo.builder.node</span> <span class="k">import</span> <span class="n">SimPyFunc</span>
+<span class="kn">from</span> <span class="nn">nengo.builder.operator</span> <span class="k">import</span> <span class="n">Copy</span><span class="p">,</span> <span class="n">DotInc</span><span class="p">,</span> <span class="n">ElementwiseInc</span><span class="p">,</span> <span class="n">Reset</span>
+<span class="kn">from</span> <span class="nn">nengo.connection</span> <span class="k">import</span> <span class="n">Connection</span>
+<span class="kn">from</span> <span class="nn">nengo.dists</span> <span class="k">import</span> <span class="n">get_samples</span>
+<span class="kn">from</span> <span class="nn">nengo.ensemble</span> <span class="k">import</span> <span class="n">Ensemble</span><span class="p">,</span> <span class="n">Neurons</span>
+<span class="kn">from</span> <span class="nn">nengo.exceptions</span> <span class="k">import</span> <span class="n">BuildError</span><span class="p">,</span> <span class="n">ObsoleteError</span>
+<span class="kn">from</span> <span class="nn">nengo.neurons</span> <span class="k">import</span> <span class="n">Direct</span>
+<span class="kn">from</span> <span class="nn">nengo.node</span> <span class="k">import</span> <span class="n">Node</span>
+<span class="kn">from</span> <span class="nn">nengo.solvers</span> <span class="k">import</span> <span class="n">NoSolver</span><span class="p">,</span> <span class="n">Solver</span>
+<span class="kn">from</span> <span class="nn">nengo.utils.compat</span> <span class="k">import</span> <span class="n">is_iterable</span><span class="p">,</span> <span class="n">itervalues</span>
+
+<span class="n">built_attrs</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;eval_points&#39;</span><span class="p">,</span> <span class="s1">&#39;solver_info&#39;</span><span class="p">,</span> <span class="s1">&#39;weights&#39;</span><span class="p">,</span> <span class="s1">&#39;transform&#39;</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="BuiltConnection"><a class="viewcode-back" href="../../../backend_api.html#nengo.builder.connection.BuiltConnection">[docs]</a><span class="k">class</span> <span class="nc">BuiltConnection</span><span class="p">(</span><span class="n">collections</span><span class="o">.</span><span class="n">namedtuple</span><span class="p">(</span><span class="s1">&#39;BuiltConnection&#39;</span><span class="p">,</span> <span class="n">built_attrs</span><span class="p">)):</span>
+    <span class="sd">&quot;&quot;&quot;Collects the parameters generated in `.build_connection`.</span>
+
+<span class="sd">    These are stored here because in the majority of cases the equivalent</span>
+<span class="sd">    attribute in the original connection is a `.Distribution`. The attributes</span>
+<span class="sd">    of a BuiltConnection are the full NumPy arrays used in the simulation.</span>
+
+<span class="sd">    See the `.Connection` documentation for more details on each parameter.</span>
+
+<span class="sd">    .. note:: The ``decoders`` attribute is obsolete as of Nengo 2.1.0.</span>
+<span class="sd">              Use the ``weights`` attribute instead.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    eval_points : ndarray</span>
+<span class="sd">        Evaluation points.</span>
+<span class="sd">    solver_info : dict</span>
+<span class="sd">        Information dictionary returned by the `.Solver`.</span>
+<span class="sd">    weights : ndarray</span>
+<span class="sd">        Connection weights. May be synaptic connection weights defined in</span>
+<span class="sd">        the connection&#39;s transform, or a combination of the decoders</span>
+<span class="sd">        automatically solved for and the specified transform.</span>
+<span class="sd">    transform : ndarray</span>
+<span class="sd">        The transform matrix.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">eval_points</span><span class="p">,</span> <span class="n">solver_info</span><span class="p">,</span> <span class="n">weights</span><span class="p">,</span> <span class="n">transform</span><span class="p">):</span>
+        <span class="c1"># Overridden to suppress the default __new__ docstring</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span>
+            <span class="bp">cls</span><span class="p">,</span> <span class="p">(</span><span class="n">eval_points</span><span class="p">,</span> <span class="n">solver_info</span><span class="p">,</span> <span class="n">weights</span><span class="p">,</span> <span class="n">transform</span><span class="p">))</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">decoders</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">ObsoleteError</span><span class="p">(</span><span class="s2">&quot;decoders are now part of &#39;weights&#39;. &quot;</span>
+                            <span class="s2">&quot;Access BuiltConnection.weights instead.&quot;</span><span class="p">,</span>
+                            <span class="n">since</span><span class="o">=</span><span class="s2">&quot;v2.1.0&quot;</span><span class="p">)</span></div>
+
+
+<span class="k">def</span> <span class="nf">get_eval_points</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">conn</span><span class="p">,</span> <span class="n">rng</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">conn</span><span class="o">.</span><span class="n">eval_points</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">view</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="n">conn</span><span class="o">.</span><span class="n">pre_obj</span><span class="p">]</span><span class="o">.</span><span class="n">eval_points</span><span class="o">.</span><span class="n">view</span><span class="p">()</span>
+        <span class="n">view</span><span class="o">.</span><span class="n">setflags</span><span class="p">(</span><span class="n">write</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">view</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">gen_eval_points</span><span class="p">(</span>
+            <span class="n">conn</span><span class="o">.</span><span class="n">pre_obj</span><span class="p">,</span> <span class="n">conn</span><span class="o">.</span><span class="n">eval_points</span><span class="p">,</span> <span class="n">rng</span><span class="p">,</span> <span class="n">conn</span><span class="o">.</span><span class="n">scale_eval_points</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">get_targets</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">eval_points</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">conn</span><span class="o">.</span><span class="n">function</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">targets</span> <span class="o">=</span> <span class="n">eval_points</span><span class="p">[:,</span> <span class="n">conn</span><span class="o">.</span><span class="n">pre_slice</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">conn</span><span class="o">.</span><span class="n">function</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="n">targets</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">function</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">targets</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">eval_points</span><span class="p">),</span> <span class="n">conn</span><span class="o">.</span><span class="n">size_mid</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">ep</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">eval_points</span><span class="p">[:,</span> <span class="n">conn</span><span class="o">.</span><span class="n">pre_slice</span><span class="p">]):</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">function</span><span class="p">(</span><span class="n">ep</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">out</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">BuildError</span><span class="p">(</span><span class="s2">&quot;Building </span><span class="si">%s</span><span class="s2">: Connection function returned &quot;</span>
+                                 <span class="s2">&quot;None. Cannot solve for decoders.&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">conn</span><span class="p">,))</span>
+            <span class="n">targets</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">out</span>
+
+    <span class="k">return</span> <span class="n">targets</span>
+
+
+<span class="k">def</span> <span class="nf">build_linear_system</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">conn</span><span class="p">,</span> <span class="n">rng</span><span class="p">):</span>
+    <span class="n">eval_points</span> <span class="o">=</span> <span class="n">get_eval_points</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">conn</span><span class="p">,</span> <span class="n">rng</span><span class="p">)</span>
+    <span class="n">ens</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">pre_obj</span>
+    <span class="n">activities</span> <span class="o">=</span> <span class="n">get_activities</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="n">ens</span><span class="p">],</span> <span class="n">ens</span><span class="p">,</span> <span class="n">eval_points</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span><span class="p">(</span><span class="n">activities</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">BuildError</span><span class="p">(</span>
+            <span class="s2">&quot;Building </span><span class="si">%s</span><span class="s2">: &#39;activites&#39; matrix is all zero for </span><span class="si">%s</span><span class="s2">. &quot;</span>
+            <span class="s2">&quot;This is because no evaluation points fall in the firing &quot;</span>
+            <span class="s2">&quot;ranges of any neurons.&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">conn</span><span class="o">.</span><span class="n">pre_obj</span><span class="p">))</span>
+
+    <span class="n">targets</span> <span class="o">=</span> <span class="n">get_targets</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">eval_points</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">eval_points</span><span class="p">,</span> <span class="n">activities</span><span class="p">,</span> <span class="n">targets</span>
+
+
+<span class="k">def</span> <span class="nf">build_decoders</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">conn</span><span class="p">,</span> <span class="n">rng</span><span class="p">,</span> <span class="n">transform</span><span class="p">):</span>
+    <span class="n">encoders</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="n">conn</span><span class="o">.</span><span class="n">pre_obj</span><span class="p">]</span><span class="o">.</span><span class="n">encoders</span>
+    <span class="n">gain</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="n">conn</span><span class="o">.</span><span class="n">pre_obj</span><span class="p">]</span><span class="o">.</span><span class="n">gain</span>
+    <span class="n">bias</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="n">conn</span><span class="o">.</span><span class="n">pre_obj</span><span class="p">]</span><span class="o">.</span><span class="n">bias</span>
+
+    <span class="n">eval_points</span> <span class="o">=</span> <span class="n">get_eval_points</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">conn</span><span class="p">,</span> <span class="n">rng</span><span class="p">)</span>
+    <span class="n">targets</span> <span class="o">=</span> <span class="n">get_targets</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">eval_points</span><span class="p">)</span>
+
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">eval_points</span><span class="p">,</span> <span class="n">encoders</span><span class="o">.</span><span class="n">T</span> <span class="o">/</span> <span class="n">conn</span><span class="o">.</span><span class="n">pre_obj</span><span class="o">.</span><span class="n">radius</span><span class="p">)</span>
+    <span class="n">E</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">conn</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">weights</span><span class="p">:</span>
+        <span class="n">E</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="n">conn</span><span class="o">.</span><span class="n">post_obj</span><span class="p">]</span><span class="o">.</span><span class="n">scaled_encoders</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="n">conn</span><span class="o">.</span><span class="n">post_slice</span><span class="p">]</span>
+        <span class="c1"># include transform in solved weights</span>
+        <span class="n">targets</span> <span class="o">=</span> <span class="n">multiply</span><span class="p">(</span><span class="n">targets</span><span class="p">,</span> <span class="n">transform</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+
+    <span class="n">wrapped_solver</span> <span class="o">=</span> <span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">decoder_cache</span><span class="o">.</span><span class="n">wrap_solver</span><span class="p">(</span><span class="n">solve_for_decoders</span><span class="p">)</span>
+                      <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">seeded</span><span class="p">[</span><span class="n">conn</span><span class="p">]</span> <span class="k">else</span> <span class="n">solve_for_decoders</span><span class="p">)</span>
+    <span class="n">decoders</span><span class="p">,</span> <span class="n">solver_info</span> <span class="o">=</span> <span class="n">wrapped_solver</span><span class="p">(</span>
+        <span class="n">conn</span><span class="p">,</span> <span class="n">gain</span><span class="p">,</span> <span class="n">bias</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="n">rng</span><span class="p">,</span> <span class="n">E</span><span class="o">=</span><span class="n">E</span><span class="p">)</span>
+
+    <span class="n">weights</span> <span class="o">=</span> <span class="p">(</span><span class="n">decoders</span><span class="o">.</span><span class="n">T</span> <span class="k">if</span> <span class="n">conn</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">weights</span> <span class="k">else</span>
+               <span class="n">multiply</span><span class="p">(</span><span class="n">transform</span><span class="p">,</span> <span class="n">decoders</span><span class="o">.</span><span class="n">T</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">eval_points</span><span class="p">,</span> <span class="n">weights</span><span class="p">,</span> <span class="n">solver_info</span>
+
+
+<span class="k">def</span> <span class="nf">solve_for_decoders</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">gain</span><span class="p">,</span> <span class="n">bias</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="n">rng</span><span class="p">,</span> <span class="n">E</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="n">activities</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">pre_obj</span><span class="o">.</span><span class="n">neuron_type</span><span class="o">.</span><span class="n">rates</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">gain</span><span class="p">,</span> <span class="n">bias</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span><span class="p">(</span><span class="n">activities</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">BuildError</span><span class="p">(</span>
+            <span class="s2">&quot;Building </span><span class="si">%s</span><span class="s2">: &#39;activities&#39; matrix is all zero for </span><span class="si">%s</span><span class="s2">. &quot;</span>
+            <span class="s2">&quot;This is because no evaluation points fall in the firing &quot;</span>
+            <span class="s2">&quot;ranges of any neurons.&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">conn</span><span class="o">.</span><span class="n">pre_obj</span><span class="p">))</span>
+
+    <span class="n">decoders</span><span class="p">,</span> <span class="n">solver_info</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">solver</span><span class="p">(</span><span class="n">activities</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="n">rng</span><span class="p">,</span> <span class="n">E</span><span class="o">=</span><span class="n">E</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">decoders</span><span class="p">,</span> <span class="n">solver_info</span>
+
+
+<span class="k">def</span> <span class="nf">multiply</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&lt;=</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">y</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">x</span> <span class="o">*</span> <span class="n">y</span>
+    <span class="k">elif</span> <span class="n">x</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&lt;</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">y</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">x</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">y</span>
+    <span class="k">elif</span> <span class="n">x</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">y</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">BuildError</span><span class="p">(</span><span class="s2">&quot;Tensors not supported (x.ndim = </span><span class="si">%d</span><span class="s2">, y.ndim = </span><span class="si">%d</span><span class="s2">)&quot;</span>
+                         <span class="o">%</span> <span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">ndim</span><span class="p">,</span> <span class="n">y</span><span class="o">.</span><span class="n">ndim</span><span class="p">))</span>
+
+
+<span class="k">def</span> <span class="nf">slice_signal</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">signal</span><span class="p">,</span> <span class="n">sl</span><span class="p">):</span>
+    <span class="k">assert</span> <span class="n">signal</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sl</span><span class="p">,</span> <span class="nb">slice</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">sl</span><span class="o">.</span><span class="n">step</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">sl</span><span class="o">.</span><span class="n">step</span> <span class="o">==</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">signal</span><span class="p">[</span><span class="n">sl</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">size</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">size</span><span class="p">)[</span><span class="n">sl</span><span class="p">]</span><span class="o">.</span><span class="n">size</span>
+        <span class="n">sliced_signal</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">size</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">.sliced&quot;</span> <span class="o">%</span> <span class="n">signal</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">add_op</span><span class="p">(</span><span class="n">Copy</span><span class="p">(</span><span class="n">signal</span><span class="p">,</span> <span class="n">sliced_signal</span><span class="p">,</span> <span class="n">src_slice</span><span class="o">=</span><span class="n">sl</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">sliced_signal</span>
+
+
+<span class="nd">@Builder</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">Solver</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">build_solver</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">solver</span><span class="p">,</span> <span class="n">conn</span><span class="p">,</span> <span class="n">rng</span><span class="p">,</span> <span class="n">transform</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">build_decoders</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">conn</span><span class="p">,</span> <span class="n">rng</span><span class="p">,</span> <span class="n">transform</span><span class="p">)</span>
+
+
+<span class="nd">@Builder</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">NoSolver</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">build_no_solver</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">solver</span><span class="p">,</span> <span class="n">conn</span><span class="p">,</span> <span class="n">rng</span><span class="p">,</span> <span class="n">transform</span><span class="p">):</span>
+    <span class="n">activities</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">conn</span><span class="o">.</span><span class="n">pre_obj</span><span class="o">.</span><span class="n">n_neurons</span><span class="p">))</span>
+    <span class="n">targets</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">conn</span><span class="o">.</span><span class="n">size_mid</span><span class="p">))</span>
+    <span class="n">E</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">conn</span><span class="o">.</span><span class="n">post_obj</span><span class="o">.</span><span class="n">n_neurons</span><span class="p">))</span> <span class="k">if</span> <span class="n">solver</span><span class="o">.</span><span class="n">weights</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="c1"># No need to invoke the cache for NoSolver</span>
+    <span class="n">decoders</span><span class="p">,</span> <span class="n">solver_info</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">solver</span><span class="p">(</span><span class="n">activities</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="n">rng</span><span class="p">,</span> <span class="n">E</span><span class="o">=</span><span class="n">E</span><span class="p">)</span>
+    <span class="n">weights</span> <span class="o">=</span> <span class="p">(</span><span class="n">decoders</span><span class="o">.</span><span class="n">T</span> <span class="k">if</span> <span class="n">conn</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">weights</span> <span class="k">else</span>
+               <span class="n">multiply</span><span class="p">(</span><span class="n">transform</span><span class="p">,</span> <span class="n">decoders</span><span class="o">.</span><span class="n">T</span><span class="p">))</span>
+    <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="n">weights</span><span class="p">,</span> <span class="n">solver_info</span>
+
+
+<div class="viewcode-block" id="build_connection"><a class="viewcode-back" href="../../../backend_api.html#nengo.builder.connection.build_connection">[docs]</a><span class="nd">@Builder</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">Connection</span><span class="p">)</span>  <span class="c1"># noqa: C901</span>
+<span class="k">def</span> <span class="nf">build_connection</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">conn</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Builds a `.Connection` object into a model.</span>
+
+<span class="sd">    A brief summary of what happens in the connection build process,</span>
+<span class="sd">    in order:</span>
+
+<span class="sd">    1. Solve for decoders.</span>
+<span class="sd">    2. Combine transform matrix with decoders to get weights.</span>
+<span class="sd">    3. Add operators for computing the function</span>
+<span class="sd">       or multiplying neural activity by weights.</span>
+<span class="sd">    4. Call build function for the synapse.</span>
+<span class="sd">    5. Call build function for the learning rule.</span>
+<span class="sd">    6. Add operator for applying learning rule delta to weights.</span>
+
+<span class="sd">    Some of these steps may be altered or omitted depending on the parameters</span>
+<span class="sd">    of the connection, in particular the pre and post types.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    model : Model</span>
+<span class="sd">        The model to build into.</span>
+<span class="sd">    conn : Connection</span>
+<span class="sd">        The connection to build.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Sets ``model.params[conn]`` to a `.BuiltConnection` instance.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Create random number generator</span>
+    <span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">RandomState</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">seeds</span><span class="p">[</span><span class="n">conn</span><span class="p">])</span>
+
+    <span class="c1"># Get input and output connections from pre and post</span>
+    <span class="k">def</span> <span class="nf">get_prepost_signal</span><span class="p">(</span><span class="n">is_pre</span><span class="p">):</span>
+        <span class="n">target</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">pre_obj</span> <span class="k">if</span> <span class="n">is_pre</span> <span class="k">else</span> <span class="n">conn</span><span class="o">.</span><span class="n">post_obj</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="s1">&#39;out&#39;</span> <span class="k">if</span> <span class="n">is_pre</span> <span class="k">else</span> <span class="s1">&#39;in&#39;</span>
+
+        <span class="k">if</span> <span class="n">target</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">BuildError</span><span class="p">(</span><span class="s2">&quot;Building </span><span class="si">%s</span><span class="s2">: the </span><span class="si">%r</span><span class="s2"> object </span><span class="si">%s</span><span class="s2"> is not in the &quot;</span>
+                             <span class="s2">&quot;model, or has a size of zero.&quot;</span>
+                             <span class="o">%</span> <span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="s1">&#39;pre&#39;</span> <span class="k">if</span> <span class="n">is_pre</span> <span class="k">else</span> <span class="s1">&#39;post&#39;</span><span class="p">,</span> <span class="n">target</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">target</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="n">BuildError</span><span class="p">(</span>
+                <span class="s2">&quot;Building </span><span class="si">%s</span><span class="s2">: the </span><span class="si">%r</span><span class="s2"> object </span><span class="si">%s</span><span class="s2"> has a </span><span class="si">%r</span><span class="s2"> size of zero.&quot;</span>
+                <span class="o">%</span> <span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="s1">&#39;pre&#39;</span> <span class="k">if</span> <span class="n">is_pre</span> <span class="k">else</span> <span class="s1">&#39;post&#39;</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">key</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">target</span><span class="p">][</span><span class="n">key</span><span class="p">]</span>
+
+    <span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">conn</span><span class="p">][</span><span class="s1">&#39;in&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_prepost_signal</span><span class="p">(</span><span class="n">is_pre</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">conn</span><span class="p">][</span><span class="s1">&#39;out&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_prepost_signal</span><span class="p">(</span><span class="n">is_pre</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="n">weights</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">eval_points</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">solver_info</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">signal_size</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">size_out</span>
+    <span class="n">post_slice</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">post_slice</span>
+
+    <span class="c1"># Sample transform if given a distribution</span>
+    <span class="n">transform</span> <span class="o">=</span> <span class="n">get_samples</span><span class="p">(</span>
+        <span class="n">conn</span><span class="o">.</span><span class="n">transform</span><span class="p">,</span> <span class="n">conn</span><span class="o">.</span><span class="n">size_out</span><span class="p">,</span> <span class="n">d</span><span class="o">=</span><span class="n">conn</span><span class="o">.</span><span class="n">size_mid</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="n">rng</span><span class="p">)</span>
+
+    <span class="c1"># Figure out the signal going across this connection</span>
+    <span class="n">in_signal</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">conn</span><span class="p">][</span><span class="s1">&#39;in&#39;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">conn</span><span class="o">.</span><span class="n">pre_obj</span><span class="p">,</span> <span class="n">Node</span><span class="p">)</span> <span class="ow">or</span>
+            <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">conn</span><span class="o">.</span><span class="n">pre_obj</span><span class="p">,</span> <span class="n">Ensemble</span><span class="p">)</span> <span class="ow">and</span>
+             <span class="nb">isinstance</span><span class="p">(</span><span class="n">conn</span><span class="o">.</span><span class="n">pre_obj</span><span class="o">.</span><span class="n">neuron_type</span><span class="p">,</span> <span class="n">Direct</span><span class="p">))):</span>
+        <span class="c1"># Node or Decoded connection in directmode</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="n">transform</span>
+        <span class="n">sliced_in</span> <span class="o">=</span> <span class="n">slice_signal</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">in_signal</span><span class="p">,</span> <span class="n">conn</span><span class="o">.</span><span class="n">pre_slice</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">conn</span><span class="o">.</span><span class="n">function</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">in_signal</span> <span class="o">=</span> <span class="n">sliced_in</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">conn</span><span class="o">.</span><span class="n">function</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">BuildError</span><span class="p">(</span><span class="s2">&quot;Cannot use function points in direct connection&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">in_signal</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">conn</span><span class="o">.</span><span class="n">size_mid</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">.func&#39;</span> <span class="o">%</span> <span class="n">conn</span><span class="p">)</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">add_op</span><span class="p">(</span><span class="n">SimPyFunc</span><span class="p">(</span><span class="n">in_signal</span><span class="p">,</span> <span class="n">conn</span><span class="o">.</span><span class="n">function</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">sliced_in</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">conn</span><span class="o">.</span><span class="n">pre_obj</span><span class="p">,</span> <span class="n">Ensemble</span><span class="p">):</span>  <span class="c1"># Normal decoded connection</span>
+        <span class="n">eval_points</span><span class="p">,</span> <span class="n">weights</span><span class="p">,</span> <span class="n">solver_info</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">build</span><span class="p">(</span>
+            <span class="n">conn</span><span class="o">.</span><span class="n">solver</span><span class="p">,</span> <span class="n">conn</span><span class="p">,</span> <span class="n">rng</span><span class="p">,</span> <span class="n">transform</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">conn</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">weights</span><span class="p">:</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">conn</span><span class="p">][</span><span class="s1">&#39;out&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">conn</span><span class="o">.</span><span class="n">post_obj</span><span class="o">.</span><span class="n">neurons</span><span class="p">][</span><span class="s1">&#39;in&#39;</span><span class="p">]</span>
+            <span class="n">signal_size</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">post_obj</span><span class="o">.</span><span class="n">neurons</span><span class="o">.</span><span class="n">size_in</span>
+            <span class="n">post_slice</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># don&#39;t apply slice later</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="n">transform</span>
+        <span class="n">in_signal</span> <span class="o">=</span> <span class="n">slice_signal</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">in_signal</span><span class="p">,</span> <span class="n">conn</span><span class="o">.</span><span class="n">pre_slice</span><span class="p">)</span>
+
+    <span class="c1"># Add operator for applying weights</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">conn</span><span class="p">][</span><span class="s1">&#39;weights&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span>
+        <span class="n">weights</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">.weights&quot;</span> <span class="o">%</span> <span class="n">conn</span><span class="p">,</span> <span class="n">readonly</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">signal</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">signal_size</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">.weighted&quot;</span> <span class="o">%</span> <span class="n">conn</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">add_op</span><span class="p">(</span><span class="n">Reset</span><span class="p">(</span><span class="n">signal</span><span class="p">))</span>
+    <span class="n">op</span> <span class="o">=</span> <span class="n">ElementwiseInc</span> <span class="k">if</span> <span class="n">weights</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&lt;</span> <span class="mi">2</span> <span class="k">else</span> <span class="n">DotInc</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">add_op</span><span class="p">(</span><span class="n">op</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">conn</span><span class="p">][</span><span class="s1">&#39;weights&#39;</span><span class="p">],</span>
+                    <span class="n">in_signal</span><span class="p">,</span>
+                    <span class="n">signal</span><span class="p">,</span>
+                    <span class="n">tag</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">.weights_elementwiseinc&quot;</span> <span class="o">%</span> <span class="n">conn</span><span class="p">))</span>
+
+    <span class="c1"># Add operator for filtering</span>
+    <span class="k">if</span> <span class="n">conn</span><span class="o">.</span><span class="n">synapse</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">signal</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="n">conn</span><span class="o">.</span><span class="n">synapse</span><span class="p">,</span> <span class="n">signal</span><span class="p">)</span>
+
+    <span class="c1"># Store the weighted-filtered output in case we want to probe it</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">conn</span><span class="p">][</span><span class="s1">&#39;weighted&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">signal</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">conn</span><span class="o">.</span><span class="n">post_obj</span><span class="p">,</span> <span class="n">Neurons</span><span class="p">):</span>
+        <span class="c1"># Apply neuron gains (we don&#39;t need to do this if we&#39;re connecting to</span>
+        <span class="c1"># an Ensemble, because the gains are rolled into the encoders)</span>
+        <span class="n">gains</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="n">conn</span><span class="o">.</span><span class="n">post_obj</span><span class="o">.</span><span class="n">ensemble</span><span class="p">]</span><span class="o">.</span><span class="n">gain</span><span class="p">[</span><span class="n">post_slice</span><span class="p">],</span>
+                       <span class="n">name</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">.gains&quot;</span> <span class="o">%</span> <span class="n">conn</span><span class="p">)</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">add_op</span><span class="p">(</span><span class="n">ElementwiseInc</span><span class="p">(</span>
+            <span class="n">gains</span><span class="p">,</span> <span class="n">signal</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">conn</span><span class="p">][</span><span class="s1">&#39;out&#39;</span><span class="p">][</span><span class="n">post_slice</span><span class="p">],</span>
+            <span class="n">tag</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">.gains_elementwiseinc&quot;</span> <span class="o">%</span> <span class="n">conn</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Copy to the proper slice</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">add_op</span><span class="p">(</span><span class="n">Copy</span><span class="p">(</span>
+            <span class="n">signal</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">conn</span><span class="p">][</span><span class="s1">&#39;out&#39;</span><span class="p">],</span> <span class="n">dst_slice</span><span class="o">=</span><span class="n">post_slice</span><span class="p">,</span>
+            <span class="n">inc</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">tag</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">conn</span><span class="p">))</span>
+
+    <span class="c1"># Build learning rules</span>
+    <span class="k">if</span> <span class="n">conn</span><span class="o">.</span><span class="n">learning_rule</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">rule</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">learning_rule</span>
+        <span class="n">rule</span> <span class="o">=</span> <span class="p">[</span><span class="n">rule</span><span class="p">]</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">is_iterable</span><span class="p">(</span><span class="n">rule</span><span class="p">)</span> <span class="k">else</span> <span class="n">rule</span>
+        <span class="n">targets</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">itervalues</span><span class="p">(</span><span class="n">rule</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rule</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">else</span> <span class="n">rule</span><span class="p">:</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+            <span class="n">targets</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">modifies</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s1">&#39;encoders&#39;</span> <span class="ow">in</span> <span class="n">targets</span><span class="p">:</span>
+            <span class="n">encoder_sig</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">conn</span><span class="o">.</span><span class="n">post_obj</span><span class="p">][</span><span class="s1">&#39;encoders&#39;</span><span class="p">]</span>
+            <span class="n">encoder_sig</span><span class="o">.</span><span class="n">readonly</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="s1">&#39;decoders&#39;</span> <span class="ow">in</span> <span class="n">targets</span> <span class="ow">or</span> <span class="s1">&#39;weights&#39;</span> <span class="ow">in</span> <span class="n">targets</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">weights</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">BuildError</span><span class="p">(</span>
+                    <span class="s2">&quot;&#39;transform&#39; must be a 2-dimensional array for learning&quot;</span><span class="p">)</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">conn</span><span class="p">][</span><span class="s1">&#39;weights&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">readonly</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="n">model</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="n">conn</span><span class="p">]</span> <span class="o">=</span> <span class="n">BuiltConnection</span><span class="p">(</span><span class="n">eval_points</span><span class="o">=</span><span class="n">eval_points</span><span class="p">,</span>
+                                         <span class="n">solver_info</span><span class="o">=</span><span class="n">solver_info</span><span class="p">,</span>
+                                         <span class="n">transform</span><span class="o">=</span><span class="n">transform</span><span class="p">,</span>
+                                         <span class="n">weights</span><span class="o">=</span><span class="n">weights</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+            
+        </div>
+        <div class="clearfix"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+<script type="text/javascript">
+  $("#mobile-toggle a").click(function () {
+    $("#left-column").toggle();
+  });
+</script>
+<script type="text/javascript" src="../../../_static/js/bootstrap.js"></script>
+  <div class="footer">
+    &copy; Copyright 2013-2017, Applied Brain Research. Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+  </div>
+  </body>
+</html>

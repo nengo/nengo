@@ -1,0 +1,694 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  
+  <!-- Licensed under the Apache 2.0 License -->
+  <link rel="stylesheet" type="text/css" href="../../_static/fonts/open-sans/stylesheet.css" />
+  <!-- Licensed under the SIL Open Font License -->
+  <link rel="stylesheet" type="text/css" href="../../_static/fonts/source-serif-pro/source-serif-pro.css" />
+  <link rel="stylesheet" type="text/css" href="../../_static/css/bootstrap.min.css" />
+  <link rel="stylesheet" type="text/css" href="../../_static/css/bootstrap-theme.min.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+    <title>nengo.solvers &#8212; Nengo core 2.8.0 docs</title>
+    <link rel="stylesheet" href="../../_static/guzzle.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '2.8.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+<link rel="stylesheet" type="text/css" href="../../_static/custom.css">
+
+
+  
+   
+
+  </head>
+  <body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="container-wrapper">
+
+      <div id="mobile-toggle">
+        <a href="#"><span class="glyphicon glyphicon-align-justify" aria-hidden="true"></span></a>
+      </div>
+  <div id="left-column">
+    <div class="sphinxsidebar">
+        <a href="
+    ../../index.html" class="text-logo">Nengo core 2.8</a>
+        <div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <h2>Table Of Contents</h2>
+  </div>
+  <div class="sidebar-toc">
+    
+    
+      <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide.html">User guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing to Nengo</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://www.nengo.ai/projects.html">Nengo ecosystem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../license.html">Nengo license</a></li>
+</ul>
+
+    
+  </div>
+</div>
+        
+<div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <div id="main-search">
+      <form class="form-inline" action="../../search.html" method="GET" role="form">
+        <div class="input-group">
+          <input name="q" type="text" class="form-control" placeholder="Search...">
+        </div>
+        <input type="hidden" name="check_keywords" value="yes" />
+        <input type="hidden" name="area" value="default" />
+      </form>
+    </div>
+  </div>
+</div>
+    </div>
+  </div>
+        <div id="right-column">
+          
+  <div class="header">
+    
+          <div role="navigation" aria-label="breadcrumbs navigation">
+            <ol class="breadcrumb">
+              <li><a href="../../index.html">Docs</a></li>
+              
+                <li><a href="../index.html">Module code</a></li>
+              
+              <li>nengo.solvers</li>
+            </ol>
+          </div>
+          
+    
+  </div>
+
+          <div class="document clearer body">
+            
+  <h1>Source code for nengo.solvers</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Functions concerned with solving for decoders or full weight matrices.</span>
+
+<span class="sd">Many of the solvers in this file can solve for decoders or weight matrices,</span>
+<span class="sd">depending on whether the post-population encoders `E` are provided (see below).</span>
+<span class="sd">Solvers that are only intended to solve for either decoders or weights can</span>
+<span class="sd">remove the `E` parameter or make it manditory as they see fit.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">import</span> <span class="nn">nengo.utils.least_squares_solvers</span> <span class="k">as</span> <span class="nn">lstsq</span>
+<span class="kn">from</span> <span class="nn">nengo.exceptions</span> <span class="k">import</span> <span class="n">ValidationError</span>
+<span class="kn">from</span> <span class="nn">nengo.params</span> <span class="k">import</span> <span class="p">(</span>
+    <span class="n">BoolParam</span><span class="p">,</span> <span class="n">FrozenObject</span><span class="p">,</span> <span class="n">NdarrayParam</span><span class="p">,</span> <span class="n">NumberParam</span><span class="p">,</span> <span class="n">Parameter</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">nengo.utils.compat</span> <span class="k">import</span> <span class="nb">range</span><span class="p">,</span> <span class="n">with_metaclass</span>
+<span class="kn">from</span> <span class="nn">nengo.utils.least_squares_solvers</span> <span class="k">import</span> <span class="p">(</span>
+    <span class="n">format_system</span><span class="p">,</span> <span class="n">rmses</span><span class="p">,</span> <span class="n">LeastSquaresSolverParam</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">nengo.utils.magic</span> <span class="k">import</span> <span class="n">DocstringInheritor</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Solver"><a class="viewcode-back" href="../../frontend_api.html#nengo.solvers.Solver">[docs]</a><span class="k">class</span> <span class="nc">Solver</span><span class="p">(</span><span class="n">with_metaclass</span><span class="p">(</span><span class="n">DocstringInheritor</span><span class="p">,</span> <span class="n">FrozenObject</span><span class="p">)):</span>
+    <span class="sd">&quot;&quot;&quot;Decoder or weight solver.&quot;&quot;&quot;</span>
+
+    <span class="n">weights</span> <span class="o">=</span> <span class="n">BoolParam</span><span class="p">(</span><span class="s1">&#39;weights&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Solver</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="o">=</span> <span class="n">weights</span>
+
+<div class="viewcode-block" id="Solver.__call__"><a class="viewcode-back" href="../../frontend_api.html#nengo.solvers.Solver.__call__">[docs]</a>    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="p">,</span> <span class="n">E</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Call the solver.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        A : (n_eval_points, n_neurons) array_like</span>
+<span class="sd">            Matrix of the neurons&#39; activities at the evaluation points</span>
+<span class="sd">        Y : (n_eval_points, dimensions) array_like</span>
+<span class="sd">            Matrix of the target decoded values for each of the D dimensions,</span>
+<span class="sd">            at each of the evaluation points.</span>
+<span class="sd">        rng : `numpy.random.RandomState`, optional (Default: `np.random`)</span>
+<span class="sd">            A random number generator to use as required.</span>
+<span class="sd">        E : (dimensions, post.n_neurons) array_like, optional (Default: None)</span>
+<span class="sd">            Array of post-population encoders. Providing this tells the solver</span>
+<span class="sd">            to return an array of connection weights rather than decoders.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        X : (n_neurons, dimensions) or (n_neurons, post.n_neurons) ndarray</span>
+<span class="sd">            (n_neurons, dimensions) array of decoders (if ``solver.weights``</span>
+<span class="sd">            is False) or (n_neurons, post.n_neurons) array of weights</span>
+<span class="sd">            (if ``&#39;solver.weights`` is True).</span>
+<span class="sd">        info : dict</span>
+<span class="sd">            A dictionary of information about the solver. All dictionaries have</span>
+<span class="sd">            an ``&#39;rmses&#39;`` key that contains RMS errors of the solve.</span>
+<span class="sd">            Other keys are unique to particular solvers.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Solvers must implement &#39;__call__&#39;&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Solver.mul_encoders"><a class="viewcode-back" href="../../frontend_api.html#nengo.solvers.Solver.mul_encoders">[docs]</a>    <span class="k">def</span> <span class="nf">mul_encoders</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">E</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Helper function that projects signal ``Y`` onto encoders ``E``.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        Y : ndarray</span>
+<span class="sd">            The signal of interest.</span>
+<span class="sd">        E : (dimensions, n_neurons) array_like or None</span>
+<span class="sd">            Array of encoders. If None, ``Y`` will be returned unchanged.</span>
+<span class="sd">        copy : bool, optional (Default: False)</span>
+<span class="sd">            Whether a copy of ``Y`` should be returned if ``E`` is None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="ow">and</span> <span class="n">E</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span>
+                <span class="s2">&quot;Encoders must be provided for weight solver&quot;</span><span class="p">,</span> <span class="n">attr</span><span class="o">=</span><span class="s1">&#39;E&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="ow">and</span> <span class="n">E</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span>
+                <span class="s2">&quot;Encoders must be &#39;None&#39; for decoder solver&quot;</span><span class="p">,</span> <span class="n">attr</span><span class="o">=</span><span class="s1">&#39;E&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span> <span class="n">E</span><span class="p">)</span> <span class="k">if</span> <span class="n">E</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">Y</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">if</span> <span class="n">copy</span> <span class="k">else</span> <span class="n">Y</span></div></div>
+
+
+<span class="k">class</span> <span class="nc">SolverParam</span><span class="p">(</span><span class="n">Parameter</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">coerce</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instance</span><span class="p">,</span> <span class="n">solver</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="n">instance</span><span class="p">,</span> <span class="n">solver</span><span class="p">,</span> <span class="n">Solver</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">SolverParam</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">coerce</span><span class="p">(</span><span class="n">instance</span><span class="p">,</span> <span class="n">solver</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Lstsq"><a class="viewcode-back" href="../../frontend_api.html#nengo.solvers.Lstsq">[docs]</a><span class="k">class</span> <span class="nc">Lstsq</span><span class="p">(</span><span class="n">Solver</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Unregularized least-squares solver.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    weights : bool, optional (Default: False)</span>
+<span class="sd">        If False, solve for decoders. If True, solve for weights.</span>
+<span class="sd">    rcond : float, optional (Default: 0.01)</span>
+<span class="sd">        Cut-off ratio for small singular values (see `numpy.linalg.lstsq`).</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    rcond : float</span>
+<span class="sd">        Cut-off ratio for small singular values (see `numpy.linalg.lstsq`).</span>
+<span class="sd">    weights : bool</span>
+<span class="sd">        If False, solve for decoders. If True, solve for weights.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">rcond</span> <span class="o">=</span> <span class="n">NumberParam</span><span class="p">(</span><span class="s1">&#39;noise&#39;</span><span class="p">,</span> <span class="n">low</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rcond</span><span class="o">=</span><span class="mf">0.01</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Lstsq</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">weights</span><span class="o">=</span><span class="n">weights</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rcond</span> <span class="o">=</span> <span class="n">rcond</span>
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="p">,</span> <span class="n">E</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">tstart</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mul_encoders</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span> <span class="n">E</span><span class="p">)</span>
+        <span class="n">X</span><span class="p">,</span> <span class="n">residuals2</span><span class="p">,</span> <span class="n">rank</span><span class="p">,</span> <span class="n">s</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">lstsq</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">rcond</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rcond</span><span class="p">)</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">tstart</span>
+        <span class="k">return</span> <span class="n">X</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;rmses&#39;</span><span class="p">:</span> <span class="n">rmses</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">),</span>
+                   <span class="s1">&#39;residuals&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">residuals2</span><span class="p">),</span>
+                   <span class="s1">&#39;rank&#39;</span><span class="p">:</span> <span class="n">rank</span><span class="p">,</span>
+                   <span class="s1">&#39;singular_values&#39;</span><span class="p">:</span> <span class="n">s</span><span class="p">,</span>
+                   <span class="s1">&#39;time&#39;</span><span class="p">:</span> <span class="n">t</span><span class="p">}</span></div>
+
+
+<span class="k">class</span> <span class="nc">_LstsqNoiseSolver</span><span class="p">(</span><span class="n">Solver</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Base class for least-squares solvers with noise.&quot;&quot;&quot;</span>
+
+    <span class="n">noise</span> <span class="o">=</span> <span class="n">NumberParam</span><span class="p">(</span><span class="s1">&#39;noise&#39;</span><span class="p">,</span> <span class="n">low</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">solver</span> <span class="o">=</span> <span class="n">LeastSquaresSolverParam</span><span class="p">(</span><span class="s1">&#39;solver&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">noise</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="n">lstsq</span><span class="o">.</span><span class="n">Cholesky</span><span class="p">()):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        weights : bool, optional (Default: False)</span>
+<span class="sd">            If False, solve for decoders. If True, solve for weights.</span>
+<span class="sd">        noise : float, optional (Default: 0.1)</span>
+<span class="sd">            Amount of noise, as a fraction of the neuron activity.</span>
+<span class="sd">        solver : `.LeastSquaresSolver`, optional (Default: ``Cholesky()``)</span>
+<span class="sd">            Subsolver to use for solving the least squares problem.</span>
+
+<span class="sd">        Attributes</span>
+<span class="sd">        ----------</span>
+<span class="sd">        noise : float</span>
+<span class="sd">            Amount of noise, as a fraction of the neuron activity.</span>
+<span class="sd">        solver : `.LeastSquaresSolver`</span>
+<span class="sd">            Subsolver to use for solving the least squares problem.</span>
+<span class="sd">        weights : bool</span>
+<span class="sd">            If False, solve for decoders. If True, solve for weights.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">_LstsqNoiseSolver</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">weights</span><span class="o">=</span><span class="n">weights</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">noise</span> <span class="o">=</span> <span class="n">noise</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">solver</span> <span class="o">=</span> <span class="n">solver</span>
+
+
+<div class="viewcode-block" id="LstsqNoise"><a class="viewcode-back" href="../../frontend_api.html#nengo.solvers.LstsqNoise">[docs]</a><span class="k">class</span> <span class="nc">LstsqNoise</span><span class="p">(</span><span class="n">_LstsqNoiseSolver</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Least-squares solver with additive Gaussian white noise.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="p">,</span> <span class="n">E</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">tstart</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="n">sigma</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">noise</span> <span class="o">*</span> <span class="n">A</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+        <span class="n">A</span> <span class="o">=</span> <span class="n">A</span> <span class="o">+</span> <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">scale</span><span class="o">=</span><span class="n">sigma</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="n">X</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solver</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="n">rng</span><span class="p">)</span>
+        <span class="n">info</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">tstart</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">mul_encoders</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">E</span><span class="p">),</span> <span class="n">info</span></div>
+
+
+<div class="viewcode-block" id="LstsqMultNoise"><a class="viewcode-back" href="../../frontend_api.html#nengo.solvers.LstsqMultNoise">[docs]</a><span class="k">class</span> <span class="nc">LstsqMultNoise</span><span class="p">(</span><span class="n">_LstsqNoiseSolver</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Least-squares solver with multiplicative white noise.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="p">,</span> <span class="n">E</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">tstart</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="n">A</span> <span class="o">=</span> <span class="n">A</span> <span class="o">+</span> <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">scale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">noise</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">*</span> <span class="n">A</span>
+        <span class="n">X</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solver</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="n">rng</span><span class="p">)</span>
+        <span class="n">info</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">tstart</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">mul_encoders</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">E</span><span class="p">),</span> <span class="n">info</span></div>
+
+
+<span class="k">class</span> <span class="nc">_LstsqL2Solver</span><span class="p">(</span><span class="n">Solver</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Base class for L2-regularized least-squares solvers.&quot;&quot;&quot;</span>
+
+    <span class="n">reg</span> <span class="o">=</span> <span class="n">NumberParam</span><span class="p">(</span><span class="s1">&#39;reg&#39;</span><span class="p">,</span> <span class="n">low</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">solver</span> <span class="o">=</span> <span class="n">LeastSquaresSolverParam</span><span class="p">(</span><span class="s1">&#39;solver&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">reg</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="n">lstsq</span><span class="o">.</span><span class="n">Cholesky</span><span class="p">()):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        weights : bool, optional (Default: False)</span>
+<span class="sd">            If False, solve for decoders. If True, solve for weights.</span>
+<span class="sd">        reg : float, optional (Default: 0.1)</span>
+<span class="sd">            Amount of regularization, as a fraction of the neuron activity.</span>
+<span class="sd">        solver : `.LeastSquaresSolver`, optional (Default: ``Cholesky()``)</span>
+<span class="sd">            Subsolver to use for solving the least squares problem.</span>
+
+<span class="sd">        Attributes</span>
+<span class="sd">        ----------</span>
+<span class="sd">        reg : float</span>
+<span class="sd">            Amount of regularization, as a fraction of the neuron activity.</span>
+<span class="sd">        solver : `.LeastSquaresSolver`</span>
+<span class="sd">            Subsolver to use for solving the least squares problem.</span>
+<span class="sd">        weights : bool</span>
+<span class="sd">            If False, solve for decoders. If True, solve for weights.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">_LstsqL2Solver</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">weights</span><span class="o">=</span><span class="n">weights</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reg</span> <span class="o">=</span> <span class="n">reg</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">solver</span> <span class="o">=</span> <span class="n">solver</span>
+
+
+<div class="viewcode-block" id="LstsqL2"><a class="viewcode-back" href="../../frontend_api.html#nengo.solvers.LstsqL2">[docs]</a><span class="k">class</span> <span class="nc">LstsqL2</span><span class="p">(</span><span class="n">_LstsqL2Solver</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Least-squares solver with L2 regularization.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="p">,</span> <span class="n">E</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">tstart</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="n">sigma</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reg</span> <span class="o">*</span> <span class="n">A</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+        <span class="n">X</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solver</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="n">rng</span><span class="p">)</span>
+        <span class="n">info</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">tstart</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">mul_encoders</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">E</span><span class="p">),</span> <span class="n">info</span></div>
+
+
+<div class="viewcode-block" id="LstsqL2nz"><a class="viewcode-back" href="../../frontend_api.html#nengo.solvers.LstsqL2nz">[docs]</a><span class="k">class</span> <span class="nc">LstsqL2nz</span><span class="p">(</span><span class="n">_LstsqL2Solver</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Least-squares solver with L2 regularization on non-zero components.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="p">,</span> <span class="n">E</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">tstart</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="c1"># Compute the equivalent noise standard deviation. This equals the</span>
+        <span class="c1"># base amplitude (noise_amp times the overall max activation) times</span>
+        <span class="c1"># the square-root of the fraction of non-zero components.</span>
+        <span class="n">sigma</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reg</span> <span class="o">*</span> <span class="n">A</span><span class="o">.</span><span class="n">max</span><span class="p">())</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">A</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+
+        <span class="c1"># sigma == 0 means the neuron is never active, so won&#39;t be used, but</span>
+        <span class="c1"># we have to make sigma != 0 for numeric reasons.</span>
+        <span class="n">sigma</span><span class="p">[</span><span class="n">sigma</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">sigma</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+
+        <span class="n">X</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solver</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="n">rng</span><span class="p">)</span>
+        <span class="n">info</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">tstart</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">mul_encoders</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">E</span><span class="p">),</span> <span class="n">info</span></div>
+
+
+<div class="viewcode-block" id="LstsqL1"><a class="viewcode-back" href="../../frontend_api.html#nengo.solvers.LstsqL1">[docs]</a><span class="k">class</span> <span class="nc">LstsqL1</span><span class="p">(</span><span class="n">Solver</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Least-squares solver with L1 and L2 regularization (elastic net).</span>
+
+<span class="sd">    This method is well suited for creating sparse decoders or weight matrices.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">l1</span> <span class="o">=</span> <span class="n">NumberParam</span><span class="p">(</span><span class="s1">&#39;l1&#39;</span><span class="p">,</span> <span class="n">low</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">l2</span> <span class="o">=</span> <span class="n">NumberParam</span><span class="p">(</span><span class="s1">&#39;l2&#39;</span><span class="p">,</span> <span class="n">low</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">l1</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span> <span class="n">l2</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="mi">1000</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        .. note:: Requires `scikit-learn &lt;http://scikit-learn.org/stable/&gt;`_.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        weights : bool, optional (Default: False)</span>
+<span class="sd">            If False, solve for decoders. If True, solve for weights.</span>
+<span class="sd">        l1 : float, optional (Default: 1e-4)</span>
+<span class="sd">            Amount of L1 regularization.</span>
+<span class="sd">        l2 : float, optional (Default: 1e-6)</span>
+<span class="sd">            Amount of L2 regularization.</span>
+<span class="sd">        max_iter : int, optional</span>
+<span class="sd">            Maximum number of iterations for the underlying elastic net.</span>
+
+<span class="sd">        Attributes</span>
+<span class="sd">        ----------</span>
+<span class="sd">        l1 : float</span>
+<span class="sd">            Amount of L1 regularization.</span>
+<span class="sd">        l2 : float</span>
+<span class="sd">            Amount of L2 regularization.</span>
+<span class="sd">        weights : bool</span>
+<span class="sd">            If False, solve for decoders. If True, solve for weights.</span>
+<span class="sd">        max_iter : int</span>
+<span class="sd">            Maximum number of iterations for the underlying elastic net.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">sklearn.linear_model</span>  <span class="c1"># noqa F401, import to check existence</span>
+        <span class="k">assert</span> <span class="n">sklearn</span><span class="o">.</span><span class="n">linear_model</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">LstsqL1</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">weights</span><span class="o">=</span><span class="n">weights</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">l1</span> <span class="o">=</span> <span class="n">l1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">l2</span> <span class="o">=</span> <span class="n">l2</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_iter</span> <span class="o">=</span> <span class="n">max_iter</span>
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="p">,</span> <span class="n">E</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">sklearn.linear_model</span>
+        <span class="n">tstart</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mul_encoders</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span> <span class="n">E</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># copy since &#39;fit&#39; may modify Y</span>
+
+        <span class="c1"># TODO: play around with regularization constants (I just guessed).</span>
+        <span class="c1">#   Do we need to scale regularization by number of neurons, to get</span>
+        <span class="c1">#   same level of sparsity? esp. with weights? Currently, setting</span>
+        <span class="c1">#   l1=1e-3 works well with weights when connecting 1D populations</span>
+        <span class="c1">#   with 100 neurons each.</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">l1</span> <span class="o">*</span> <span class="n">A</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>      <span class="c1"># L1 regularization</span>
+        <span class="n">b</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">l2</span> <span class="o">*</span> <span class="n">A</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">**</span><span class="mi">2</span>   <span class="c1"># L2 regularization</span>
+        <span class="n">alpha</span> <span class="o">=</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span>
+        <span class="n">l1_ratio</span> <span class="o">=</span> <span class="n">a</span> <span class="o">/</span> <span class="p">(</span><span class="n">a</span> <span class="o">+</span> <span class="n">b</span><span class="p">)</span>
+
+        <span class="c1"># --- solve least-squares A * X = Y</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">sklearn</span><span class="o">.</span><span class="n">linear_model</span><span class="o">.</span><span class="n">ElasticNet</span><span class="p">(</span>
+            <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">,</span> <span class="n">l1_ratio</span><span class="o">=</span><span class="n">l1_ratio</span><span class="p">,</span> <span class="n">fit_intercept</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">max_iter</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_iter</span><span class="p">)</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">Y</span><span class="p">)</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">coef_</span><span class="o">.</span><span class="n">T</span>
+        <span class="n">X</span><span class="o">.</span><span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">Y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="k">if</span> <span class="n">Y</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],)</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">tstart</span>
+        <span class="n">infos</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;rmses&#39;</span><span class="p">:</span> <span class="n">rmses</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">),</span> <span class="s1">&#39;time&#39;</span><span class="p">:</span> <span class="n">t</span><span class="p">}</span>
+        <span class="k">return</span> <span class="n">X</span><span class="p">,</span> <span class="n">infos</span></div>
+
+
+<div class="viewcode-block" id="LstsqDrop"><a class="viewcode-back" href="../../frontend_api.html#nengo.solvers.LstsqDrop">[docs]</a><span class="k">class</span> <span class="nc">LstsqDrop</span><span class="p">(</span><span class="n">Solver</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Find sparser decoders/weights by dropping small values.</span>
+
+<span class="sd">    This solver first solves for coefficients (decoders/weights) with</span>
+<span class="sd">    L2 regularization, drops those nearest to zero, and retrains remaining.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">drop</span> <span class="o">=</span> <span class="n">NumberParam</span><span class="p">(</span><span class="s1">&#39;drop&#39;</span><span class="p">,</span> <span class="n">low</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">solver1</span> <span class="o">=</span> <span class="n">SolverParam</span><span class="p">(</span><span class="s1">&#39;solver1&#39;</span><span class="p">)</span>
+    <span class="n">solver2</span> <span class="o">=</span> <span class="n">SolverParam</span><span class="p">(</span><span class="s1">&#39;solver2&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span>
+                 <span class="n">solver1</span><span class="o">=</span><span class="n">LstsqL2</span><span class="p">(</span><span class="n">reg</span><span class="o">=</span><span class="mf">0.001</span><span class="p">),</span> <span class="n">solver2</span><span class="o">=</span><span class="n">LstsqL2</span><span class="p">(</span><span class="n">reg</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        weights : bool, optional (Default: False)</span>
+<span class="sd">            If False, solve for decoders. If True, solve for weights.</span>
+<span class="sd">        drop : float, optional (Default: 0.25)</span>
+<span class="sd">            Fraction of decoders or weights to set to zero.</span>
+<span class="sd">        solver1 : Solver, optional (Default: ``LstsqL2(reg=0.001)``)</span>
+<span class="sd">            Solver for finding the initial decoders.</span>
+<span class="sd">        solver2 : Solver, optional (Default: ``LstsqL2(reg=0.1)``)</span>
+<span class="sd">            Used for re-solving for the decoders after dropout.</span>
+
+<span class="sd">        Attributes</span>
+<span class="sd">        ----------</span>
+<span class="sd">        drop : float</span>
+<span class="sd">            Fraction of decoders or weights to set to zero.</span>
+<span class="sd">        solver1 : Solver</span>
+<span class="sd">            Solver for finding the initial decoders.</span>
+<span class="sd">        solver2 : Solver</span>
+<span class="sd">            Used for re-solving for the decoders after dropout.</span>
+<span class="sd">        weights : bool</span>
+<span class="sd">            If False, solve for decoders. If True, solve for weights.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">LstsqDrop</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">weights</span><span class="o">=</span><span class="n">weights</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">drop</span> <span class="o">=</span> <span class="n">drop</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">solver1</span> <span class="o">=</span> <span class="n">solver1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">solver2</span> <span class="o">=</span> <span class="n">solver2</span>
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="p">,</span> <span class="n">E</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">tstart</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="n">Y</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">matrix_in</span> <span class="o">=</span> <span class="n">format_system</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">Y</span><span class="p">)</span>
+
+        <span class="c1"># solve for coefficients using standard solver</span>
+        <span class="n">X</span><span class="p">,</span> <span class="n">info0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solver1</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="n">rng</span><span class="p">)</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mul_encoders</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">E</span><span class="p">)</span>
+
+        <span class="c1"># drop weights close to zero, based on `drop` ratio</span>
+        <span class="n">Xabs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">flat</span><span class="p">))</span>
+        <span class="n">threshold</span> <span class="o">=</span> <span class="n">Xabs</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">drop</span> <span class="o">*</span> <span class="n">Xabs</span><span class="o">.</span><span class="n">size</span><span class="p">))]</span>
+        <span class="n">X</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">X</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">threshold</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="c1"># retrain nonzero weights</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mul_encoders</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span> <span class="n">E</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="n">nonzero</span> <span class="o">=</span> <span class="n">X</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span>
+            <span class="k">if</span> <span class="n">nonzero</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">X</span><span class="p">[</span><span class="n">nonzero</span><span class="p">,</span> <span class="n">i</span><span class="p">],</span> <span class="n">info1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solver2</span><span class="p">(</span>
+                    <span class="n">A</span><span class="p">[:,</span> <span class="n">nonzero</span><span class="p">],</span> <span class="n">Y</span><span class="p">[:,</span> <span class="n">i</span><span class="p">],</span> <span class="n">rng</span><span class="o">=</span><span class="n">rng</span><span class="p">)</span>
+
+        <span class="n">t</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">tstart</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;rmses&#39;</span><span class="p">:</span> <span class="n">rmses</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">),</span> <span class="s1">&#39;info0&#39;</span><span class="p">:</span> <span class="n">info0</span><span class="p">,</span> <span class="s1">&#39;info1&#39;</span><span class="p">:</span> <span class="n">info1</span><span class="p">,</span>
+                <span class="s1">&#39;time&#39;</span><span class="p">:</span> <span class="n">t</span><span class="p">}</span>
+        <span class="k">return</span> <span class="n">X</span> <span class="k">if</span> <span class="n">matrix_in</span> <span class="ow">or</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">X</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">info</span></div>
+
+
+<div class="viewcode-block" id="Nnls"><a class="viewcode-back" href="../../frontend_api.html#nengo.solvers.Nnls">[docs]</a><span class="k">class</span> <span class="nc">Nnls</span><span class="p">(</span><span class="n">Solver</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Non-negative least-squares solver without regularization.</span>
+
+<span class="sd">    Similar to `.Lstsq`, except the output values are non-negative.</span>
+
+<span class="sd">    If solving for non-negative **weights**, it is important that the</span>
+<span class="sd">    intercepts of the post-population are also non-negative, since neurons with</span>
+<span class="sd">    negative intercepts will never be silent, affecting output accuracy.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        .. note:: Requires</span>
+<span class="sd">                  `SciPy &lt;https://docs.scipy.org/doc/scipy/reference/&gt;`_.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        weights : bool, optional (Default: False)</span>
+<span class="sd">            If False, solve for decoders. If True, solve for weights.</span>
+
+<span class="sd">        Attributes</span>
+<span class="sd">        ----------</span>
+<span class="sd">        weights : bool</span>
+<span class="sd">            If False, solve for decoders. If True, solve for weights.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">scipy.optimize</span>  <span class="c1"># import here too to throw error early</span>
+        <span class="k">assert</span> <span class="n">scipy</span><span class="o">.</span><span class="n">optimize</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Nnls</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">weights</span><span class="o">=</span><span class="n">weights</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="p">,</span> <span class="n">E</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">scipy.optimize</span>
+
+        <span class="n">tstart</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="n">Y</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">matrix_in</span> <span class="o">=</span> <span class="n">format_system</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">Y</span><span class="p">)</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mul_encoders</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span> <span class="n">E</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="n">Y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n</span><span class="p">,</span> <span class="n">d</span><span class="p">))</span>
+        <span class="n">residuals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">d</span><span class="p">):</span>
+            <span class="n">X</span><span class="p">[:,</span> <span class="n">i</span><span class="p">],</span> <span class="n">residuals</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">optimize</span><span class="o">.</span><span class="n">nnls</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">Y</span><span class="p">[:,</span> <span class="n">i</span><span class="p">])</span>
+
+        <span class="n">t</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">tstart</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;rmses&#39;</span><span class="p">:</span> <span class="n">rmses</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">),</span> <span class="s1">&#39;residuals&#39;</span><span class="p">:</span> <span class="n">residuals</span><span class="p">,</span> <span class="s1">&#39;time&#39;</span><span class="p">:</span> <span class="n">t</span><span class="p">}</span>
+        <span class="k">return</span> <span class="n">X</span> <span class="k">if</span> <span class="n">matrix_in</span> <span class="ow">or</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">X</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">info</span></div>
+
+
+<div class="viewcode-block" id="NnlsL2"><a class="viewcode-back" href="../../frontend_api.html#nengo.solvers.NnlsL2">[docs]</a><span class="k">class</span> <span class="nc">NnlsL2</span><span class="p">(</span><span class="n">Nnls</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Non-negative least-squares solver with L2 regularization.</span>
+
+<span class="sd">    Similar to `.LstsqL2`, except the output values are non-negative.</span>
+
+<span class="sd">    If solving for non-negative **weights**, it is important that the</span>
+<span class="sd">    intercepts of the post-population are also non-negative, since neurons with</span>
+<span class="sd">    negative intercepts will never be silent, affecting output accuracy.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">reg</span> <span class="o">=</span> <span class="n">NumberParam</span><span class="p">(</span><span class="s1">&#39;reg&#39;</span><span class="p">,</span> <span class="n">low</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">reg</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        .. note:: Requires</span>
+<span class="sd">                  `SciPy &lt;https://docs.scipy.org/doc/scipy/reference/&gt;`_.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        weights : bool, optional (Default: False)</span>
+<span class="sd">            If False, solve for decoders. If True, solve for weights.</span>
+<span class="sd">        reg : float, optional (Default: 0.1)</span>
+<span class="sd">            Amount of regularization, as a fraction of the neuron activity.</span>
+
+<span class="sd">        Attributes</span>
+<span class="sd">        ----------</span>
+<span class="sd">        reg : float</span>
+<span class="sd">            Amount of regularization, as a fraction of the neuron activity.</span>
+<span class="sd">        weights : bool</span>
+<span class="sd">            If False, solve for decoders. If True, solve for weights.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NnlsL2</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">weights</span><span class="o">=</span><span class="n">weights</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reg</span> <span class="o">=</span> <span class="n">reg</span>
+
+    <span class="k">def</span> <span class="nf">_solve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">rng</span><span class="p">,</span> <span class="n">E</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mf">0.</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">scipy.optimize</span>
+
+        <span class="n">tstart</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="n">Y</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">matrix_in</span> <span class="o">=</span> <span class="n">format_system</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">Y</span><span class="p">)</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mul_encoders</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span> <span class="n">E</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="n">Y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="c1"># form Gram matrix so we can add regularization</span>
+        <span class="n">GA</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">fill_diagonal</span><span class="p">(</span><span class="n">GA</span><span class="p">,</span> <span class="n">GA</span><span class="o">.</span><span class="n">diagonal</span><span class="p">()</span> <span class="o">+</span> <span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">sigma</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">GY</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">Y</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+        <span class="c1"># ^ TODO: why is it better if we clip Y to be positive here?</span>
+
+        <span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n</span><span class="p">,</span> <span class="n">d</span><span class="p">))</span>
+        <span class="n">residuals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">d</span><span class="p">):</span>
+            <span class="n">X</span><span class="p">[:,</span> <span class="n">i</span><span class="p">],</span> <span class="n">residuals</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">optimize</span><span class="o">.</span><span class="n">nnls</span><span class="p">(</span><span class="n">GA</span><span class="p">,</span> <span class="n">GY</span><span class="p">[:,</span> <span class="n">i</span><span class="p">])</span>
+
+        <span class="n">t</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">tstart</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;rmses&#39;</span><span class="p">:</span> <span class="n">rmses</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">),</span> <span class="s1">&#39;residuals&#39;</span><span class="p">:</span> <span class="n">residuals</span><span class="p">,</span> <span class="s1">&#39;time&#39;</span><span class="p">:</span> <span class="n">t</span><span class="p">}</span>
+        <span class="k">return</span> <span class="n">X</span> <span class="k">if</span> <span class="n">matrix_in</span> <span class="ow">or</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">X</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">info</span>
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="p">,</span> <span class="n">E</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_solve</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">rng</span><span class="p">,</span> <span class="n">E</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">reg</span> <span class="o">*</span> <span class="n">A</span><span class="o">.</span><span class="n">max</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="NnlsL2nz"><a class="viewcode-back" href="../../frontend_api.html#nengo.solvers.NnlsL2nz">[docs]</a><span class="k">class</span> <span class="nc">NnlsL2nz</span><span class="p">(</span><span class="n">NnlsL2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Non-negative least-squares with L2 regularization on nonzero components.</span>
+
+<span class="sd">    Similar to `.LstsqL2nz`, except the output values are non-negative.</span>
+
+<span class="sd">    If solving for non-negative **weights**, it is important that the</span>
+<span class="sd">    intercepts of the post-population are also non-negative, since neurons with</span>
+<span class="sd">    negative intercepts will never be silent, affecting output accuracy.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="p">,</span> <span class="n">E</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">sigma</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reg</span> <span class="o">*</span> <span class="n">A</span><span class="o">.</span><span class="n">max</span><span class="p">())</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">A</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+        <span class="n">sigma</span><span class="p">[</span><span class="n">sigma</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_solve</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">rng</span><span class="p">,</span> <span class="n">E</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="n">sigma</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NoSolver"><a class="viewcode-back" href="../../frontend_api.html#nengo.solvers.NoSolver">[docs]</a><span class="k">class</span> <span class="nc">NoSolver</span><span class="p">(</span><span class="n">Solver</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Manually pass in weights, bypassing the decoder solver.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    values : (n_neurons, n_weights) array_like, optional (Default: None)</span>
+<span class="sd">        The array of decoders or weights to use.</span>
+<span class="sd">        If ``weights`` is ``False``, ``n_weights`` is the expected</span>
+<span class="sd">        output dimensionality. If ``weights`` is ``True``,</span>
+<span class="sd">        ``n_weights`` is the number of neurons in the post ensemble.</span>
+<span class="sd">        If ``None``, which is the default, the solver will return an</span>
+<span class="sd">        appropriately sized array of zeros.</span>
+<span class="sd">    weights : bool, optional (Default: False)</span>
+<span class="sd">        If False, ``values`` is interpreted as decoders.</span>
+<span class="sd">        If True, ``values`` is interpreted as weights.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    values : (n_neurons, n_weights) array_like, optional (Default: None)</span>
+<span class="sd">        The array of decoders or weights to use.</span>
+<span class="sd">        If ``weights`` is ``False``, ``n_weights`` is the expected</span>
+<span class="sd">        output dimensionality. If ``weights`` is ``True``,</span>
+<span class="sd">        ``n_weights`` is the number of neurons in the post ensemble.</span>
+<span class="sd">        If ``None``, which is the default, the solver will return an</span>
+<span class="sd">        appropriately sized array of zeros.</span>
+<span class="sd">    weights : bool, optional (Default: False)</span>
+<span class="sd">        If False, ``values`` is interpreted as decoders.</span>
+<span class="sd">        If True, ``values`` is interpreted as weights.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">values</span> <span class="o">=</span> <span class="n">NdarrayParam</span><span class="p">(</span><span class="s2">&quot;values&quot;</span><span class="p">,</span> <span class="n">optional</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="s2">&quot;*&quot;</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NoSolver</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">weights</span><span class="o">=</span><span class="n">weights</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">values</span> <span class="o">=</span> <span class="n">values</span>
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">E</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">values</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">n_neurons</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">A</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_neurons</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">E</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])),</span> <span class="p">{}</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_neurons</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">Y</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])),</span> <span class="p">{}</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="p">{}</span></div>
+</pre></div>
+
+          </div>
+            
+        </div>
+        <div class="clearfix"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+<script type="text/javascript">
+  $("#mobile-toggle a").click(function () {
+    $("#left-column").toggle();
+  });
+</script>
+<script type="text/javascript" src="../../_static/js/bootstrap.js"></script>
+  <div class="footer">
+    &copy; Copyright 2013-2017, Applied Brain Research. Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+  </div>
+  </body>
+</html>

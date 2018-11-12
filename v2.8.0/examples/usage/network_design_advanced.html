@@ -1,0 +1,759 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  
+  <!-- Licensed under the Apache 2.0 License -->
+  <link rel="stylesheet" type="text/css" href="../../_static/fonts/open-sans/stylesheet.css" />
+  <!-- Licensed under the SIL Open Font License -->
+  <link rel="stylesheet" type="text/css" href="../../_static/fonts/source-serif-pro/source-serif-pro.css" />
+  <link rel="stylesheet" type="text/css" href="../../_static/css/bootstrap.min.css" />
+  <link rel="stylesheet" type="text/css" href="../../_static/css/bootstrap-theme.min.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+    <title>Additional tips and tricks for designing networks &#8212; Nengo core 2.8.0 docs</title>
+    <link rel="stylesheet" href="../../_static/guzzle.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '2.8.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Semantic Pointer Architecture" href="../../spa.html" />
+    <link rel="prev" title="Designing networks" href="network_design.html" />
+<link rel="stylesheet" type="text/css" href="../../_static/custom.css">
+
+
+  
+   
+
+  </head>
+  <body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../spa.html" title="Semantic Pointer Architecture"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="network_design.html" title="Designing networks"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../user_guide.html" >User guide</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../networks.html" accesskey="U">Reusable networks</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="container-wrapper">
+
+      <div id="mobile-toggle">
+        <a href="#"><span class="glyphicon glyphicon-align-justify" aria-hidden="true"></span></a>
+      </div>
+  <div id="left-column">
+    <div class="sphinxsidebar">
+        <a href="
+    ../../index.html" class="text-logo">Nengo core 2.8</a>
+        <div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <h2>Table Of Contents</h2>
+  </div>
+  <div class="sidebar-toc">
+    
+    
+      <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">Getting started</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../user_guide.html">User guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../frontend_api.html">Nengo frontend API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../config.html">Setting parameters with Configs</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../networks.html">Reusable networks</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="network_design.html">Designing networks</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Additional tips and tricks for designing networks</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../spa.html">Semantic Pointer Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../advanced.html">Advanced topics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../backend_api.html">Nengo backend API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../changelog.html">Release History</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../history.html">Nengo history</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../converting.html">Converting from Nengo 1.4 to Nengo 2.0</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing to Nengo</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://www.nengo.ai/projects.html">Nengo ecosystem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../license.html">Nengo license</a></li>
+</ul>
+
+    
+  </div>
+</div>
+        
+<div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <div id="main-search">
+      <form class="form-inline" action="../../search.html" method="GET" role="form">
+        <div class="input-group">
+          <input name="q" type="text" class="form-control" placeholder="Search...">
+        </div>
+        <input type="hidden" name="check_keywords" value="yes" />
+        <input type="hidden" name="area" value="default" />
+      </form>
+    </div>
+  </div>
+</div>
+    </div>
+  </div>
+        <div id="right-column">
+          
+  <div class="header">
+    
+          <div role="navigation" aria-label="breadcrumbs navigation">
+            <ol class="breadcrumb">
+              <li><a href="../../index.html">Docs</a></li>
+              
+                <li><a href="../../user_guide.html">User guide</a></li>
+              
+                <li><a href="../../networks.html">Reusable networks</a></li>
+              
+              <li>Additional tips and tricks for designing networks</li>
+            </ol>
+          </div>
+          
+    
+      <div style="float: right;">
+        <ol class="breadcrumb">
+          <li><a href="../../_downloads/examples/usage/network_design_advanced.ipynb" download>Download example as Jupyter Notebook</a></li>
+        </ol>
+      </div>
+    
+  </div>
+
+          <div class="document clearer body">
+            
+  
+<style>
+/* CSS for nbsphinx extension */
+
+/* remove conflicting styling from Sphinx themes */
+div.nbinput,
+div.nbinput div.prompt,
+div.nbinput div.input_area,
+div.nbinput div[class*=highlight],
+div.nbinput div[class*=highlight] pre,
+div.nboutput,
+div.nbinput div.prompt,
+div.nbinput div.output_area,
+div.nboutput div[class*=highlight],
+div.nboutput div[class*=highlight] pre {
+    background: none;
+    border: none;
+    padding: 0 0;
+    margin: 0;
+    box-shadow: none;
+}
+
+/* avoid gaps between output lines */
+div.nboutput div[class*=highlight] pre {
+    line-height: normal;
+}
+
+/* input/output containers */
+div.nbinput,
+div.nboutput {
+    display: -webkit-flex;
+    display: flex;
+    align-items: flex-start;
+    margin: 0;
+    width: 100%;
+}
+@media (max-width: 540px) {
+    div.nbinput,
+    div.nboutput {
+        flex-direction: column;
+    }
+}
+
+/* input container */
+div.nbinput {
+    padding-top: 5px;
+}
+
+/* last container */
+div.nblast {
+    padding-bottom: 5px;
+}
+
+/* input prompt */
+div.nbinput div.prompt pre {
+    color: #303F9F;
+}
+
+/* output prompt */
+div.nboutput div.prompt pre {
+    color: #D84315;
+}
+
+/* all prompts */
+div.nbinput div.prompt,
+div.nboutput div.prompt {
+    min-width: 9ex;
+    padding-top: 0.4em;
+    padding-right: 0.4em;
+    text-align: right;
+    flex: 0;
+}
+@media (max-width: 540px) {
+    div.nbinput div.prompt,
+    div.nboutput div.prompt {
+        text-align: left;
+        padding: 0.4em;
+    }
+    div.nboutput div.prompt.empty {
+        padding: 0;
+    }
+}
+
+/* disable scrollbars on prompts */
+div.nbinput div.prompt pre,
+div.nboutput div.prompt pre {
+    overflow: hidden;
+}
+
+/* input/output area */
+div.nbinput div.input_area,
+div.nboutput div.output_area {
+    padding: 0.4em;
+    -webkit-flex: 1;
+    flex: 1;
+    overflow: auto;
+}
+@media (max-width: 540px) {
+    div.nbinput div.input_area,
+    div.nboutput div.output_area {
+        width: 100%;
+    }
+}
+
+/* input area */
+div.nbinput div.input_area {
+    border: 1px solid #cfcfcf;
+    border-radius: 2px;
+    background: #f7f7f7;
+}
+
+/* override MathJax center alignment in output cells */
+div.nboutput div[class*=MathJax] {
+    text-align: left !important;
+}
+
+/* override sphinx.ext.pngmath center alignment in output cells */
+div.nboutput div.math p {
+    text-align: left;
+}
+
+/* standard error */
+div.nboutput div.output_area.stderr {
+    background: #fdd;
+}
+
+/* ANSI colors */
+.ansi-black-fg { color: #3E424D; }
+.ansi-black-bg { background-color: #3E424D; }
+.ansi-black-intense-fg { color: #282C36; }
+.ansi-black-intense-bg { background-color: #282C36; }
+.ansi-red-fg { color: #E75C58; }
+.ansi-red-bg { background-color: #E75C58; }
+.ansi-red-intense-fg { color: #B22B31; }
+.ansi-red-intense-bg { background-color: #B22B31; }
+.ansi-green-fg { color: #00A250; }
+.ansi-green-bg { background-color: #00A250; }
+.ansi-green-intense-fg { color: #007427; }
+.ansi-green-intense-bg { background-color: #007427; }
+.ansi-yellow-fg { color: #DDB62B; }
+.ansi-yellow-bg { background-color: #DDB62B; }
+.ansi-yellow-intense-fg { color: #B27D12; }
+.ansi-yellow-intense-bg { background-color: #B27D12; }
+.ansi-blue-fg { color: #208FFB; }
+.ansi-blue-bg { background-color: #208FFB; }
+.ansi-blue-intense-fg { color: #0065CA; }
+.ansi-blue-intense-bg { background-color: #0065CA; }
+.ansi-magenta-fg { color: #D160C4; }
+.ansi-magenta-bg { background-color: #D160C4; }
+.ansi-magenta-intense-fg { color: #A03196; }
+.ansi-magenta-intense-bg { background-color: #A03196; }
+.ansi-cyan-fg { color: #60C6C8; }
+.ansi-cyan-bg { background-color: #60C6C8; }
+.ansi-cyan-intense-fg { color: #258F8F; }
+.ansi-cyan-intense-bg { background-color: #258F8F; }
+.ansi-white-fg { color: #C5C1B4; }
+.ansi-white-bg { background-color: #C5C1B4; }
+.ansi-white-intense-fg { color: #A1A6B2; }
+.ansi-white-intense-bg { background-color: #A1A6B2; }
+
+.ansi-default-inverse-fg { color: #FFFFFF; }
+.ansi-default-inverse-bg { background-color: #000000; }
+
+.ansi-bold { font-weight: bold; }
+.ansi-underline { text-decoration: underline; }
+</style>
+<div class="section" id="Additional-tips-and-tricks-for-designing-networks">
+<h1>Additional tips and tricks for designing networks<a class="headerlink" href="#Additional-tips-and-tricks-for-designing-networks" title="Permalink to this headline">¶</a></h1>
+<p>This tutorial assumes that you have read the <code class="docutils literal"><span class="pre">network_design</span></code>
+tutorial, and have designed a network or two. Here, we will give a few
+advanced tips and tricks for designing networks that can be reused
+flexibly. In particular, these tips will use the <code class="docutils literal"><span class="pre">config</span></code> system, so
+we will also assume that you have gone over the <code class="docutils literal"><span class="pre">config</span></code> tutorial.</p>
+<p>Briefly, the general principles covered in this tutorial are</p>
+<ol class="arabic simple" start="0">
+<li>Accept a network argument</li>
+<li>Accept a config argument for groups of parameters</li>
+</ol>
+<p>We will demonstrate these principles using the two examples from the
+<code class="docutils literal"><span class="pre">network_design</span></code> tutorial.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="o">%</span><span class="k">matplotlib</span> inline
+
+<span class="kn">import</span> <span class="nn">nengo</span>
+<span class="kn">from</span> <span class="nn">nengo.dists</span> <span class="k">import</span> <span class="n">Choice</span>
+<span class="kn">from</span> <span class="nn">nengo.processes</span> <span class="k">import</span> <span class="n">Piecewise</span>
+<span class="kn">from</span> <span class="nn">nengo.utils.ipython</span> <span class="k">import</span> <span class="n">hide_input</span>
+
+
+<span class="k">def</span> <span class="nf">test_integrators</span><span class="p">(</span><span class="n">net</span><span class="p">):</span>
+    <span class="k">with</span> <span class="n">net</span><span class="p">:</span>
+        <span class="n">piecewise</span> <span class="o">=</span> <span class="n">Piecewise</span><span class="p">({</span>
+            <span class="mi">0</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="mf">0.2</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span>
+            <span class="mi">1</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="mi">2</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+            <span class="mi">3</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="mi">4</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="mi">5</span><span class="p">:</span> <span class="mi">0</span>
+        <span class="p">})</span>
+        <span class="n">piecewise_inp</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Node</span><span class="p">(</span><span class="n">piecewise</span><span class="p">)</span>
+        <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="n">piecewise_inp</span><span class="p">,</span> <span class="n">net</span><span class="o">.</span><span class="n">pre_integrator</span><span class="o">.</span><span class="n">input</span><span class="p">)</span>
+        <span class="n">input_probe</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">piecewise_inp</span><span class="p">)</span>
+        <span class="n">pre_probe</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">net</span><span class="o">.</span><span class="n">pre_integrator</span><span class="o">.</span><span class="n">ensemble</span><span class="p">,</span> <span class="n">synapse</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
+        <span class="n">post_probe</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">net</span><span class="o">.</span><span class="n">post_integrator</span><span class="o">.</span><span class="n">ensemble</span><span class="p">,</span> <span class="n">synapse</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Simulator</span><span class="p">(</span><span class="n">net</span><span class="p">)</span> <span class="k">as</span> <span class="n">sim</span><span class="p">:</span>
+        <span class="n">sim</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="mi">6</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">(),</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">input_probe</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">(),</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">pre_probe</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;b&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">(),</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">post_probe</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;g&#39;</span><span class="p">)</span>
+
+
+<span class="n">hide_input</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>Out[1]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<a id="1560693641" href="javascript:toggle_input_1560693641()"
+  >Show Input</a>
+
+<script type="text/javascript">
+var toggle_input_1560693641;
+(function() {
+    if (typeof jQuery == 'undefined') {
+        // no jQuery
+        var link_1560693641 = document.getElementById("1560693641");
+        var cell = link_1560693641;
+        while (cell.className.split(' ')[0] != "cell"
+               && cell.className.split(' ')[0] != "nboutput") {
+            cell = cell.parentNode;
+        }
+        var input_1560693641;
+        if (cell.className.split(' ')[0] == "cell") {
+            for (var i = 0; i < cell.children.length; i++) {
+                if (cell.children[i].className.split(' ')[0]
+                    == "input") {
+                    input_1560693641 = cell.children[i];
+                }
+            }
+        } else {
+            input_1560693641 = cell.previousElementSibling;
+        }
+        input_1560693641.style.display = "none"; // hide
+
+        toggle_input_1560693641 = function() {
+            if (input_1560693641.style.display == "none") {
+                input_1560693641.style.display = ""; // show
+                link_1560693641.innerHTML = "Hide Input";
+            } else {
+                input_1560693641.style.display = "none"; // hide
+                link_1560693641.innerHTML = "Show Input";
+            }
+        }
+
+    } else {
+        // jQuery
+        var link_1560693641 = $("a[id='1560693641']");
+        var cell_1560693641 = link_1560693641.parents("div.cell:first");
+        if (cell_1560693641.length == 0) {
+            cell_1560693641 = link_1560693641.parents(
+                "div.nboutput:first");
+        }
+        var input_1560693641 = cell_1560693641.children("div.input");
+        if (input_1560693641.length == 0) {
+            input_1560693641 = cell_1560693641.prev("div.nbinput");
+        }
+        input_1560693641.hide();
+
+        toggle_input_1560693641 = function() {
+            if (input_1560693641.is(':hidden')) {
+                input_1560693641.slideDown();
+                link_1560693641[0].innerHTML = "Hide Input";
+            } else {
+                input_1560693641.slideUp();
+                link_1560693641[0].innerHTML = "Show Input";
+            }
+        }
+    }
+}());
+</script></div>
+</div>
+<div class="section" id="1.-Accept-a-network-argument">
+<h2>1. Accept a network argument<a class="headerlink" href="#1.-Accept-a-network-argument" title="Permalink to this headline">¶</a></h2>
+<p>Typically, a network-creation function will take a set of arguments,
+which affect some important parts of the network. When testing the
+network, it’s common to change several parameters to see how they affect
+the network. One way to do this is to add more and more arguments to
+your function; this quickly gets out of hand. Instead, use the
+<code class="docutils literal"><span class="pre">config</span></code> system, which enables us to set network-level defaults for
+all Nengo objects.</p>
+<p>You can either do this by creating your network in the context of some
+other network, or you can modify your function to optionally take in a
+network instance, which you will build your objects into.</p>
+<p>In the example below, we change both integrators to use <code class="docutils literal"><span class="pre">LIFRate</span></code>
+neurons by changing the <code class="docutils literal"><span class="pre">config</span></code> object in the network both
+integrators are build within. We also change the <code class="docutils literal"><span class="pre">post_integrator</span></code> to
+use a very small radius by passing in a network which has its default
+radius modified.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">def</span> <span class="nf">Integrator</span><span class="p">(</span><span class="n">n_neurons</span><span class="p">,</span> <span class="n">dimensions</span><span class="p">,</span> <span class="n">tau</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">net</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">net</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">net</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Network</span><span class="p">()</span>
+    <span class="k">with</span> <span class="n">net</span><span class="p">:</span>
+        <span class="n">net</span><span class="o">.</span><span class="n">input</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Node</span><span class="p">(</span><span class="n">size_in</span><span class="o">=</span><span class="n">dimensions</span><span class="p">)</span>
+        <span class="n">net</span><span class="o">.</span><span class="n">ensemble</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">(</span><span class="n">n_neurons</span><span class="p">,</span> <span class="n">dimensions</span><span class="o">=</span><span class="n">dimensions</span><span class="p">)</span>
+        <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="n">net</span><span class="o">.</span><span class="n">ensemble</span><span class="p">,</span> <span class="n">net</span><span class="o">.</span><span class="n">ensemble</span><span class="p">,</span> <span class="n">synapse</span><span class="o">=</span><span class="n">tau</span><span class="p">)</span>
+        <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="n">net</span><span class="o">.</span><span class="n">input</span><span class="p">,</span> <span class="n">net</span><span class="o">.</span><span class="n">ensemble</span><span class="p">,</span> <span class="n">synapse</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">tau</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">net</span>
+
+
+<span class="n">net</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Network</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;Two integrators&quot;</span><span class="p">)</span>
+<span class="k">with</span> <span class="n">net</span><span class="p">:</span>
+    <span class="c1"># Make both integrators use LIFRate neurons</span>
+    <span class="n">net</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">]</span><span class="o">.</span><span class="n">neuron_type</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">LIFRate</span><span class="p">()</span>
+    <span class="n">net</span><span class="o">.</span><span class="n">pre_integrator</span> <span class="o">=</span> <span class="n">Integrator</span><span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="c1"># Lower the radius of the post_integrator</span>
+    <span class="n">net</span><span class="o">.</span><span class="n">post_integrator</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Network</span><span class="p">()</span>
+    <span class="n">net</span><span class="o">.</span><span class="n">post_integrator</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">]</span><span class="o">.</span><span class="n">radius</span> <span class="o">=</span> <span class="mf">0.2</span>
+    <span class="n">Integrator</span><span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">net</span><span class="o">=</span><span class="n">net</span><span class="o">.</span><span class="n">post_integrator</span><span class="p">)</span>
+    <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="n">net</span><span class="o">.</span><span class="n">pre_integrator</span><span class="o">.</span><span class="n">ensemble</span><span class="p">,</span> <span class="n">net</span><span class="o">.</span><span class="n">post_integrator</span><span class="o">.</span><span class="n">input</span><span class="p">)</span>
+<span class="n">test_integrators</span><span class="p">(</span><span class="n">net</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_usage_network_design_advanced_3_0.png" src="../../_images/examples_usage_network_design_advanced_3_0.png" />
+</div>
+</div>
+</div>
+<div class="section" id="2.-Accept-a-config-argument-for-groups-of-parameters">
+<h2>2. Accept a config argument for groups of parameters<a class="headerlink" href="#2.-Accept-a-config-argument-for-groups-of-parameters" title="Permalink to this headline">¶</a></h2>
+<p>Often, you will not want to use the network-level defaults for all of
+your objects. Some objects need certain things overwritten, while others
+need other values overwritten. Again, it is possible to deal with this
+issue by adding more and more parameters, but this quickly gets out of
+hand. Instead, add a small number of arguments that optionally accept a
+<code class="docutils literal"><span class="pre">config</span></code> object, which allows for setting multiple parameters at once.</p>
+<p>In the coupled integrator network example, we make two connections. We
+have to be careful changing the defaults for those connections, as they
+are wildly different; one is a recurrent connection from an ensemble to
+itself, while the other is a connection from a node to an ensemble. We
+will accept a <code class="docutils literal"><span class="pre">config</span></code> object for the recurrent connection to make
+this easier.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">def</span> <span class="nf">Integrator</span><span class="p">(</span><span class="n">n_neurons</span><span class="p">,</span> <span class="n">dimensions</span><span class="p">,</span> <span class="n">recurrent_config</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">net</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">net</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">net</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Network</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">recurrent_config</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">recurrent_config</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Config</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">)</span>
+        <span class="n">recurrent_config</span><span class="p">[</span><span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">]</span><span class="o">.</span><span class="n">synapse</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Lowpass</span><span class="p">(</span><span class="mf">0.1</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">net</span><span class="p">:</span>
+        <span class="n">net</span><span class="o">.</span><span class="n">input</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Node</span><span class="p">(</span><span class="n">size_in</span><span class="o">=</span><span class="n">dimensions</span><span class="p">)</span>
+        <span class="n">net</span><span class="o">.</span><span class="n">ensemble</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">(</span><span class="n">n_neurons</span><span class="p">,</span> <span class="n">dimensions</span><span class="o">=</span><span class="n">dimensions</span><span class="p">)</span>
+        <span class="k">with</span> <span class="n">recurrent_config</span><span class="p">:</span>
+            <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="n">net</span><span class="o">.</span><span class="n">ensemble</span><span class="p">,</span> <span class="n">net</span><span class="o">.</span><span class="n">ensemble</span><span class="p">)</span>
+            <span class="n">tau</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Config</span><span class="o">.</span><span class="n">default</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">,</span> <span class="s1">&#39;synapse&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">tau</span>
+        <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="n">net</span><span class="o">.</span><span class="n">input</span><span class="p">,</span> <span class="n">net</span><span class="o">.</span><span class="n">ensemble</span><span class="p">,</span> <span class="n">synapse</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">tau</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">net</span>
+
+
+<span class="n">net</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Network</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;Two integrators&quot;</span><span class="p">)</span>
+<span class="k">with</span> <span class="n">net</span><span class="p">:</span>
+    <span class="c1"># Make both integrators use LIFRate neurons</span>
+    <span class="n">net</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">]</span><span class="o">.</span><span class="n">neuron_type</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">LIFRate</span><span class="p">()</span>
+    <span class="n">net</span><span class="o">.</span><span class="n">pre_integrator</span> <span class="o">=</span> <span class="n">Integrator</span><span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="c1"># Give the post_integrator a shorter tau (should make integration fail)</span>
+    <span class="n">recurrent_config</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Config</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">)</span>
+    <span class="n">recurrent_config</span><span class="p">[</span><span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">]</span><span class="o">.</span><span class="n">synapse</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Lowpass</span><span class="p">(</span><span class="mf">0.01</span><span class="p">)</span>
+    <span class="n">net</span><span class="o">.</span><span class="n">post_integrator</span> <span class="o">=</span> <span class="n">Integrator</span><span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">recurrent_config</span><span class="o">=</span><span class="n">recurrent_config</span><span class="p">)</span>
+    <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="n">net</span><span class="o">.</span><span class="n">pre_integrator</span><span class="o">.</span><span class="n">ensemble</span><span class="p">,</span> <span class="n">net</span><span class="o">.</span><span class="n">post_integrator</span><span class="o">.</span><span class="n">input</span><span class="p">)</span>
+<span class="n">test_integrators</span><span class="p">(</span><span class="n">net</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_usage_network_design_advanced_5_0.png" src="../../_images/examples_usage_network_design_advanced_5_0.png" />
+</div>
+</div>
+</div>
+<div class="section" id="Longer-example:-double-integrator-network">
+<h2>Longer example: double integrator network<a class="headerlink" href="#Longer-example:-double-integrator-network" title="Permalink to this headline">¶</a></h2>
+<p>Recall in the previous tutorial that we created a model that released a
+lever 0.6 to 1.0 seconds after pressing a lever. Let’s use the above
+principles, and the <code class="docutils literal"><span class="pre">config</span></code> system in general, to improve the code
+constructing this model.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">def</span> <span class="nf">controlled_integrator</span><span class="p">(</span><span class="n">n_neurons</span><span class="p">,</span>
+                          <span class="n">dimensions</span><span class="p">,</span>
+                          <span class="n">recurrent_config</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                          <span class="n">net</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">net</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">net</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Network</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">recurrent_config</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">recurrent_config</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Config</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">)</span>
+        <span class="n">recurrent_config</span><span class="p">[</span><span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">]</span><span class="o">.</span><span class="n">synapse</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Lowpass</span><span class="p">(</span><span class="mf">0.1</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">net</span><span class="p">:</span>
+        <span class="n">net</span><span class="o">.</span><span class="n">ensemble</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">(</span><span class="n">n_neurons</span><span class="p">,</span> <span class="n">dimensions</span><span class="o">=</span><span class="n">dimensions</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">with</span> <span class="n">recurrent_config</span><span class="p">:</span>
+            <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span>
+                <span class="n">net</span><span class="o">.</span><span class="n">ensemble</span><span class="p">,</span>
+                <span class="n">net</span><span class="o">.</span><span class="n">ensemble</span><span class="p">[:</span><span class="n">dimensions</span><span class="p">],</span>
+                <span class="n">function</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="k">return</span> <span class="n">net</span>
+
+
+<span class="k">def</span> <span class="nf">medial_pfc</span><span class="p">(</span><span class="n">coupling_strength</span><span class="p">,</span>
+               <span class="n">n_neurons_per_integrator</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
+               <span class="n">recurrent_config</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+               <span class="n">tau</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+               <span class="n">net</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">net</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">net</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Network</span><span class="p">()</span>
+    <span class="k">with</span> <span class="n">net</span><span class="p">:</span>
+        <span class="n">recurrent_config</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Config</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">)</span>
+        <span class="n">recurrent_config</span><span class="p">[</span><span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">]</span><span class="o">.</span><span class="n">synapse</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Lowpass</span><span class="p">(</span><span class="n">tau</span><span class="p">)</span>
+        <span class="n">net</span><span class="o">.</span><span class="n">pre</span> <span class="o">=</span> <span class="n">controlled_integrator</span><span class="p">(</span><span class="n">n_neurons_per_integrator</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span>
+                                        <span class="n">recurrent_config</span><span class="p">)</span>
+        <span class="n">net</span><span class="o">.</span><span class="n">post</span> <span class="o">=</span> <span class="n">controlled_integrator</span><span class="p">(</span><span class="n">n_neurons_per_integrator</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span>
+                                         <span class="n">recurrent_config</span><span class="p">)</span>
+        <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span>
+            <span class="n">net</span><span class="o">.</span><span class="n">pre</span><span class="o">.</span><span class="n">ensemble</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="n">net</span><span class="o">.</span><span class="n">post</span><span class="o">.</span><span class="n">ensemble</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="n">transform</span><span class="o">=</span><span class="n">coupling_strength</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">net</span>
+
+
+<span class="k">def</span> <span class="nf">motor_cortex</span><span class="p">(</span><span class="n">command_threshold</span><span class="p">,</span>
+                 <span class="n">n_neurons_per_command</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+                 <span class="n">ens_config</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">net</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">net</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">net</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Network</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">ens_config</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ens_config</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Config</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">)</span>
+        <span class="n">ens_config</span><span class="p">[</span><span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">]</span><span class="o">.</span><span class="n">encoders</span> <span class="o">=</span> <span class="n">Choice</span><span class="p">([[</span><span class="mi">1</span><span class="p">]])</span>
+        <span class="n">ens_config</span><span class="p">[</span><span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">]</span><span class="o">.</span><span class="n">intercepts</span> <span class="o">=</span> <span class="n">Choice</span><span class="p">([</span><span class="n">command_threshold</span><span class="p">])</span>
+    <span class="k">with</span> <span class="n">net</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">ens_config</span><span class="p">:</span>
+            <span class="n">net</span><span class="o">.</span><span class="n">press</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">(</span><span class="n">n_neurons_per_command</span><span class="p">,</span> <span class="n">dimensions</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">net</span><span class="o">.</span><span class="n">release</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">(</span><span class="n">n_neurons_per_command</span><span class="p">,</span> <span class="n">dimensions</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">net</span>
+
+
+<span class="k">def</span> <span class="nf">double_integrator</span><span class="p">(</span><span class="n">mpfc_coupling_strength</span><span class="p">,</span>
+                      <span class="n">command_threshold</span><span class="p">,</span>
+                      <span class="n">press_to_pre_gain</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+                      <span class="n">press_to_post_control</span><span class="o">=-</span><span class="mi">6</span><span class="p">,</span>
+                      <span class="n">recurrent_tau</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+                      <span class="n">net</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">net</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">net</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Network</span><span class="p">()</span>
+    <span class="k">with</span> <span class="n">net</span><span class="p">:</span>
+        <span class="n">net</span><span class="o">.</span><span class="n">mpfc</span> <span class="o">=</span> <span class="n">medial_pfc</span><span class="p">(</span><span class="n">mpfc_coupling_strength</span><span class="p">)</span>
+        <span class="n">net</span><span class="o">.</span><span class="n">motor</span> <span class="o">=</span> <span class="n">motor_cortex</span><span class="p">(</span><span class="n">command_threshold</span><span class="p">)</span>
+        <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span>
+            <span class="n">net</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">press</span><span class="p">,</span>
+            <span class="n">net</span><span class="o">.</span><span class="n">mpfc</span><span class="o">.</span><span class="n">pre</span><span class="o">.</span><span class="n">ensemble</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="n">transform</span><span class="o">=</span><span class="n">recurrent_tau</span> <span class="o">*</span> <span class="n">press_to_pre_gain</span><span class="p">)</span>
+        <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span>
+            <span class="n">net</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">press</span><span class="p">,</span>
+            <span class="n">net</span><span class="o">.</span><span class="n">mpfc</span><span class="o">.</span><span class="n">post</span><span class="o">.</span><span class="n">ensemble</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+            <span class="n">transform</span><span class="o">=</span><span class="n">press_to_post_control</span><span class="p">)</span>
+        <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="n">net</span><span class="o">.</span><span class="n">mpfc</span><span class="o">.</span><span class="n">post</span><span class="o">.</span><span class="n">ensemble</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">net</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">release</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">net</span>
+
+
+<span class="k">def</span> <span class="nf">test_doubleintegrator</span><span class="p">(</span><span class="n">net</span><span class="p">):</span>
+    <span class="c1"># Provide input and probe outside of network construction,</span>
+    <span class="c1"># for more flexibility</span>
+    <span class="k">with</span> <span class="n">net</span><span class="p">:</span>
+        <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span>
+            <span class="n">nengo</span><span class="o">.</span><span class="n">Node</span><span class="p">(</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">t</span> <span class="o">&lt;</span> <span class="mf">0.2</span> <span class="k">else</span> <span class="mi">0</span><span class="p">),</span> <span class="n">net</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">press</span><span class="p">)</span>
+        <span class="n">pr_press</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">net</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">press</span><span class="p">,</span> <span class="n">synapse</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
+        <span class="n">pr_release</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">net</span><span class="o">.</span><span class="n">motor</span><span class="o">.</span><span class="n">release</span><span class="p">,</span> <span class="n">synapse</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
+        <span class="n">pr_pre_int</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">net</span><span class="o">.</span><span class="n">mpfc</span><span class="o">.</span><span class="n">pre</span><span class="o">.</span><span class="n">ensemble</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">synapse</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
+        <span class="n">pr_post_int</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">net</span><span class="o">.</span><span class="n">mpfc</span><span class="o">.</span><span class="n">post</span><span class="o">.</span><span class="n">ensemble</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">synapse</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Simulator</span><span class="p">(</span><span class="n">net</span><span class="p">)</span> <span class="k">as</span> <span class="n">sim</span><span class="p">:</span>
+        <span class="n">sim</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="mf">1.4</span><span class="p">)</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">pr_press</span><span class="p">],</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;b&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Press&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">pr_release</span><span class="p">],</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;g&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Release&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">axvspan</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;b&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">axvspan</span><span class="p">(</span><span class="mf">0.8</span><span class="p">,</span> <span class="mf">1.2</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;g&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="n">right</span><span class="o">=</span><span class="mf">1.4</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s2">&quot;best&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">pr_pre_int</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Pre Integrator&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">pr_post_int</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Post Integrator&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="n">right</span><span class="o">=</span><span class="mf">1.4</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s2">&quot;best&quot;</span><span class="p">)</span>
+
+
+<span class="k">for</span> <span class="n">coupling_strength</span> <span class="ow">in</span> <span class="p">(</span><span class="mf">0.11</span><span class="p">,</span> <span class="mf">0.16</span><span class="p">,</span> <span class="mf">0.21</span><span class="p">):</span>
+    <span class="n">net</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Network</span><span class="p">(</span><span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># Set seed here instead</span>
+    <span class="c1"># Try the same network with LIFRate neurons</span>
+    <span class="n">net</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">]</span><span class="o">.</span><span class="n">neuron_type</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">LIFRate</span><span class="p">()</span>
+    <span class="n">net</span> <span class="o">=</span> <span class="n">double_integrator</span><span class="p">(</span>
+        <span class="n">mpfc_coupling_strength</span><span class="o">=</span><span class="n">coupling_strength</span><span class="p">,</span>
+        <span class="n">command_threshold</span><span class="o">=</span><span class="mf">0.85</span><span class="p">,</span>
+        <span class="n">net</span><span class="o">=</span><span class="n">net</span><span class="p">)</span>
+    <span class="n">test_doubleintegrator</span><span class="p">(</span><span class="n">net</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_usage_network_design_advanced_7_0.png" src="../../_images/examples_usage_network_design_advanced_7_0.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_usage_network_design_advanced_7_1.png" src="../../_images/examples_usage_network_design_advanced_7_1.png" />
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_usage_network_design_advanced_7_2.png" src="../../_images/examples_usage_network_design_advanced_7_2.png" />
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+            
+  <div class="footer-relations">
+    
+      <div class="pull-left">
+        <a class="btn btn-default" href="network_design.html" title="previous chapter (use the left arrow)">Designing networks</a>
+      </div>
+    
+      <div class="pull-right">
+        <a class="btn btn-default" href="../../spa.html" title="next chapter (use the right arrow)">Semantic Pointer Architecture</a>
+      </div>
+    </div>
+    <div class="clearer"></div>
+  
+        </div>
+        <div class="clearfix"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../spa.html" title="Semantic Pointer Architecture"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="network_design.html" title="Designing networks"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../user_guide.html" >User guide</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../networks.html" >Reusable networks</a> &#187;</li> 
+      </ul>
+    </div>
+<script type="text/javascript">
+  $("#mobile-toggle a").click(function () {
+    $("#left-column").toggle();
+  });
+</script>
+<script type="text/javascript" src="../../_static/js/bootstrap.js"></script>
+  <div class="footer">
+    &copy; Copyright 2013-2017, Applied Brain Research. Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+  </div>
+  </body>
+</html>

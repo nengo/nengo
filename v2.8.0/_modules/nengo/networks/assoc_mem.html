@@ -1,0 +1,533 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  
+  <!-- Licensed under the Apache 2.0 License -->
+  <link rel="stylesheet" type="text/css" href="../../../_static/fonts/open-sans/stylesheet.css" />
+  <!-- Licensed under the SIL Open Font License -->
+  <link rel="stylesheet" type="text/css" href="../../../_static/fonts/source-serif-pro/source-serif-pro.css" />
+  <link rel="stylesheet" type="text/css" href="../../../_static/css/bootstrap.min.css" />
+  <link rel="stylesheet" type="text/css" href="../../../_static/css/bootstrap-theme.min.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+    <title>nengo.networks.assoc_mem &#8212; Nengo core 2.8.0 docs</title>
+    <link rel="stylesheet" href="../../../_static/guzzle.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '2.8.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+<link rel="stylesheet" type="text/css" href="../../../_static/custom.css">
+
+
+  
+   
+
+  </head>
+  <body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="container-wrapper">
+
+      <div id="mobile-toggle">
+        <a href="#"><span class="glyphicon glyphicon-align-justify" aria-hidden="true"></span></a>
+      </div>
+  <div id="left-column">
+    <div class="sphinxsidebar">
+        <a href="
+    ../../../index.html" class="text-logo">Nengo core 2.8</a>
+        <div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <h2>Table Of Contents</h2>
+  </div>
+  <div class="sidebar-toc">
+    
+    
+      <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../user_guide.html">User guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">Contributing to Nengo</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://www.nengo.ai/projects.html">Nengo ecosystem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../license.html">Nengo license</a></li>
+</ul>
+
+    
+  </div>
+</div>
+        
+<div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <div id="main-search">
+      <form class="form-inline" action="../../../search.html" method="GET" role="form">
+        <div class="input-group">
+          <input name="q" type="text" class="form-control" placeholder="Search...">
+        </div>
+        <input type="hidden" name="check_keywords" value="yes" />
+        <input type="hidden" name="area" value="default" />
+      </form>
+    </div>
+  </div>
+</div>
+    </div>
+  </div>
+        <div id="right-column">
+          
+  <div class="header">
+    
+          <div role="navigation" aria-label="breadcrumbs navigation">
+            <ol class="breadcrumb">
+              <li><a href="../../../index.html">Docs</a></li>
+              
+                <li><a href="../../index.html">Module code</a></li>
+              
+              <li>nengo.networks.assoc_mem</li>
+            </ol>
+          </div>
+          
+    
+  </div>
+
+          <div class="document clearer body">
+            
+  <h1>Source code for nengo.networks.assoc_mem</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">warnings</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">import</span> <span class="nn">nengo</span>
+<span class="kn">from</span> <span class="nn">nengo.dists</span> <span class="k">import</span> <span class="n">Choice</span><span class="p">,</span> <span class="n">Exponential</span><span class="p">,</span> <span class="n">Uniform</span>
+<span class="kn">from</span> <span class="nn">nengo.exceptions</span> <span class="k">import</span> <span class="n">ValidationError</span>
+<span class="kn">from</span> <span class="nn">nengo.utils.compat</span> <span class="k">import</span> <span class="n">is_iterable</span><span class="p">,</span> <span class="nb">range</span>
+<span class="kn">from</span> <span class="nn">nengo.utils.network</span> <span class="k">import</span> <span class="n">with_self</span>
+<span class="kn">from</span> <span class="nn">.ensemblearray</span> <span class="k">import</span> <span class="n">EnsembleArray</span>
+
+
+<span class="k">def</span> <span class="nf">filtered_step</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">shift</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">step_val</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">((</span><span class="n">t</span> <span class="o">-</span> <span class="n">shift</span><span class="p">)</span> <span class="o">*</span> <span class="n">scale</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">*</span> <span class="n">step_val</span>
+
+
+<div class="viewcode-block" id="AssociativeMemory"><a class="viewcode-back" href="../../../networks.html#nengo.networks.AssociativeMemory">[docs]</a><span class="k">class</span> <span class="nc">AssociativeMemory</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">Network</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Associative memory network.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    input_vectors: array_like</span>
+<span class="sd">        The list of vectors to be compared against.</span>
+<span class="sd">    output_vectors: array_like, optional (Default: None)</span>
+<span class="sd">        The list of vectors to be produced for each match. If None, the</span>
+<span class="sd">        associative memory will be autoassociative (cleanup memory).</span>
+<span class="sd">    n_neurons: int, optional (Default: 50)</span>
+<span class="sd">        The number of neurons for each of the ensemble (where each ensemble</span>
+<span class="sd">        represents each item in the input_vectors list).</span>
+<span class="sd">    threshold: float, optional (Default: 0.3)</span>
+<span class="sd">        The association activation threshold.</span>
+<span class="sd">    input_scales: float or array_like, optional (Default: 1.0)</span>
+<span class="sd">        Scaling factor to apply on each of the input vectors. Note that it</span>
+<span class="sd">        is possible to scale each vector independently.</span>
+<span class="sd">    inhibitable: bool, optional (Default: False)</span>
+<span class="sd">        Flag to indicate if the entire associative memory module is</span>
+<span class="sd">        inhibitable (entire thing can be shut off). The input gain into</span>
+<span class="sd">        the inhibitory connection is 1.5.</span>
+<span class="sd">    label : str, optional (Default: None)</span>
+<span class="sd">        A name for the ensemble. Used for debugging and visualization.</span>
+<span class="sd">    seed : int, optional (Default: None)</span>
+<span class="sd">        The seed used for random number generation.</span>
+<span class="sd">    add_to_container : bool, optional (Default: None)</span>
+<span class="sd">        Determines if the network will be added to the current container.</span>
+<span class="sd">        If None, will be true if currently within a Network.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">exp_scale</span> <span class="o">=</span> <span class="mf">0.15</span>  <span class="c1"># Scaling factor for exponential distribution</span>
+    <span class="n">n_eval_points</span> <span class="o">=</span> <span class="mi">5000</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_vectors</span><span class="p">,</span> <span class="n">output_vectors</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># noqa: C901</span>
+                 <span class="n">n_neurons</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">input_scales</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+                 <span class="n">inhibitable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                 <span class="n">label</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">add_to_container</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">AssociativeMemory</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">seed</span><span class="p">,</span> <span class="n">add_to_container</span><span class="p">)</span>
+
+        <span class="c1"># --- Put arguments in canonical form</span>
+        <span class="k">if</span> <span class="n">output_vectors</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># If output vocabulary is not specified, use input vector list</span>
+            <span class="c1"># (i.e autoassociative memory)</span>
+            <span class="n">output_vectors</span> <span class="o">=</span> <span class="n">input_vectors</span>
+        <span class="k">if</span> <span class="n">is_iterable</span><span class="p">(</span><span class="n">input_vectors</span><span class="p">):</span>
+            <span class="n">input_vectors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">input_vectors</span><span class="p">,</span> <span class="n">ndmin</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">is_iterable</span><span class="p">(</span><span class="n">output_vectors</span><span class="p">):</span>
+            <span class="n">output_vectors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">output_vectors</span><span class="p">,</span> <span class="n">ndmin</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">input_vectors</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span><span class="s2">&quot;Number of input vectors cannot be 0.&quot;</span><span class="p">,</span>
+                                  <span class="n">attr</span><span class="o">=</span><span class="s1">&#39;input_vectors&#39;</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">input_vectors</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">output_vectors</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="c1"># Fail if number of input items and number of output items don&#39;t</span>
+            <span class="c1"># match</span>
+            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span>
+                <span class="s2">&quot;Number of input vectors does not match number of output &quot;</span>
+                <span class="s2">&quot;vectors. </span><span class="si">%d</span><span class="s2"> != </span><span class="si">%d</span><span class="s2">&quot;</span>
+                <span class="o">%</span> <span class="p">(</span><span class="n">input_vectors</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">output_vectors</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+                <span class="n">attr</span><span class="o">=</span><span class="s1">&#39;input_vectors&#39;</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
+
+        <span class="c1"># Handle possible different threshold / input_scale values for each</span>
+        <span class="c1"># element in the associative memory</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">is_iterable</span><span class="p">(</span><span class="n">threshold</span><span class="p">):</span>
+            <span class="n">threshold</span> <span class="o">=</span> <span class="n">threshold</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">input_vectors</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">threshold</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">threshold</span><span class="p">)</span>
+
+        <span class="c1"># --- Check preconditions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_items</span> <span class="o">=</span> <span class="n">input_vectors</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_items</span> <span class="o">!=</span> <span class="n">output_vectors</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span>
+                <span class="s2">&quot;Number of input vectors (</span><span class="si">%d</span><span class="s2">) does not match number of output &quot;</span>
+                <span class="s2">&quot;vectors (</span><span class="si">%d</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_items</span><span class="p">,</span> <span class="n">output_vectors</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+                <span class="n">attr</span><span class="o">=</span><span class="s1">&#39;input_vectors&#39;</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">threshold</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_items</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span>
+                <span class="s2">&quot;Number of threshold values (</span><span class="si">%d</span><span class="s2">) does not match number of &quot;</span>
+                <span class="s2">&quot;input vectors (</span><span class="si">%d</span><span class="s2">).&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">threshold</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_items</span><span class="p">),</span>
+                <span class="n">attr</span><span class="o">=</span><span class="s1">&#39;threshold&#39;</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+
+        <span class="c1"># --- Set parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">out_conns</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># Used in `add_threshold_to_output`</span>
+        <span class="c1"># Used in `add_threshold_to_output`</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">default_vector_inhibit_conns</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">thresh_ens</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># Will hold thresholded outputs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_wta</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_inhib_scale</span> <span class="o">=</span> <span class="mf">1.5</span>
+
+        <span class="c1"># -- Create the core network</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">am_ens_config</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">bias_node</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Node</span><span class="p">(</span><span class="n">output</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">elem_input</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Node</span><span class="p">(</span>
+                <span class="n">size_in</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_items</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;element input&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">elem_output</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Node</span><span class="p">(</span>
+                <span class="n">size_in</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_items</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;element output&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">utilities</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">elem_output</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">am_ensembles</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">label_prefix</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span> <span class="k">if</span> <span class="n">label</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">label</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span>
+            <span class="n">filt_scale</span> <span class="o">=</span> <span class="mi">15</span>
+            <span class="n">filt_step_func</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">filtered_step</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="n">filt_scale</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_items</span><span class="p">):</span>
+                <span class="n">e</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">(</span><span class="n">n_neurons</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">label_prefix</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">am_ensembles</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+
+                <span class="c1"># Connect input and output nodes</span>
+                <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bias_node</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">transform</span><span class="o">=-</span><span class="n">threshold</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">elem_input</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">e</span><span class="p">)</span>
+                <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span>
+                    <span class="n">e</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">elem_output</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">function</span><span class="o">=</span><span class="n">filt_step_func</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">inhibitable</span><span class="p">:</span>
+                <span class="c1"># Input node for inhibitory gating signal (if enabled)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">inhibit</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Node</span><span class="p">(</span><span class="n">size_in</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;inhibit&quot;</span><span class="p">)</span>
+                <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inhibit</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">elem_input</span><span class="p">,</span>
+                                 <span class="n">transform</span><span class="o">=-</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">n_items</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+                                 <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inhib_scale</span><span class="p">)</span>
+                <span class="c1"># Note: We can use a decoded connection here because all the</span>
+                <span class="c1"># am_ensembles have [1] encoders</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">inhibit</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_input_mapping</span><span class="p">(</span><span class="s2">&quot;input&quot;</span><span class="p">,</span> <span class="n">input_vectors</span><span class="p">,</span> <span class="n">input_scales</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_output_mapping</span><span class="p">(</span><span class="s2">&quot;output&quot;</span><span class="p">,</span> <span class="n">output_vectors</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">am_ens_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;(Config) Defaults for associative memory ensemble creation.&quot;&quot;&quot;</span>
+        <span class="n">cfg</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Config</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">,</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">)</span>
+        <span class="n">cfg</span><span class="p">[</span><span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">({</span>
+            <span class="s1">&#39;radius&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="s1">&#39;intercepts&#39;</span><span class="p">:</span> <span class="n">Exponential</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exp_scale</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span>
+            <span class="s1">&#39;encoders&#39;</span><span class="p">:</span> <span class="n">Choice</span><span class="p">([[</span><span class="mi">1</span><span class="p">]]),</span>
+            <span class="s1">&#39;eval_points&#39;</span><span class="p">:</span> <span class="n">Uniform</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span>
+            <span class="s1">&#39;n_eval_points&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_eval_points</span><span class="p">,</span>
+        <span class="p">})</span>
+        <span class="n">cfg</span><span class="p">[</span><span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">]</span><span class="o">.</span><span class="n">synapse</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">cfg</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">default_ens_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;(Config) Defaults for other ensemble creation.&quot;&quot;&quot;</span>
+        <span class="n">cfg</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Config</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">)</span>
+        <span class="n">cfg</span><span class="p">[</span><span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">({</span>
+            <span class="s1">&#39;radius&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="s1">&#39;intercepts&#39;</span><span class="p">:</span> <span class="n">Exponential</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exp_scale</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span>
+            <span class="s1">&#39;encoders&#39;</span><span class="p">:</span> <span class="n">Choice</span><span class="p">([[</span><span class="mi">1</span><span class="p">]]),</span>
+            <span class="s1">&#39;eval_points&#39;</span><span class="p">:</span> <span class="n">Uniform</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span>
+            <span class="s1">&#39;n_eval_points&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_eval_points</span><span class="p">,</span>
+        <span class="p">})</span>
+        <span class="k">return</span> <span class="n">cfg</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">thresh_ens_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;(Config) Defaults for threshold ensemble creation.&quot;&quot;&quot;</span>
+        <span class="n">cfg</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Config</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">)</span>
+        <span class="n">cfg</span><span class="p">[</span><span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">({</span>
+            <span class="s1">&#39;radius&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="s1">&#39;intercepts&#39;</span><span class="p">:</span> <span class="n">Uniform</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span>
+            <span class="s1">&#39;encoders&#39;</span><span class="p">:</span> <span class="n">Choice</span><span class="p">([[</span><span class="mi">1</span><span class="p">]]),</span>
+            <span class="s1">&#39;eval_points&#39;</span><span class="p">:</span> <span class="n">Uniform</span><span class="p">(</span><span class="mf">0.75</span><span class="p">,</span> <span class="mf">1.1</span><span class="p">),</span>
+            <span class="s1">&#39;n_eval_points&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_eval_points</span><span class="p">,</span>
+        <span class="p">})</span>
+        <span class="k">return</span> <span class="n">cfg</span>
+
+<div class="viewcode-block" id="AssociativeMemory.add_input_mapping"><a class="viewcode-back" href="../../../networks.html#nengo.networks.AssociativeMemory.add_input_mapping">[docs]</a>    <span class="nd">@with_self</span>
+    <span class="k">def</span> <span class="nf">add_input_mapping</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">input_vectors</span><span class="p">,</span> <span class="n">input_scales</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Adds a set of input vectors to the associative memory network.</span>
+
+<span class="sd">        Creates a transform with the given input vectors between the</span>
+<span class="sd">        a named input node and associative memory element input to enable the</span>
+<span class="sd">        inputs to be mapped onto ensembles of the Associative Memory.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        name: str</span>
+<span class="sd">            Name to use for the input node. This name will be used as the name</span>
+<span class="sd">            of the attribute for the associative memory network.</span>
+<span class="sd">        input_vectors: array_like</span>
+<span class="sd">            The list of vectors to be compared against.</span>
+<span class="sd">        input_scales: float or array_like, optional (Default: 1.0)</span>
+<span class="sd">            Scaling factor to apply on each of the input vectors. Note that it</span>
+<span class="sd">            is possible to scale each vector independently.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># --- Put arguments in canonical form</span>
+        <span class="n">n_vectors</span><span class="p">,</span> <span class="n">d_vectors</span> <span class="o">=</span> <span class="n">input_vectors</span><span class="o">.</span><span class="n">shape</span>
+        <span class="k">if</span> <span class="n">is_iterable</span><span class="p">(</span><span class="n">input_vectors</span><span class="p">):</span>
+            <span class="n">input_vectors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">input_vectors</span><span class="p">,</span> <span class="n">ndmin</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">is_iterable</span><span class="p">(</span><span class="n">input_scales</span><span class="p">):</span>
+            <span class="n">input_scales</span> <span class="o">=</span> <span class="n">input_scales</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_vectors</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">input_scales</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">input_scales</span><span class="p">,</span> <span class="n">ndmin</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+        <span class="c1"># --- Check some preconditions</span>
+        <span class="k">if</span> <span class="n">input_scales</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">n_vectors</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span><span class="s2">&quot;Number of input_scale values (</span><span class="si">%d</span><span class="s2">) does not &quot;</span>
+                                  <span class="s2">&quot;match number of input vectors (</span><span class="si">%d</span><span class="s2">).&quot;</span>
+                                  <span class="o">%</span> <span class="p">(</span><span class="n">input_scales</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">n_vectors</span><span class="p">),</span>
+                                  <span class="n">attr</span><span class="o">=</span><span class="s1">&#39;input_scales&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span><span class="s2">&quot;Name &#39;</span><span class="si">%s</span><span class="s2">&#39; already exists as a node in the &quot;</span>
+                                  <span class="s2">&quot;associative memory.&quot;</span> <span class="o">%</span> <span class="n">name</span><span class="p">,</span> <span class="n">attr</span><span class="o">=</span><span class="s1">&#39;name&#39;</span><span class="p">)</span>
+
+        <span class="c1"># --- Finally, make the input node and connect it</span>
+        <span class="n">in_node</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Node</span><span class="p">(</span><span class="n">size_in</span><span class="o">=</span><span class="n">d_vectors</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">in_node</span><span class="p">)</span>
+        <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="n">in_node</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">elem_input</span><span class="p">,</span>
+                         <span class="n">synapse</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                         <span class="n">transform</span><span class="o">=</span><span class="n">input_vectors</span> <span class="o">*</span> <span class="n">input_scales</span><span class="o">.</span><span class="n">T</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AssociativeMemory.add_output_mapping"><a class="viewcode-back" href="../../../networks.html#nengo.networks.AssociativeMemory.add_output_mapping">[docs]</a>    <span class="nd">@with_self</span>
+    <span class="k">def</span> <span class="nf">add_output_mapping</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">output_vectors</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Adds another output to the associative memory network.</span>
+
+<span class="sd">        Creates a transform with the given output vectors between the</span>
+<span class="sd">        associative memory element output and a named output node to enable the</span>
+<span class="sd">        selection of output vectors by the associative memory.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        name: str</span>
+<span class="sd">            Name to use for the output node. This name will be used as</span>
+<span class="sd">            the name of the attribute for the associative memory network.</span>
+<span class="sd">        output_vectors: array_like</span>
+<span class="sd">            The list of vectors to be produced for each match.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># --- Put arguments in canonical form</span>
+        <span class="k">if</span> <span class="n">is_iterable</span><span class="p">(</span><span class="n">output_vectors</span><span class="p">):</span>
+            <span class="n">output_vectors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">output_vectors</span><span class="p">,</span> <span class="n">ndmin</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+        <span class="c1"># --- Check preconditions</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span><span class="s2">&quot;Name &#39;</span><span class="si">%s</span><span class="s2">&#39; already exists as a node in the &quot;</span>
+                                  <span class="s2">&quot;associative memory.&quot;</span> <span class="o">%</span> <span class="n">name</span><span class="p">,</span> <span class="n">attr</span><span class="o">=</span><span class="s1">&#39;name&#39;</span><span class="p">)</span>
+
+        <span class="c1"># --- Make the output node and connect it</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Node</span><span class="p">(</span><span class="n">size_in</span><span class="o">=</span><span class="n">output_vectors</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">output</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">thresh_ens</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">thresh_ens</span><span class="o">.</span><span class="n">output</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span>
+                                 <span class="n">synapse</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">output_vectors</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">elem_output</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span>
+                                 <span class="n">synapse</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">output_vectors</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">out_conns</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">c</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AssociativeMemory.add_default_output_vector"><a class="viewcode-back" href="../../../networks.html#nengo.networks.AssociativeMemory.add_default_output_vector">[docs]</a>    <span class="nd">@with_self</span>
+    <span class="k">def</span> <span class="nf">add_default_output_vector</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_vector</span><span class="p">,</span> <span class="n">output_name</span><span class="o">=</span><span class="s1">&#39;output&#39;</span><span class="p">,</span>
+                                  <span class="n">n_neurons</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">min_activation_value</span><span class="o">=</span><span class="mf">0.5</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Adds a default output vector to the associative memory network.</span>
+
+<span class="sd">        The default output vector is chosen if the input matches none of</span>
+<span class="sd">        the given input vectors.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        output_vector: array_like</span>
+<span class="sd">            The vector to be produced if the input value matches none of</span>
+<span class="sd">            the vectors in the input vector list.</span>
+<span class="sd">        output_name: str, optional (Default: &#39;output&#39;)</span>
+<span class="sd">            The name of the input to which the default output vector</span>
+<span class="sd">            should be applied.</span>
+<span class="sd">        n_neurons: int, optional (Default: 50)</span>
+<span class="sd">            Number of neurons to use for the default output vector ensemble.</span>
+<span class="sd">        min_activation_value: float, optional (Default: 0.5)</span>
+<span class="sd">            Minimum activation value (i.e. threshold) to use to disable</span>
+<span class="sd">            the default output vector.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_ens_config</span><span class="p">:</span>
+            <span class="n">default_vector_ens</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">(</span>
+                <span class="n">n_neurons</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Default </span><span class="si">%s</span><span class="s2"> vector&quot;</span> <span class="o">%</span> <span class="n">output_name</span><span class="p">)</span>
+            <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bias_node</span><span class="p">,</span> <span class="n">default_vector_ens</span><span class="p">,</span> <span class="n">synapse</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+            <span class="n">tr</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">/</span> <span class="n">min_activation_value</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_items</span><span class="p">))</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">thresh_ens</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">c</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">thresh_ens</span><span class="o">.</span><span class="n">output</span><span class="p">,</span> <span class="n">default_vector_ens</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">tr</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">c</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">elem_output</span><span class="p">,</span> <span class="n">default_vector_ens</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">tr</span><span class="p">)</span>
+
+            <span class="c1"># Add the output connection to the output connection list</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">default_vector_inhibit_conns</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+
+            <span class="c1"># Make new output class attribute and connect to it</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_name</span><span class="p">)</span>
+            <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="n">default_vector_ens</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span>
+                             <span class="n">transform</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">output_vector</span><span class="p">,</span> <span class="n">ndmin</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="p">,</span>
+                             <span class="n">synapse</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">inhibit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inhibit</span><span class="p">,</span> <span class="n">default_vector_ens</span><span class="p">,</span>
+                                 <span class="n">transform</span><span class="o">=-</span><span class="bp">self</span><span class="o">.</span><span class="n">_inhib_scale</span><span class="p">,</span> <span class="n">synapse</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AssociativeMemory.add_wta_network"><a class="viewcode-back" href="../../../networks.html#nengo.networks.AssociativeMemory.add_wta_network">[docs]</a>    <span class="nd">@with_self</span>
+    <span class="k">def</span> <span class="nf">add_wta_network</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inhibit_scale</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span> <span class="n">inhibit_synapse</span><span class="o">=</span><span class="mf">0.005</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add a winner-take-all (WTA) network to associative memory output.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        inhibit_scale: float, optional (Default: 1.5)</span>
+<span class="sd">            Mutual inhibition scaling factor.</span>
+<span class="sd">        inhibit_synapse: float, optional (Default: 0.005)</span>
+<span class="sd">            Mutual inhibition synapse time constant.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_wta</span><span class="p">:</span>
+            <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">elem_output</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">elem_input</span><span class="p">,</span>
+                             <span class="n">synapse</span><span class="o">=</span><span class="n">inhibit_synapse</span><span class="p">,</span>
+                             <span class="n">transform</span><span class="o">=</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_items</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span>
+                                        <span class="n">inhibit_scale</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">is_wta</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;AssociativeMemory network is already configured &quot;</span>
+                          <span class="s2">&quot;with a WTA network. Additional `add_wta_network` &quot;</span>
+                          <span class="s2">&quot;calls are ignored.&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AssociativeMemory.add_threshold_to_outputs"><a class="viewcode-back" href="../../../networks.html#nengo.networks.AssociativeMemory.add_threshold_to_outputs">[docs]</a>    <span class="nd">@with_self</span>
+    <span class="k">def</span> <span class="nf">add_threshold_to_outputs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_neurons</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">inhibit_scale</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Adds a thresholded output to the associative memory.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        n_neurons: int, optional (Default: 50)</span>
+<span class="sd">            Number of neurons to use for the default output vector ensemble.</span>
+<span class="sd">        inhibit_scale: float, optional (Default: 10)</span>
+<span class="sd">            Mutual inhibition scaling factor.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">thresh_ens</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;AssociativeMemory network is already configured &quot;</span>
+                          <span class="s2">&quot;with thresholded outputs. Additional &quot;</span>
+                          <span class="s2">&quot;`add_threshold_to_output` calls are ignored.&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">thresh_ens_config</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">thresh_bias</span> <span class="o">=</span> <span class="n">EnsembleArray</span><span class="p">(</span>
+                <span class="n">n_neurons</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_items</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;thresh_bias&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">thresh_ens</span> <span class="o">=</span> <span class="n">EnsembleArray</span><span class="p">(</span>
+                <span class="n">n_neurons</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_items</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;thresh_ens&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">thresholded_utilities</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">thresh_ens</span><span class="o">.</span><span class="n">output</span>
+
+            <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bias_node</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">thresh_bias</span><span class="o">.</span><span class="n">input</span><span class="p">,</span>
+                             <span class="n">transform</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">n_items</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span>
+                             <span class="n">synapse</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+            <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bias_node</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">thresh_ens</span><span class="o">.</span><span class="n">input</span><span class="p">,</span>
+                             <span class="n">transform</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">n_items</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span>
+                             <span class="n">synapse</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+            <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">elem_output</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">thresh_bias</span><span class="o">.</span><span class="n">input</span><span class="p">,</span>
+                             <span class="n">transform</span><span class="o">=-</span><span class="n">inhibit_scale</span><span class="p">)</span>
+            <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">thresh_bias</span><span class="o">.</span><span class="n">output</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">thresh_ens</span><span class="o">.</span><span class="n">input</span><span class="p">,</span>
+                             <span class="n">transform</span><span class="o">=-</span><span class="n">inhibit_scale</span><span class="p">)</span>
+
+            <span class="c1"># Reroute connections from elem_output to be connections</span>
+            <span class="c1"># from thresh_ens.output</span>
+            <span class="k">def</span> <span class="nf">reroute</span><span class="p">(</span><span class="n">conn</span><span class="p">):</span>
+                <span class="n">c</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">thresh_ens</span><span class="o">.</span><span class="n">output</span><span class="p">,</span> <span class="n">conn</span><span class="o">.</span><span class="n">post</span><span class="p">,</span>
+                                     <span class="n">transform</span><span class="o">=</span><span class="n">conn</span><span class="o">.</span><span class="n">transform</span><span class="p">,</span>
+                                     <span class="n">synapse</span><span class="o">=</span><span class="n">conn</span><span class="o">.</span><span class="n">synapse</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">connections</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">conn</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">c</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">default_vector_inhibit_conns</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">reroute</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_vector_inhibit_conns</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">out_conns</span> <span class="o">=</span> <span class="p">[</span><span class="n">reroute</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_conns</span><span class="p">]</span>
+
+            <span class="c1"># Make inhibitory connection if inhibit option is set</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">inhibit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">thresh_ens</span><span class="o">.</span><span class="n">ensembles</span><span class="p">:</span>
+                    <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">inhibit</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">transform</span><span class="o">=-</span><span class="bp">self</span><span class="o">.</span><span class="n">_inhib_scale</span><span class="p">,</span>
+                        <span class="n">synapse</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></div></div>
+</pre></div>
+
+          </div>
+            
+        </div>
+        <div class="clearfix"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+<script type="text/javascript">
+  $("#mobile-toggle a").click(function () {
+    $("#left-column").toggle();
+  });
+</script>
+<script type="text/javascript" src="../../../_static/js/bootstrap.js"></script>
+  <div class="footer">
+    &copy; Copyright 2013-2017, Applied Brain Research. Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+  </div>
+  </body>
+</html>

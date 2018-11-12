@@ -1,0 +1,392 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  
+  <!-- Licensed under the Apache 2.0 License -->
+  <link rel="stylesheet" type="text/css" href="../../_static/fonts/open-sans/stylesheet.css" />
+  <!-- Licensed under the SIL Open Font License -->
+  <link rel="stylesheet" type="text/css" href="../../_static/fonts/source-serif-pro/source-serif-pro.css" />
+  <link rel="stylesheet" type="text/css" href="../../_static/css/bootstrap.min.css" />
+  <link rel="stylesheet" type="text/css" href="../../_static/css/bootstrap-theme.min.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+    <title>nengo.ensemble &#8212; Nengo core 2.8.0 docs</title>
+    <link rel="stylesheet" href="../../_static/guzzle.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '2.8.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+<link rel="stylesheet" type="text/css" href="../../_static/custom.css">
+
+
+  
+   
+
+  </head>
+  <body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="container-wrapper">
+
+      <div id="mobile-toggle">
+        <a href="#"><span class="glyphicon glyphicon-align-justify" aria-hidden="true"></span></a>
+      </div>
+  <div id="left-column">
+    <div class="sphinxsidebar">
+        <a href="
+    ../../index.html" class="text-logo">Nengo core 2.8</a>
+        <div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <h2>Table Of Contents</h2>
+  </div>
+  <div class="sidebar-toc">
+    
+    
+      <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide.html">User guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing to Nengo</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://www.nengo.ai/projects.html">Nengo ecosystem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../license.html">Nengo license</a></li>
+</ul>
+
+    
+  </div>
+</div>
+        
+<div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <div id="main-search">
+      <form class="form-inline" action="../../search.html" method="GET" role="form">
+        <div class="input-group">
+          <input name="q" type="text" class="form-control" placeholder="Search...">
+        </div>
+        <input type="hidden" name="check_keywords" value="yes" />
+        <input type="hidden" name="area" value="default" />
+      </form>
+    </div>
+  </div>
+</div>
+    </div>
+  </div>
+        <div id="right-column">
+          
+  <div class="header">
+    
+          <div role="navigation" aria-label="breadcrumbs navigation">
+            <ol class="breadcrumb">
+              <li><a href="../../index.html">Docs</a></li>
+              
+                <li><a href="../index.html">Module code</a></li>
+              
+              <li>nengo.ensemble</li>
+            </ol>
+          </div>
+          
+    
+  </div>
+
+          <div class="document clearer body">
+            
+  <h1>Source code for nengo.ensemble</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">nengo.base</span> <span class="k">import</span> <span class="n">NengoObject</span><span class="p">,</span> <span class="n">ObjView</span><span class="p">,</span> <span class="n">ProcessParam</span>
+<span class="kn">from</span> <span class="nn">nengo.dists</span> <span class="k">import</span> <span class="n">DistOrArrayParam</span><span class="p">,</span> <span class="n">Uniform</span><span class="p">,</span> <span class="n">UniformHypersphere</span>
+<span class="kn">from</span> <span class="nn">nengo.exceptions</span> <span class="k">import</span> <span class="n">ReadonlyError</span>
+<span class="kn">from</span> <span class="nn">nengo.neurons</span> <span class="k">import</span> <span class="n">LIF</span><span class="p">,</span> <span class="n">NeuronTypeParam</span><span class="p">,</span> <span class="n">Direct</span>
+<span class="kn">from</span> <span class="nn">nengo.params</span> <span class="k">import</span> <span class="n">BoolParam</span><span class="p">,</span> <span class="n">Default</span><span class="p">,</span> <span class="n">IntParam</span><span class="p">,</span> <span class="n">NumberParam</span>
+
+
+<div class="viewcode-block" id="Ensemble"><a class="viewcode-back" href="../../frontend_api.html#nengo.Ensemble">[docs]</a><span class="k">class</span> <span class="nc">Ensemble</span><span class="p">(</span><span class="n">NengoObject</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A group of neurons that collectively represent a vector.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    n_neurons : int</span>
+<span class="sd">        The number of neurons.</span>
+<span class="sd">    dimensions : int</span>
+<span class="sd">        The number of representational dimensions.</span>
+
+<span class="sd">    radius : int, optional (Default: 1.0)</span>
+<span class="sd">        The representational radius of the ensemble.</span>
+<span class="sd">    encoders : Distribution or (n_neurons, dimensions) array_like, optional \</span>
+<span class="sd">               (Default: UniformHypersphere(surface=True))</span>
+<span class="sd">        The encoders used to transform from representational space</span>
+<span class="sd">        to neuron space. Each row is a neuron&#39;s encoder; each column is a</span>
+<span class="sd">        representational dimension.</span>
+<span class="sd">    intercepts : Distribution or (n_neurons,) array_like, optional \</span>
+<span class="sd">                 (Default: ``nengo.dists.Uniform(-1.0, 1.0)``)</span>
+<span class="sd">        The point along each neuron&#39;s encoder where its activity is zero. If</span>
+<span class="sd">        ``e`` is the neuron&#39;s encoder, then the activity will be zero when</span>
+<span class="sd">        ``dot(x, e) &lt;= c``, where ``c`` is the given intercept.</span>
+<span class="sd">    max_rates : Distribution or (n_neurons,) array_like, optional \</span>
+<span class="sd">                (Default: ``nengo.dists.Uniform(200, 400)``)</span>
+<span class="sd">        The activity of each neuron when the input signal ``x`` is magnitude 1</span>
+<span class="sd">        and aligned with that neuron&#39;s encoder ``e``;</span>
+<span class="sd">        i.e., when ``dot(x, e) = 1``.</span>
+<span class="sd">    eval_points : Distribution or (n_eval_points, dims) array_like, optional \</span>
+<span class="sd">                  (Default: ``nengo.dists.UniformHypersphere()``)</span>
+<span class="sd">        The evaluation points used for decoder solving, spanning the interval</span>
+<span class="sd">        (-radius, radius) in each dimension, or a distribution from which</span>
+<span class="sd">        to choose evaluation points.</span>
+<span class="sd">    n_eval_points : int, optional (Default: None)</span>
+<span class="sd">        The number of evaluation points to be drawn from the `eval_points`</span>
+<span class="sd">        distribution. If None, then a heuristic is used to determine</span>
+<span class="sd">        the number of evaluation points.</span>
+<span class="sd">    neuron_type : `~nengo.neurons.NeuronType`, optional \</span>
+<span class="sd">                  (Default: ``nengo.LIF()``)</span>
+<span class="sd">        The model that simulates all neurons in the ensemble</span>
+<span class="sd">        (see `~nengo.neurons.NeuronType`).</span>
+<span class="sd">    gain : Distribution or (n_neurons,) array_like (Default: None)</span>
+<span class="sd">        The gains associated with each neuron in the ensemble. If None, then</span>
+<span class="sd">        the gain will be solved for using ``max_rates`` and ``intercepts``.</span>
+<span class="sd">    bias : Distribution or (n_neurons,) array_like (Default: None)</span>
+<span class="sd">        The biases associated with each neuron in the ensemble. If None, then</span>
+<span class="sd">        the gain will be solved for using ``max_rates`` and ``intercepts``.</span>
+<span class="sd">    noise : Process, optional (Default: None)</span>
+<span class="sd">        Random noise injected directly into each neuron in the ensemble</span>
+<span class="sd">        as current. A sample is drawn for each individual neuron on</span>
+<span class="sd">        every simulation step.</span>
+<span class="sd">    normalize_encoders : bool, optional (Default: True)</span>
+<span class="sd">        Indicates whether the encoders should be normalized.</span>
+<span class="sd">    label : str, optional (Default: None)</span>
+<span class="sd">        A name for the ensemble. Used for debugging and visualization.</span>
+<span class="sd">    seed : int, optional (Default: None)</span>
+<span class="sd">        The seed used for random number generation.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    bias : Distribution or (n_neurons,) array_like or None</span>
+<span class="sd">        The biases associated with each neuron in the ensemble.</span>
+<span class="sd">    dimensions : int</span>
+<span class="sd">        The number of representational dimensions.</span>
+<span class="sd">    encoders : Distribution or (n_neurons, dimensions) array_like</span>
+<span class="sd">        The encoders, used to transform from representational space</span>
+<span class="sd">        to neuron space. Each row is a neuron&#39;s encoder, each column is a</span>
+<span class="sd">        representational dimension.</span>
+<span class="sd">    eval_points : Distribution or (n_eval_points, dims) array_like</span>
+<span class="sd">        The evaluation points used for decoder solving, spanning the interval</span>
+<span class="sd">        (-radius, radius) in each dimension, or a distribution from which</span>
+<span class="sd">        to choose evaluation points.</span>
+<span class="sd">    gain : Distribution or (n_neurons,) array_like or None</span>
+<span class="sd">        The gains associated with each neuron in the ensemble.</span>
+<span class="sd">    intercepts : Distribution or (n_neurons) array_like or None</span>
+<span class="sd">        The point along each neuron&#39;s encoder where its activity is zero. If</span>
+<span class="sd">        ``e`` is the neuron&#39;s encoder, then the activity will be zero when</span>
+<span class="sd">        ``dot(x, e) &lt;= c``, where ``c`` is the given intercept.</span>
+<span class="sd">    label : str or None</span>
+<span class="sd">        A name for the ensemble. Used for debugging and visualization.</span>
+<span class="sd">    max_rates : Distribution or (n_neurons,) array_like or None</span>
+<span class="sd">        The activity of each neuron when ``dot(x, e) = 1``,</span>
+<span class="sd">        where ``e`` is the neuron&#39;s encoder.</span>
+<span class="sd">    n_eval_points : int or None</span>
+<span class="sd">        The number of evaluation points to be drawn from the `eval_points`</span>
+<span class="sd">        distribution. If None, then a heuristic is used to determine</span>
+<span class="sd">        the number of evaluation points.</span>
+<span class="sd">    n_neurons : int or None</span>
+<span class="sd">        The number of neurons.</span>
+<span class="sd">    neuron_type : NeuronType</span>
+<span class="sd">        The model that simulates all neurons in the ensemble</span>
+<span class="sd">        (see ``nengo.neurons``).</span>
+<span class="sd">    noise : Process or None</span>
+<span class="sd">        Random noise injected directly into each neuron in the ensemble</span>
+<span class="sd">        as current. A sample is drawn for each individual neuron on</span>
+<span class="sd">        every simulation step.</span>
+<span class="sd">    radius : int</span>
+<span class="sd">        The representational radius of the ensemble.</span>
+<span class="sd">    seed : int or None</span>
+<span class="sd">        The seed used for random number generation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">probeable</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;decoded_output&#39;</span><span class="p">,</span> <span class="s1">&#39;input&#39;</span><span class="p">,</span> <span class="s1">&#39;scaled_encoders&#39;</span><span class="p">)</span>
+
+    <span class="n">n_neurons</span> <span class="o">=</span> <span class="n">IntParam</span><span class="p">(</span><span class="s1">&#39;n_neurons&#39;</span><span class="p">,</span> <span class="n">low</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">dimensions</span> <span class="o">=</span> <span class="n">IntParam</span><span class="p">(</span><span class="s1">&#39;dimensions&#39;</span><span class="p">,</span> <span class="n">low</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">radius</span> <span class="o">=</span> <span class="n">NumberParam</span><span class="p">(</span><span class="s1">&#39;radius&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">low</span><span class="o">=</span><span class="mf">1e-10</span><span class="p">)</span>
+    <span class="n">encoders</span> <span class="o">=</span> <span class="n">DistOrArrayParam</span><span class="p">(</span><span class="s1">&#39;encoders&#39;</span><span class="p">,</span>
+                                <span class="n">default</span><span class="o">=</span><span class="n">UniformHypersphere</span><span class="p">(</span><span class="n">surface</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+                                <span class="n">sample_shape</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;n_neurons&#39;</span><span class="p">,</span> <span class="s1">&#39;dimensions&#39;</span><span class="p">))</span>
+    <span class="n">intercepts</span> <span class="o">=</span> <span class="n">DistOrArrayParam</span><span class="p">(</span><span class="s1">&#39;intercepts&#39;</span><span class="p">,</span>
+                                  <span class="n">default</span><span class="o">=</span><span class="n">Uniform</span><span class="p">(</span><span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span>
+                                  <span class="n">optional</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                  <span class="n">sample_shape</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;n_neurons&#39;</span><span class="p">,))</span>
+    <span class="n">max_rates</span> <span class="o">=</span> <span class="n">DistOrArrayParam</span><span class="p">(</span><span class="s1">&#39;max_rates&#39;</span><span class="p">,</span>
+                                 <span class="n">default</span><span class="o">=</span><span class="n">Uniform</span><span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="mi">400</span><span class="p">),</span>
+                                 <span class="n">optional</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                 <span class="n">sample_shape</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;n_neurons&#39;</span><span class="p">,))</span>
+    <span class="n">eval_points</span> <span class="o">=</span> <span class="n">DistOrArrayParam</span><span class="p">(</span><span class="s1">&#39;eval_points&#39;</span><span class="p">,</span>
+                                   <span class="n">default</span><span class="o">=</span><span class="n">UniformHypersphere</span><span class="p">(),</span>
+                                   <span class="n">sample_shape</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;*&#39;</span><span class="p">,</span> <span class="s1">&#39;dimensions&#39;</span><span class="p">))</span>
+    <span class="n">n_eval_points</span> <span class="o">=</span> <span class="n">IntParam</span><span class="p">(</span><span class="s1">&#39;n_eval_points&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">optional</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">neuron_type</span> <span class="o">=</span> <span class="n">NeuronTypeParam</span><span class="p">(</span><span class="s1">&#39;neuron_type&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">LIF</span><span class="p">())</span>
+    <span class="n">gain</span> <span class="o">=</span> <span class="n">DistOrArrayParam</span><span class="p">(</span><span class="s1">&#39;gain&#39;</span><span class="p">,</span>
+                            <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                            <span class="n">optional</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                            <span class="n">sample_shape</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;n_neurons&#39;</span><span class="p">,))</span>
+    <span class="n">bias</span> <span class="o">=</span> <span class="n">DistOrArrayParam</span><span class="p">(</span><span class="s1">&#39;bias&#39;</span><span class="p">,</span>
+                            <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                            <span class="n">optional</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                            <span class="n">sample_shape</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;n_neurons&#39;</span><span class="p">,))</span>
+    <span class="n">noise</span> <span class="o">=</span> <span class="n">ProcessParam</span><span class="p">(</span><span class="s1">&#39;noise&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">optional</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">normalize_encoders</span> <span class="o">=</span> <span class="n">BoolParam</span><span class="p">(</span>
+        <span class="s1">&#39;normalize_encoders&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">optional</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_neurons</span><span class="p">,</span> <span class="n">dimensions</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="n">Default</span><span class="p">,</span> <span class="n">encoders</span><span class="o">=</span><span class="n">Default</span><span class="p">,</span>
+                 <span class="n">intercepts</span><span class="o">=</span><span class="n">Default</span><span class="p">,</span> <span class="n">max_rates</span><span class="o">=</span><span class="n">Default</span><span class="p">,</span> <span class="n">eval_points</span><span class="o">=</span><span class="n">Default</span><span class="p">,</span>
+                 <span class="n">n_eval_points</span><span class="o">=</span><span class="n">Default</span><span class="p">,</span> <span class="n">neuron_type</span><span class="o">=</span><span class="n">Default</span><span class="p">,</span> <span class="n">gain</span><span class="o">=</span><span class="n">Default</span><span class="p">,</span>
+                 <span class="n">bias</span><span class="o">=</span><span class="n">Default</span><span class="p">,</span> <span class="n">noise</span><span class="o">=</span><span class="n">Default</span><span class="p">,</span> <span class="n">normalize_encoders</span><span class="o">=</span><span class="n">Default</span><span class="p">,</span>
+                 <span class="n">label</span><span class="o">=</span><span class="n">Default</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">Default</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Ensemble</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_neurons</span> <span class="o">=</span> <span class="n">n_neurons</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dimensions</span> <span class="o">=</span> <span class="n">dimensions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">radius</span> <span class="o">=</span> <span class="n">radius</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">encoders</span> <span class="o">=</span> <span class="n">encoders</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">intercepts</span> <span class="o">=</span> <span class="n">intercepts</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_rates</span> <span class="o">=</span> <span class="n">max_rates</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_eval_points</span> <span class="o">=</span> <span class="n">n_eval_points</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eval_points</span> <span class="o">=</span> <span class="n">eval_points</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bias</span> <span class="o">=</span> <span class="n">bias</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gain</span> <span class="o">=</span> <span class="n">gain</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">neuron_type</span> <span class="o">=</span> <span class="n">neuron_type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">noise</span> <span class="o">=</span> <span class="n">noise</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">normalize_encoders</span> <span class="o">=</span> <span class="n">normalize_encoders</span>
+
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">ObjView</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dimensions</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">neurons</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;A direct interface to the neurons in the ensemble.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">Neurons</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+    <span class="nd">@neurons</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">neurons</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dummy</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">ReadonlyError</span><span class="p">(</span><span class="n">attr</span><span class="o">=</span><span class="s2">&quot;neurons&quot;</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">size_in</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;The dimensionality of the ensemble.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dimensions</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">size_out</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;The dimensionality of the ensemble.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dimensions</span></div>
+
+
+<div class="viewcode-block" id="Neurons"><a class="viewcode-back" href="../../frontend_api.html#nengo.Neurons">[docs]</a><span class="k">class</span> <span class="nc">Neurons</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;An interface for making connections directly to an ensemble&#39;s neurons.</span>
+
+<span class="sd">    This should only ever be accessed through the ``neurons`` attribute of an</span>
+<span class="sd">    ensemble, as a way to signal to `~nengo.Connection` that the connection</span>
+<span class="sd">    should be made directly to the neurons rather than to the ensemble&#39;s</span>
+<span class="sd">    decoded value, e.g.::</span>
+
+<span class="sd">        nengo.Connection(a.neurons, b.neurons)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ensemble</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ensemble</span> <span class="o">=</span> <span class="n">ensemble</span>
+
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">ObjView</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ensemble</span><span class="o">.</span><span class="n">n_neurons</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;&lt;Neurons at 0x</span><span class="si">%x</span><span class="s2"> of </span><span class="si">%r</span><span class="s2">&gt;&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">ensemble</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;&lt;Neurons of </span><span class="si">%s</span><span class="s2">&gt;&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">ensemble</span>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ensemble</span> <span class="ow">is</span> <span class="n">other</span><span class="o">.</span><span class="n">ensemble</span>
+
+    <span class="k">def</span> <span class="nf">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ensemble</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>  <span class="c1"># +1 to avoid collision with ensemble</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">ensemble</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;(Ensemble) The ensemble these neurons are part of.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ensemble</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">probeable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;(tuple) Signals that can be probed in the neuron population.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span><span class="s1">&#39;output&#39;</span><span class="p">,</span> <span class="s1">&#39;input&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">ensemble</span><span class="o">.</span><span class="n">neuron_type</span><span class="o">.</span><span class="n">probeable</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">size_in</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;(int) The number of neurons in the population.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ensemble</span><span class="o">.</span><span class="n">neuron_type</span><span class="p">,</span> <span class="n">Direct</span><span class="p">):</span>
+            <span class="c1"># This will prevent users from connecting/probing Direct neurons</span>
+            <span class="c1"># (since there aren&#39;t actually any neurons being simulated).</span>
+            <span class="k">return</span> <span class="mi">0</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ensemble</span><span class="o">.</span><span class="n">n_neurons</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">size_out</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;(int) The number of neurons in the population.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ensemble</span><span class="o">.</span><span class="n">neuron_type</span><span class="p">,</span> <span class="n">Direct</span><span class="p">):</span>
+            <span class="c1"># This will prevent users from connecting/probing Direct neurons</span>
+            <span class="c1"># (since there aren&#39;t actually any neurons being simulated).</span>
+            <span class="k">return</span> <span class="mi">0</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ensemble</span><span class="o">.</span><span class="n">n_neurons</span></div>
+</pre></div>
+
+          </div>
+            
+        </div>
+        <div class="clearfix"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+<script type="text/javascript">
+  $("#mobile-toggle a").click(function () {
+    $("#left-column").toggle();
+  });
+</script>
+<script type="text/javascript" src="../../_static/js/bootstrap.js"></script>
+  <div class="footer">
+    &copy; Copyright 2013-2017, Applied Brain Research. Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+  </div>
+  </body>
+</html>

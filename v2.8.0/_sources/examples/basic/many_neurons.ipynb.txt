@@ -1,0 +1,214 @@
+{
+ "metadata": {
+  "language_info": {
+   "name": "python",
+   "pygments_lexer": "ipython3"
+  },
+  "name": ""
+ },
+ "nbformat": 3,
+ "nbformat_minor": 0,
+ "worksheets": [
+  {
+   "cells": [
+    {
+     "cell_type": "markdown",
+     "metadata": {},
+     "source": [
+      "# Many neurons\n",
+      "\n",
+      "This demo shows how to construct and manipulate a population of neurons.\n",
+      "\n",
+      "These are 100 leaky integrate-and-fire (LIF) neurons. The neuron tuning properties have been randomly selected.\n",
+      "\n",
+      "The input is a sine wave to show the effects of increasing or decreasing input. As a population, these neurons do a good job of representing a single scalar value. This can be seen by the fact that the input graph and neurons graphs match well."
+     ]
+    },
+    {
+     "cell_type": "code",
+     "collapsed": false,
+     "input": [
+      "import numpy as np\n",
+      "import matplotlib.pyplot as plt\n",
+      "%matplotlib inline\n",
+      "\n",
+      "import nengo"
+     ],
+     "language": "python",
+     "metadata": {},
+     "outputs": [],
+     "prompt_number": null
+    },
+    {
+     "cell_type": "markdown",
+     "metadata": {},
+     "source": [
+      "## Step 1: Create the neural population\n",
+      "\n",
+      "Our model consists of a single population of neurons."
+     ]
+    },
+    {
+     "cell_type": "code",
+     "collapsed": false,
+     "input": [
+      "model = nengo.Network(label='Many Neurons')\n",
+      "with model:\n",
+      "    # Our ensemble consists of 100 leaky integrate-and-fire neurons,\n",
+      "    # representing a one-dimensional signal\n",
+      "    A = nengo.Ensemble(100, dimensions=1)"
+     ],
+     "language": "python",
+     "metadata": {},
+     "outputs": [],
+     "prompt_number": null
+    },
+    {
+     "cell_type": "markdown",
+     "metadata": {},
+     "source": [
+      "## Step 2: Create input for the model\n",
+      "\n",
+      "We will use a sine wave as a continuously changing input."
+     ]
+    },
+    {
+     "cell_type": "code",
+     "collapsed": false,
+     "input": [
+      "with model:\n",
+      "    sin = nengo.Node(lambda t: np.sin(8 * t))  # Input is a sine"
+     ],
+     "language": "python",
+     "metadata": {},
+     "outputs": [],
+     "prompt_number": null
+    },
+    {
+     "cell_type": "heading",
+     "level": 2,
+     "metadata": {},
+     "source": [
+      "Step 3: Connect the network elements"
+     ]
+    },
+    {
+     "cell_type": "code",
+     "collapsed": false,
+     "input": [
+      "with model:\n",
+      "    # Connect the input to the population\n",
+      "    nengo.Connection(sin, A, synapse=0.01)  # 10ms filter"
+     ],
+     "language": "python",
+     "metadata": {},
+     "outputs": [],
+     "prompt_number": null
+    },
+    {
+     "cell_type": "markdown",
+     "metadata": {},
+     "source": [
+      "## Step 4: Probe outputs\n",
+      "\n",
+      "Anything that is probed will collect the data it produces over time, allowing us to analyze and visualize it later."
+     ]
+    },
+    {
+     "cell_type": "code",
+     "collapsed": false,
+     "input": [
+      "with model:\n",
+      "    sin_probe = nengo.Probe(sin)\n",
+      "    A_probe = nengo.Probe(A, synapse=0.01)  # 10ms filter\n",
+      "    A_spikes = nengo.Probe(A.neurons)  # Collect the spikes"
+     ],
+     "language": "python",
+     "metadata": {},
+     "outputs": [],
+     "prompt_number": null
+    },
+    {
+     "cell_type": "heading",
+     "level": 2,
+     "metadata": {},
+     "source": [
+      "Step 5: Run the model"
+     ]
+    },
+    {
+     "cell_type": "code",
+     "collapsed": false,
+     "input": [
+      "# Create our simulator\n",
+      "with nengo.Simulator(model) as sim:\n",
+      "    # Run it for 1 second\n",
+      "    sim.run(1)"
+     ],
+     "language": "python",
+     "metadata": {},
+     "outputs": [],
+     "prompt_number": null
+    },
+    {
+     "cell_type": "heading",
+     "level": 2,
+     "metadata": {},
+     "source": [
+      "Step 6: Plot the results"
+     ]
+    },
+    {
+     "cell_type": "code",
+     "collapsed": false,
+     "input": [
+      "from nengo.utils.matplotlib import rasterplot\n",
+      "\n",
+      "# Plot the decoded output of the ensemble\n",
+      "plt.figure()\n",
+      "plt.plot(sim.trange(), sim.data[A_probe], label=\"A output\")\n",
+      "plt.plot(sim.trange(), sim.data[sin_probe], 'r', label=\"Input\")\n",
+      "plt.xlim(0, 1)\n",
+      "plt.legend()\n",
+      "\n",
+      "# Plot the spiking output of the ensemble\n",
+      "plt.figure()\n",
+      "rasterplot(sim.trange(), sim.data[A_spikes])\n",
+      "plt.xlim(0, 1);"
+     ],
+     "language": "python",
+     "metadata": {},
+     "outputs": [],
+     "prompt_number": null
+    },
+    {
+     "cell_type": "markdown",
+     "metadata": {},
+     "source": [
+      "The top graph shows the decoded response of the neural spiking.  The bottom plot shows the spike raster coming out of every 2nd neuron."
+     ]
+    },
+    {
+     "cell_type": "code",
+     "collapsed": false,
+     "input": [
+      "# For interest's sake, you can also sort by encoder\n",
+      "from nengo.utils.ensemble import sorted_neurons\n",
+      "from nengo.utils.matplotlib import rasterplot\n",
+      "\n",
+      "indices = sorted_neurons(A, sim, iterations=250)\n",
+      "plt.figure()\n",
+      "rasterplot(sim.trange(), sim.data[A_spikes][:, indices])\n",
+      "plt.xlim(0, 1);"
+     ],
+     "language": "python",
+     "metadata": {},
+     "outputs": [],
+     "prompt_number": null
+    }
+   ],
+   "metadata": {}
+  }
+ ]
+}
+

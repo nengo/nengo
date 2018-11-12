@@ -1,0 +1,301 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  
+  <!-- Licensed under the Apache 2.0 License -->
+  <link rel="stylesheet" type="text/css" href="_static/fonts/open-sans/stylesheet.css" />
+  <!-- Licensed under the SIL Open Font License -->
+  <link rel="stylesheet" type="text/css" href="_static/fonts/source-serif-pro/source-serif-pro.css" />
+  <link rel="stylesheet" type="text/css" href="_static/css/bootstrap.min.css" />
+  <link rel="stylesheet" type="text/css" href="_static/css/bootstrap-theme.min.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+    <title>Nengo configuration &#8212; Nengo core 2.8.0 docs</title>
+    <link rel="stylesheet" href="_static/guzzle.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '2.8.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Improving performance" href="improving_performance.html" />
+    <link rel="prev" title="Connections in depth" href="connections.html" />
+<link rel="stylesheet" type="text/css" href="_static/custom.css">
+
+
+  
+   
+
+  </head>
+  <body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="improving_performance.html" title="Improving performance"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="connections.html" title="Connections in depth"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="user_guide.html" >User guide</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="advanced.html" accesskey="U">Advanced topics</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="container-wrapper">
+
+      <div id="mobile-toggle">
+        <a href="#"><span class="glyphicon glyphicon-align-justify" aria-hidden="true"></span></a>
+      </div>
+  <div id="left-column">
+    <div class="sphinxsidebar">
+        <a href="
+    index.html" class="text-logo">Nengo core 2.8</a>
+        <div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <h2>Table Of Contents</h2>
+  </div>
+  <div class="sidebar-toc">
+    
+    
+      <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting started</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="user_guide.html">User guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="frontend_api.html">Nengo frontend API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="config.html">Setting parameters with Configs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="networks.html">Reusable networks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="spa.html">Semantic Pointer Architecture</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="advanced.html">Advanced topics</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="connections.html">Connections in depth</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Nengo configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="improving_performance.html">Improving performance</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="backend_api.html">Nengo backend API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html">Release History</a></li>
+<li class="toctree-l2"><a class="reference internal" href="history.html">Nengo history</a></li>
+<li class="toctree-l2"><a class="reference internal" href="converting.html">Converting from Nengo 1.4 to Nengo 2.0</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing to Nengo</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://www.nengo.ai/projects.html">Nengo ecosystem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">Nengo license</a></li>
+</ul>
+
+    
+  </div>
+</div>
+        
+<div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <div id="main-search">
+      <form class="form-inline" action="search.html" method="GET" role="form">
+        <div class="input-group">
+          <input name="q" type="text" class="form-control" placeholder="Search...">
+        </div>
+        <input type="hidden" name="check_keywords" value="yes" />
+        <input type="hidden" name="area" value="default" />
+      </form>
+    </div>
+  </div>
+</div>
+    </div>
+  </div>
+        <div id="right-column">
+          
+  <div class="header">
+    
+          <div role="navigation" aria-label="breadcrumbs navigation">
+            <ol class="breadcrumb">
+              <li><a href="index.html">Docs</a></li>
+              
+                <li><a href="user_guide.html">User guide</a></li>
+              
+                <li><a href="advanced.html">Advanced topics</a></li>
+              
+              <li>Nengo configuration</li>
+            </ol>
+          </div>
+          
+    
+  </div>
+
+          <div class="document clearer body">
+            
+  <div class="section" id="nengo-configuration">
+<h1>Nengo configuration<a class="headerlink" href="#nengo-configuration" title="Permalink to this headline">¶</a></h1>
+<p>Certain features of Nengo can be configured globally through RC settings.</p>
+<p>RC settings can be manipulated either through the <code class="docutils literal"><span class="pre">nengo.rc</span></code> object,
+or through RC configuration files.</p>
+<div class="section" id="the-nengo-rc-object">
+<h2>The <code class="docutils literal"><span class="pre">nengo.rc</span></code> object<a class="headerlink" href="#the-nengo-rc-object" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal"><span class="pre">nengo.rc</span></code> object gives programmatic access to
+globally configured features of Nengo.</p>
+<dl class="data">
+<dt id="nengo.rc">
+<code class="descclassname">nengo.</code><code class="descname">rc</code><em class="property"> = &lt;nengo.rc._RC object&gt;</em><a class="headerlink" href="#nengo.rc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Allows reading from and writing to Nengo RC settings.</p>
+<p>This object is a <a class="reference external" href="https://docs.python.org/3/library/configparser.html#configparser.ConfigParser" title="(in Python v3.7)"><code class="xref py py-class docutils literal"><span class="pre">configparser.ConfigParser</span></code></a>, which means that
+values can be accessed and manipulated with <code class="docutils literal"><span class="pre">get</span></code> and <code class="docutils literal"><span class="pre">set</span></code>:</p>
+<div class="highlight-text"><div class="highlight"><pre><span></span>oldsize = nengo.rc.get(&quot;decoder_cache&quot;, &quot;size&quot;)
+nengo.rc.set(&quot;decoder_cache&quot;, &quot;size&quot;, &quot;2 GB&quot;)
+</pre></div>
+</div>
+<p><code class="docutils literal"><span class="pre">get</span></code> and <code class="docutils literal"><span class="pre">set</span></code> return and expect strings. There are also special
+getter methods for booleans, ints, and floats:</p>
+<div class="highlight-text"><div class="highlight"><pre><span></span>simple = nengo.rc.getboolean(&quot;exceptions&quot;, &quot;simplified&quot;)
+</pre></div>
+</div>
+<p>In addition to the normal <a class="reference external" href="https://docs.python.org/3/library/configparser.html#configparser.ConfigParser" title="(in Python v3.7)"><code class="xref py py-class docutils literal"><span class="pre">configparser.ConfigParser</span></code></a> methods,
+this object also has a <code class="docutils literal"><span class="pre">reload_rc</span></code> method to reset <code class="docutils literal"><span class="pre">nengo.rc</span></code>
+to default settings:</p>
+<div class="highlight-text"><div class="highlight"><pre><span></span>nengo.rc.reload_rc()  # Reads defaults from configuration files
+nengo.rc.reload_rc(filenames=[])  # Ignores configuration files
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="configuration-files">
+<h2>Configuration files<a class="headerlink" href="#configuration-files" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal"><span class="pre">nengo.rc</span></code> is initialized with configuration settings read
+from the following files with precedence to those listed first:</p>
+<ol class="arabic simple">
+<li><code class="docutils literal"><span class="pre">nengorc</span></code> in the current directory. This is intended to allow for project
+specific settings without hard coding them in the model script.</li>
+<li>An operating system specific file in the user’s home directory.<ul>
+<li>Windows: <code class="docutils literal"><span class="pre">%userprofile%\.nengo\nengorc</span></code></li>
+<li>Other (OS X, Linux): <code class="docutils literal"><span class="pre">~/.config/nengo/nengorc</span></code></li>
+</ul>
+</li>
+<li><code class="docutils literal"><span class="pre">INSTALL/nengo-data/nengorc</span></code> (where <code class="docutils literal"><span class="pre">INSTALL</span></code> is the
+installation directory of the Nengo package).</li>
+</ol>
+<p>The RC file is divided into sections by lines containing the section name
+in brackets, i.e. <code class="docutils literal"><span class="pre">[section]</span></code>. A setting is set by giving the name followed
+by a <code class="docutils literal"><span class="pre">:</span></code> or <code class="docutils literal"><span class="pre">=</span></code> and the value. All lines starting with <code class="docutils literal"><span class="pre">#</span></code> or <code class="docutils literal"><span class="pre">;</span></code> are
+comments.</p>
+<p>For example, to set the size of the decoder cache to 512 MB,
+add the following to a configuration file:</p>
+<div class="highlight-ini"><div class="highlight"><pre><span></span><span class="k">[decoder_cache]</span>
+<span class="na">size</span> <span class="o">=</span> <span class="s">512 MB</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="configuration-options">
+<h2>Configuration options<a class="headerlink" href="#configuration-options" title="Permalink to this headline">¶</a></h2>
+<p>All of the configuration options are listed in the example
+configuration file, which is included with Nengo
+and copied below.</p>
+<p>Commented lines show the default values for each setting.</p>
+<div class="highlight-text" id="nengorc"><div class="highlight"><pre><span></span># --- Settings for the decoder cache
+[decoder_cache]
+
+# Enable or disable the cache. (bool)
+#enabled = True
+
+# Path where the cached decoders will be stored. (str)
+#path = ~/.cache/nengo/decoders  # Linux/Mac OS X default
+
+# Set the cache to readonly. In readonly mode cached decoders will be
+# loaded, but no newly calculated decoders will be written to the cache.
+# (bool)
+#readonly = False
+
+# Set the maximum cache size. Whenever the cache exceeds this limit, cached
+# decoders will be deleted, beginning with the oldest, until the limit
+# is met again. Please specify the unit (e.g., 512 MB). (str)
+#size = 512 MB
+
+
+# --- Settings for error messages due to exceptions
+[exceptions]
+
+# Use simplified exceptions. In most cases, simplified exceptions will be
+# easier to read and more useful for model development. However,
+# developers of Nengo internals or tools extending Nengo
+# may benefit from full exception tracebacks.
+#simplified = True
+
+
+# --- Settings for the progress bar used when running the simulator
+[progress]
+
+# Set the progress bar to use. The default of &#39;auto&#39; or will display
+# a progress bar when the estimated simulation run time exceeds one second.
+# Setting this to &#39;none&#39; will disable to progress bar. Any other string
+# will be interpreted as a module and class name
+# (e.g., &#39;nengo.utils.progress.ProgressBar&#39;), which Nengo will attempt
+# to load. (str)
+#progress_bar = auto
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+            
+  <div class="footer-relations">
+    
+      <div class="pull-left">
+        <a class="btn btn-default" href="connections.html" title="previous chapter (use the left arrow)">Connections in depth</a>
+      </div>
+    
+      <div class="pull-right">
+        <a class="btn btn-default" href="improving_performance.html" title="next chapter (use the right arrow)">Improving performance</a>
+      </div>
+    </div>
+    <div class="clearer"></div>
+  
+        </div>
+        <div class="clearfix"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="improving_performance.html" title="Improving performance"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="connections.html" title="Connections in depth"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="user_guide.html" >User guide</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="advanced.html" >Advanced topics</a> &#187;</li> 
+      </ul>
+    </div>
+<script type="text/javascript">
+  $("#mobile-toggle a").click(function () {
+    $("#left-column").toggle();
+  });
+</script>
+<script type="text/javascript" src="_static/js/bootstrap.js"></script>
+  <div class="footer">
+    &copy; Copyright 2013-2017, Applied Brain Research. Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+  </div>
+  </body>
+</html>

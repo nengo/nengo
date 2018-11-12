@@ -1,0 +1,274 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  
+  <!-- Licensed under the Apache 2.0 License -->
+  <link rel="stylesheet" type="text/css" href="../../../_static/fonts/open-sans/stylesheet.css" />
+  <!-- Licensed under the SIL Open Font License -->
+  <link rel="stylesheet" type="text/css" href="../../../_static/fonts/source-serif-pro/source-serif-pro.css" />
+  <link rel="stylesheet" type="text/css" href="../../../_static/css/bootstrap.min.css" />
+  <link rel="stylesheet" type="text/css" href="../../../_static/css/bootstrap-theme.min.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+    <title>nengo.builder.network &#8212; Nengo core 2.8.0 docs</title>
+    <link rel="stylesheet" href="../../../_static/guzzle.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '2.8.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+<link rel="stylesheet" type="text/css" href="../../../_static/custom.css">
+
+
+  
+   
+
+  </head>
+  <body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="container-wrapper">
+
+      <div id="mobile-toggle">
+        <a href="#"><span class="glyphicon glyphicon-align-justify" aria-hidden="true"></span></a>
+      </div>
+  <div id="left-column">
+    <div class="sphinxsidebar">
+        <a href="
+    ../../../index.html" class="text-logo">Nengo core 2.8</a>
+        <div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <h2>Table Of Contents</h2>
+  </div>
+  <div class="sidebar-toc">
+    
+    
+      <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../user_guide.html">User guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">Contributing to Nengo</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://www.nengo.ai/projects.html">Nengo ecosystem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../license.html">Nengo license</a></li>
+</ul>
+
+    
+  </div>
+</div>
+        
+<div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <div id="main-search">
+      <form class="form-inline" action="../../../search.html" method="GET" role="form">
+        <div class="input-group">
+          <input name="q" type="text" class="form-control" placeholder="Search...">
+        </div>
+        <input type="hidden" name="check_keywords" value="yes" />
+        <input type="hidden" name="area" value="default" />
+      </form>
+    </div>
+  </div>
+</div>
+    </div>
+  </div>
+        <div id="right-column">
+          
+  <div class="header">
+    
+          <div role="navigation" aria-label="breadcrumbs navigation">
+            <ol class="breadcrumb">
+              <li><a href="../../../index.html">Docs</a></li>
+              
+                <li><a href="../../index.html">Module code</a></li>
+              
+              <li>nengo.builder.network</li>
+            </ol>
+          </div>
+          
+    
+  </div>
+
+          <div class="document clearer body">
+            
+  <h1>Source code for nengo.builder.network</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">contextlib</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">import</span> <span class="nn">nengo.utils.numpy</span> <span class="k">as</span> <span class="nn">npext</span>
+<span class="kn">from</span> <span class="nn">nengo.builder</span> <span class="k">import</span> <span class="n">Builder</span>
+<span class="kn">from</span> <span class="nn">nengo.connection</span> <span class="k">import</span> <span class="n">Connection</span>
+<span class="kn">from</span> <span class="nn">nengo.ensemble</span> <span class="k">import</span> <span class="n">Ensemble</span>
+<span class="kn">from</span> <span class="nn">nengo.network</span> <span class="k">import</span> <span class="n">Network</span>
+<span class="kn">from</span> <span class="nn">nengo.node</span> <span class="k">import</span> <span class="n">Node</span>
+<span class="kn">from</span> <span class="nn">nengo.probe</span> <span class="k">import</span> <span class="n">Probe</span>
+<span class="kn">from</span> <span class="nn">nengo.utils.progress</span> <span class="k">import</span> <span class="n">Progress</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+<span class="n">nullcontext</span> <span class="o">=</span> <span class="n">contextlib</span><span class="o">.</span><span class="n">contextmanager</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">(</span><span class="k">yield</span><span class="p">))</span>
+
+
+<div class="viewcode-block" id="build_network"><a class="viewcode-back" href="../../../backend_api.html#nengo.builder.network.build_network">[docs]</a><span class="nd">@Builder</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">Network</span><span class="p">)</span>  <span class="c1"># noqa: C901</span>
+<span class="k">def</span> <span class="nf">build_network</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">network</span><span class="p">,</span> <span class="n">progress</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Builds a `.Network` object into a model.</span>
+
+<span class="sd">    The network builder does this by mapping each high-level object to its</span>
+<span class="sd">    associated signals and operators one-by-one, in the following order:</span>
+
+<span class="sd">    1. Ensembles, nodes, neurons</span>
+<span class="sd">    2. Subnetworks (recursively)</span>
+<span class="sd">    3. Connections, learning rules</span>
+<span class="sd">    4. Probes</span>
+
+<span class="sd">    Before calling any of the individual objects&#39; build functions, random</span>
+<span class="sd">    number seeds are assigned to objects that did not have a seed explicitly</span>
+<span class="sd">    set by the user. Whether the seed was assigned manually or automatically</span>
+<span class="sd">    is tracked, and the decoder cache is only used when the seed is assigned</span>
+<span class="sd">    manually.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    model : Model</span>
+<span class="sd">        The model to build into.</span>
+<span class="sd">    network : Network</span>
+<span class="sd">        The network to build.</span>
+<span class="sd">    progress : `nengo.utils.progress.Progress`, optional</span>
+<span class="sd">        Object used to track the build progress.</span>
+
+<span class="sd">        Note that this will only affect top-level networks.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Sets ``model.params[network]`` to ``None``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">get_seed</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">rng</span><span class="p">):</span>
+        <span class="c1"># Generate a seed no matter what, so that setting a seed or not on</span>
+        <span class="c1"># one object doesn&#39;t affect the seeds of other objects.</span>
+        <span class="n">seed</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="n">npext</span><span class="o">.</span><span class="n">maxint</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">seed</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s1">&#39;seed&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">obj</span><span class="o">.</span><span class="n">seed</span> <span class="ow">is</span> <span class="kc">None</span>
+                <span class="k">else</span> <span class="n">obj</span><span class="o">.</span><span class="n">seed</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">toplevel</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">toplevel</span> <span class="o">=</span> <span class="n">network</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">seeds</span><span class="p">[</span><span class="n">network</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_seed</span><span class="p">(</span><span class="n">network</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="p">)</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">seeded</span><span class="p">[</span><span class="n">network</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">network</span><span class="p">,</span> <span class="s1">&#39;seed&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="n">max_steps</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">network</span><span class="o">.</span><span class="n">all_objects</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>  <span class="c1"># +1 for top level network</span>
+
+        <span class="k">if</span> <span class="n">progress</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">progress</span><span class="o">.</span><span class="n">max_steps</span> <span class="o">=</span> <span class="n">max_steps</span>
+
+            <span class="k">def</span> <span class="nf">build_callback</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">network</span><span class="o">.</span><span class="n">objects</span><span class="p">)):</span>
+                    <span class="n">progress</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">build_callback</span> <span class="o">=</span> <span class="n">build_callback</span>
+
+    <span class="k">if</span> <span class="n">progress</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">progress</span> <span class="o">=</span> <span class="n">Progress</span><span class="p">()</span>  <span class="c1"># dummy progress</span>
+
+    <span class="c1"># Set config</span>
+    <span class="n">old_config</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">config</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">network</span><span class="o">.</span><span class="n">config</span>
+
+    <span class="c1"># assign seeds to children</span>
+    <span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">RandomState</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">seeds</span><span class="p">[</span><span class="n">network</span><span class="p">])</span>
+    <span class="c1"># Put probes last so that they don&#39;t influence other seeds</span>
+    <span class="n">sorted_types</span> <span class="o">=</span> <span class="p">(</span><span class="n">Connection</span><span class="p">,</span> <span class="n">Ensemble</span><span class="p">,</span> <span class="n">Network</span><span class="p">,</span> <span class="n">Node</span><span class="p">,</span> <span class="n">Probe</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="n">tp</span> <span class="ow">in</span> <span class="n">sorted_types</span> <span class="k">for</span> <span class="n">tp</span> <span class="ow">in</span> <span class="n">network</span><span class="o">.</span><span class="n">objects</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">obj_type</span> <span class="ow">in</span> <span class="n">sorted_types</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">network</span><span class="o">.</span><span class="n">objects</span><span class="p">[</span><span class="n">obj_type</span><span class="p">]:</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">seeded</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">seeded</span><span class="p">[</span><span class="n">network</span><span class="p">]</span> <span class="ow">or</span>
+                                 <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s1">&#39;seed&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">seeds</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_seed</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">rng</span><span class="p">)</span>
+
+    <span class="c1"># If this is the toplevel network, enter the decoder cache</span>
+    <span class="n">context</span> <span class="o">=</span> <span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">decoder_cache</span> <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">toplevel</span> <span class="ow">is</span> <span class="n">network</span>
+               <span class="k">else</span> <span class="n">nullcontext</span><span class="p">())</span>
+    <span class="k">with</span> <span class="n">context</span><span class="p">,</span> <span class="n">progress</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Network step 1: Building ensembles and nodes&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">network</span><span class="o">.</span><span class="n">ensembles</span> <span class="o">+</span> <span class="n">network</span><span class="o">.</span><span class="n">nodes</span><span class="p">:</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Network step 2: Building subnetworks&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">subnetwork</span> <span class="ow">in</span> <span class="n">network</span><span class="o">.</span><span class="n">networks</span><span class="p">:</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="n">subnetwork</span><span class="p">)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Network step 3: Building connections&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">conn</span> <span class="ow">in</span> <span class="n">network</span><span class="o">.</span><span class="n">connections</span><span class="p">:</span>
+            <span class="c1"># NB: we do these in the order in which they&#39;re defined, and build</span>
+            <span class="c1"># the learning rule in the connection builder. Because learning</span>
+            <span class="c1"># rules are attached to connections, the connection that contains</span>
+            <span class="c1"># the learning rule (and the learning rule) are always built</span>
+            <span class="c1"># *before* a connection that attaches to that learning rule.</span>
+            <span class="c1"># Therefore, we don&#39;t have to worry about connection ordering here.</span>
+            <span class="c1"># TODO: Except perhaps if the connection being learned</span>
+            <span class="c1"># is in a subnetwork?</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="n">conn</span><span class="p">)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Network step 4: Building probes&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">probe</span> <span class="ow">in</span> <span class="n">network</span><span class="o">.</span><span class="n">probes</span><span class="p">:</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="n">probe</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">context</span> <span class="ow">is</span> <span class="n">model</span><span class="o">.</span><span class="n">decoder_cache</span><span class="p">:</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">decoder_cache</span><span class="o">.</span><span class="n">shrink</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">toplevel</span> <span class="ow">is</span> <span class="n">network</span><span class="p">:</span>
+            <span class="n">progress</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">build_callback</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># Unset config</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">old_config</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="n">network</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></div>
+</pre></div>
+
+          </div>
+            
+        </div>
+        <div class="clearfix"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+<script type="text/javascript">
+  $("#mobile-toggle a").click(function () {
+    $("#left-column").toggle();
+  });
+</script>
+<script type="text/javascript" src="../../../_static/js/bootstrap.js"></script>
+  <div class="footer">
+    &copy; Copyright 2013-2017, Applied Brain Research. Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+  </div>
+  </body>
+</html>

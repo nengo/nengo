@@ -1,0 +1,216 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  
+  <!-- Licensed under the Apache 2.0 License -->
+  <link rel="stylesheet" type="text/css" href="_static/fonts/open-sans/stylesheet.css" />
+  <!-- Licensed under the SIL Open Font License -->
+  <link rel="stylesheet" type="text/css" href="_static/fonts/source-serif-pro/source-serif-pro.css" />
+  <link rel="stylesheet" type="text/css" href="_static/css/bootstrap.min.css" />
+  <link rel="stylesheet" type="text/css" href="_static/css/bootstrap-theme.min.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+    <title>Advanced topics &#8212; Nengo core 2.8.0 docs</title>
+    <link rel="stylesheet" href="_static/guzzle.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '2.8.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Connections in depth" href="connections.html" />
+    <link rel="prev" title="Parsing simple commands" href="examples/spa/spa_parser.html" />
+<link rel="stylesheet" type="text/css" href="_static/custom.css">
+
+
+  
+   
+
+  </head>
+  <body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="connections.html" title="Connections in depth"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="examples/spa/spa_parser.html" title="Parsing simple commands"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="user_guide.html" accesskey="U">User guide</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="container-wrapper">
+
+      <div id="mobile-toggle">
+        <a href="#"><span class="glyphicon glyphicon-align-justify" aria-hidden="true"></span></a>
+      </div>
+  <div id="left-column">
+    <div class="sphinxsidebar">
+        <a href="
+    index.html" class="text-logo">Nengo core 2.8</a>
+        <div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <h2>Table Of Contents</h2>
+  </div>
+  <div class="sidebar-toc">
+    
+    
+      <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting started</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="user_guide.html">User guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="frontend_api.html">Nengo frontend API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="config.html">Setting parameters with Configs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="networks.html">Reusable networks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="spa.html">Semantic Pointer Architecture</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Advanced topics</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="connections.html">Connections in depth</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nengorc.html">Nengo configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="improving_performance.html">Improving performance</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="backend_api.html">Nengo backend API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html">Release History</a></li>
+<li class="toctree-l2"><a class="reference internal" href="history.html">Nengo history</a></li>
+<li class="toctree-l2"><a class="reference internal" href="converting.html">Converting from Nengo 1.4 to Nengo 2.0</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing to Nengo</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://www.nengo.ai/projects.html">Nengo ecosystem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">Nengo license</a></li>
+</ul>
+
+    
+  </div>
+</div>
+        
+<div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <div id="main-search">
+      <form class="form-inline" action="search.html" method="GET" role="form">
+        <div class="input-group">
+          <input name="q" type="text" class="form-control" placeholder="Search...">
+        </div>
+        <input type="hidden" name="check_keywords" value="yes" />
+        <input type="hidden" name="area" value="default" />
+      </form>
+    </div>
+  </div>
+</div>
+    </div>
+  </div>
+        <div id="right-column">
+          
+  <div class="header">
+    
+          <div role="navigation" aria-label="breadcrumbs navigation">
+            <ol class="breadcrumb">
+              <li><a href="index.html">Docs</a></li>
+              
+                <li><a href="user_guide.html">User guide</a></li>
+              
+              <li>Advanced topics</li>
+            </ol>
+          </div>
+          
+    
+  </div>
+
+          <div class="document clearer body">
+            
+  <div class="section" id="advanced-topics">
+<h1>Advanced topics<a class="headerlink" href="#advanced-topics" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="connections.html">Connections in depth</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="connections.html#decoded-connections">Decoded connections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="connections.html#direct-connections">Direct connections</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nengorc.html">Nengo configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nengorc.html#the-nengo-rc-object">The <code class="docutils literal"><span class="pre">nengo.rc</span></code> object</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nengorc.html#configuration-files">Configuration files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nengorc.html#configuration-options">Configuration options</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="improving_performance.html">Improving performance</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="improving_performance.html#in-a-nutshell">In a nutshell</a></li>
+<li class="toctree-l2"><a class="reference internal" href="improving_performance.html#build-and-run-time-performance">Build and run time performance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="improving_performance.html#decoder-caching">Decoder caching</a></li>
+<li class="toctree-l2"><a class="reference internal" href="improving_performance.html#operator-graph-optimizer">Operator graph optimizer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="improving_performance.html#id1">SciPy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="improving_performance.html#id3">nengo_ocl</a></li>
+<li class="toctree-l2"><a class="reference internal" href="improving_performance.html#model-structure">Model structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="improving_performance.html#limiting-probed-data">Limiting probed data</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+            
+  <div class="footer-relations">
+    
+      <div class="pull-left">
+        <a class="btn btn-default" href="examples/spa/spa_parser.html" title="previous chapter (use the left arrow)">Parsing simple commands</a>
+      </div>
+    
+      <div class="pull-right">
+        <a class="btn btn-default" href="connections.html" title="next chapter (use the right arrow)">Connections in depth</a>
+      </div>
+    </div>
+    <div class="clearer"></div>
+  
+        </div>
+        <div class="clearfix"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="connections.html" title="Connections in depth"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="examples/spa/spa_parser.html" title="Parsing simple commands"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="user_guide.html" >User guide</a> &#187;</li> 
+      </ul>
+    </div>
+<script type="text/javascript">
+  $("#mobile-toggle a").click(function () {
+    $("#left-column").toggle();
+  });
+</script>
+<script type="text/javascript" src="_static/js/bootstrap.js"></script>
+  <div class="footer">
+    &copy; Copyright 2013-2017, Applied Brain Research. Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+  </div>
+  </body>
+</html>

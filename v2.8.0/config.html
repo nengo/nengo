@@ -1,0 +1,443 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  
+  <!-- Licensed under the Apache 2.0 License -->
+  <link rel="stylesheet" type="text/css" href="_static/fonts/open-sans/stylesheet.css" />
+  <!-- Licensed under the SIL Open Font License -->
+  <link rel="stylesheet" type="text/css" href="_static/fonts/source-serif-pro/source-serif-pro.css" />
+  <link rel="stylesheet" type="text/css" href="_static/css/bootstrap.min.css" />
+  <link rel="stylesheet" type="text/css" href="_static/css/bootstrap-theme.min.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+    <title>Setting parameters with Configs &#8212; Nengo core 2.8.0 docs</title>
+    <link rel="stylesheet" href="_static/guzzle.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '2.8.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="The config system" href="examples/usage/config.html" />
+    <link rel="prev" title="Nengo frontend API" href="frontend_api.html" />
+<link rel="stylesheet" type="text/css" href="_static/custom.css">
+
+
+  
+   
+
+  </head>
+  <body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="examples/usage/config.html" title="The config system"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="frontend_api.html" title="Nengo frontend API"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="user_guide.html" accesskey="U">User guide</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="container-wrapper">
+
+      <div id="mobile-toggle">
+        <a href="#"><span class="glyphicon glyphicon-align-justify" aria-hidden="true"></span></a>
+      </div>
+  <div id="left-column">
+    <div class="sphinxsidebar">
+        <a href="
+    index.html" class="text-logo">Nengo core 2.8</a>
+        <div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <h2>Table Of Contents</h2>
+  </div>
+  <div class="sidebar-toc">
+    
+    
+      <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting started</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="user_guide.html">User guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="frontend_api.html">Nengo frontend API</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Setting parameters with Configs</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#the-config-system">The <code class="docutils literal"><span class="pre">config</span></code> system</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#preset-configs">Preset configs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#quirks">Quirks</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="networks.html">Reusable networks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="spa.html">Semantic Pointer Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="advanced.html">Advanced topics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="backend_api.html">Nengo backend API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html">Release History</a></li>
+<li class="toctree-l2"><a class="reference internal" href="history.html">Nengo history</a></li>
+<li class="toctree-l2"><a class="reference internal" href="converting.html">Converting from Nengo 1.4 to Nengo 2.0</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing to Nengo</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://www.nengo.ai/projects.html">Nengo ecosystem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">Nengo license</a></li>
+</ul>
+
+    
+  </div>
+</div>
+        
+<div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <div id="main-search">
+      <form class="form-inline" action="search.html" method="GET" role="form">
+        <div class="input-group">
+          <input name="q" type="text" class="form-control" placeholder="Search...">
+        </div>
+        <input type="hidden" name="check_keywords" value="yes" />
+        <input type="hidden" name="area" value="default" />
+      </form>
+    </div>
+  </div>
+</div>
+    </div>
+  </div>
+        <div id="right-column">
+          
+  <div class="header">
+    
+          <div role="navigation" aria-label="breadcrumbs navigation">
+            <ol class="breadcrumb">
+              <li><a href="index.html">Docs</a></li>
+              
+                <li><a href="user_guide.html">User guide</a></li>
+              
+              <li>Setting parameters with Configs</li>
+            </ol>
+          </div>
+          
+    
+  </div>
+
+          <div class="document clearer body">
+            
+  <div class="section" id="setting-parameters-with-configs">
+<h1>Setting parameters with Configs<a class="headerlink" href="#setting-parameters-with-configs" title="Permalink to this headline">¶</a></h1>
+<p>Building models with the <a class="reference internal" href="frontend_api.html"><span class="doc">Nengo frontend API</span></a>
+involves constructing many objects,
+each with many parameters that can be set.
+To make setting all of these parameters easier,
+Nengo has a <code class="docutils literal"><span class="pre">config</span></code> system and
+pre-set configurations.</p>
+<div class="section" id="the-config-system">
+<h2>The <code class="docutils literal"><span class="pre">config</span></code> system<a class="headerlink" href="#the-config-system" title="Permalink to this headline">¶</a></h2>
+<p>Nengo’s <code class="docutils literal"><span class="pre">config</span></code> system is used for two important functions:</p>
+<ol class="arabic simple">
+<li>Setting default parameters with a hierarchy of defaults.</li>
+<li>Associating new information with Nengo classes and objects
+without modifying the classes and objects themselves.</li>
+</ol>
+<p>A tutorial-style introduction to the <code class="docutils literal"><span class="pre">config</span></code> system
+can be found below:</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="examples/usage/config.html">The <code class="docutils literal"><span class="pre">config</span></code> system</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="examples/usage/config.html#Setting-default-parameters">Setting default parameters</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="examples/usage/config.html#Defaults-are-filled-in-immediately">Defaults are filled in immediately</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples/usage/config.html#Resetting-to-default">Resetting to default</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples/usage/config.html#Making-new-configs">Making new <code class="docutils literal"><span class="pre">config</span></code>s</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="examples/usage/config.html#Advanced:-adding-new-parameters">Advanced: adding new parameters</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="config-system-api">
+<h3><code class="docutils literal"><span class="pre">config</span></code> system API<a class="headerlink" href="#config-system-api" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="nengo.Config">
+<em class="property">class </em><code class="descclassname">nengo.</code><code class="descname">Config</code><span class="sig-paren">(</span><em>*configures</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nengo/config.html#Config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nengo.Config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Configures network-level defaults and additional parameters.</p>
+<p>Every <a class="reference internal" href="frontend_api.html#nengo.Network" title="nengo.Network"><code class="xref py py-obj docutils literal"><span class="pre">Network</span></code></a> contains an associated <code class="docutils literal"><span class="pre">Config</span></code> object which can
+be manipulated to change network-specific defaults, and to store
+additional parameters (for example, those specific to a backend).</p>
+<p>A <code class="docutils literal"><span class="pre">Config</span></code> object can configure objects of any class, but it has to be
+told the classes to configure first. This is either done on instantiation
+of the <code class="docutils literal"><span class="pre">Config</span></code> object or by calling the <a class="reference internal" href="#nengo.Config.configures" title="nengo.Config.configures"><code class="xref py py-obj docutils literal"><span class="pre">configures</span></code></a>  method.
+This sets up a mapping between configured class and a <a class="reference internal" href="#nengo.config.ClassParams" title="nengo.config.ClassParams"><code class="xref py py-obj docutils literal"><span class="pre">ClassParams</span></code></a>
+object that sets the default values for that class. Attempting to
+configure an instance of a configure class will create a mapping from
+that instance to an <a class="reference internal" href="#nengo.config.InstanceParams" title="nengo.config.InstanceParams"><code class="xref py py-obj docutils literal"><span class="pre">InstanceParams</span></code></a> object to configure additional
+parameters for that instance.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>*configures</strong></dt>
+<dd><p class="first last">The classes that this <code class="docutils literal"><span class="pre">Config</span></code> instance will configure.</p>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Examples</p>
+<p>To configure defaults on a network:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">net</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Network</span><span class="p">()</span>
+<span class="n">net</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">]</span><span class="o">.</span><span class="n">radius</span> <span class="o">=</span> <span class="mf">1.5</span>
+<span class="k">with</span> <span class="n">net</span><span class="p">:</span>
+    <span class="n">ens</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">ens</span><span class="o">.</span><span class="n">radius</span> <span class="o">==</span> <span class="mf">1.5</span>  <span class="c1"># True</span>
+</pre></div>
+</div>
+<p>To add a new parameter to a Nengo object:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">net</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">]</span><span class="o">.</span><span class="n">set_param</span><span class="p">(</span>
+    <span class="s1">&#39;location&#39;</span><span class="p">,</span> <span class="n">nengo</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="s1">&#39;location&#39;</span><span class="p">))</span>
+<span class="n">net</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="n">ens</span><span class="p">]</span><span class="o">.</span><span class="n">location</span> <span class="o">=</span> <span class="s1">&#39;cortex&#39;</span>
+</pre></div>
+</div>
+<p>To group together a set of parameters:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">gaba</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Config</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">)</span>
+<span class="n">gaba</span><span class="p">[</span><span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">]</span><span class="o">.</span><span class="n">synapse</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Lowpass</span><span class="p">(</span><span class="mf">0.008</span><span class="p">)</span>
+<span class="k">with</span> <span class="n">net</span><span class="p">,</span> <span class="n">gaba</span><span class="p">:</span>
+    <span class="n">conn</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="n">ens</span><span class="p">,</span> <span class="n">ens</span><span class="p">)</span>
+<span class="n">conn</span><span class="o">.</span><span class="n">synapse</span> <span class="o">==</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Lowpass</span><span class="p">(</span><span class="mf">0.008</span><span class="p">)</span>  <span class="c1"># True</span>
+</pre></div>
+</div>
+<p>To configure a new type of object:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">SynapseInfo</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="n">label</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">StringParam</span><span class="p">(</span><span class="s1">&#39;label&#39;</span><span class="p">)</span>
+<span class="n">gaba</span><span class="o">.</span><span class="n">configures</span><span class="p">(</span><span class="n">SynapseInfo</span><span class="p">)</span>
+<span class="n">gaba</span><span class="p">[</span><span class="n">SynapseInfo</span><span class="p">]</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="s2">&quot;GABA&quot;</span>  <span class="c1"># Set default label</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Attributes:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>params</strong> <span class="classifier-delimiter">:</span> <span class="classifier">dict</span></dt>
+<dd><p class="first last">Maps configured classes and instances to their <a class="reference internal" href="#nengo.config.ClassParams" title="nengo.config.ClassParams"><code class="xref py py-obj docutils literal"><span class="pre">ClassParams</span></code></a>
+or <a class="reference internal" href="#nengo.config.InstanceParams" title="nengo.config.InstanceParams"><code class="xref py py-obj docutils literal"><span class="pre">InstanceParams</span></code></a> object.</p>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="staticmethod">
+<dt id="nengo.Config.all_defaults">
+<em class="property">static </em><code class="descname">all_defaults</code><span class="sig-paren">(</span><em>nengo_cls=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nengo/config.html#Config.all_defaults"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nengo.Config.all_defaults" title="Permalink to this definition">¶</a></dt>
+<dd><p>Look up all of the default values in the current context.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt><strong>nengo_cls</strong> <span class="classifier-delimiter">:</span> <span class="classifier">class, optional</span></dt>
+<dd><p class="first last">If specified, only the defaults for a particular class will
+be returned. If not specified, the defaults for all configured
+classes will be returned.</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>str</strong></dt>
+<dd></dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="nengo.Config.default">
+<em class="property">static </em><code class="descname">default</code><span class="sig-paren">(</span><em>nengo_cls</em>, <em>param</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nengo/config.html#Config.default"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nengo.Config.default" title="Permalink to this definition">¶</a></dt>
+<dd><p>Look up the current default value for a parameter.</p>
+<p>The default is found by going through the config stack, from most
+specific to least specific. The network that an object is in
+is the most specific; the top-level network is the least specific.
+If no default is found there, then the parameter’s default value
+is returned.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nengo.Config.configures">
+<code class="descname">configures</code><span class="sig-paren">(</span><em>*classes</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nengo/config.html#Config.configures"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nengo.Config.configures" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start configuring a particular class and its instances.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="nengo.config.ClassParams">
+<em class="property">class </em><code class="descclassname">nengo.config.</code><code class="descname">ClassParams</code><span class="sig-paren">(</span><em>configures</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nengo/config.html#ClassParams"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nengo.config.ClassParams" title="Permalink to this definition">¶</a></dt>
+<dd><p>A class to store extra parameters and defaults on configured classes.</p>
+<p>This is used by <a class="reference internal" href="#nengo.Config" title="nengo.Config"><code class="xref py py-obj docutils literal"><span class="pre">Config</span></code></a> to associate defaults and new <code class="xref py py-obj docutils literal"><span class="pre">Parameter</span></code>
+instances with existing objects. It should not be instantiated outside of
+<a class="reference internal" href="#nengo.Config.configures" title="nengo.Config.configures"><code class="xref py py-obj docutils literal"><span class="pre">Config.configures</span></code></a>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>configures</strong> <span class="classifier-delimiter">:</span> <span class="classifier">class</span></dt>
+<dd><p class="first last">The class with which to associate new defaults and parameters.</p>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="nengo.config.ClassParams.update">
+<code class="descname">update</code><span class="sig-paren">(</span><em>d</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nengo/config.html#ClassParams.update"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nengo.config.ClassParams.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets a number of parameters at once given a dictionary.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="nengo.config.InstanceParams">
+<em class="property">class </em><code class="descclassname">nengo.config.</code><code class="descname">InstanceParams</code><span class="sig-paren">(</span><em>configures</em>, <em>clsparams</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nengo/config.html#InstanceParams"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nengo.config.InstanceParams" title="Permalink to this definition">¶</a></dt>
+<dd><p>A class to store parameter value on configured objects.</p>
+<p>In contrast to <a class="reference internal" href="#nengo.config.ClassParams" title="nengo.config.ClassParams"><code class="xref py py-obj docutils literal"><span class="pre">ClassParams</span></code></a>, the only thing that can be done with
+<code class="docutils literal"><span class="pre">InstanceParams</span></code> is get and set parameter values. Use the corresponding
+<a class="reference internal" href="#nengo.config.ClassParams" title="nengo.config.ClassParams"><code class="xref py py-obj docutils literal"><span class="pre">ClassParams</span></code></a> to set defaults and create new parameters.</p>
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="preset-configs">
+<h2>Preset configs<a class="headerlink" href="#preset-configs" title="Permalink to this headline">¶</a></h2>
+<p>Nengo includes preset configurations that can be
+dropped into your model to enable specific neural circuits.</p>
+<dl class="function">
+<dt id="nengo.presets.ThresholdingEnsembles">
+<code class="descclassname">nengo.presets.</code><code class="descname">ThresholdingEnsembles</code><span class="sig-paren">(</span><em>threshold</em>, <em>intercept_width=0.15</em>, <em>radius=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nengo/presets.html#ThresholdingEnsembles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nengo.presets.ThresholdingEnsembles" title="Permalink to this definition">¶</a></dt>
+<dd><p>Configuration preset for a thresholding ensemble.</p>
+<p>This preset adjust ensemble parameters for thresholding. The ensemble’s
+neurons will only fire for values above threshold. One can either decode
+the represented value (if it is above the threshold) or decode
+a step function if binary classification is desired.</p>
+<p>This preset:</p>
+<ul class="simple">
+<li>Sets intercepts to be between <code class="docutils literal"><span class="pre">threshold</span></code> and <code class="docutils literal"><span class="pre">radius</span></code> with an
+exponential distribution (shape parameter of <code class="docutils literal"><span class="pre">intercept_width</span></code>).
+This clusters intercepts near the threshold for better approximation.</li>
+<li>Sets encoders to 1.</li>
+<li>Sets evaluation points to be uniformly distributed between
+<code class="docutils literal"><span class="pre">threshold</span></code> and <code class="docutils literal"><span class="pre">radius</span></code>.</li>
+<li>Sets the radius.</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt><strong>threshold</strong> <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd><p class="first last">Point at which ensembles should start firing.</p>
+</dd>
+<dt><strong>intercept_width</strong> <span class="classifier-delimiter">:</span> <span class="classifier">float, optional (Default: 0.15)</span></dt>
+<dd><p class="first last">Controls how widely distributed the intercepts are. Smaller values
+give more clustering at the threshold, larger values give a more
+uniform distribution.</p>
+</dd>
+<dt><strong>radius</strong> <span class="classifier-delimiter">:</span> <span class="classifier">float, optional (Default: 1.)</span></dt>
+<dd><p class="first last">Ensemble radius.</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>`nengo.Config`</strong></dt>
+<dd><p class="first last">Configuration with presets.</p>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="quirks">
+<h2>Quirks<a class="headerlink" href="#quirks" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="examples/quirks/config.html">Context matters, membership doesn’t</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="examples/quirks/config.html#Context-details">Context details</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+</div>
+
+
+          </div>
+            
+  <div class="footer-relations">
+    
+      <div class="pull-left">
+        <a class="btn btn-default" href="frontend_api.html" title="previous chapter (use the left arrow)">Nengo frontend API</a>
+      </div>
+    
+      <div class="pull-right">
+        <a class="btn btn-default" href="examples/usage/config.html" title="next chapter (use the right arrow)">The <code class="docutils literal"><span class="pre">config</span></code> system</a>
+      </div>
+    </div>
+    <div class="clearer"></div>
+  
+        </div>
+        <div class="clearfix"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="examples/usage/config.html" title="The config system"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="frontend_api.html" title="Nengo frontend API"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="user_guide.html" >User guide</a> &#187;</li> 
+      </ul>
+    </div>
+<script type="text/javascript">
+  $("#mobile-toggle a").click(function () {
+    $("#left-column").toggle();
+  });
+</script>
+<script type="text/javascript" src="_static/js/bootstrap.js"></script>
+  <div class="footer">
+    &copy; Copyright 2013-2017, Applied Brain Research. Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+  </div>
+  </body>
+</html>

@@ -1,0 +1,339 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  
+  <!-- Licensed under the Apache 2.0 License -->
+  <link rel="stylesheet" type="text/css" href="../../../_static/fonts/open-sans/stylesheet.css" />
+  <!-- Licensed under the SIL Open Font License -->
+  <link rel="stylesheet" type="text/css" href="../../../_static/fonts/source-serif-pro/source-serif-pro.css" />
+  <link rel="stylesheet" type="text/css" href="../../../_static/css/bootstrap.min.css" />
+  <link rel="stylesheet" type="text/css" href="../../../_static/css/bootstrap-theme.min.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+    <title>nengo.spa.actions &#8212; Nengo core 2.8.0 docs</title>
+    <link rel="stylesheet" href="../../../_static/guzzle.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '2.8.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+<link rel="stylesheet" type="text/css" href="../../../_static/custom.css">
+
+
+  
+   
+
+  </head>
+  <body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="container-wrapper">
+
+      <div id="mobile-toggle">
+        <a href="#"><span class="glyphicon glyphicon-align-justify" aria-hidden="true"></span></a>
+      </div>
+  <div id="left-column">
+    <div class="sphinxsidebar">
+        <a href="
+    ../../../index.html" class="text-logo">Nengo core 2.8</a>
+        <div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <h2>Table Of Contents</h2>
+  </div>
+  <div class="sidebar-toc">
+    
+    
+      <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../user_guide.html">User guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">Contributing to Nengo</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://www.nengo.ai/projects.html">Nengo ecosystem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../license.html">Nengo license</a></li>
+</ul>
+
+    
+  </div>
+</div>
+        
+<div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <div id="main-search">
+      <form class="form-inline" action="../../../search.html" method="GET" role="form">
+        <div class="input-group">
+          <input name="q" type="text" class="form-control" placeholder="Search...">
+        </div>
+        <input type="hidden" name="check_keywords" value="yes" />
+        <input type="hidden" name="area" value="default" />
+      </form>
+    </div>
+  </div>
+</div>
+    </div>
+  </div>
+        <div id="right-column">
+          
+  <div class="header">
+    
+          <div role="navigation" aria-label="breadcrumbs navigation">
+            <ol class="breadcrumb">
+              <li><a href="../../../index.html">Docs</a></li>
+              
+                <li><a href="../../index.html">Module code</a></li>
+              
+              <li>nengo.spa.actions</li>
+            </ol>
+          </div>
+          
+    
+  </div>
+
+          <div class="document clearer body">
+            
+  <h1>Source code for nengo.spa.actions</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Expressions and Effects used to define all Actions.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">OrderedDict</span>
+
+<span class="kn">from</span> <span class="nn">nengo.exceptions</span> <span class="k">import</span> <span class="n">SpaParseError</span>
+<span class="kn">from</span> <span class="nn">nengo.spa.action_objects</span> <span class="k">import</span> <span class="n">Symbol</span><span class="p">,</span> <span class="n">Source</span><span class="p">,</span> <span class="n">DotProduct</span><span class="p">,</span> <span class="n">Summation</span>
+<span class="kn">from</span> <span class="nn">nengo.utils.compat</span> <span class="k">import</span> <span class="n">iteritems</span>
+
+
+<div class="viewcode-block" id="Expression"><a class="viewcode-back" href="../../../spa.html#nengo.spa.Expression">[docs]</a><span class="k">class</span> <span class="nc">Expression</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Parses an Action expression given a set of module outputs.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    sources : list</span>
+<span class="sd">        The names of the module outputs that can be used as part of the</span>
+<span class="sd">        expression.</span>
+<span class="sd">    expression : str</span>
+<span class="sd">        The expression to evaluate. This either defines the utility of the</span>
+<span class="sd">        action, or a value from an effect&#39;s assignment, given the state</span>
+<span class="sd">        information from the module outputs. The simplest expression is</span>
+<span class="sd">        ``&quot;1&quot;`` and they can get more complex, such as</span>
+<span class="sd">        ``&quot;0.5*(dot(vision, DOG) + dot(memory, CAT*MOUSE)*3 - 1)&quot;``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sources</span><span class="p">,</span> <span class="n">expression</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">objects</span> <span class="o">=</span> <span class="p">{}</span>   <span class="c1"># the list of known terms</span>
+
+        <span class="c1"># make all the module outputs as known terms</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">sources</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">objects</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">Source</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="c1"># handle the term &#39;dot(a, b)&#39; to mean DotProduct(a, b)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">objects</span><span class="p">[</span><span class="s1">&#39;dot&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">DotProduct</span>
+
+        <span class="c1"># use Python&#39;s eval to do the parsing of expressions for us</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">validate_string</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
+        <span class="n">sanitized_exp</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">expression</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">))</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">expression</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">sanitized_exp</span><span class="p">,</span> <span class="p">{},</span> <span class="bp">self</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">NameError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">SpaParseError</span><span class="p">(</span><span class="s2">&quot;Unknown module in expression &#39;</span><span class="si">%s</span><span class="s2">&#39;: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span>
+                                <span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">e</span><span class="p">))</span>
+        <span class="k">except</span> <span class="ne">TypeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">SpaParseError</span><span class="p">(</span><span class="s2">&quot;Invalid operator in expression &#39;</span><span class="si">%s</span><span class="s2">&#39;: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span>
+                                <span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">e</span><span class="p">))</span>
+
+        <span class="c1"># normalize the result to a summation</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expression</span><span class="p">,</span> <span class="n">Summation</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">expression</span> <span class="o">=</span> <span class="n">Summation</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">expression</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">validate_string</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s1">&#39;~[^a-zA-Z]&#39;</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">m</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">SpaParseError</span><span class="p">(</span><span class="s2">&quot;~ is only permitted before names (e.g., DOG) &quot;</span>
+                                <span class="s2">&quot;or modules (e.g., vision): </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">text</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="c1"># this gets used by the eval in the constructor to create new</span>
+        <span class="c1"># terms as needed</span>
+        <span class="n">item</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">item</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">key</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">isupper</span><span class="p">():</span>
+                <span class="k">raise</span> <span class="n">SpaParseError</span><span class="p">(</span>
+                    <span class="s2">&quot;Semantic pointers must begin with a capital letter.&quot;</span><span class="p">)</span>
+            <span class="n">item</span> <span class="o">=</span> <span class="n">Symbol</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">objects</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">item</span>
+        <span class="k">return</span> <span class="n">item</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expression</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Effect"><a class="viewcode-back" href="../../../spa.html#nengo.spa.Effect">[docs]</a><span class="k">class</span> <span class="nc">Effect</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Parses an action effect given a set of module outputs.</span>
+
+<span class="sd">    The following, in an `.Action` string, are valid effects::</span>
+
+<span class="sd">        &quot;motor=A&quot;</span>
+<span class="sd">        &quot;motor=A*B, memory=vision+DOG&quot;</span>
+<span class="sd">        &quot;motor=0.5*(memory*A + vision*B)&quot;</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    sources : list</span>
+<span class="sd">        The names of valid sources of information (SPA module outputs).</span>
+<span class="sd">    sinks : list</span>
+<span class="sd">        The names of valid places to send information (SPA module inputs).</span>
+<span class="sd">    effect: str</span>
+<span class="sd">        The action to implement. This is a set of assignment statements</span>
+<span class="sd">        which can be parsed into a `.VectorList`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sources</span><span class="p">,</span> <span class="n">sinks</span><span class="p">,</span> <span class="n">effect</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">effect</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+        <span class="c1"># Splits by &#39;,&#39; and separates into lvalue=rvalue. We cannot simply use</span>
+        <span class="c1"># split, because the rvalue may contain commas in the case of dot(*,*).</span>
+        <span class="c1"># However, *? is lazy, and * is greedy, making this regex work.</span>
+        <span class="k">for</span> <span class="n">lvalue</span><span class="p">,</span> <span class="n">rvalue</span> <span class="ow">in</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s2">&quot;(.*?)=([^=]*)(?:,|$)&quot;</span><span class="p">,</span> <span class="n">effect</span><span class="p">):</span>
+            <span class="n">sink</span> <span class="o">=</span> <span class="n">lvalue</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">sink</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sinks</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">SpaParseError</span><span class="p">(</span>
+                    <span class="s2">&quot;Left-hand module &#39;</span><span class="si">%s</span><span class="s2">&#39; from effect &#39;</span><span class="si">%s</span><span class="s2">=</span><span class="si">%s</span><span class="s2">&#39; &quot;</span>
+                    <span class="s2">&quot;is not defined.&quot;</span> <span class="o">%</span>
+                    <span class="p">(</span><span class="n">lvalue</span><span class="p">,</span> <span class="n">lvalue</span><span class="p">,</span> <span class="n">rvalue</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">sink</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">effect</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">SpaParseError</span><span class="p">(</span>
+                    <span class="s2">&quot;Left-hand module &#39;</span><span class="si">%s</span><span class="s2">&#39; from effect &#39;</span><span class="si">%s</span><span class="s2">=</span><span class="si">%s</span><span class="s2">&#39; &quot;</span>
+                    <span class="s2">&quot;is assigned to multiple times in &#39;</span><span class="si">%s</span><span class="s2">&#39;.&quot;</span> <span class="o">%</span>
+                    <span class="p">(</span><span class="n">lvalue</span><span class="p">,</span> <span class="n">lvalue</span><span class="p">,</span> <span class="n">rvalue</span><span class="p">,</span> <span class="n">effect</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">effect</span><span class="p">[</span><span class="n">sink</span><span class="p">]</span> <span class="o">=</span> <span class="n">Expression</span><span class="p">(</span><span class="n">sources</span><span class="p">,</span> <span class="n">rvalue</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">=</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">iteritems</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">effect</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="Action"><a class="viewcode-back" href="../../../spa.html#nengo.spa.Action">[docs]</a><span class="k">class</span> <span class="nc">Action</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A single action.</span>
+
+<span class="sd">    Consists of a conditional `.Expression` (optional) and an `.Effect`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    sources : list</span>
+<span class="sd">        The names of valid sources of information (SPA module outputs).</span>
+<span class="sd">    sinks : list</span>
+<span class="sd">        The names of valid places to send information (SPA module inputs).</span>
+<span class="sd">    action : str</span>
+<span class="sd">        A string defining the action.  If ``&#39;--&gt;&#39;`` is in the string, this</span>
+<span class="sd">        is used as a marker to split the string into condition and effect.</span>
+<span class="sd">        Otherwise it is treated as having no condition and just effect.</span>
+<span class="sd">    name : str</span>
+<span class="sd">        The name of this action.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sources</span><span class="p">,</span> <span class="n">sinks</span><span class="p">,</span> <span class="n">action</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="k">if</span> <span class="s1">&#39;--&gt;&#39;</span> <span class="ow">in</span> <span class="n">action</span><span class="p">:</span>
+            <span class="n">condition</span><span class="p">,</span> <span class="n">effect</span> <span class="o">=</span> <span class="n">action</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;--&gt;&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">condition</span> <span class="o">=</span> <span class="n">Expression</span><span class="p">(</span><span class="n">sources</span><span class="p">,</span> <span class="n">condition</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">effect</span> <span class="o">=</span> <span class="n">Effect</span><span class="p">(</span><span class="n">sources</span><span class="p">,</span> <span class="n">sinks</span><span class="p">,</span> <span class="n">effect</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">condition</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">effect</span> <span class="o">=</span> <span class="n">Effect</span><span class="p">(</span><span class="n">sources</span><span class="p">,</span> <span class="n">sinks</span><span class="p">,</span> <span class="n">action</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;&lt;Action </span><span class="si">%s</span><span class="s2">:</span><span class="se">\n</span><span class="s2">  </span><span class="si">%s</span><span class="se">\n</span><span class="s2"> --&gt; </span><span class="si">%s</span><span class="se">\n</span><span class="s2">&gt;&quot;</span> <span class="o">%</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">condition</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">effect</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Actions"><a class="viewcode-back" href="../../../spa.html#nengo.spa.Actions">[docs]</a><span class="k">class</span> <span class="nc">Actions</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A collection of Action objects.</span>
+
+<span class="sd">    The ``*args`` and ``**kwargs`` are treated as unnamed and named actions,</span>
+<span class="sd">    respectively. The list of actions are only generated once</span>
+<span class="sd">    `~.Actions.process` is called, since it needs access to the list of</span>
+<span class="sd">    module inputs and outputs from the SPA object. The ``**kwargs`` are sorted</span>
+<span class="sd">    alphabetically before being processed.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">actions</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="n">args</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span> <span class="o">=</span> <span class="n">kwargs</span>
+
+    <span class="k">def</span> <span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">actions</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;The actions currently being added must be processed&quot;</span>
+                          <span class="s2">&quot; either by spa.BasalGanglia or spa.Cortical&quot;</span>
+                          <span class="s2">&quot; to be added to the model.&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">+=</span> <span class="n">args</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">count</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the number of actions.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Actions.process"><a class="viewcode-back" href="../../../spa.html#nengo.spa.Actions.process">[docs]</a>    <span class="k">def</span> <span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spa</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Parse the actions and generate the list of Action objects.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">actions</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">sources</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">spa</span><span class="o">.</span><span class="n">get_module_outputs</span><span class="p">())</span>
+        <span class="n">sinks</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">spa</span><span class="o">.</span><span class="n">get_module_inputs</span><span class="p">())</span>
+
+        <span class="n">sorted_kwargs</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+
+        <span class="k">for</span> <span class="n">action</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">actions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Action</span><span class="p">(</span><span class="n">sources</span><span class="p">,</span> <span class="n">sinks</span><span class="p">,</span> <span class="n">action</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">action</span> <span class="ow">in</span> <span class="n">sorted_kwargs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">actions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Action</span><span class="p">(</span><span class="n">sources</span><span class="p">,</span> <span class="n">sinks</span><span class="p">,</span> <span class="n">action</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">))</span></div></div>
+</pre></div>
+
+          </div>
+            
+        </div>
+        <div class="clearfix"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+<script type="text/javascript">
+  $("#mobile-toggle a").click(function () {
+    $("#left-column").toggle();
+  });
+</script>
+<script type="text/javascript" src="../../../_static/js/bootstrap.js"></script>
+  <div class="footer">
+    &copy; Copyright 2013-2017, Applied Brain Research. Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+  </div>
+  </body>
+</html>

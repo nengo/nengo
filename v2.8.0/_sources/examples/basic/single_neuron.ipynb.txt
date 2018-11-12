@@ -1,0 +1,196 @@
+{
+ "metadata": {
+  "language_info": {
+   "name": "python",
+   "pygments_lexer": "ipython3"
+  },
+  "name": ""
+ },
+ "nbformat": 3,
+ "nbformat_minor": 0,
+ "worksheets": [
+  {
+   "cells": [
+    {
+     "cell_type": "markdown",
+     "metadata": {},
+     "source": [
+      "# A single neuron\n",
+      "This demo shows you how to construct and manipulate a single leaky integrate-and-fire (LIF) neuron. The LIF neuron is a simple, standard neuron model, and here it resides inside a neural \u2018population\u2019, even though there is only one neuron."
+     ]
+    },
+    {
+     "cell_type": "code",
+     "collapsed": false,
+     "input": [
+      "import numpy as np\n",
+      "import matplotlib.pyplot as plt\n",
+      "%matplotlib inline\n",
+      "\n",
+      "import nengo"
+     ],
+     "language": "python",
+     "metadata": {},
+     "outputs": [],
+     "prompt_number": null
+    },
+    {
+     "cell_type": "heading",
+     "level": 2,
+     "metadata": {},
+     "source": [
+      "Step 1: Create the Neuron"
+     ]
+    },
+    {
+     "cell_type": "code",
+     "collapsed": false,
+     "input": [
+      "from nengo.dists import Uniform\n",
+      "\n",
+      "model = nengo.Network(label='A Single Neuron')\n",
+      "with model:\n",
+      "    neuron = nengo.Ensemble(\n",
+      "        1,\n",
+      "        dimensions=1,  # Represent a scalar\n",
+      "        intercepts=Uniform(-.5, -.5),  # Set intercept to 0.5\n",
+      "        max_rates=Uniform(100, 100),  # Set the maximum firing rate of the neuron to 100hz\n",
+      "        encoders=[[1]])  # Sets the neurons firing rate to increase for positive input"
+     ],
+     "language": "python",
+     "metadata": {},
+     "outputs": [],
+     "prompt_number": null
+    },
+    {
+     "cell_type": "markdown",
+     "metadata": {},
+     "source": [
+      "## Step 2: Provide Input to the Model\n",
+      "Create an input node generating a cosine wave."
+     ]
+    },
+    {
+     "cell_type": "code",
+     "collapsed": false,
+     "input": [
+      "with model:\n",
+      "    cos = nengo.Node(lambda t: np.cos(8 * t))"
+     ],
+     "language": "python",
+     "metadata": {},
+     "outputs": [],
+     "prompt_number": null
+    },
+    {
+     "cell_type": "heading",
+     "level": 2,
+     "metadata": {},
+     "source": [
+      "Step 3: Connect the Network Elements"
+     ]
+    },
+    {
+     "cell_type": "code",
+     "collapsed": false,
+     "input": [
+      "with model:\n",
+      "    # Connect the input signal to the neuron\n",
+      "    nengo.Connection(cos, neuron)"
+     ],
+     "language": "python",
+     "metadata": {},
+     "outputs": [],
+     "prompt_number": null
+    },
+    {
+     "cell_type": "markdown",
+     "metadata": {},
+     "source": [
+      "## Step 4: Add Probes\n",
+      "Anything that is probed will collect the data it produces over time, allowing us to analyze and visualize it later."
+     ]
+    },
+    {
+     "cell_type": "code",
+     "collapsed": false,
+     "input": [
+      "with model:\n",
+      "    cos_probe = nengo.Probe(cos)  # The original input\n",
+      "    spikes = nengo.Probe(neuron.neurons)  # The raw spikes from the neuron\n",
+      "    voltage = nengo.Probe(neuron.neurons,'voltage')  # Subthreshold soma voltage of the neuron\n",
+      "    filtered = nengo.Probe(neuron, synapse=0.01)  # Spikes filtered by a 10ms post-synaptic filter"
+     ],
+     "language": "python",
+     "metadata": {},
+     "outputs": [],
+     "prompt_number": null
+    },
+    {
+     "cell_type": "heading",
+     "level": 2,
+     "metadata": {},
+     "source": [
+      "Step 5: Run the Model"
+     ]
+    },
+    {
+     "cell_type": "code",
+     "collapsed": false,
+     "input": [
+      "with nengo.Simulator(model) as sim:  # Create the simulator\n",
+      "    sim.run(1)  # Run it for 1 second"
+     ],
+     "language": "python",
+     "metadata": {},
+     "outputs": [],
+     "prompt_number": null
+    },
+    {
+     "cell_type": "heading",
+     "level": 2,
+     "metadata": {},
+     "source": [
+      "Step 6: Plot the Results"
+     ]
+    },
+    {
+     "cell_type": "code",
+     "collapsed": false,
+     "input": [
+      "# Plot the decoded output of the ensemble\n",
+      "plt.figure()\n",
+      "plt.plot(sim.trange(), sim.data[filtered])\n",
+      "plt.plot(sim.trange(), sim.data[cos_probe])\n",
+      "plt.xlim(0, 1)\n",
+      "\n",
+      "# Plot the spiking output of the ensemble\n",
+      "from nengo.utils.matplotlib import rasterplot\n",
+      "plt.figure(figsize=(10, 8))\n",
+      "plt.subplot(221)\n",
+      "rasterplot(sim.trange(), sim.data[spikes])\n",
+      "plt.ylabel(\"Neuron\")\n",
+      "plt.xlim(0, 1)\n",
+      "\n",
+      "# Plot the soma voltages of the neurons\n",
+      "plt.subplot(222)\n",
+      "plt.plot(sim.trange(), sim.data[voltage][:, 0], 'r')\n",
+      "plt.xlim(0, 1);"
+     ],
+     "language": "python",
+     "metadata": {},
+     "outputs": [],
+     "prompt_number": null
+    },
+    {
+     "cell_type": "markdown",
+     "metadata": {},
+     "source": [
+      "The top graph shows that the input signal in green and the filtered output spikes from the single neuron population in blue. The spikes (that are filtered) from the neuron are shown in the bottom graph on the left. On the right is the subthreshold voltages for the neuron."
+     ]
+    }
+   ],
+   "metadata": {}
+  }
+ ]
+}

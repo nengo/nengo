@@ -1,0 +1,260 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  
+  <!-- Licensed under the Apache 2.0 License -->
+  <link rel="stylesheet" type="text/css" href="_static/fonts/open-sans/stylesheet.css" />
+  <!-- Licensed under the SIL Open Font License -->
+  <link rel="stylesheet" type="text/css" href="_static/fonts/source-serif-pro/source-serif-pro.css" />
+  <link rel="stylesheet" type="text/css" href="_static/css/bootstrap.min.css" />
+  <link rel="stylesheet" type="text/css" href="_static/css/bootstrap-theme.min.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+    <title>User guide &#8212; Nengo core 2.8.0 docs</title>
+    <link rel="stylesheet" href="_static/guzzle.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '2.8.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Nengo frontend API" href="frontend_api.html" />
+    <link rel="prev" title="Getting started" href="getting_started.html" />
+<link rel="stylesheet" type="text/css" href="_static/custom.css">
+
+
+  
+   
+
+  </head>
+  <body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="frontend_api.html" title="Nengo frontend API"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="getting_started.html" title="Getting started"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Nengo core 2.8.0 docs</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="container-wrapper">
+
+      <div id="mobile-toggle">
+        <a href="#"><span class="glyphicon glyphicon-align-justify" aria-hidden="true"></span></a>
+      </div>
+  <div id="left-column">
+    <div class="sphinxsidebar">
+        <a href="
+    index.html" class="text-logo">Nengo core 2.8</a>
+        <div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <h2>Table Of Contents</h2>
+  </div>
+  <div class="sidebar-toc">
+    
+    
+      <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting started</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">User guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="frontend_api.html">Nengo frontend API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="config.html">Setting parameters with Configs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="networks.html">Reusable networks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="spa.html">Semantic Pointer Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="advanced.html">Advanced topics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="backend_api.html">Nengo backend API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html">Release History</a></li>
+<li class="toctree-l2"><a class="reference internal" href="history.html">Nengo history</a></li>
+<li class="toctree-l2"><a class="reference internal" href="converting.html">Converting from Nengo 1.4 to Nengo 2.0</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing to Nengo</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://www.nengo.ai/projects.html">Nengo ecosystem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">Nengo license</a></li>
+</ul>
+
+    
+  </div>
+</div>
+        
+<div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <div id="main-search">
+      <form class="form-inline" action="search.html" method="GET" role="form">
+        <div class="input-group">
+          <input name="q" type="text" class="form-control" placeholder="Search...">
+        </div>
+        <input type="hidden" name="check_keywords" value="yes" />
+        <input type="hidden" name="area" value="default" />
+      </form>
+    </div>
+  </div>
+</div>
+    </div>
+  </div>
+        <div id="right-column">
+          
+  <div class="header">
+    
+          <div role="navigation" aria-label="breadcrumbs navigation">
+            <ol class="breadcrumb">
+              <li><a href="index.html">Docs</a></li>
+              
+              <li>User guide</li>
+            </ol>
+          </div>
+          
+    
+  </div>
+
+          <div class="document clearer body">
+            
+  <div class="section" id="user-guide">
+<h1>User guide<a class="headerlink" href="#user-guide" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="frontend_api.html">Nengo frontend API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="frontend_api.html#nengo-objects">Nengo Objects</a></li>
+<li class="toctree-l2"><a class="reference internal" href="frontend_api.html#distributions">Distributions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="frontend_api.html#neuron-types">Neuron types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="frontend_api.html#learning-rule-types">Learning rule types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="frontend_api.html#processes">Processes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="frontend_api.html#synapse-models">Synapse models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="frontend_api.html#decoder-and-connection-weight-solvers">Decoder and connection weight solvers</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="config.html">Setting parameters with Configs</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="config.html#the-config-system">The <code class="docutils literal"><span class="pre">config</span></code> system</a></li>
+<li class="toctree-l2"><a class="reference internal" href="config.html#preset-configs">Preset configs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="config.html#quirks">Quirks</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="networks.html">Reusable networks</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="examples/usage/network_design.html">Designing networks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/usage/network_design_advanced.html">Additional tips and tricks for designing networks</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="spa.html">Semantic Pointer Architecture</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="examples/spa/convolution.html">Convolution network</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/spa/question.html">Simple question answering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/spa/question_control.html">Controlled question answering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/spa/question_memory.html">Simple question answering with memory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/spa/spa_sequence.html">Routing through a sequence</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/spa/spa_sequence_routed.html">Routed sequencing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/spa/spa_parser.html">Parsing simple commands</a></li>
+<li class="toctree-l2"><a class="reference internal" href="spa.html#api-reference">API reference</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="advanced.html">Advanced topics</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="connections.html">Connections in depth</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nengorc.html">Nengo configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="improving_performance.html">Improving performance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="backend_api.html">Nengo backend API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="backend_api.html#reference-backend">Reference backend</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Release History</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#june-9-2018">2.8.0 (June 9, 2018)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#march-7-2018">2.7.0 (March 7, 2018)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#october-6-2017">2.6.0 (October 6, 2017)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#july-24-2017">2.5.0 (July 24, 2017)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#april-18-2017">2.4.0 (April 18, 2017)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#february-18-2017">2.3.1 (February 18, 2017)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#november-30-2016">2.3.0 (November 30, 2016)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#september-12-2016">2.2.0 (September 12, 2016)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#june-27-2016">2.1.2 (June 27, 2016)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#june-24-2016">2.1.1 (June 24, 2016)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#april-27-2016">2.1.0 (April 27, 2016)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#id200">2.0.4 (April 27, 2016)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#december-7-2015">2.0.3 (December 7, 2015)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#october-13-2015">2.0.2 (October 13, 2015)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#january-27-2015">2.0.1 (January 27, 2015)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#january-15-2015">2.0.0 (January 15, 2015)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="history.html">Nengo history</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="history.html#generation-1">Generation 1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="history.html#generation-2">Generation 2</a></li>
+<li class="toctree-l2"><a class="reference internal" href="history.html#generation-3">Generation 3</a></li>
+<li class="toctree-l2"><a class="reference internal" href="history.html#generation-4">Generation 4</a></li>
+<li class="toctree-l2"><a class="reference internal" href="history.html#generation-5">Generation 5</a></li>
+<li class="toctree-l2"><a class="reference internal" href="history.html#citations">Citations</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="converting.html">Converting from Nengo 1.4 to Nengo 2.0</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="converting.html#big-changes">Big changes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="converting.html#id1">Changes to common functions</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+            
+  <div class="footer-relations">
+    
+      <div class="pull-left">
+        <a class="btn btn-default" href="getting_started.html" title="previous chapter (use the left arrow)">Getting started</a>
+      </div>
+    
+      <div class="pull-right">
+        <a class="btn btn-default" href="frontend_api.html" title="next chapter (use the right arrow)">Nengo frontend API</a>
+      </div>
+    </div>
+    <div class="clearer"></div>
+  
+        </div>
+        <div class="clearfix"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="frontend_api.html" title="Nengo frontend API"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="getting_started.html" title="Getting started"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Nengo core 2.8.0 docs</a> &#187;</li> 
+      </ul>
+    </div>
+<script type="text/javascript">
+  $("#mobile-toggle a").click(function () {
+    $("#left-column").toggle();
+  });
+</script>
+<script type="text/javascript" src="_static/js/bootstrap.js"></script>
+  <div class="footer">
+    &copy; Copyright 2013-2017, Applied Brain Research. Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+  </div>
+  </body>
+</html>

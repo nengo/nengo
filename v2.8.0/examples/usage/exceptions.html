@@ -1,0 +1,1194 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  
+  <!-- Licensed under the Apache 2.0 License -->
+  <link rel="stylesheet" type="text/css" href="../../_static/fonts/open-sans/stylesheet.css" />
+  <!-- Licensed under the SIL Open Font License -->
+  <link rel="stylesheet" type="text/css" href="../../_static/fonts/source-serif-pro/source-serif-pro.css" />
+  <link rel="stylesheet" type="text/css" href="../../_static/css/bootstrap.min.css" />
+  <link rel="stylesheet" type="text/css" href="../../_static/css/bootstrap-theme.min.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+    <title>Exceptions &#8212; Nengo core 2.8.0 docs</title>
+    <link rel="stylesheet" href="../../_static/guzzle.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '2.8.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="String representations" href="strings.html" />
+    <link rel="prev" title="The NEF algorithm" href="../advanced/nef_algorithm.html" />
+<link rel="stylesheet" type="text/css" href="../../_static/custom.css">
+
+
+  
+   
+
+  </head>
+  <body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="strings.html" title="String representations"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../advanced/nef_algorithm.html" title="The NEF algorithm"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../examples.html" accesskey="U">Examples</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="container-wrapper">
+
+      <div id="mobile-toggle">
+        <a href="#"><span class="glyphicon glyphicon-align-justify" aria-hidden="true"></span></a>
+      </div>
+  <div id="left-column">
+    <div class="sphinxsidebar">
+        <a href="
+    ../../index.html" class="text-logo">Nengo core 2.8</a>
+        <div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <h2>Table Of Contents</h2>
+  </div>
+  <div class="sidebar-toc">
+    
+    
+      <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide.html">User guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../examples.html">Examples</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../advanced/nef_summary.html">NEF summary</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#principle-1-representation">Principle 1: Representation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#principle-2-transformation">Principle 2: Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#principle-3-dynamics">Principle 3: Dynamics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#nodes">Nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#processes">Processes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#ensembles">Ensembles</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#connections">Connections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#learning">Learning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#networks">Networks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#semantic-pointer-architecture">Semantic Pointer Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#under-the-hood">Under the hood</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../examples.html#reference">Reference</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Exceptions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="strings.html">String representations</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing to Nengo</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://www.nengo.ai/projects.html">Nengo ecosystem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../license.html">Nengo license</a></li>
+</ul>
+
+    
+  </div>
+</div>
+        
+<div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <div id="main-search">
+      <form class="form-inline" action="../../search.html" method="GET" role="form">
+        <div class="input-group">
+          <input name="q" type="text" class="form-control" placeholder="Search...">
+        </div>
+        <input type="hidden" name="check_keywords" value="yes" />
+        <input type="hidden" name="area" value="default" />
+      </form>
+    </div>
+  </div>
+</div>
+    </div>
+  </div>
+        <div id="right-column">
+          
+  <div class="header">
+    
+          <div role="navigation" aria-label="breadcrumbs navigation">
+            <ol class="breadcrumb">
+              <li><a href="../../index.html">Docs</a></li>
+              
+                <li><a href="../../examples.html">Examples</a></li>
+              
+              <li>Exceptions</li>
+            </ol>
+          </div>
+          
+    
+      <div style="float: right;">
+        <ol class="breadcrumb">
+          <li><a href="../../_downloads/examples/usage/exceptions.ipynb" download>Download example as Jupyter Notebook</a></li>
+        </ol>
+      </div>
+    
+  </div>
+
+          <div class="document clearer body">
+            
+  
+<style>
+/* CSS for nbsphinx extension */
+
+/* remove conflicting styling from Sphinx themes */
+div.nbinput,
+div.nbinput div.prompt,
+div.nbinput div.input_area,
+div.nbinput div[class*=highlight],
+div.nbinput div[class*=highlight] pre,
+div.nboutput,
+div.nbinput div.prompt,
+div.nbinput div.output_area,
+div.nboutput div[class*=highlight],
+div.nboutput div[class*=highlight] pre {
+    background: none;
+    border: none;
+    padding: 0 0;
+    margin: 0;
+    box-shadow: none;
+}
+
+/* avoid gaps between output lines */
+div.nboutput div[class*=highlight] pre {
+    line-height: normal;
+}
+
+/* input/output containers */
+div.nbinput,
+div.nboutput {
+    display: -webkit-flex;
+    display: flex;
+    align-items: flex-start;
+    margin: 0;
+    width: 100%;
+}
+@media (max-width: 540px) {
+    div.nbinput,
+    div.nboutput {
+        flex-direction: column;
+    }
+}
+
+/* input container */
+div.nbinput {
+    padding-top: 5px;
+}
+
+/* last container */
+div.nblast {
+    padding-bottom: 5px;
+}
+
+/* input prompt */
+div.nbinput div.prompt pre {
+    color: #303F9F;
+}
+
+/* output prompt */
+div.nboutput div.prompt pre {
+    color: #D84315;
+}
+
+/* all prompts */
+div.nbinput div.prompt,
+div.nboutput div.prompt {
+    min-width: 9ex;
+    padding-top: 0.4em;
+    padding-right: 0.4em;
+    text-align: right;
+    flex: 0;
+}
+@media (max-width: 540px) {
+    div.nbinput div.prompt,
+    div.nboutput div.prompt {
+        text-align: left;
+        padding: 0.4em;
+    }
+    div.nboutput div.prompt.empty {
+        padding: 0;
+    }
+}
+
+/* disable scrollbars on prompts */
+div.nbinput div.prompt pre,
+div.nboutput div.prompt pre {
+    overflow: hidden;
+}
+
+/* input/output area */
+div.nbinput div.input_area,
+div.nboutput div.output_area {
+    padding: 0.4em;
+    -webkit-flex: 1;
+    flex: 1;
+    overflow: auto;
+}
+@media (max-width: 540px) {
+    div.nbinput div.input_area,
+    div.nboutput div.output_area {
+        width: 100%;
+    }
+}
+
+/* input area */
+div.nbinput div.input_area {
+    border: 1px solid #cfcfcf;
+    border-radius: 2px;
+    background: #f7f7f7;
+}
+
+/* override MathJax center alignment in output cells */
+div.nboutput div[class*=MathJax] {
+    text-align: left !important;
+}
+
+/* override sphinx.ext.pngmath center alignment in output cells */
+div.nboutput div.math p {
+    text-align: left;
+}
+
+/* standard error */
+div.nboutput div.output_area.stderr {
+    background: #fdd;
+}
+
+/* ANSI colors */
+.ansi-black-fg { color: #3E424D; }
+.ansi-black-bg { background-color: #3E424D; }
+.ansi-black-intense-fg { color: #282C36; }
+.ansi-black-intense-bg { background-color: #282C36; }
+.ansi-red-fg { color: #E75C58; }
+.ansi-red-bg { background-color: #E75C58; }
+.ansi-red-intense-fg { color: #B22B31; }
+.ansi-red-intense-bg { background-color: #B22B31; }
+.ansi-green-fg { color: #00A250; }
+.ansi-green-bg { background-color: #00A250; }
+.ansi-green-intense-fg { color: #007427; }
+.ansi-green-intense-bg { background-color: #007427; }
+.ansi-yellow-fg { color: #DDB62B; }
+.ansi-yellow-bg { background-color: #DDB62B; }
+.ansi-yellow-intense-fg { color: #B27D12; }
+.ansi-yellow-intense-bg { background-color: #B27D12; }
+.ansi-blue-fg { color: #208FFB; }
+.ansi-blue-bg { background-color: #208FFB; }
+.ansi-blue-intense-fg { color: #0065CA; }
+.ansi-blue-intense-bg { background-color: #0065CA; }
+.ansi-magenta-fg { color: #D160C4; }
+.ansi-magenta-bg { background-color: #D160C4; }
+.ansi-magenta-intense-fg { color: #A03196; }
+.ansi-magenta-intense-bg { background-color: #A03196; }
+.ansi-cyan-fg { color: #60C6C8; }
+.ansi-cyan-bg { background-color: #60C6C8; }
+.ansi-cyan-intense-fg { color: #258F8F; }
+.ansi-cyan-intense-bg { background-color: #258F8F; }
+.ansi-white-fg { color: #C5C1B4; }
+.ansi-white-bg { background-color: #C5C1B4; }
+.ansi-white-intense-fg { color: #A1A6B2; }
+.ansi-white-intense-bg { background-color: #A1A6B2; }
+
+.ansi-default-inverse-fg { color: #FFFFFF; }
+.ansi-default-inverse-bg { background-color: #000000; }
+
+.ansi-bold { font-weight: bold; }
+.ansi-underline { text-decoration: underline; }
+</style>
+<div class="section" id="Exceptions">
+<h1>Exceptions<a class="headerlink" href="#Exceptions" title="Permalink to this headline">¶</a></h1>
+<p>This should be an exhaustive list of the exceptions that can be raised
+by Nengo, and how they appear when they occur.</p>
+<p>The exceptions are ordered roughly by how commonly we expect them to
+occur.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">traceback</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">import</span> <span class="nn">nengo</span>
+<span class="kn">import</span> <span class="nn">nengo.spa</span>
+
+<span class="k">def</span> <span class="nf">print_exc</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s1">&#39;ignore&#39;</span><span class="p">)</span>
+            <span class="n">func</span><span class="p">()</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="n">traceback</span><span class="o">.</span><span class="n">print_exc</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="ValidationError-in-NengoObject-(simplified)">
+<h2>ValidationError in NengoObject (simplified)<a class="headerlink" href="#ValidationError-in-NengoObject-(simplified)" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">def</span> <span class="nf">nengo_obj</span><span class="p">():</span>
+    <span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Network</span><span class="p">():</span>
+        <span class="n">ens</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">(</span><span class="n">n_neurons</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">dimensions</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+
+<span class="n">nengo</span><span class="o">.</span><span class="n">rc</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;exceptions&#39;</span><span class="p">,</span> <span class="s1">&#39;simplified&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="kc">True</span><span class="p">))</span>
+<span class="n">print_exc</span><span class="p">(</span><span class="n">nengo_obj</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="stderr output_area docutils container">
+<div class="highlight"><pre>
+Traceback (most recent call last):
+  File &#34;&lt;ipython-input-1-b62501498822&gt;&#34;, line 10, in print_exc
+    func()
+  File &#34;&lt;ipython-input-2-6e36c811bd24&gt;&#34;, line 3, in nengo_obj
+    ens = nengo.Ensemble(n_neurons=0, dimensions=1)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\base.py&#34;, line 35, in __call__
+    inst.__init__(*args, **kwargs)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\ensemble.py&#34;, line 148, in __init__
+    self.n_neurons = n_neurons
+  File &#34;d:\documents\nengo_repos\nengo\nengo\base.py&#34;, line 106, in __setattr__
+    super(NengoObject, self).__setattr__(name, val)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\config.py&#34;, line 456, in __setattr__
+    reraise(exc_info[0], exc_info[1], None)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\utils\compat.py&#34;, line 99, in reraise
+    raise value.with_traceback(tb)
+nengo.exceptions.ValidationError: Ensemble.n_neurons: Value must be greater than or equal to 1 (got 0)
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="ValidationError-in-NengoObject-(full)">
+<h2>ValidationError in NengoObject (full)<a class="headerlink" href="#ValidationError-in-NengoObject-(full)" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">def</span> <span class="nf">nengo_obj</span><span class="p">():</span>
+    <span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Network</span><span class="p">():</span>
+        <span class="n">ens</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">(</span><span class="n">n_neurons</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">dimensions</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+
+<span class="n">nengo</span><span class="o">.</span><span class="n">rc</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;exceptions&#39;</span><span class="p">,</span> <span class="s1">&#39;simplified&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="kc">False</span><span class="p">))</span>
+<span class="n">print_exc</span><span class="p">(</span><span class="n">nengo_obj</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="stderr output_area docutils container">
+<div class="highlight"><pre>
+Traceback (most recent call last):
+  File &#34;&lt;ipython-input-1-b62501498822&gt;&#34;, line 10, in print_exc
+    func()
+  File &#34;&lt;ipython-input-3-9197d6770900&gt;&#34;, line 3, in nengo_obj
+    ens = nengo.Ensemble(n_neurons=0, dimensions=1)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\base.py&#34;, line 35, in __call__
+    inst.__init__(*args, **kwargs)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\ensemble.py&#34;, line 148, in __init__
+    self.n_neurons = n_neurons
+  File &#34;d:\documents\nengo_repos\nengo\nengo\base.py&#34;, line 106, in __setattr__
+    super(NengoObject, self).__setattr__(name, val)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\config.py&#34;, line 458, in __setattr__
+    super(SupportDefaultsMixin, self).__setattr__(name, val)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\params.py&#34;, line 124, in __set__
+    self.data[instance] = self.coerce(instance, value)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\params.py&#34;, line 271, in coerce
+    return super(IntParam, self).coerce(instance, num)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\params.py&#34;, line 255, in coerce
+    num), attr=self.name, obj=instance)
+nengo.exceptions.ValidationError: Ensemble.n_neurons: Value must be greater than or equal to 1 (got 0)
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="ValidationError-in-non-NengoObject">
+<h2>ValidationError in non-NengoObject<a class="headerlink" href="#ValidationError-in-non-NengoObject" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">def</span> <span class="nf">dist</span><span class="p">():</span>
+    <span class="n">nengo</span><span class="o">.</span><span class="n">dists</span><span class="o">.</span><span class="n">PDF</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">p</span><span class="o">=</span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">])</span>
+
+
+<span class="n">print_exc</span><span class="p">(</span><span class="n">dist</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="stderr output_area docutils container">
+<div class="highlight"><pre>
+Traceback (most recent call last):
+  File &#34;&lt;ipython-input-1-b62501498822&gt;&#34;, line 10, in print_exc
+    func()
+  File &#34;&lt;ipython-input-4-c5ba72006dad&gt;&#34;, line 2, in dist
+    nengo.dists.PDF(x=[1, 1], p=[0.1, 0.2])
+  File &#34;d:\documents\nengo_repos\nengo\nengo\dists.py&#34;, line 68, in __init__
+    &#34;PDF must sum to one (sums to %f)&#34; % psum, attr=&#39;p&#39;, obj=self)
+nengo.exceptions.ValidationError: PDF.p: PDF must sum to one (sums to 0.300000)
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="ReadonlyError-in-NengoObject-(simplified)">
+<h2>ReadonlyError in NengoObject (simplified)<a class="headerlink" href="#ReadonlyError-in-NengoObject-(simplified)" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">def</span> <span class="nf">nengo_obj</span><span class="p">():</span>
+    <span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Network</span><span class="p">():</span>
+        <span class="n">ens</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">(</span><span class="n">n_neurons</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">dimensions</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">ens</span><span class="p">)</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">target</span> <span class="o">=</span> <span class="n">ens</span>
+
+
+<span class="n">nengo</span><span class="o">.</span><span class="n">rc</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;exceptions&#39;</span><span class="p">,</span> <span class="s1">&#39;simplified&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="kc">True</span><span class="p">))</span>
+<span class="n">print_exc</span><span class="p">(</span><span class="n">nengo_obj</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="stderr output_area docutils container">
+<div class="highlight"><pre>
+Traceback (most recent call last):
+  File &#34;&lt;ipython-input-1-b62501498822&gt;&#34;, line 10, in print_exc
+    func()
+  File &#34;&lt;ipython-input-5-1d0b5dd0bd42&gt;&#34;, line 5, in nengo_obj
+    p.target = ens
+  File &#34;d:\documents\nengo_repos\nengo\nengo\base.py&#34;, line 106, in __setattr__
+    super(NengoObject, self).__setattr__(name, val)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\config.py&#34;, line 456, in __setattr__
+    reraise(exc_info[0], exc_info[1], None)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\utils\compat.py&#34;, line 99, in reraise
+    raise value.with_traceback(tb)
+nengo.exceptions.ReadonlyError: Probe.target: target is read-only and cannot be changed
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="ReadonlyError-in-NengoObject-(full)">
+<h2>ReadonlyError in NengoObject (full)<a class="headerlink" href="#ReadonlyError-in-NengoObject-(full)" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">def</span> <span class="nf">nengo_obj</span><span class="p">():</span>
+    <span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Network</span><span class="p">():</span>
+        <span class="n">ens</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">(</span><span class="n">n_neurons</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">dimensions</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">ens</span><span class="p">)</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">target</span> <span class="o">=</span> <span class="n">ens</span>
+
+
+<span class="n">nengo</span><span class="o">.</span><span class="n">rc</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;exceptions&#39;</span><span class="p">,</span> <span class="s1">&#39;simplified&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="kc">False</span><span class="p">))</span>
+<span class="n">print_exc</span><span class="p">(</span><span class="n">nengo_obj</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="stderr output_area docutils container">
+<div class="highlight"><pre>
+Traceback (most recent call last):
+  File &#34;&lt;ipython-input-1-b62501498822&gt;&#34;, line 10, in print_exc
+    func()
+  File &#34;&lt;ipython-input-6-a089d4f43453&gt;&#34;, line 5, in nengo_obj
+    p.target = ens
+  File &#34;d:\documents\nengo_repos\nengo\nengo\base.py&#34;, line 106, in __setattr__
+    super(NengoObject, self).__setattr__(name, val)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\config.py&#34;, line 458, in __setattr__
+    super(SupportDefaultsMixin, self).__setattr__(name, val)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\params.py&#34;, line 124, in __set__
+    self.data[instance] = self.coerce(instance, value)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\probe.py&#34;, line 24, in coerce
+    return super(TargetParam, self).coerce(probe, target)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\base.py&#34;, line 226, in coerce
+    return super(NengoObjectParam, self).coerce(instance, nengo_obj)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\params.py&#34;, line 166, in coerce
+    raise ReadonlyError(attr=self.name, obj=instance)
+nengo.exceptions.ReadonlyError: Probe.target: target is read-only and cannot be changed
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="ReadonlyError-in-non-NengoObject">
+<h2>ReadonlyError in non-NengoObject<a class="headerlink" href="#ReadonlyError-in-non-NengoObject" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">def</span> <span class="nf">ensemble</span><span class="p">():</span>
+    <span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Network</span><span class="p">():</span>
+        <span class="n">ens</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">(</span><span class="n">n_neurons</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">dimensions</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">ens</span><span class="o">.</span><span class="n">neurons</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+<span class="n">print_exc</span><span class="p">(</span><span class="n">ensemble</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="stderr output_area docutils container">
+<div class="highlight"><pre>
+Traceback (most recent call last):
+  File &#34;&lt;ipython-input-1-b62501498822&gt;&#34;, line 10, in print_exc
+    func()
+  File &#34;&lt;ipython-input-7-f06a59b96231&gt;&#34;, line 4, in ensemble
+    ens.neurons = None
+  File &#34;d:\documents\nengo_repos\nengo\nengo\base.py&#34;, line 106, in __setattr__
+    super(NengoObject, self).__setattr__(name, val)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\config.py&#34;, line 458, in __setattr__
+    super(SupportDefaultsMixin, self).__setattr__(name, val)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\ensemble.py&#34;, line 175, in neurons
+    raise ReadonlyError(attr=&#34;neurons&#34;, obj=self)
+nengo.exceptions.ReadonlyError: Ensemble.neurons: neurons is read-only and cannot be changed
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">def</span> <span class="nf">param</span><span class="p">():</span>
+    <span class="k">class</span> <span class="nc">Frozen</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">FrozenObject</span><span class="p">):</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="s1">&#39;p&#39;</span><span class="p">,</span> <span class="n">readonly</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="n">f</span> <span class="o">=</span> <span class="n">Frozen</span><span class="p">()</span>
+
+
+<span class="n">print_exc</span><span class="p">(</span><span class="n">param</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="stderr output_area docutils container">
+<div class="highlight"><pre>
+Traceback (most recent call last):
+  File &#34;&lt;ipython-input-1-b62501498822&gt;&#34;, line 10, in print_exc
+    func()
+  File &#34;&lt;ipython-input-8-853aad8fd15a&gt;&#34;, line 5, in param
+    f = Frozen()
+  File &#34;d:\documents\nengo_repos\nengo\nengo\params.py&#34;, line 501, in __init__
+    raise ReadonlyError(attr=p, obj=self, msg=msg)
+nengo.exceptions.ReadonlyError: Frozen.Parameter(&#39;p&#39;, default=Unconfigurable, optional=False, readonly=False): All parameters of a FrozenObject must be readonly
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="SimulatorClosed">
+<h2>SimulatorClosed<a class="headerlink" href="#SimulatorClosed" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">def</span> <span class="nf">simclose</span><span class="p">():</span>
+    <span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Network</span><span class="p">()</span> <span class="k">as</span> <span class="n">net</span><span class="p">:</span>
+        <span class="n">e</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Simulator</span><span class="p">(</span><span class="n">net</span><span class="p">)</span> <span class="k">as</span> <span class="n">sim</span><span class="p">:</span>
+        <span class="n">sim</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="mf">0.01</span><span class="p">)</span>
+    <span class="n">sim</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="mf">0.01</span><span class="p">)</span>
+
+
+<span class="n">print_exc</span><span class="p">(</span><span class="n">simclose</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="stderr output_area docutils container">
+<div class="highlight"><pre>
+Traceback (most recent call last):
+  File &#34;&lt;ipython-input-1-b62501498822&gt;&#34;, line 10, in print_exc
+    func()
+  File &#34;&lt;ipython-input-9-d6ec664b675d&gt;&#34;, line 6, in simclose
+    sim.run(0.01)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\simulator.py&#34;, line 321, in run
+    self.run_steps(steps, progress_bar=progress_bar)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\simulator.py&#34;, line 345, in run_steps
+    self.step()
+  File &#34;d:\documents\nengo_repos\nengo\nengo\simulator.py&#34;, line 351, in step
+    raise SimulatorClosed(&#34;Simulator cannot run because it is closed.&#34;)
+nengo.exceptions.SimulatorClosed: Simulator cannot run because it is closed.
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="BuildtimeError">
+<h2>BuildtimeError<a class="headerlink" href="#BuildtimeError" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">def</span> <span class="nf">builderror</span><span class="p">():</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">builder</span><span class="o">.</span><span class="n">Model</span><span class="p">()</span>
+    <span class="n">nengo</span><span class="o">.</span><span class="n">builder</span><span class="o">.</span><span class="n">Builder</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+
+<span class="n">print_exc</span><span class="p">(</span><span class="n">builderror</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="stderr output_area docutils container">
+<div class="highlight"><pre>
+Traceback (most recent call last):
+  File &#34;&lt;ipython-input-1-b62501498822&gt;&#34;, line 10, in print_exc
+    func()
+  File &#34;&lt;ipython-input-10-b1b0372de682&gt;&#34;, line 3, in builderror
+    nengo.builder.Builder.build(model, &#34;&#34;)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\builder\builder.py&#34;, line 216, in build
+    &#34;Cannot build object of type %r&#34; % type(obj).__name__)
+nengo.exceptions.BuildError: Cannot build object of type &#39;str&#39;
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="ZeroActivityError">
+<h2>ZeroActivityError<a class="headerlink" href="#ZeroActivityError" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">def</span> <span class="nf">zeroactivity</span><span class="p">():</span>
+    <span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Network</span><span class="p">()</span> <span class="k">as</span> <span class="n">net</span><span class="p">:</span>
+        <span class="n">e</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">gain</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">bias</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">encoders</span><span class="o">=</span><span class="p">[[</span><span class="mi">1</span><span class="p">]])</span>
+        <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Simulator</span><span class="p">(</span><span class="n">net</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+
+<span class="n">print_exc</span><span class="p">(</span><span class="n">zeroactivity</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="stderr output_area docutils container">
+<div class="highlight"><pre>
+Traceback (most recent call last):
+  File &#34;&lt;ipython-input-1-b62501498822&gt;&#34;, line 10, in print_exc
+    func()
+  File &#34;&lt;ipython-input-11-dfc293e55cd3&gt;&#34;, line 5, in zeroactivity
+    with nengo.Simulator(net):
+  File &#34;d:\documents\nengo_repos\nengo\nengo\simulator.py&#34;, line 160, in __init__
+    progress=pt.next_stage(&#34;Building&#34;, &#34;Build&#34;))
+  File &#34;d:\documents\nengo_repos\nengo\nengo\builder\builder.py&#34;, line 123, in build
+    built = self.builder.build(self, obj, *args, **kwargs)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\builder\builder.py&#34;, line 218, in build
+    return cls.builders[obj_cls](model, obj, *args, **kwargs)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\builder\network.py&#34;, line 113, in build_network
+    model.build(conn)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\builder\builder.py&#34;, line 123, in build
+    built = self.builder.build(self, obj, *args, **kwargs)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\builder\builder.py&#34;, line 218, in build
+    return cls.builders[obj_cls](model, obj, *args, **kwargs)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\builder\connection.py&#34;, line 258, in build_connection
+    conn.solver, conn, rng, transform)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\builder\builder.py&#34;, line 123, in build
+    built = self.builder.build(self, obj, *args, **kwargs)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\builder\builder.py&#34;, line 218, in build
+    return cls.builders[obj_cls](model, obj, *args, **kwargs)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\builder\connection.py&#34;, line 164, in build_solver
+    return build_decoders(model, conn, rng, transform)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\builder\connection.py&#34;, line 120, in build_decoders
+    conn, gain, bias, x, targets, rng=rng, E=E)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\builder\connection.py&#34;, line 133, in solve_for_decoders
+    &#34;ranges of any neurons.&#34; % (conn, conn.pre_obj))
+nengo.exceptions.BuildError: Building &lt;Connection from &lt;Ensemble (unlabeled) at 0x2991425b668&gt; to &lt;Ensemble (unlabeled) at 0x2991425b668&gt;&gt;: &#39;activities&#39; matrix is all zero for &lt;Ensemble (unlabeled) at 0x2991425b668&gt;. This is because no evaluation points fall in the firing ranges of any neurons.
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="SpaParseError">
+<h2>SpaParseError<a class="headerlink" href="#SpaParseError" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">def</span> <span class="nf">spaparse</span><span class="p">():</span>
+    <span class="n">vocab</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">spa</span><span class="o">.</span><span class="n">Vocabulary</span><span class="p">(</span><span class="mi">16</span><span class="p">)</span>
+    <span class="n">vocab</span><span class="p">[</span><span class="s1">&#39;a&#39;</span><span class="p">]</span>
+
+
+<span class="n">print_exc</span><span class="p">(</span><span class="n">spaparse</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="stderr output_area docutils container">
+<div class="highlight"><pre>
+Traceback (most recent call last):
+  File &#34;&lt;ipython-input-1-b62501498822&gt;&#34;, line 10, in print_exc
+    func()
+  File &#34;&lt;ipython-input-12-a4683a73ea41&gt;&#34;, line 3, in spaparse
+    vocab[&#39;a&#39;]
+  File &#34;d:\documents\nengo_repos\nengo\nengo\spa\vocab.py&#34;, line 138, in __getitem__
+    &#34;Semantic pointers must begin with a capital letter.&#34;)
+nengo.exceptions.SpaParseError: Semantic pointers must begin with a capital letter.
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="SpaModuleError">
+<h2>SpaModuleError<a class="headerlink" href="#SpaModuleError" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">def</span> <span class="nf">spamodule</span><span class="p">():</span>
+    <span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">spa</span><span class="o">.</span><span class="n">SPA</span><span class="p">()</span> <span class="k">as</span> <span class="n">net</span><span class="p">:</span>
+        <span class="n">st</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">spa</span><span class="o">.</span><span class="n">State</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+
+<span class="n">print_exc</span><span class="p">(</span><span class="n">spamodule</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="stderr output_area docutils container">
+<div class="highlight"><pre>
+Traceback (most recent call last):
+  File &#34;&lt;ipython-input-1-b62501498822&gt;&#34;, line 10, in print_exc
+    func()
+  File &#34;&lt;ipython-input-13-435380a533be&gt;&#34;, line 3, in spamodule
+    st = nengo.spa.State(1)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\spa\spa.py&#34;, line 145, in __exit__
+    &#34;a SPA network&#34; % (net))
+nengo.exceptions.SpaModuleError: &lt;State (unlabeled) at 0x29913ac74a8&gt; must be set as an attribute of a SPA network
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="ObsoleteError">
+<h2>ObsoleteError<a class="headerlink" href="#ObsoleteError" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">def</span> <span class="nf">obsolete</span><span class="p">():</span>
+    <span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Network</span><span class="p">()</span> <span class="k">as</span> <span class="n">net</span><span class="p">:</span>
+        <span class="n">e</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="s1">&#39;decoders&#39;</span><span class="p">)</span>
+
+
+<span class="n">print_exc</span><span class="p">(</span><span class="n">obsolete</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="stderr output_area docutils container">
+<div class="highlight"><pre>
+Traceback (most recent call last):
+  File &#34;&lt;ipython-input-1-b62501498822&gt;&#34;, line 10, in print_exc
+    func()
+  File &#34;&lt;ipython-input-14-e52d127bd928&gt;&#34;, line 5, in obsolete
+    p = nengo.Probe(c, &#39;decoders&#39;)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\base.py&#34;, line 35, in __call__
+    inst.__init__(*args, **kwargs)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\probe.py&#34;, line 126, in __init__
+    self.attr = attr if attr is not None else self.obj.probeable[0]
+  File &#34;d:\documents\nengo_repos\nengo\nengo\base.py&#34;, line 106, in __setattr__
+    super(NengoObject, self).__setattr__(name, val)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\config.py&#34;, line 458, in __setattr__
+    super(SupportDefaultsMixin, self).__setattr__(name, val)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\params.py&#34;, line 124, in __set__
+    self.data[instance] = self.coerce(instance, value)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\probe.py&#34;, line 35, in coerce
+    since=&#34;v2.1.0&#34;)
+nengo.exceptions.ObsoleteError: Obsolete since v2.1.0: &#39;decoders&#39; and &#39;transform&#39; are now combined into &#39;weights&#39;. Probe &#39;weights&#39; instead.
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="ConfigError">
+<h2>ConfigError<a class="headerlink" href="#ConfigError" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [15]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">def</span> <span class="nf">config</span><span class="p">():</span>
+    <span class="n">nengo</span><span class="o">.</span><span class="n">Network</span><span class="p">()</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="nb">object</span><span class="p">]</span>
+
+
+<span class="n">print_exc</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="stderr output_area docutils container">
+<div class="highlight"><pre>
+Traceback (most recent call last):
+  File &#34;&lt;ipython-input-1-b62501498822&gt;&#34;, line 10, in print_exc
+    func()
+  File &#34;&lt;ipython-input-15-d4d5765b03c3&gt;&#34;, line 2, in config
+    nengo.Network().config[object]
+  File &#34;d:\documents\nengo_repos\nengo\nengo\config.py&#34;, line 349, in __getitem__
+    &#34;Call &#39;configures(%(name)s)&#39; first.&#34; % {&#39;name&#39;: key.__name__})
+nengo.exceptions.ConfigError: Type &#39;object&#39; is not set up for configuration. Call &#39;configures(object)&#39; first.
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="SimulationError">
+<h2>SimulationError<a class="headerlink" href="#SimulationError" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [16]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">def</span> <span class="nf">simerror</span><span class="p">():</span>
+    <span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Network</span><span class="p">()</span> <span class="k">as</span> <span class="n">net</span><span class="p">:</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Node</span><span class="p">(</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">t</span> <span class="o">&gt;</span> <span class="mf">0.002</span> <span class="k">else</span> <span class="mf">1.0</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Simulator</span><span class="p">(</span><span class="n">net</span><span class="p">)</span> <span class="k">as</span> <span class="n">sim</span><span class="p">:</span>
+        <span class="n">sim</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="mf">0.003</span><span class="p">)</span>
+
+
+<span class="n">print_exc</span><span class="p">(</span><span class="n">simerror</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="stderr output_area docutils container">
+<div class="highlight"><pre>
+Traceback (most recent call last):
+  File &#34;&lt;ipython-input-1-b62501498822&gt;&#34;, line 10, in print_exc
+    func()
+  File &#34;&lt;ipython-input-16-409b13b04d5a&gt;&#34;, line 5, in simerror
+    sim.run(0.003)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\simulator.py&#34;, line 321, in run
+    self.run_steps(steps, progress_bar=progress_bar)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\simulator.py&#34;, line 345, in run_steps
+    self.step()
+  File &#34;d:\documents\nengo_repos\nengo\nengo\simulator.py&#34;, line 356, in step
+    step_fn()
+  File &#34;d:\documents\nengo_repos\nengo\nengo\builder\operator.py&#34;, line 774, in step_simpyfunc
+    function_name(self.fn))
+nengo.exceptions.SimulationError: Function &#39;&lt;lambda&gt;&#39; returned non-finite value
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="NetworkContextError">
+<h2>NetworkContextError<a class="headerlink" href="#NetworkContextError" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [17]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">def</span> <span class="nf">context</span><span class="p">():</span>
+    <span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Network</span><span class="p">():</span>
+        <span class="n">nengo</span><span class="o">.</span><span class="n">Network</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;bad&quot;</span><span class="p">)</span>
+        <span class="n">ens</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+
+<span class="n">print_exc</span><span class="p">(</span><span class="n">context</span><span class="p">)</span>
+<span class="n">nengo</span><span class="o">.</span><span class="n">Network</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="stderr output_area docutils container">
+<div class="highlight"><pre>
+Traceback (most recent call last):
+  File &#34;&lt;ipython-input-17-40df65c4caac&gt;&#34;, line 4, in context
+    ens = nengo.Ensemble(10, 1)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\base.py&#34;, line 37, in __call__
+    nengo.Network.add(inst)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\network.py&#34;, line 118, in add
+    &#34;Current context (%s) is not a network&#34; % network)
+nengo.exceptions.NetworkContextError: Current context (bad) is not a network
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File &#34;&lt;ipython-input-1-b62501498822&gt;&#34;, line 10, in print_exc
+    func()
+  File &#34;&lt;ipython-input-17-40df65c4caac&gt;&#34;, line 4, in context
+    ens = nengo.Ensemble(10, 1)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\network.py&#34;, line 211, in __exit__
+    &#34;to be &#39;%s&#39; but instead got &#39;%s&#39;.&#34; % (self, network))
+nengo.exceptions.NetworkContextError: Network.context in bad state; was expecting current context to be &#39;&lt;Network (unlabeled) at 0x299143592b0&gt;&#39; but instead got &#39;bad&#39;.
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="NeuronTypeError">
+<h2>NeuronTypeError<a class="headerlink" href="#NeuronTypeError" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [18]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">def</span> <span class="nf">direct</span><span class="p">():</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">neurons</span><span class="o">.</span><span class="n">Direct</span><span class="p">()</span>
+    <span class="n">d</span><span class="o">.</span><span class="n">step_math</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+
+<span class="n">print_exc</span><span class="p">(</span><span class="n">direct</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="stderr output_area docutils container">
+<div class="highlight"><pre>
+Traceback (most recent call last):
+  File &#34;&lt;ipython-input-1-b62501498822&gt;&#34;, line 10, in print_exc
+    func()
+  File &#34;&lt;ipython-input-18-b945a7fba508&gt;&#34;, line 3, in direct
+    d.step_math(None, None, None)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\neurons.py&#34;, line 221, in step_math
+    raise SimulationError(&#34;Direct mode neurons shouldn&#39;t be simulated.&#34;)
+nengo.exceptions.SimulationError: Direct mode neurons shouldn&#39;t be simulated.
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="FingerprintError">
+<h2>FingerprintError<a class="headerlink" href="#FingerprintError" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [19]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">def</span> <span class="nf">fingerprint</span><span class="p">():</span>
+    <span class="n">nengo</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">Fingerprint</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">)</span>
+
+
+<span class="n">print_exc</span><span class="p">(</span><span class="n">fingerprint</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="stderr output_area docutils container">
+<div class="highlight"><pre>
+Traceback (most recent call last):
+  File &#34;&lt;ipython-input-1-b62501498822&gt;&#34;, line 10, in print_exc
+    func()
+  File &#34;&lt;ipython-input-19-da0e15bb2fa5&gt;&#34;, line 2, in fingerprint
+    nengo.cache.Fingerprint(lambda x: x)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\cache.py&#34;, line 162, in __init__
+    % type(obj).__name__)
+nengo.exceptions.FingerprintError: Object of type &#39;function&#39; cannot be fingerprinted.
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="CacheIOError">
+<h2>CacheIOError<a class="headerlink" href="#CacheIOError" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [20]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">def</span> <span class="nf">cacheio</span><span class="p">():</span>
+    <span class="kn">from</span> <span class="nn">nengo.utils.compat</span> <span class="k">import</span> <span class="n">StringIO</span>
+    <span class="n">sio</span> <span class="o">=</span> <span class="n">StringIO</span><span class="p">(</span><span class="s2">&quot;a&quot;</span> <span class="o">*</span> <span class="mi">40</span><span class="p">)</span>
+    <span class="n">nengo</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">nco</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">sio</span><span class="p">)</span>
+
+
+<span class="n">print_exc</span><span class="p">(</span><span class="n">cacheio</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="stderr output_area docutils container">
+<div class="highlight"><pre>
+Traceback (most recent call last):
+  File &#34;&lt;ipython-input-1-b62501498822&gt;&#34;, line 10, in print_exc
+    func()
+  File &#34;&lt;ipython-input-20-f926726d3027&gt;&#34;, line 4, in cacheio
+    nengo.utils.nco.read(sio)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\utils\nco.py&#34;, line 152, in read
+    struct.unpack(HEADER_FORMAT, header))
+TypeError: a bytes-like object is required, not &#39;str&#39;
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="Unconvertible">
+<h2>Unconvertible<a class="headerlink" href="#Unconvertible" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [21]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">def</span> <span class="nf">unconvertible</span><span class="p">():</span>
+    <span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Network</span><span class="p">()</span> <span class="k">as</span> <span class="n">net</span><span class="p">:</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Node</span><span class="p">(</span><span class="n">output</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">size_in</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">synapse</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">nengo</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">builder</span><span class="o">.</span><span class="n">remove_passthrough_nodes</span><span class="p">(</span><span class="n">net</span><span class="o">.</span><span class="n">nodes</span><span class="p">,</span> <span class="n">net</span><span class="o">.</span><span class="n">connections</span><span class="p">)</span>
+
+
+<span class="n">print_exc</span><span class="p">(</span><span class="n">unconvertible</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="stderr output_area docutils container">
+<div class="highlight"><pre>
+Traceback (most recent call last):
+  File &#34;&lt;ipython-input-1-b62501498822&gt;&#34;, line 10, in print_exc
+    func()
+  File &#34;&lt;ipython-input-21-f295108a2eb4&gt;&#34;, line 5, in unconvertible
+    nengo.utils.builder.remove_passthrough_nodes(net.nodes, net.connections)
+  File &#34;d:\documents\nengo_repos\nengo\nengo\utils\builder.py&#34;, line 233, in remove_passthrough_nodes
+    &#34;Cannot remove a Node with a feedback connection&#34;)
+nengo.exceptions.Unconvertible: Cannot remove a Node with a feedback connection
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="SignalError">
+<h2>SignalError<a class="headerlink" href="#SignalError" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [22]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">def</span> <span class="nf">signal</span><span class="p">():</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">builder</span><span class="o">.</span><span class="n">signal</span><span class="o">.</span><span class="n">Signal</span><span class="p">([</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">s</span><span class="o">.</span><span class="n">initial_value</span> <span class="o">=</span> <span class="mi">0</span>
+
+
+<span class="n">print_exc</span><span class="p">(</span><span class="n">signal</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="stderr output_area docutils container">
+<div class="highlight"><pre>
+Traceback (most recent call last):
+  File &#34;&lt;ipython-input-1-b62501498822&gt;&#34;, line 10, in print_exc
+    func()
+  File &#34;&lt;ipython-input-22-334f8676127c&gt;&#34;, line 3, in signal
+    s.initial_value = 0
+  File &#34;d:\documents\nengo_repos\nengo\nengo\builder\signal.py&#34;, line 146, in initial_value
+    raise SignalError(&#34;Cannot change initial value after initialization&#34;)
+nengo.exceptions.SignalError: Cannot change initial value after initialization
+</pre></div></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+            
+  <div class="footer-relations">
+    
+      <div class="pull-left">
+        <a class="btn btn-default" href="../advanced/nef_algorithm.html" title="previous chapter (use the left arrow)">The NEF algorithm</a>
+      </div>
+    
+      <div class="pull-right">
+        <a class="btn btn-default" href="strings.html" title="next chapter (use the right arrow)">String representations</a>
+      </div>
+    </div>
+    <div class="clearer"></div>
+  
+        </div>
+        <div class="clearfix"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="strings.html" title="String representations"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../advanced/nef_algorithm.html" title="The NEF algorithm"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../examples.html" >Examples</a> &#187;</li> 
+      </ul>
+    </div>
+<script type="text/javascript">
+  $("#mobile-toggle a").click(function () {
+    $("#left-column").toggle();
+  });
+</script>
+<script type="text/javascript" src="../../_static/js/bootstrap.js"></script>
+  <div class="footer">
+    &copy; Copyright 2013-2017, Applied Brain Research. Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+  </div>
+  </body>
+</html>

@@ -1,0 +1,332 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  
+  <!-- Licensed under the Apache 2.0 License -->
+  <link rel="stylesheet" type="text/css" href="../../../_static/fonts/open-sans/stylesheet.css" />
+  <!-- Licensed under the SIL Open Font License -->
+  <link rel="stylesheet" type="text/css" href="../../../_static/fonts/source-serif-pro/source-serif-pro.css" />
+  <link rel="stylesheet" type="text/css" href="../../../_static/css/bootstrap.min.css" />
+  <link rel="stylesheet" type="text/css" href="../../../_static/css/bootstrap-theme.min.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+    <title>nengo.spa.basalganglia &#8212; Nengo core 2.8.0 docs</title>
+    <link rel="stylesheet" href="../../../_static/guzzle.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '2.8.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+<link rel="stylesheet" type="text/css" href="../../../_static/custom.css">
+
+
+  
+   
+
+  </head>
+  <body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="container-wrapper">
+
+      <div id="mobile-toggle">
+        <a href="#"><span class="glyphicon glyphicon-align-justify" aria-hidden="true"></span></a>
+      </div>
+  <div id="left-column">
+    <div class="sphinxsidebar">
+        <a href="
+    ../../../index.html" class="text-logo">Nengo core 2.8</a>
+        <div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <h2>Table Of Contents</h2>
+  </div>
+  <div class="sidebar-toc">
+    
+    
+      <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../user_guide.html">User guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">Contributing to Nengo</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://www.nengo.ai/projects.html">Nengo ecosystem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../license.html">Nengo license</a></li>
+</ul>
+
+    
+  </div>
+</div>
+        
+<div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <div id="main-search">
+      <form class="form-inline" action="../../../search.html" method="GET" role="form">
+        <div class="input-group">
+          <input name="q" type="text" class="form-control" placeholder="Search...">
+        </div>
+        <input type="hidden" name="check_keywords" value="yes" />
+        <input type="hidden" name="area" value="default" />
+      </form>
+    </div>
+  </div>
+</div>
+    </div>
+  </div>
+        <div id="right-column">
+          
+  <div class="header">
+    
+          <div role="navigation" aria-label="breadcrumbs navigation">
+            <ol class="breadcrumb">
+              <li><a href="../../../index.html">Docs</a></li>
+              
+                <li><a href="../../index.html">Module code</a></li>
+              
+              <li>nengo.spa.basalganglia</li>
+            </ol>
+          </div>
+          
+    
+  </div>
+
+          <div class="document clearer body">
+            
+  <h1>Source code for nengo.spa.basalganglia</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">import</span> <span class="nn">nengo</span>
+<span class="kn">from</span> <span class="nn">nengo.exceptions</span> <span class="k">import</span> <span class="n">ValidationError</span>
+<span class="kn">from</span> <span class="nn">nengo.spa.action_objects</span> <span class="k">import</span> <span class="n">DotProduct</span><span class="p">,</span> <span class="n">Source</span>
+<span class="kn">from</span> <span class="nn">nengo.spa.module</span> <span class="k">import</span> <span class="n">Module</span>
+<span class="kn">from</span> <span class="nn">nengo.utils.compat</span> <span class="k">import</span> <span class="n">is_number</span>
+
+
+<div class="viewcode-block" id="BasalGanglia"><a class="viewcode-back" href="../../../spa.html#nengo.spa.BasalGanglia">[docs]</a><span class="k">class</span> <span class="nc">BasalGanglia</span><span class="p">(</span><span class="n">Module</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A basal ganglia, performing action selection on a set of given actions.</span>
+
+<span class="sd">    See `.networks.BasalGanglia` for more details.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    actions : Actions</span>
+<span class="sd">        The actions to choose between.</span>
+<span class="sd">    input_synapse : float, optional (Default: 0.002)</span>
+<span class="sd">        The synaptic filter on all input connections.</span>
+<span class="sd">    label : str, optional (Default: None)</span>
+<span class="sd">        A name for the ensemble. Used for debugging and visualization.</span>
+<span class="sd">    seed : int, optional (Default: None)</span>
+<span class="sd">        The seed used for random number generation.</span>
+<span class="sd">    add_to_container : bool, optional (Default: None)</span>
+<span class="sd">        Determines if this Network will be added to the current container.</span>
+<span class="sd">        If None, will be true if currently within a Network.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">actions</span><span class="p">,</span> <span class="n">input_synapse</span><span class="o">=</span><span class="mf">0.002</span><span class="p">,</span>
+                 <span class="n">label</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">add_to_container</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">actions</span> <span class="o">=</span> <span class="n">actions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_synapse</span> <span class="o">=</span> <span class="n">input_synapse</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_bias</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">Module</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">seed</span><span class="p">,</span> <span class="n">add_to_container</span><span class="p">)</span>
+        <span class="n">nengo</span><span class="o">.</span><span class="n">networks</span><span class="o">.</span><span class="n">BasalGanglia</span><span class="p">(</span><span class="n">dimensions</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">actions</span><span class="o">.</span><span class="n">count</span><span class="p">,</span> <span class="n">net</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">bias</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create a bias node, when needed.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bias</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">with</span> <span class="bp">self</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_bias</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Node</span><span class="p">([</span><span class="mi">1</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;basal ganglia bias&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bias</span>
+
+<div class="viewcode-block" id="BasalGanglia.on_add"><a class="viewcode-back" href="../../../spa.html#nengo.spa.BasalGanglia.on_add">[docs]</a>    <span class="k">def</span> <span class="nf">on_add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spa</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Form the connections into the BG to compute the utilty values.</span>
+
+<span class="sd">        Each action&#39;s condition variable contains the set of computations</span>
+<span class="sd">        needed for that action&#39;s utility value, which is the input to the</span>
+<span class="sd">        basal ganglia.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">Module</span><span class="o">.</span><span class="n">on_add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spa</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spa</span> <span class="o">=</span> <span class="n">spa</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">actions</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">spa</span><span class="p">)</span>   <span class="c1"># parse the actions</span>
+
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">action</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">actions</span><span class="o">.</span><span class="n">actions</span><span class="p">):</span>
+            <span class="n">cond</span> <span class="o">=</span> <span class="n">action</span><span class="o">.</span><span class="n">condition</span><span class="o">.</span><span class="n">expression</span>
+            <span class="c1"># the basal ganglia hangles the condition part of the action;</span>
+            <span class="c1"># the effect is handled by the thalamus</span>
+
+            <span class="c1"># Note: A Source is an output from a module, and a Symbol is</span>
+            <span class="c1"># text that can be parsed to be a SemanticPointer</span>
+
+            <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cond</span><span class="o">.</span><span class="n">items</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">DotProduct</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="p">((</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">item1</span><span class="p">,</span> <span class="n">Source</span><span class="p">)</span> <span class="ow">and</span> <span class="n">c</span><span class="o">.</span><span class="n">item1</span><span class="o">.</span><span class="n">inverted</span><span class="p">)</span> <span class="ow">or</span>
+                       <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">item2</span><span class="p">,</span> <span class="n">Source</span><span class="p">)</span> <span class="ow">and</span> <span class="n">c</span><span class="o">.</span><span class="n">item2</span><span class="o">.</span><span class="n">inverted</span><span class="p">)):</span>
+                        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                            <span class="s2">&quot;Inversion in subexpression &#39;</span><span class="si">%s</span><span class="s2">&#39; from action &#39;</span><span class="si">%s</span><span class="s2">&#39; &quot;</span>
+                            <span class="s2">&quot;is not supported by the Basal Ganglia.&quot;</span> <span class="o">%</span>
+                            <span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">action</span><span class="p">))</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">item1</span><span class="p">,</span> <span class="n">Source</span><span class="p">):</span>
+                        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">item2</span><span class="p">,</span> <span class="n">Source</span><span class="p">):</span>
+                            <span class="c1"># dot product between two different sources</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">add_compare_input</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">item1</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">item2</span><span class="p">,</span>
+                                                   <span class="n">c</span><span class="o">.</span><span class="n">scale</span><span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">add_dot_input</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">item1</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">item2</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">scale</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="c1"># enforced in DotProduct constructor</span>
+                        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">item2</span><span class="p">,</span> <span class="n">Source</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">add_dot_input</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">item2</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">item1</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">scale</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">Source</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">add_scalar_input</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">is_number</span><span class="p">(</span><span class="n">c</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">add_bias_input</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                        <span class="s2">&quot;Subexpression &#39;</span><span class="si">%s</span><span class="s2">&#39; from action &#39;</span><span class="si">%s</span><span class="s2">&#39; is not supported &quot;</span>
+                        <span class="s2">&quot;by the Basal Ganglia.&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">action</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="BasalGanglia.add_bias_input"><a class="viewcode-back" href="../../../spa.html#nengo.spa.BasalGanglia.add_bias_input">[docs]</a>    <span class="k">def</span> <span class="nf">add_bias_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Make an input that is just a fixed scalar value.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        index : int</span>
+<span class="sd">            the index of the action</span>
+<span class="sd">        value : float or int</span>
+<span class="sd">            the fixed utility value to add</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">spa</span><span class="p">:</span>
+            <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bias</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="p">[</span><span class="n">index</span><span class="p">:</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span>
+                             <span class="n">transform</span><span class="o">=</span><span class="n">value</span><span class="p">,</span> <span class="n">synapse</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">input_synapse</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BasalGanglia.add_compare_input"><a class="viewcode-back" href="../../../spa.html#nengo.spa.BasalGanglia.add_compare_input">[docs]</a>    <span class="k">def</span> <span class="nf">add_compare_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">source1</span><span class="p">,</span> <span class="n">source2</span><span class="p">,</span> <span class="n">scale</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Make an input that is the dot product of two different sources.</span>
+
+<span class="sd">        This would be used for an input action such as ``dot(vision, memory)``.</span>
+<span class="sd">        Each source might be transformed before being compared. If the</span>
+<span class="sd">        two sources have different vocabularies, we use the vocabulary of</span>
+<span class="sd">        the first one for comparison.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        index : int</span>
+<span class="sd">            The index of the action.</span>
+<span class="sd">        source1 : Source</span>
+<span class="sd">            The first module output to read from.</span>
+<span class="sd">        source2 : Source</span>
+<span class="sd">            The second module output to read from.</span>
+<span class="sd">        scale : float</span>
+<span class="sd">            A scaling factor to be applied to the result.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Compare between two sources will never be &quot;</span>
+                                  <span class="s2">&quot;implemented as discussed in &quot;</span>
+                                  <span class="s2">&quot;https://github.com/nengo/nengo/issues/759&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BasalGanglia.add_dot_input"><a class="viewcode-back" href="../../../spa.html#nengo.spa.BasalGanglia.add_dot_input">[docs]</a>    <span class="k">def</span> <span class="nf">add_dot_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">symbol</span><span class="p">,</span> <span class="n">scale</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Make an input that is the dot product of a Source and a Symbol.</span>
+
+<span class="sd">        This would be used for an input action such as ``dot(vision, A)``.</span>
+<span class="sd">        The source may have a transformation applied first.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        index : int</span>
+<span class="sd">            The index of the action.</span>
+<span class="sd">        source : Source</span>
+<span class="sd">            The module output to read from.</span>
+<span class="sd">        symbol : Source</span>
+<span class="sd">            The semantic pointer to compute the dot product with.</span>
+<span class="sd">        scale : float</span>
+<span class="sd">            A scaling factor to be applied to the result.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">output</span><span class="p">,</span> <span class="n">vocab</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spa</span><span class="o">.</span><span class="n">get_module_output</span><span class="p">(</span><span class="n">source</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="c1"># the first transformation, to handle dot(vision*A, B)</span>
+        <span class="n">t1</span> <span class="o">=</span> <span class="n">vocab</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">source</span><span class="o">.</span><span class="n">transform</span><span class="o">.</span><span class="n">symbol</span><span class="p">)</span><span class="o">.</span><span class="n">get_convolution_matrix</span><span class="p">()</span>
+        <span class="c1"># the linear transform to compute the fixed dot product</span>
+        <span class="n">t2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">vocab</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">symbol</span><span class="o">.</span><span class="n">symbol</span><span class="p">)</span><span class="o">.</span><span class="n">v</span><span class="o">*</span><span class="n">scale</span><span class="p">])</span>
+
+        <span class="n">transform</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">t2</span><span class="p">,</span> <span class="n">t1</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">spa</span><span class="p">:</span>
+            <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="p">[</span><span class="n">index</span><span class="p">:</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span>
+                             <span class="n">transform</span><span class="o">=</span><span class="n">transform</span><span class="p">,</span> <span class="n">synapse</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">input_synapse</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BasalGanglia.add_scalar_input"><a class="viewcode-back" href="../../../spa.html#nengo.spa.BasalGanglia.add_scalar_input">[docs]</a>    <span class="k">def</span> <span class="nf">add_scalar_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">source</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add a scalar input that will vary over time.</span>
+
+<span class="sd">        This is used for the output of the `.Compare` module.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        index : int</span>
+<span class="sd">            The index of the action.</span>
+<span class="sd">        source : Source</span>
+<span class="sd">            The module output to read from.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">output</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spa</span><span class="o">.</span><span class="n">get_module_output</span><span class="p">(</span><span class="n">source</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">output</span><span class="o">.</span><span class="n">size_out</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                <span class="s2">&quot;Only 1-dimensional sources can be scalar inputs&quot;</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">scale</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="nb">eval</span><span class="p">(</span><span class="n">source</span><span class="o">.</span><span class="n">transform</span><span class="o">.</span><span class="n">symbol</span><span class="p">))</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span><span class="s2">&quot;Transform must be scalar; got &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span>
+                                  <span class="o">%</span> <span class="n">source</span><span class="o">.</span><span class="n">transform</span><span class="o">.</span><span class="n">symbol</span><span class="p">,</span>
+                                  <span class="n">attr</span><span class="o">=</span><span class="s1">&#39;source.transform&#39;</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">spa</span><span class="p">:</span>
+            <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="p">[</span><span class="n">index</span><span class="p">:</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span>
+                             <span class="n">transform</span><span class="o">=</span><span class="n">scale</span><span class="p">,</span>
+                             <span class="n">synapse</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">input_synapse</span><span class="p">)</span></div></div>
+</pre></div>
+
+          </div>
+            
+        </div>
+        <div class="clearfix"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+<script type="text/javascript">
+  $("#mobile-toggle a").click(function () {
+    $("#left-column").toggle();
+  });
+</script>
+<script type="text/javascript" src="../../../_static/js/bootstrap.js"></script>
+  <div class="footer">
+    &copy; Copyright 2013-2017, Applied Brain Research. Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+  </div>
+  </body>
+</html>

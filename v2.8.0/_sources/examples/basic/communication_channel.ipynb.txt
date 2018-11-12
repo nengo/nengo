@@ -1,0 +1,173 @@
+{
+ "metadata": {
+  "language_info": {
+   "name": "python",
+   "pygments_lexer": "ipython3"
+  },
+  "name": ""
+ },
+ "nbformat": 3,
+ "nbformat_minor": 0,
+ "worksheets": [
+  {
+   "cells": [
+    {
+     "cell_type": "heading",
+     "level": 1,
+     "metadata": {},
+     "source": [
+      "Communication channel"
+     ]
+    },
+    {
+     "cell_type": "markdown",
+     "metadata": {},
+     "source": [
+      "This example demonstrates how to create a connections from one neuronal ensemble to another that behaves like a communication channel (that is, it transmits information without changing it). \n",
+      "\n",
+      "Network diagram:\n",
+      "\n",
+      "      [Input] ---> (A) ---> (B)\n",
+      "\n",
+      "An abstract input signal is fed into a first neuronal ensemble $A$, which then passes it on to another ensemble $B$. The result is that spiking activity in ensemble $B$ encodes the value from the Input.  "
+     ]
+    },
+    {
+     "cell_type": "code",
+     "collapsed": false,
+     "input": [
+      "import numpy as np\n",
+      "import matplotlib.pyplot as plt\n",
+      "%matplotlib inline\n",
+      "\n",
+      "import nengo"
+     ],
+     "language": "python",
+     "metadata": {},
+     "outputs": [],
+     "prompt_number": null
+    },
+    {
+     "cell_type": "heading",
+     "level": 2,
+     "metadata": {},
+     "source": [
+      "Step 1: Create the Network"
+     ]
+    },
+    {
+     "cell_type": "code",
+     "collapsed": false,
+     "input": [
+      "# Create a 'model' object to which we can add ensembles, connections, etc.  \n",
+      "model = nengo.Network(label=\"Communications Channel\")\n",
+      "with model:\n",
+      "    # Create an abstract input signal that oscillates as sin(t)\n",
+      "    sin = nengo.Node(np.sin)\n",
+      "\n",
+      "    # Create the neuronal ensembles\n",
+      "    A = nengo.Ensemble(100, dimensions=1)\n",
+      "    B = nengo.Ensemble(100, dimensions=1)\n",
+      "\n",
+      "    # Connect the input to the first neuronal ensemble\n",
+      "    nengo.Connection(sin, A)\n",
+      "\n",
+      "    # Connect the first neuronal ensemble to the second\n",
+      "    # (this is the communication channel)\n",
+      "    nengo.Connection(A, B)"
+     ],
+     "language": "python",
+     "metadata": {},
+     "outputs": [],
+     "prompt_number": null
+    },
+    {
+     "cell_type": "markdown",
+     "metadata": {},
+     "source": [
+      "## Step 2: Add Probes to Collect Data\n",
+      "Even this simple model involves many quantities that change over time, such as membrane potentials of individual neurons. Typically there are so many variables in a simulation that it is not practical to store them all. If we want to plot or analyze data from the simulation we have to \"probe\" the signals of interest. "
+     ]
+    },
+    {
+     "cell_type": "code",
+     "collapsed": false,
+     "input": [
+      "with model:\n",
+      "    sin_probe = nengo.Probe(sin)\n",
+      "    A_probe = nengo.Probe(A, synapse=.01)  # ensemble output \n",
+      "    B_probe = nengo.Probe(B, synapse=.01)"
+     ],
+     "language": "python",
+     "metadata": {},
+     "outputs": [],
+     "prompt_number": null
+    },
+    {
+     "cell_type": "heading",
+     "level": 2,
+     "metadata": {},
+     "source": [
+      "Step 3: Run the Model!  "
+     ]
+    },
+    {
+     "cell_type": "code",
+     "collapsed": false,
+     "input": [
+      "with nengo.Simulator(model) as sim:\n",
+      "    sim.run(2)"
+     ],
+     "language": "python",
+     "metadata": {},
+     "outputs": [],
+     "prompt_number": null
+    },
+    {
+     "cell_type": "heading",
+     "level": 2,
+     "metadata": {},
+     "source": [
+      "Step 4: Plot the Results"
+     ]
+    },
+    {
+     "cell_type": "code",
+     "collapsed": false,
+     "input": [
+      "plt.figure(figsize=(9, 3))\n",
+      "plt.subplot(1, 3, 1)\n",
+      "plt.title(\"Input\")\n",
+      "plt.plot(sim.trange(), sim.data[sin_probe])\n",
+      "plt.ylim(0, 1.2)\n",
+      "plt.subplot(1, 3, 2)\n",
+      "plt.title(\"A\")\n",
+      "plt.plot(sim.trange(), sim.data[A_probe])\n",
+      "plt.ylim(0, 1.2)\n",
+      "plt.subplot(1, 3, 3)\n",
+      "plt.title(\"B\")\n",
+      "plt.plot(sim.trange(), sim.data[B_probe])\n",
+      "plt.ylim(0, 1.2)"
+     ],
+     "language": "python",
+     "metadata": {},
+     "outputs": [],
+     "prompt_number": null
+    },
+    {
+     "cell_type": "markdown",
+     "metadata": {},
+     "source": [
+      "These plots show the idealized sinusoidal input, and estimates of the sinusoid that are decoded from the spiking activity of neurons in ensembles A and B. \n",
+      "\n",
+      "## Step 5: Using a Different Input Function\n",
+      "To drive the neural ensembles with different abstract inputs, it is convenient to use Python's \"Lambda Functions\". For example, try changing the `sin = nengo.Node` line to the following for higher-frequency input: \n",
+      "\n",
+      "    sin = nengo.Node(lambda t: np.sin(2*np.pi*t))"
+     ]
+    }
+   ],
+   "metadata": {}
+  }
+ ]
+}

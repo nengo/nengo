@@ -1,0 +1,601 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  
+  <!-- Licensed under the Apache 2.0 License -->
+  <link rel="stylesheet" type="text/css" href="../../_static/fonts/open-sans/stylesheet.css" />
+  <!-- Licensed under the SIL Open Font License -->
+  <link rel="stylesheet" type="text/css" href="../../_static/fonts/source-serif-pro/source-serif-pro.css" />
+  <link rel="stylesheet" type="text/css" href="../../_static/css/bootstrap.min.css" />
+  <link rel="stylesheet" type="text/css" href="../../_static/css/bootstrap-theme.min.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+    <title>nengo.processes &#8212; Nengo core 2.8.0 docs</title>
+    <link rel="stylesheet" href="../../_static/guzzle.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '2.8.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+<link rel="stylesheet" type="text/css" href="../../_static/custom.css">
+
+
+  
+   
+
+  </head>
+  <body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="container-wrapper">
+
+      <div id="mobile-toggle">
+        <a href="#"><span class="glyphicon glyphicon-align-justify" aria-hidden="true"></span></a>
+      </div>
+  <div id="left-column">
+    <div class="sphinxsidebar">
+        <a href="
+    ../../index.html" class="text-logo">Nengo core 2.8</a>
+        <div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <h2>Table Of Contents</h2>
+  </div>
+  <div class="sidebar-toc">
+    
+    
+      <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide.html">User guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing to Nengo</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://www.nengo.ai/projects.html">Nengo ecosystem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../license.html">Nengo license</a></li>
+</ul>
+
+    
+  </div>
+</div>
+        
+<div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <div id="main-search">
+      <form class="form-inline" action="../../search.html" method="GET" role="form">
+        <div class="input-group">
+          <input name="q" type="text" class="form-control" placeholder="Search...">
+        </div>
+        <input type="hidden" name="check_keywords" value="yes" />
+        <input type="hidden" name="area" value="default" />
+      </form>
+    </div>
+  </div>
+</div>
+    </div>
+  </div>
+        <div id="right-column">
+          
+  <div class="header">
+    
+          <div role="navigation" aria-label="breadcrumbs navigation">
+            <ol class="breadcrumb">
+              <li><a href="../../index.html">Docs</a></li>
+              
+                <li><a href="../index.html">Module code</a></li>
+              
+              <li>nengo.processes</li>
+            </ol>
+          </div>
+          
+    
+  </div>
+
+          <div class="document clearer body">
+            
+  <h1>Source code for nengo.processes</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">warnings</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">import</span> <span class="nn">nengo.utils.numpy</span> <span class="k">as</span> <span class="nn">npext</span>
+<span class="kn">from</span> <span class="nn">nengo.base</span> <span class="k">import</span> <span class="n">Process</span>
+<span class="kn">from</span> <span class="nn">nengo.dists</span> <span class="k">import</span> <span class="n">DistributionParam</span><span class="p">,</span> <span class="n">Gaussian</span>
+<span class="kn">from</span> <span class="nn">nengo.exceptions</span> <span class="k">import</span> <span class="n">ValidationError</span>
+<span class="kn">from</span> <span class="nn">nengo.params</span> <span class="k">import</span> <span class="p">(</span>
+    <span class="n">BoolParam</span><span class="p">,</span> <span class="n">DictParam</span><span class="p">,</span> <span class="n">EnumParam</span><span class="p">,</span> <span class="n">NdarrayParam</span><span class="p">,</span> <span class="n">NumberParam</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">nengo.synapses</span> <span class="k">import</span> <span class="n">LinearFilter</span><span class="p">,</span> <span class="n">Lowpass</span><span class="p">,</span> <span class="n">SynapseParam</span>
+<span class="kn">from</span> <span class="nn">nengo.utils.compat</span> <span class="k">import</span> <span class="n">is_number</span><span class="p">,</span> <span class="n">iteritems</span><span class="p">,</span> <span class="n">itervalues</span>
+
+
+<div class="viewcode-block" id="WhiteNoise"><a class="viewcode-back" href="../../frontend_api.html#nengo.processes.WhiteNoise">[docs]</a><span class="k">class</span> <span class="nc">WhiteNoise</span><span class="p">(</span><span class="n">Process</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Full-spectrum white noise process.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    dist : Distribution, optional (Default: ``Gaussian(mean=0, std=1)``)</span>
+<span class="sd">        The distribution from which to draw samples.</span>
+<span class="sd">    scale : bool, optional (Default: True)</span>
+<span class="sd">        Whether to scale the white noise for integration. Integrating white</span>
+<span class="sd">        noise requires using a time constant of ``sqrt(dt)`` instead of ``dt``</span>
+<span class="sd">        on the noise term [1]_, to ensure the magnitude of the integrated</span>
+<span class="sd">        noise does not change with ``dt``.</span>
+<span class="sd">    seed : int, optional (Default: None)</span>
+<span class="sd">        Random number seed. Ensures noise will be the same each run.</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [1] Gillespie, D.T. (1996) Exact numerical simulation of the Ornstein-</span>
+<span class="sd">       Uhlenbeck process and its integral. Phys. Rev. E 54, pp. 2084-91.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">dist</span> <span class="o">=</span> <span class="n">DistributionParam</span><span class="p">(</span><span class="s1">&#39;dist&#39;</span><span class="p">)</span>
+    <span class="n">scale</span> <span class="o">=</span> <span class="n">BoolParam</span><span class="p">(</span><span class="s1">&#39;scale&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dist</span><span class="o">=</span><span class="n">Gaussian</span><span class="p">(</span><span class="n">mean</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">std</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">scale</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">WhiteNoise</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">default_size_in</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dist</span> <span class="o">=</span> <span class="n">dist</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="n">scale</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">(</span><span class="si">%r</span><span class="s2">, scale=</span><span class="si">%r</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="p">(</span>
+            <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dist</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">make_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">shape_in</span><span class="p">,</span> <span class="n">shape_out</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">rng</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="n">shape_in</span> <span class="o">==</span> <span class="p">(</span><span class="mi">0</span><span class="p">,)</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">shape_out</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
+
+        <span class="n">dist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dist</span>
+        <span class="n">scale</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span>
+        <span class="n">alpha</span> <span class="o">=</span> <span class="mf">1.</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>
+        <span class="c1"># ^ need sqrt(dt) when integrating, so divide by sqrt(dt) here,</span>
+        <span class="c1">#   since dt / sqrt(dt) = sqrt(dt).</span>
+
+        <span class="k">def</span> <span class="nf">step_whitenoise</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">d</span><span class="o">=</span><span class="n">shape_out</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">rng</span><span class="o">=</span><span class="n">rng</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">return</span> <span class="n">alpha</span> <span class="o">*</span> <span class="n">x</span> <span class="k">if</span> <span class="n">scale</span> <span class="k">else</span> <span class="n">x</span>
+
+        <span class="k">return</span> <span class="n">step_whitenoise</span></div>
+
+
+<div class="viewcode-block" id="FilteredNoise"><a class="viewcode-back" href="../../frontend_api.html#nengo.processes.FilteredNoise">[docs]</a><span class="k">class</span> <span class="nc">FilteredNoise</span><span class="p">(</span><span class="n">Process</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Filtered white noise process.</span>
+
+<span class="sd">    This process takes white noise and filters it using the provided synapse.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    synapse : Synapse, optional (Default: ``Lowpass(tau=0.005)``)</span>
+<span class="sd">        The synapse to use to filter the noise.</span>
+<span class="sd">    dist : Distribution, optional (Default: ``Gaussian(mean=0, std=1)``)</span>
+<span class="sd">        The distribution used to generate the white noise.</span>
+<span class="sd">    scale : bool, optional (Default: True)</span>
+<span class="sd">        Whether to scale the white noise for integration, making the output</span>
+<span class="sd">        signal invariant to ``dt``.</span>
+<span class="sd">    synapse_kwargs : dict, optional (Default: None)</span>
+<span class="sd">        Arguments to pass to ``synapse.make_step``.</span>
+<span class="sd">    seed : int, optional (Default: None)</span>
+<span class="sd">        Random number seed. Ensures noise will be the same each run.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">synapse</span> <span class="o">=</span> <span class="n">SynapseParam</span><span class="p">(</span><span class="s1">&#39;synapse&#39;</span><span class="p">)</span>
+    <span class="n">dist</span> <span class="o">=</span> <span class="n">DistributionParam</span><span class="p">(</span><span class="s1">&#39;dist&#39;</span><span class="p">)</span>
+    <span class="n">scale</span> <span class="o">=</span> <span class="n">BoolParam</span><span class="p">(</span><span class="s1">&#39;scale&#39;</span><span class="p">)</span>
+    <span class="n">synapse_kwargs</span> <span class="o">=</span> <span class="n">DictParam</span><span class="p">(</span><span class="s1">&#39;synapse_kwargs&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">synapse</span><span class="o">=</span><span class="n">Lowpass</span><span class="p">(</span><span class="n">tau</span><span class="o">=</span><span class="mf">0.005</span><span class="p">),</span> <span class="n">dist</span><span class="o">=</span><span class="n">Gaussian</span><span class="p">(</span><span class="n">mean</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">std</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+                 <span class="n">scale</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">synapse_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">FilteredNoise</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">default_size_in</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">synapse</span> <span class="o">=</span> <span class="n">synapse</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">synapse_kwargs</span> <span class="o">=</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">synapse_kwargs</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">synapse_kwargs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dist</span> <span class="o">=</span> <span class="n">dist</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="n">scale</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">(synapse=</span><span class="si">%r</span><span class="s2">, dist=</span><span class="si">%r</span><span class="s2">, scale=</span><span class="si">%r</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="p">(</span>
+            <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">synapse</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dist</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">make_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">shape_in</span><span class="p">,</span> <span class="n">shape_out</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">rng</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="n">shape_in</span> <span class="o">==</span> <span class="p">(</span><span class="mi">0</span><span class="p">,)</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">shape_out</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
+
+        <span class="n">dist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dist</span>
+        <span class="n">scale</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span>
+        <span class="n">alpha</span> <span class="o">=</span> <span class="mf">1.</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>
+        <span class="n">filter_step</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">synapse</span><span class="o">.</span><span class="n">make_step</span><span class="p">(</span>
+            <span class="n">shape_out</span><span class="p">,</span> <span class="n">shape_out</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">synapse_kwargs</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">step_filterednoise</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">d</span><span class="o">=</span><span class="n">shape_out</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">rng</span><span class="o">=</span><span class="n">rng</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">scale</span><span class="p">:</span>
+                <span class="n">x</span> <span class="o">*=</span> <span class="n">alpha</span>
+            <span class="k">return</span> <span class="n">filter_step</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">step_filterednoise</span></div>
+
+
+<div class="viewcode-block" id="BrownNoise"><a class="viewcode-back" href="../../frontend_api.html#nengo.processes.BrownNoise">[docs]</a><span class="k">class</span> <span class="nc">BrownNoise</span><span class="p">(</span><span class="n">FilteredNoise</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Brown noise process (aka Brownian noise, red noise, Wiener process).</span>
+
+<span class="sd">    This process is the integral of white noise.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    dist : Distribution, optional (Default: ``Gaussian(mean=0, std=1)``)</span>
+<span class="sd">        The distribution used to generate the white noise.</span>
+<span class="sd">    seed : int, optional (Default: None)</span>
+<span class="sd">        Random number seed. Ensures noise will be the same each run.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dist</span><span class="o">=</span><span class="n">Gaussian</span><span class="p">(</span><span class="n">mean</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">std</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">BrownNoise</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">synapse</span><span class="o">=</span><span class="n">LinearFilter</span><span class="p">([</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]),</span>
+            <span class="n">synapse_kwargs</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s1">&#39;euler&#39;</span><span class="p">),</span>
+            <span class="n">dist</span><span class="o">=</span><span class="n">dist</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">(</span><span class="si">%r</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dist</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="WhiteSignal"><a class="viewcode-back" href="../../frontend_api.html#nengo.processes.WhiteSignal">[docs]</a><span class="k">class</span> <span class="nc">WhiteSignal</span><span class="p">(</span><span class="n">Process</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;An ideal low-pass filtered white noise process.</span>
+
+<span class="sd">    This signal is created in the frequency domain, and designed to have</span>
+<span class="sd">    exactly equal power at all frequencies below the cut-off frequency,</span>
+<span class="sd">    and no power above the cut-off.</span>
+
+<span class="sd">    The signal is naturally periodic, so it can be used beyond its period</span>
+<span class="sd">    while still being continuous with continuous derivatives.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    period : float</span>
+<span class="sd">        A white noise signal with this period will be generated.</span>
+<span class="sd">        Samples will repeat after this duration.</span>
+<span class="sd">    high : float</span>
+<span class="sd">        The cut-off frequency of the low-pass filter, in Hz.</span>
+<span class="sd">        Must not exceed the Nyquist frequency for the simulation</span>
+<span class="sd">        timestep, which is ``0.5 / dt``.</span>
+<span class="sd">    rms : float, optional (Default: 0.5)</span>
+<span class="sd">        The root mean square power of the filtered signal</span>
+<span class="sd">    y0 : float, optional (Default: None)</span>
+<span class="sd">        Align the phase of each output dimension to begin at the value</span>
+<span class="sd">        that is closest (in absolute value) to y0.</span>
+<span class="sd">    seed : int, optional (Default: None)</span>
+<span class="sd">        Random number seed. Ensures noise will be the same each run.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">period</span> <span class="o">=</span> <span class="n">NumberParam</span><span class="p">(</span><span class="s1">&#39;period&#39;</span><span class="p">,</span> <span class="n">low</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">low_open</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">high</span> <span class="o">=</span> <span class="n">NumberParam</span><span class="p">(</span><span class="s1">&#39;high&#39;</span><span class="p">,</span> <span class="n">low</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">low_open</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">rms</span> <span class="o">=</span> <span class="n">NumberParam</span><span class="p">(</span><span class="s1">&#39;rms&#39;</span><span class="p">,</span> <span class="n">low</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">low_open</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">y0</span> <span class="o">=</span> <span class="n">NumberParam</span><span class="p">(</span><span class="s1">&#39;y0&#39;</span><span class="p">,</span> <span class="n">optional</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">period</span><span class="p">,</span> <span class="n">high</span><span class="p">,</span> <span class="n">rms</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">y0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">WhiteSignal</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">default_size_in</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">period</span> <span class="o">=</span> <span class="n">period</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">high</span> <span class="o">=</span> <span class="n">high</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rms</span> <span class="o">=</span> <span class="n">rms</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y0</span> <span class="o">=</span> <span class="n">y0</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">high</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">high</span> <span class="o">&lt;</span> <span class="mf">1.</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">period</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span>
+                <span class="s2">&quot;Make ``high &gt;= 1. / period`` to produce a non-zero signal&quot;</span><span class="p">,</span>
+                <span class="n">attr</span><span class="o">=</span><span class="s1">&#39;high&#39;</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">(period=</span><span class="si">%r</span><span class="s2">, high=</span><span class="si">%r</span><span class="s2">, rms=</span><span class="si">%r</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="p">(</span>
+            <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">period</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">high</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rms</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">make_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">shape_in</span><span class="p">,</span> <span class="n">shape_out</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">rng</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="n">shape_in</span> <span class="o">==</span> <span class="p">(</span><span class="mi">0</span><span class="p">,)</span>
+
+        <span class="n">nyquist_cutoff</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">/</span> <span class="n">dt</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">high</span> <span class="o">&gt;</span> <span class="n">nyquist_cutoff</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span><span class="s2">&quot;High must not exceed the Nyquist frequency &quot;</span>
+                                  <span class="s2">&quot;for the given dt (</span><span class="si">%0.3f</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="n">nyquist_cutoff</span><span class="p">,</span>
+                                  <span class="n">attr</span><span class="o">=</span><span class="s1">&#39;high&#39;</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+
+        <span class="n">n_coefficients</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">period</span> <span class="o">/</span> <span class="n">dt</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">))</span>
+        <span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">n_coefficients</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,)</span> <span class="o">+</span> <span class="n">shape_out</span>
+        <span class="n">sigma</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rms</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
+        <span class="n">coefficients</span> <span class="o">=</span> <span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">shape</span><span class="p">)</span>
+        <span class="n">coefficients</span> <span class="o">+=</span> <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">shape</span><span class="p">)</span>
+        <span class="n">coefficients</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.</span>
+        <span class="n">coefficients</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">imag</span> <span class="o">=</span> <span class="mf">0.</span>
+
+        <span class="n">set_to_zero</span> <span class="o">=</span> <span class="n">npext</span><span class="o">.</span><span class="n">rfftfreq</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">n_coefficients</span><span class="p">,</span> <span class="n">d</span><span class="o">=</span><span class="n">dt</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">high</span>
+        <span class="n">coefficients</span><span class="p">[</span><span class="n">set_to_zero</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.</span>
+        <span class="n">power_correction</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span>
+            <span class="mf">1.</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">set_to_zero</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span> <span class="o">/</span> <span class="n">n_coefficients</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">power_correction</span> <span class="o">&gt;</span> <span class="mf">0.</span><span class="p">:</span>
+            <span class="n">coefficients</span> <span class="o">/=</span> <span class="n">power_correction</span>
+        <span class="n">coefficients</span> <span class="o">*=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">n_coefficients</span><span class="p">)</span>
+        <span class="n">signal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">irfft</span><span class="p">(</span><span class="n">coefficients</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">y0</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Starts each dimension off where it is closest to y0</span>
+            <span class="k">def</span> <span class="nf">shift</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+                <span class="n">offset</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y0</span> <span class="o">-</span> <span class="n">x</span><span class="p">))</span>
+                <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">-</span><span class="n">offset</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># +1 since t starts at dt</span>
+            <span class="n">signal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">apply_along_axis</span><span class="p">(</span><span class="n">shift</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">signal</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">step_whitesignal</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">t</span> <span class="o">/</span> <span class="n">dt</span><span class="p">))</span>
+            <span class="k">return</span> <span class="n">signal</span><span class="p">[</span><span class="n">i</span> <span class="o">%</span> <span class="n">signal</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+
+        <span class="k">return</span> <span class="n">step_whitesignal</span></div>
+
+
+<div class="viewcode-block" id="PresentInput"><a class="viewcode-back" href="../../frontend_api.html#nengo.processes.PresentInput">[docs]</a><span class="k">class</span> <span class="nc">PresentInput</span><span class="p">(</span><span class="n">Process</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Present a series of inputs, each for the same fixed length of time.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    inputs : array_like</span>
+<span class="sd">        Inputs to present, where each row is an input. Rows will be flattened.</span>
+<span class="sd">    presentation_time : float</span>
+<span class="sd">        Show each input for this amount of time (in seconds).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">inputs</span> <span class="o">=</span> <span class="n">NdarrayParam</span><span class="p">(</span><span class="s1">&#39;inputs&#39;</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;...&#39;</span><span class="p">,))</span>
+    <span class="n">presentation_time</span> <span class="o">=</span> <span class="n">NumberParam</span><span class="p">(</span><span class="s1">&#39;presentation_time&#39;</span><span class="p">,</span> <span class="n">low</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">low_open</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">presentation_time</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span> <span class="o">=</span> <span class="n">inputs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">presentation_time</span> <span class="o">=</span> <span class="n">presentation_time</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">PresentInput</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">default_size_in</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">default_size_out</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">make_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">shape_in</span><span class="p">,</span> <span class="n">shape_out</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">rng</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="n">shape_in</span> <span class="o">==</span> <span class="p">(</span><span class="mi">0</span><span class="p">,)</span>
+        <span class="k">assert</span> <span class="n">shape_out</span> <span class="o">==</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">size</span><span class="p">,)</span>
+
+        <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="p">)</span>
+        <span class="n">inputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">presentation_time</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">presentation_time</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">step_presentinput</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">t</span><span class="o">-</span><span class="n">dt</span><span class="p">)</span> <span class="o">/</span> <span class="n">presentation_time</span> <span class="o">+</span> <span class="mf">1e-7</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">inputs</span><span class="p">[</span><span class="n">i</span> <span class="o">%</span> <span class="n">n</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">step_presentinput</span></div>
+
+
+<span class="k">class</span> <span class="nc">PiecewiseDataParam</span><span class="p">(</span><span class="n">DictParam</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Piecewise-specific validation for the data dictionary.</span>
+
+<span class="sd">    In the `.Piecewise` data dict, the keys are points in time (float) and</span>
+<span class="sd">    values are numerical constants or callables of the same dimensionality.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">coerce</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instance</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">PiecewiseDataParam</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">coerce</span><span class="p">(</span><span class="n">instance</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+
+        <span class="n">size_out</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">time</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">iteritems</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">is_number</span><span class="p">(</span><span class="n">time</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span><span class="s2">&quot;Keys must be times (floats or ints), &quot;</span>
+                                      <span class="s2">&quot;not </span><span class="si">%r</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">time</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+                                      <span class="n">attr</span><span class="o">=</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="n">instance</span><span class="p">)</span>
+
+            <span class="c1"># figure out the length of this item</span>
+            <span class="k">if</span> <span class="n">callable</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">value</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ravel</span><span class="p">(</span><span class="n">value</span><span class="p">(</span><span class="n">time</span><span class="p">))</span>
+                <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span><span class="s2">&quot;callable object for time step </span><span class="si">%.3f</span><span class="s2"> &quot;</span>
+                                          <span class="s2">&quot;should return a numerical constant&quot;</span>
+                                          <span class="o">%</span> <span class="n">time</span><span class="p">,</span> <span class="n">attr</span><span class="o">=</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="n">instance</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ravel</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                <span class="n">data</span><span class="p">[</span><span class="n">time</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="n">size</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">size</span>
+
+            <span class="c1"># make sure this is the same size as previous items</span>
+            <span class="k">if</span> <span class="n">size</span> <span class="o">!=</span> <span class="n">size_out</span> <span class="ow">and</span> <span class="n">size_out</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span><span class="s2">&quot;time </span><span class="si">%g</span><span class="s2"> has size </span><span class="si">%d</span><span class="s2"> instead of </span><span class="si">%d</span><span class="s2">&quot;</span> <span class="o">%</span>
+                                      <span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">size_out</span><span class="p">),</span>
+                                      <span class="n">attr</span><span class="o">=</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="n">instance</span><span class="p">)</span>
+            <span class="n">size_out</span> <span class="o">=</span> <span class="n">size</span>
+
+        <span class="k">return</span> <span class="n">data</span>
+
+
+<div class="viewcode-block" id="Piecewise"><a class="viewcode-back" href="../../frontend_api.html#nengo.processes.Piecewise">[docs]</a><span class="k">class</span> <span class="nc">Piecewise</span><span class="p">(</span><span class="n">Process</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A piecewise function with different options for interpolation.</span>
+
+<span class="sd">    Given an input dictionary of ``{0: 0, 0.5: -1, 0.75: 0.5, 1: 0}``,</span>
+<span class="sd">    this process  will emit the numerical values (0, -1, 0.5, 0)</span>
+<span class="sd">    starting at the corresponding time points (0, 0.5, 0.75, 1).</span>
+
+<span class="sd">    The keys in the input dictionary must be times (float or int).</span>
+<span class="sd">    The values in the dictionary can be floats, lists of floats,</span>
+<span class="sd">    or numpy arrays. All lists or numpy arrays must be of the same length,</span>
+<span class="sd">    as the output shape of the process will be determined by the shape</span>
+<span class="sd">    of the values.</span>
+
+<span class="sd">    Interpolation on the data points using `scipy.interpolate` is also</span>
+<span class="sd">    supported. The default interpolation is &#39;zero&#39;, which creates a</span>
+<span class="sd">    piecewise function whose values change at the specified time points.</span>
+<span class="sd">    So the above example would be shortcut for::</span>
+
+<span class="sd">        def function(t):</span>
+<span class="sd">            if t &lt; 0.5:</span>
+<span class="sd">                return 0</span>
+<span class="sd">            elif t &lt; 0.75</span>
+<span class="sd">                return -1</span>
+<span class="sd">            elif t &lt; 1:</span>
+<span class="sd">                return 0.5</span>
+<span class="sd">            else:</span>
+<span class="sd">                return 0</span>
+
+<span class="sd">    For times before the first specified time, an array of zeros (of</span>
+<span class="sd">    the correct length) will be emitted.</span>
+<span class="sd">    This means that the above can be simplified to::</span>
+
+<span class="sd">        Piecewise({0.5: -1, 0.75: 0.5, 1: 0})</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data : dict</span>
+<span class="sd">        A dictionary mapping times to the values that should be emitted</span>
+<span class="sd">        at those times. Times must be numbers (ints or floats), while values</span>
+<span class="sd">        can be numbers, lists of numbers, numpy arrays of numbers,</span>
+<span class="sd">        or callables that return any of those options.</span>
+<span class="sd">    interpolation : str, optional (Default: &#39;zero&#39;)</span>
+<span class="sd">        One of &#39;linear&#39;, &#39;nearest&#39;, &#39;slinear&#39;, &#39;quadratic&#39;, &#39;cubic&#39;, or &#39;zero&#39;.</span>
+<span class="sd">        Specifies how to interpolate between times with specified value.</span>
+<span class="sd">        &#39;zero&#39; creates a plain piecewise function whose values begin at</span>
+<span class="sd">        corresponding time points, while all other options interpolate</span>
+<span class="sd">        as described in `scipy.interpolate`.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data : dict</span>
+<span class="sd">        A dictionary mapping times to the values that should be emitted</span>
+<span class="sd">        at those times. Times are numbers (ints or floats), while values</span>
+<span class="sd">        can be numbers, lists of numbers, numpy arrays of numbers,</span>
+<span class="sd">        or callables that return any of those options.</span>
+<span class="sd">    interpolation : str</span>
+<span class="sd">        One of &#39;linear&#39;, &#39;nearest&#39;, &#39;slinear&#39;, &#39;quadratic&#39;, &#39;cubic&#39;, or &#39;zero&#39;.</span>
+<span class="sd">        Specifies how to interpolate between times with specified value.</span>
+<span class="sd">        &#39;zero&#39; creates a plain piecewise function whose values change at</span>
+<span class="sd">        corresponding time points, while all other options interpolate</span>
+<span class="sd">        as described in `scipy.interpolate`.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+
+<span class="sd">    &gt;&gt;&gt; from nengo.processes import Piecewise</span>
+<span class="sd">    &gt;&gt;&gt; process = Piecewise({0.5: 1, 0.75: -1, 1: 0})</span>
+<span class="sd">    &gt;&gt;&gt; with nengo.Network() as model:</span>
+<span class="sd">    ...     u = nengo.Node(process, size_out=process.default_size_out)</span>
+<span class="sd">    ...     up = nengo.Probe(u)</span>
+<span class="sd">    &gt;&gt;&gt; with nengo.Simulator(model) as sim:</span>
+<span class="sd">    ...     sim.run(1.5)</span>
+<span class="sd">    &gt;&gt;&gt; f = sim.data[up]</span>
+<span class="sd">    &gt;&gt;&gt; t = sim.trange()</span>
+<span class="sd">    &gt;&gt;&gt; f[t == 0.2]</span>
+<span class="sd">    array([[ 0.]])</span>
+<span class="sd">    &gt;&gt;&gt; f[t == 0.58]</span>
+<span class="sd">    array([[ 1.]])</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">data</span> <span class="o">=</span> <span class="n">PiecewiseDataParam</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">readonly</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">interpolation</span> <span class="o">=</span> <span class="n">EnumParam</span><span class="p">(</span><span class="s1">&#39;interpolation&#39;</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="p">(</span>
+        <span class="s1">&#39;zero&#39;</span><span class="p">,</span> <span class="s1">&#39;linear&#39;</span><span class="p">,</span> <span class="s1">&#39;nearest&#39;</span><span class="p">,</span> <span class="s1">&#39;slinear&#39;</span><span class="p">,</span> <span class="s1">&#39;quadratic&#39;</span><span class="p">,</span> <span class="s1">&#39;cubic&#39;</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;zero&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data</span>
+
+        <span class="n">needs_scipy</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span> <span class="s1">&#39;nearest&#39;</span><span class="p">,</span> <span class="s1">&#39;slinear&#39;</span><span class="p">,</span> <span class="s1">&#39;quadratic&#39;</span><span class="p">,</span> <span class="s1">&#39;cubic&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">interpolation</span> <span class="ow">in</span> <span class="n">needs_scipy</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sp_interpolate</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">callable</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">itervalues</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)):</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%r</span><span class="s2"> interpolation cannot be applied because &quot;</span>
+                              <span class="s2">&quot;a callable was supplied for some piece of the &quot;</span>
+                              <span class="s2">&quot;function. Using &#39;zero&#39; interpolation instead.&quot;</span>
+                              <span class="o">%</span> <span class="p">(</span><span class="n">interpolation</span><span class="p">,))</span>
+                <span class="n">interpolation</span> <span class="o">=</span> <span class="s1">&#39;zero&#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="kn">import</span> <span class="nn">scipy.interpolate</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">sp_interpolate</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">interpolate</span>
+                <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+                    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%r</span><span class="s2"> interpolation cannot be applied because &quot;</span>
+                                  <span class="s2">&quot;scipy is not installed. Using &#39;zero&#39; &quot;</span>
+                                  <span class="s2">&quot;interpolation instead.&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">interpolation</span><span class="p">,))</span>
+                    <span class="n">interpolation</span> <span class="o">=</span> <span class="s1">&#39;zero&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">interpolation</span> <span class="o">=</span> <span class="n">interpolation</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">Piecewise</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">default_size_in</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">default_size_out</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">size_out</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">size_out</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">time</span><span class="p">,</span> <span class="n">value</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">iteritems</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">))</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ravel</span><span class="p">(</span><span class="n">value</span><span class="p">(</span><span class="n">time</span><span class="p">))</span> <span class="k">if</span> <span class="n">callable</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="k">else</span> <span class="n">value</span>
+        <span class="k">return</span> <span class="n">value</span><span class="o">.</span><span class="n">size</span>
+
+    <span class="k">def</span> <span class="nf">make_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">shape_in</span><span class="p">,</span> <span class="n">shape_out</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">rng</span><span class="p">):</span>
+        <span class="n">tp</span><span class="p">,</span> <span class="n">yp</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="nb">sorted</span><span class="p">(</span><span class="n">iteritems</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)))</span>
+        <span class="k">assert</span> <span class="n">shape_in</span> <span class="o">==</span> <span class="p">(</span><span class="mi">0</span><span class="p">,)</span>
+        <span class="k">assert</span> <span class="n">shape_out</span> <span class="o">==</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">size_out</span><span class="p">,)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">interpolation</span> <span class="o">==</span> <span class="s1">&#39;zero&#39;</span><span class="p">:</span>
+
+            <span class="k">def</span> <span class="nf">step_piecewise</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+                <span class="n">ti</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="n">tp</span><span class="p">,</span> <span class="n">t</span> <span class="o">+</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">dt</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">yp</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">ti</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape_out</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ravel</span><span class="p">(</span><span class="n">yp</span><span class="p">[</span><span class="n">ti</span><span class="p">](</span><span class="n">t</span><span class="p">))</span>
+                            <span class="k">if</span> <span class="n">callable</span><span class="p">(</span><span class="n">yp</span><span class="p">[</span><span class="n">ti</span><span class="p">])</span> <span class="k">else</span> <span class="n">yp</span><span class="p">[</span><span class="n">ti</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">sp_interpolate</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">interpolation</span> <span class="o">==</span> <span class="s2">&quot;cubic&quot;</span> <span class="ow">and</span> <span class="mi">0</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tp</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;&#39;cubic&#39; interpolation may fail if data not &quot;</span>
+                              <span class="s2">&quot;specified for t=0.0&quot;</span><span class="p">)</span>
+
+            <span class="n">f</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sp_interpolate</span><span class="o">.</span><span class="n">interp1d</span><span class="p">(</span><span class="n">tp</span><span class="p">,</span> <span class="n">yp</span><span class="p">,</span>
+                                             <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                                             <span class="n">kind</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">interpolation</span><span class="p">,</span>
+                                             <span class="n">bounds_error</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                             <span class="n">fill_value</span><span class="o">=</span><span class="mf">0.</span><span class="p">)</span>
+
+            <span class="k">def</span> <span class="nf">step_piecewise</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">ravel</span><span class="p">(</span><span class="n">f</span><span class="p">(</span><span class="n">t</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">step_piecewise</span></div>
+</pre></div>
+
+          </div>
+            
+        </div>
+        <div class="clearfix"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+<script type="text/javascript">
+  $("#mobile-toggle a").click(function () {
+    $("#left-column").toggle();
+  });
+</script>
+<script type="text/javascript" src="../../_static/js/bootstrap.js"></script>
+  <div class="footer">
+    &copy; Copyright 2013-2017, Applied Brain Research. Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+  </div>
+  </body>
+</html>

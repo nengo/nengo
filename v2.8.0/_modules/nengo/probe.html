@@ -1,0 +1,307 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  
+  <!-- Licensed under the Apache 2.0 License -->
+  <link rel="stylesheet" type="text/css" href="../../_static/fonts/open-sans/stylesheet.css" />
+  <!-- Licensed under the SIL Open Font License -->
+  <link rel="stylesheet" type="text/css" href="../../_static/fonts/source-serif-pro/source-serif-pro.css" />
+  <link rel="stylesheet" type="text/css" href="../../_static/css/bootstrap.min.css" />
+  <link rel="stylesheet" type="text/css" href="../../_static/css/bootstrap-theme.min.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+    <title>nengo.probe &#8212; Nengo core 2.8.0 docs</title>
+    <link rel="stylesheet" href="../../_static/guzzle.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '2.8.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+<link rel="stylesheet" type="text/css" href="../../_static/custom.css">
+
+
+  
+   
+
+  </head>
+  <body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="container-wrapper">
+
+      <div id="mobile-toggle">
+        <a href="#"><span class="glyphicon glyphicon-align-justify" aria-hidden="true"></span></a>
+      </div>
+  <div id="left-column">
+    <div class="sphinxsidebar">
+        <a href="
+    ../../index.html" class="text-logo">Nengo core 2.8</a>
+        <div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <h2>Table Of Contents</h2>
+  </div>
+  <div class="sidebar-toc">
+    
+    
+      <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide.html">User guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing to Nengo</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://www.nengo.ai/projects.html">Nengo ecosystem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../license.html">Nengo license</a></li>
+</ul>
+
+    
+  </div>
+</div>
+        
+<div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <div id="main-search">
+      <form class="form-inline" action="../../search.html" method="GET" role="form">
+        <div class="input-group">
+          <input name="q" type="text" class="form-control" placeholder="Search...">
+        </div>
+        <input type="hidden" name="check_keywords" value="yes" />
+        <input type="hidden" name="area" value="default" />
+      </form>
+    </div>
+  </div>
+</div>
+    </div>
+  </div>
+        <div id="right-column">
+          
+  <div class="header">
+    
+          <div role="navigation" aria-label="breadcrumbs navigation">
+            <ol class="breadcrumb">
+              <li><a href="../../index.html">Docs</a></li>
+              
+                <li><a href="../index.html">Module code</a></li>
+              
+              <li>nengo.probe</li>
+            </ol>
+          </div>
+          
+    
+  </div>
+
+          <div class="document clearer body">
+            
+  <h1>Source code for nengo.probe</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">nengo.base</span> <span class="k">import</span> <span class="n">NengoObject</span><span class="p">,</span> <span class="n">NengoObjectParam</span><span class="p">,</span> <span class="n">ObjView</span>
+<span class="kn">from</span> <span class="nn">nengo.config</span> <span class="k">import</span> <span class="n">Config</span>
+<span class="kn">from</span> <span class="nn">nengo.connection</span> <span class="k">import</span> <span class="n">Connection</span><span class="p">,</span> <span class="n">LearningRule</span>
+<span class="kn">from</span> <span class="nn">nengo.exceptions</span> <span class="k">import</span> <span class="n">ObsoleteError</span><span class="p">,</span> <span class="n">ValidationError</span>
+<span class="kn">from</span> <span class="nn">nengo.params</span> <span class="k">import</span> <span class="p">(</span>
+    <span class="n">Default</span><span class="p">,</span> <span class="n">ConnectionDefault</span><span class="p">,</span> <span class="n">NumberParam</span><span class="p">,</span> <span class="n">Parameter</span><span class="p">,</span> <span class="n">StringParam</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">nengo.solvers</span> <span class="k">import</span> <span class="n">SolverParam</span>
+<span class="kn">from</span> <span class="nn">nengo.synapses</span> <span class="k">import</span> <span class="n">SynapseParam</span>
+
+
+<span class="k">class</span> <span class="nc">TargetParam</span><span class="p">(</span><span class="n">NengoObjectParam</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">coerce</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">probe</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">obj</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">ObjView</span><span class="p">)</span> <span class="k">else</span> <span class="n">target</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s1">&#39;probeable&#39;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span><span class="s2">&quot;Type </span><span class="si">%r</span><span class="s2"> is not probeable&quot;</span>
+                                  <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+                                  <span class="n">attr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="n">probe</span><span class="p">)</span>
+
+        <span class="c1"># do this after; better to know that type is not Probable first</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">LearningRule</span><span class="p">):</span>
+            <span class="c1"># TODO: this special case should be able to be removed with #1310</span>
+            <span class="k">return</span> <span class="n">Parameter</span><span class="o">.</span><span class="n">coerce</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">probe</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">TargetParam</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">coerce</span><span class="p">(</span><span class="n">probe</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">AttributeParam</span><span class="p">(</span><span class="n">StringParam</span><span class="p">):</span>
+    <span class="n">coerce_defaults</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="k">def</span> <span class="nf">coerce</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">probe</span><span class="p">,</span> <span class="n">attr</span><span class="p">):</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">AttributeParam</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">coerce</span><span class="p">(</span><span class="n">probe</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">attr</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;decoders&#39;</span><span class="p">,</span> <span class="s1">&#39;transform&#39;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">ObsoleteError</span><span class="p">(</span><span class="s2">&quot;&#39;decoders&#39; and &#39;transform&#39; are now combined &quot;</span>
+                                <span class="s2">&quot;into &#39;weights&#39;. Probe &#39;weights&#39; instead.&quot;</span><span class="p">,</span>
+                                <span class="n">since</span><span class="o">=</span><span class="s2">&quot;v2.1.0&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">attr</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">probe</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">probeable</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span><span class="s2">&quot;Attribute </span><span class="si">%r</span><span class="s2"> is not probeable on </span><span class="si">%s</span><span class="s2">.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                                  <span class="s2">&quot;Probeable attributes: </span><span class="si">%s</span><span class="s2">&quot;</span>
+                                  <span class="o">%</span> <span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="n">probe</span><span class="o">.</span><span class="n">obj</span><span class="p">,</span> <span class="n">probe</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">probeable</span><span class="p">),</span>
+                                  <span class="n">attr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="n">probe</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">value</span>
+
+
+<span class="k">class</span> <span class="nc">ProbeSolverParam</span><span class="p">(</span><span class="n">SolverParam</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">coerce</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">conn</span><span class="p">,</span> <span class="n">solver</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">solver</span> <span class="ow">is</span> <span class="n">ConnectionDefault</span><span class="p">:</span>
+            <span class="n">solver</span> <span class="o">=</span> <span class="n">Config</span><span class="o">.</span><span class="n">default</span><span class="p">(</span><span class="n">Connection</span><span class="p">,</span> <span class="s1">&#39;solver&#39;</span><span class="p">)</span>
+        <span class="n">solver</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">ProbeSolverParam</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">coerce</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">solver</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">solver</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">solver</span><span class="o">.</span><span class="n">weights</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span><span class="s2">&quot;weight solvers only work for ensemble to &quot;</span>
+                                  <span class="s2">&quot;ensemble connections, not probes&quot;</span><span class="p">,</span>
+                                  <span class="n">attr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="n">conn</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">solver</span>
+
+
+<div class="viewcode-block" id="Probe"><a class="viewcode-back" href="../../frontend_api.html#nengo.Probe">[docs]</a><span class="k">class</span> <span class="nc">Probe</span><span class="p">(</span><span class="n">NengoObject</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A probe is an object that collects data from the simulation.</span>
+
+<span class="sd">    This is to be used in any situation where you wish to gather simulation</span>
+<span class="sd">    data (spike data, represented values, neuron voltages, etc.) for analysis.</span>
+
+<span class="sd">    Probes do not directly affect the simulation.</span>
+
+<span class="sd">    All Nengo objects can be probed (except Probes themselves).</span>
+<span class="sd">    Each object has different attributes that can be probed.</span>
+<span class="sd">    To see what is probeable for each object, print its</span>
+<span class="sd">    ``probeable`` attribute.</span>
+
+<span class="sd">    &gt;&gt;&gt; with nengo.Network():</span>
+<span class="sd">    ...     ens = nengo.Ensemble(10, 1)</span>
+<span class="sd">    &gt;&gt;&gt; print(ens.probeable)</span>
+<span class="sd">    [&#39;decoded_output&#39;, &#39;input&#39;]</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    target : Ensemble, Neurons, Node, or Connection</span>
+<span class="sd">        The object to probe.</span>
+
+<span class="sd">    attr : str, optional (Default: None)</span>
+<span class="sd">        The signal to probe. Refer to the target&#39;s ``probeable`` list for</span>
+<span class="sd">        details. If None, the first element in the ``probeable`` list</span>
+<span class="sd">        will be used.</span>
+<span class="sd">    sample_every : float, optional (Default: None)</span>
+<span class="sd">        Sampling period in seconds. If None, the ``dt`` of the simluation</span>
+<span class="sd">        will be used.</span>
+<span class="sd">    synapse : Synapse, optional (Default: None)</span>
+<span class="sd">        A synaptic model to filter the probed signal.</span>
+<span class="sd">    solver : Solver, optional (Default: ``ConnectionDefault``)</span>
+<span class="sd">        `~nengo.solvers.Solver` to compute decoders</span>
+<span class="sd">        for probes that require them.</span>
+<span class="sd">    label : str, optional (Default: None)</span>
+<span class="sd">        A name for the probe. Used for debugging and visualization.</span>
+<span class="sd">    seed : int, optional (Default: None)</span>
+<span class="sd">        The seed used for random number generation.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    attr : str or None</span>
+<span class="sd">        The signal that will be probed. If None, the first element of the</span>
+<span class="sd">        target&#39;s ``probeable`` list will be used.</span>
+<span class="sd">    sample_every : float or None</span>
+<span class="sd">        Sampling period in seconds. If None, the ``dt`` of the simluation</span>
+<span class="sd">        will be used.</span>
+<span class="sd">    solver : Solver or None</span>
+<span class="sd">        `~nengo.solvers.Solver` to compute decoders. Only used for probes</span>
+<span class="sd">        of an ensemble&#39;s decoded output.</span>
+<span class="sd">    synapse : Synapse or None</span>
+<span class="sd">        A synaptic model to filter the probed signal.</span>
+<span class="sd">    target : Ensemble, Neurons, Node, or Connection</span>
+<span class="sd">        The object to probe.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">target</span> <span class="o">=</span> <span class="n">TargetParam</span><span class="p">(</span><span class="s1">&#39;target&#39;</span><span class="p">,</span> <span class="n">nonzero_size_out</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">attr</span> <span class="o">=</span> <span class="n">AttributeParam</span><span class="p">(</span><span class="s1">&#39;attr&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">optional</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">sample_every</span> <span class="o">=</span> <span class="n">NumberParam</span><span class="p">(</span>
+        <span class="s1">&#39;sample_every&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">optional</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">low</span><span class="o">=</span><span class="mf">1e-10</span><span class="p">)</span>
+    <span class="n">synapse</span> <span class="o">=</span> <span class="n">SynapseParam</span><span class="p">(</span><span class="s1">&#39;synapse&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">optional</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">solver</span> <span class="o">=</span> <span class="n">ProbeSolverParam</span><span class="p">(</span><span class="s1">&#39;solver&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">ConnectionDefault</span><span class="p">)</span>
+
+    <span class="n">_param_init_order</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;target&#39;</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">attr</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sample_every</span><span class="o">=</span><span class="n">Default</span><span class="p">,</span>
+                 <span class="n">synapse</span><span class="o">=</span><span class="n">Default</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="n">Default</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">Default</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">Default</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Probe</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target</span> <span class="o">=</span> <span class="n">target</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attr</span> <span class="o">=</span> <span class="n">attr</span> <span class="k">if</span> <span class="n">attr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">probeable</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sample_every</span> <span class="o">=</span> <span class="n">sample_every</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">synapse</span> <span class="o">=</span> <span class="n">synapse</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">solver</span> <span class="o">=</span> <span class="n">solver</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;&lt;Probe</span><span class="si">%s</span><span class="s2"> at 0x</span><span class="si">%x</span><span class="s2"> of &#39;</span><span class="si">%s</span><span class="s2">&#39; of </span><span class="si">%s</span><span class="s2">&gt;&quot;</span> <span class="o">%</span> <span class="p">(</span>
+            <span class="s2">&quot;&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">label</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="s1">&#39; &quot;</span><span class="si">%s</span><span class="s1">&quot;&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="p">,</span>
+            <span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;&lt;Probe</span><span class="si">%s</span><span class="s2"> of &#39;</span><span class="si">%s</span><span class="s2">&#39; of </span><span class="si">%s</span><span class="s2">&gt;&quot;</span> <span class="o">%</span> <span class="p">(</span>
+            <span class="s2">&quot;&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">label</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="s1">&#39; &quot;</span><span class="si">%s</span><span class="s1">&quot;&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">attr</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">obj</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;(Nengo object) The underlying Nengo object target.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">obj</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="p">,</span> <span class="n">ObjView</span><span class="p">)</span> <span class="k">else</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">size_in</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;(int) Dimensionality of the probed signal.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">size_out</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">size_out</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;(int) Cannot connect from probes, so always 0.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">slice</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;(slice) The slice associated with the Nengo object target.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">slice</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="p">,</span> <span class="n">ObjView</span><span class="p">)</span> <span class="k">else</span>
+                <span class="kc">None</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+            
+        </div>
+        <div class="clearfix"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+<script type="text/javascript">
+  $("#mobile-toggle a").click(function () {
+    $("#left-column").toggle();
+  });
+</script>
+<script type="text/javascript" src="../../_static/js/bootstrap.js"></script>
+  <div class="footer">
+    &copy; Copyright 2013-2017, Applied Brain Research. Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+  </div>
+  </body>
+</html>

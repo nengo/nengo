@@ -1,0 +1,252 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  
+  <!-- Licensed under the Apache 2.0 License -->
+  <link rel="stylesheet" type="text/css" href="../../../_static/fonts/open-sans/stylesheet.css" />
+  <!-- Licensed under the SIL Open Font License -->
+  <link rel="stylesheet" type="text/css" href="../../../_static/fonts/source-serif-pro/source-serif-pro.css" />
+  <link rel="stylesheet" type="text/css" href="../../../_static/css/bootstrap.min.css" />
+  <link rel="stylesheet" type="text/css" href="../../../_static/css/bootstrap-theme.min.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+    <title>nengo.networks.product &#8212; Nengo core 2.8.0 docs</title>
+    <link rel="stylesheet" href="../../../_static/guzzle.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '2.8.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+<link rel="stylesheet" type="text/css" href="../../../_static/custom.css">
+
+
+  
+   
+
+  </head>
+  <body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="container-wrapper">
+
+      <div id="mobile-toggle">
+        <a href="#"><span class="glyphicon glyphicon-align-justify" aria-hidden="true"></span></a>
+      </div>
+  <div id="left-column">
+    <div class="sphinxsidebar">
+        <a href="
+    ../../../index.html" class="text-logo">Nengo core 2.8</a>
+        <div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <h2>Table Of Contents</h2>
+  </div>
+  <div class="sidebar-toc">
+    
+    
+      <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../user_guide.html">User guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">Contributing to Nengo</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://www.nengo.ai/projects.html">Nengo ecosystem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../license.html">Nengo license</a></li>
+</ul>
+
+    
+  </div>
+</div>
+        
+<div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <div id="main-search">
+      <form class="form-inline" action="../../../search.html" method="GET" role="form">
+        <div class="input-group">
+          <input name="q" type="text" class="form-control" placeholder="Search...">
+        </div>
+        <input type="hidden" name="check_keywords" value="yes" />
+        <input type="hidden" name="area" value="default" />
+      </form>
+    </div>
+  </div>
+</div>
+    </div>
+  </div>
+        <div id="right-column">
+          
+  <div class="header">
+    
+          <div role="navigation" aria-label="breadcrumbs navigation">
+            <ol class="breadcrumb">
+              <li><a href="../../../index.html">Docs</a></li>
+              
+                <li><a href="../../index.html">Module code</a></li>
+              
+              <li>nengo.networks.product</li>
+            </ol>
+          </div>
+          
+    
+  </div>
+
+          <div class="document clearer body">
+            
+  <h1>Source code for nengo.networks.product</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">warnings</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">import</span> <span class="nn">nengo</span>
+<span class="kn">from</span> <span class="nn">nengo.networks.ensemblearray</span> <span class="k">import</span> <span class="n">EnsembleArray</span>
+
+
+<div class="viewcode-block" id="Product"><a class="viewcode-back" href="../../../networks.html#nengo.networks.Product">[docs]</a><span class="k">def</span> <span class="nf">Product</span><span class="p">(</span><span class="n">n_neurons</span><span class="p">,</span> <span class="n">dimensions</span><span class="p">,</span> <span class="n">input_magnitude</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">net</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Computes the element-wise product of two equally sized vectors.</span>
+
+<span class="sd">    The network used to calculate the product is described in</span>
+<span class="sd">    `Gosmann, 2015`_. A simpler version of this network can be found in the</span>
+<span class="sd">    `Multiplication example</span>
+<span class="sd">    &lt;https://www.nengo.ai/nengo/examples/multiplication.html&gt;`_.</span>
+
+<span class="sd">    Note that this network is optimized under the assumption that both input</span>
+<span class="sd">    values (or both values for each input dimensions of the input vectors) are</span>
+<span class="sd">    uniformly and independently distributed. Visualized in a joint 2D space,</span>
+<span class="sd">    this would give a square of equal probabilities for pairs of input values.</span>
+<span class="sd">    This assumption is violated with non-uniform input value distributions</span>
+<span class="sd">    (for example, if the input values follow a Gaussian or cosine similarity</span>
+<span class="sd">    distribution). In that case, no square of equal probabilities is obtained,</span>
+<span class="sd">    but a probability landscape with circular equi-probability lines. To obtain</span>
+<span class="sd">    the optimal network accuracy, scale the *input_magnitude* by a factor of</span>
+<span class="sd">    ``1 / sqrt(2)``.</span>
+
+<span class="sd">    .. _Gosmann, 2015:</span>
+<span class="sd">       https://nbviewer.jupyter.org/github/ctn-archive/technical-reports/blob/</span>
+<span class="sd">       master/Precise-multiplications-with-the-NEF.ipynb#An-alternative-network</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    n_neurons : int</span>
+<span class="sd">        Number of neurons per dimension in the vector.</span>
+
+<span class="sd">        .. note:: These neurons will be distributed evenly across two</span>
+<span class="sd">                  ensembles. If an odd number of neurons is specified, the</span>
+<span class="sd">                  extra neuron will not be used.</span>
+<span class="sd">    dimensions : int</span>
+<span class="sd">        Number of dimensions in each of the vectors to be multiplied.</span>
+
+<span class="sd">    input_magnitude : float, optional (Default: 1.)</span>
+<span class="sd">        The expected magnitude of the vectors to be multiplied.</span>
+<span class="sd">        This value is used to determine the radius of the ensembles</span>
+<span class="sd">        computing the element-wise product.</span>
+<span class="sd">    kwargs</span>
+<span class="sd">        Keyword arguments passed through to ``nengo.Network``.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    net : Network</span>
+<span class="sd">        The newly built product network, or the provided ``net``.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    net.input_a : Node</span>
+<span class="sd">        The first vector to be multiplied.</span>
+<span class="sd">    net.input_b : Node</span>
+<span class="sd">        The second vector to be multiplied.</span>
+<span class="sd">    net.output : Node</span>
+<span class="sd">        The resulting product.</span>
+<span class="sd">    net.sq1 : EnsembleArray</span>
+<span class="sd">        Represents the first squared term. See `Gosmann, 2015`_ for details.</span>
+<span class="sd">    net.sq2 : EnsembleArray</span>
+<span class="sd">        Represents the second squared term. See `Gosmann, 2015`_ for details.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">net</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s1">&#39;label&#39;</span><span class="p">,</span> <span class="s2">&quot;Product&quot;</span><span class="p">)</span>
+        <span class="n">net</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Network</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;The &#39;net&#39; argument is deprecated.&quot;</span><span class="p">,</span> <span class="ne">DeprecationWarning</span><span class="p">)</span>
+
+    <span class="k">with</span> <span class="n">net</span><span class="p">:</span>
+        <span class="n">net</span><span class="o">.</span><span class="n">input_a</span> <span class="o">=</span> <span class="n">net</span><span class="o">.</span><span class="n">A</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Node</span><span class="p">(</span><span class="n">size_in</span><span class="o">=</span><span class="n">dimensions</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;input_a&quot;</span><span class="p">)</span>
+        <span class="n">net</span><span class="o">.</span><span class="n">input_b</span> <span class="o">=</span> <span class="n">net</span><span class="o">.</span><span class="n">B</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Node</span><span class="p">(</span><span class="n">size_in</span><span class="o">=</span><span class="n">dimensions</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;input_b&quot;</span><span class="p">)</span>
+        <span class="n">net</span><span class="o">.</span><span class="n">output</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Node</span><span class="p">(</span><span class="n">size_in</span><span class="o">=</span><span class="n">dimensions</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;output&quot;</span><span class="p">)</span>
+
+        <span class="n">net</span><span class="o">.</span><span class="n">sq1</span> <span class="o">=</span> <span class="n">EnsembleArray</span><span class="p">(</span>
+            <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_neurons</span> <span class="o">//</span> <span class="mi">2</span><span class="p">),</span> <span class="n">n_ensembles</span><span class="o">=</span><span class="n">dimensions</span><span class="p">,</span> <span class="n">ens_dimensions</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">radius</span><span class="o">=</span><span class="n">input_magnitude</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+        <span class="n">net</span><span class="o">.</span><span class="n">sq2</span> <span class="o">=</span> <span class="n">EnsembleArray</span><span class="p">(</span>
+            <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_neurons</span> <span class="o">//</span> <span class="mi">2</span><span class="p">),</span> <span class="n">n_ensembles</span><span class="o">=</span><span class="n">dimensions</span><span class="p">,</span> <span class="n">ens_dimensions</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">radius</span><span class="o">=</span><span class="n">input_magnitude</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+
+        <span class="n">tr</span> <span class="o">=</span> <span class="mf">1.</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">2.</span><span class="p">)</span>
+        <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span>
+            <span class="n">net</span><span class="o">.</span><span class="n">input_a</span><span class="p">,</span> <span class="n">net</span><span class="o">.</span><span class="n">sq1</span><span class="o">.</span><span class="n">input</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">tr</span><span class="p">,</span> <span class="n">synapse</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+        <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span>
+            <span class="n">net</span><span class="o">.</span><span class="n">input_b</span><span class="p">,</span> <span class="n">net</span><span class="o">.</span><span class="n">sq1</span><span class="o">.</span><span class="n">input</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">tr</span><span class="p">,</span> <span class="n">synapse</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+        <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span>
+            <span class="n">net</span><span class="o">.</span><span class="n">input_a</span><span class="p">,</span> <span class="n">net</span><span class="o">.</span><span class="n">sq2</span><span class="o">.</span><span class="n">input</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">tr</span><span class="p">,</span> <span class="n">synapse</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+        <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span>
+            <span class="n">net</span><span class="o">.</span><span class="n">input_b</span><span class="p">,</span> <span class="n">net</span><span class="o">.</span><span class="n">sq2</span><span class="o">.</span><span class="n">input</span><span class="p">,</span> <span class="n">transform</span><span class="o">=-</span><span class="n">tr</span><span class="p">,</span> <span class="n">synapse</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+        <span class="n">sq1_out</span> <span class="o">=</span> <span class="n">net</span><span class="o">.</span><span class="n">sq1</span><span class="o">.</span><span class="n">add_output</span><span class="p">(</span><span class="s1">&#39;square&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">)</span>
+        <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="n">sq1_out</span><span class="p">,</span> <span class="n">net</span><span class="o">.</span><span class="n">output</span><span class="p">,</span> <span class="n">transform</span><span class="o">=.</span><span class="mi">5</span><span class="p">,</span> <span class="n">synapse</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+        <span class="n">sq2_out</span> <span class="o">=</span> <span class="n">net</span><span class="o">.</span><span class="n">sq2</span><span class="o">.</span><span class="n">add_output</span><span class="p">(</span><span class="s1">&#39;square&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">)</span>
+        <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="n">sq2_out</span><span class="p">,</span> <span class="n">net</span><span class="o">.</span><span class="n">output</span><span class="p">,</span> <span class="n">transform</span><span class="o">=-.</span><span class="mi">5</span><span class="p">,</span> <span class="n">synapse</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">net</span></div>
+
+
+<span class="k">def</span> <span class="nf">dot_product_transform</span><span class="p">(</span><span class="n">dimensions</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Returns a transform for output to compute the scaled dot product.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">scale</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">dimensions</span><span class="p">))</span>
+</pre></div>
+
+          </div>
+            
+        </div>
+        <div class="clearfix"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+<script type="text/javascript">
+  $("#mobile-toggle a").click(function () {
+    $("#left-column").toggle();
+  });
+</script>
+<script type="text/javascript" src="../../../_static/js/bootstrap.js"></script>
+  <div class="footer">
+    &copy; Copyright 2013-2017, Applied Brain Research. Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+  </div>
+  </body>
+</html>

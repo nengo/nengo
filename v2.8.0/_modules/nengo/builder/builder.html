@@ -1,0 +1,383 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  
+  <!-- Licensed under the Apache 2.0 License -->
+  <link rel="stylesheet" type="text/css" href="../../../_static/fonts/open-sans/stylesheet.css" />
+  <!-- Licensed under the SIL Open Font License -->
+  <link rel="stylesheet" type="text/css" href="../../../_static/fonts/source-serif-pro/source-serif-pro.css" />
+  <link rel="stylesheet" type="text/css" href="../../../_static/css/bootstrap.min.css" />
+  <link rel="stylesheet" type="text/css" href="../../../_static/css/bootstrap-theme.min.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+    <title>nengo.builder.builder &#8212; Nengo core 2.8.0 docs</title>
+    <link rel="stylesheet" href="../../../_static/guzzle.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '2.8.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+<link rel="stylesheet" type="text/css" href="../../../_static/custom.css">
+
+
+  
+   
+
+  </head>
+  <body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="container-wrapper">
+
+      <div id="mobile-toggle">
+        <a href="#"><span class="glyphicon glyphicon-align-justify" aria-hidden="true"></span></a>
+      </div>
+  <div id="left-column">
+    <div class="sphinxsidebar">
+        <a href="
+    ../../../index.html" class="text-logo">Nengo core 2.8</a>
+        <div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <h2>Table Of Contents</h2>
+  </div>
+  <div class="sidebar-toc">
+    
+    
+      <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../user_guide.html">User guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">Contributing to Nengo</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://www.nengo.ai/projects.html">Nengo ecosystem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../license.html">Nengo license</a></li>
+</ul>
+
+    
+  </div>
+</div>
+        
+<div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <div id="main-search">
+      <form class="form-inline" action="../../../search.html" method="GET" role="form">
+        <div class="input-group">
+          <input name="q" type="text" class="form-control" placeholder="Search...">
+        </div>
+        <input type="hidden" name="check_keywords" value="yes" />
+        <input type="hidden" name="area" value="default" />
+      </form>
+    </div>
+  </div>
+</div>
+    </div>
+  </div>
+        <div id="right-column">
+          
+  <div class="header">
+    
+          <div role="navigation" aria-label="breadcrumbs navigation">
+            <ol class="breadcrumb">
+              <li><a href="../../../index.html">Docs</a></li>
+              
+                <li><a href="../../index.html">Module code</a></li>
+              
+              <li>nengo.builder.builder</li>
+            </ol>
+          </div>
+          
+    
+  </div>
+
+          <div class="document clearer body">
+            
+  <h1>Source code for nengo.builder.builder</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">collections</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">nengo.builder.signal</span> <span class="k">import</span> <span class="n">Signal</span><span class="p">,</span> <span class="n">SignalDict</span>
+<span class="kn">from</span> <span class="nn">nengo.builder.operator</span> <span class="k">import</span> <span class="n">TimeUpdate</span>
+<span class="kn">from</span> <span class="nn">nengo.cache</span> <span class="k">import</span> <span class="n">NoDecoderCache</span>
+<span class="kn">from</span> <span class="nn">nengo.exceptions</span> <span class="k">import</span> <span class="n">BuildError</span>
+
+
+<div class="viewcode-block" id="Model"><a class="viewcode-back" href="../../../backend_api.html#nengo.builder.Model">[docs]</a><span class="k">class</span> <span class="nc">Model</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Stores artifacts from the build process, which are used by `.Simulator`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    dt : float, optional (Default: 0.001)</span>
+<span class="sd">        The length of a simulator timestep, in seconds.</span>
+<span class="sd">    label : str, optional (Default: None)</span>
+<span class="sd">        A name or description to differentiate models.</span>
+<span class="sd">    decoder_cache : DecoderCache, optional (Default: ``NoDecoderCache()``)</span>
+<span class="sd">        Interface to a cache for expensive parts of the build process.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    config : Config or None</span>
+<span class="sd">        Build functions can set a config object here to affect sub-builders.</span>
+<span class="sd">    decoder_cache : DecoderCache</span>
+<span class="sd">        Interface to a cache for expensive parts of the build process.</span>
+<span class="sd">    dt : float</span>
+<span class="sd">        The length of each timestep, in seconds.</span>
+<span class="sd">    label : str or None</span>
+<span class="sd">        A name or description to differentiate models.</span>
+<span class="sd">    operators : list</span>
+<span class="sd">        List of all operators created in the build process.</span>
+<span class="sd">        All operators must be added to this list, as it is used by Simulator.</span>
+<span class="sd">    params : dict</span>
+<span class="sd">        Mapping from objects to namedtuples containing parameters generated</span>
+<span class="sd">        in the build process.</span>
+<span class="sd">    probes : list</span>
+<span class="sd">        List of all probes. Probes must be added to this list in the build</span>
+<span class="sd">        process, as this list is used by Simulator.</span>
+<span class="sd">    seeded : dict</span>
+<span class="sd">        All objects are assigned a seed, whether the user defined the seed</span>
+<span class="sd">        or it was automatically generated. &#39;seeded&#39; keeps track of whether</span>
+<span class="sd">        the seed is user-defined. We consider the seed to be user-defined</span>
+<span class="sd">        if it was set directly on the object, or if a seed was set on the</span>
+<span class="sd">        network in which the object resides, or if a seed was set on any</span>
+<span class="sd">        ancestor network of the network in which the object resides.</span>
+<span class="sd">    seeds : dict</span>
+<span class="sd">        Mapping from objects to the integer seed assigned to that object.</span>
+<span class="sd">    sig : dict</span>
+<span class="sd">        A dictionary of dictionaries that organizes all of the signals</span>
+<span class="sd">        created in the build process, as build functions often need to</span>
+<span class="sd">        access signals created by other build functions.</span>
+<span class="sd">    step : Signal</span>
+<span class="sd">        The current step (i.e., how many timesteps have occurred thus far).</span>
+<span class="sd">    time : Signal</span>
+<span class="sd">        The current point in time.</span>
+<span class="sd">    toplevel : Network</span>
+<span class="sd">        The top-level network being built.</span>
+<span class="sd">        This is sometimes useful for accessing network elements after build,</span>
+<span class="sd">        or for the network builder to determine if it is the top-level network.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">decoder_cache</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">builder</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">=</span> <span class="n">dt</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="n">label</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">decoder_cache</span> <span class="o">=</span> <span class="p">(</span><span class="n">NoDecoderCache</span><span class="p">()</span> <span class="k">if</span> <span class="n">decoder_cache</span> <span class="ow">is</span> <span class="kc">None</span>
+                              <span class="k">else</span> <span class="n">decoder_cache</span><span class="p">)</span>
+
+        <span class="c1"># Will be filled in by the network builder</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">toplevel</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># Resources used by the build process</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">operators</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">probes</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seeds</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seeded</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">sig</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">defaultdict</span><span class="p">(</span><span class="nb">dict</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="s1">&#39;common&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="n">readonly</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;ZERO&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="s1">&#39;common&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mf">1.</span><span class="p">,</span> <span class="n">readonly</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;ONE&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">step</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;step&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;time&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_op</span><span class="p">(</span><span class="n">TimeUpdate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">step</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">builder</span> <span class="o">=</span> <span class="n">Builder</span><span class="p">()</span> <span class="k">if</span> <span class="n">builder</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">builder</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">build_callback</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;Model: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">label</span>
+
+<div class="viewcode-block" id="Model.add_op"><a class="viewcode-back" href="../../../backend_api.html#nengo.builder.Model.add_op">[docs]</a>    <span class="k">def</span> <span class="nf">add_op</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">op</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add an operator to the model.</span>
+
+<span class="sd">        In addition to adding the operator, this method performs additional</span>
+<span class="sd">        error checking by calling the operator&#39;s ``make_step`` function.</span>
+<span class="sd">        Calling ``make_step`` catches errors early, such as when signals are</span>
+<span class="sd">        not properly initialized, which aids debugging. For that reason,</span>
+<span class="sd">        we recommend calling this method over directly accessing</span>
+<span class="sd">        the ``operators`` attribute.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">operators</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">op</span><span class="p">)</span>
+        <span class="c1"># Fail fast by trying make_step with a temporary sigdict</span>
+        <span class="n">signals</span> <span class="o">=</span> <span class="n">SignalDict</span><span class="p">()</span>
+        <span class="n">op</span><span class="o">.</span><span class="n">init_signals</span><span class="p">(</span><span class="n">signals</span><span class="p">)</span>
+        <span class="n">op</span><span class="o">.</span><span class="n">make_step</span><span class="p">(</span><span class="n">signals</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Model.build"><a class="viewcode-back" href="../../../backend_api.html#nengo.builder.Model.build">[docs]</a>    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Build an object into this model.</span>
+
+<span class="sd">        See `.Builder.build` for more details.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        obj : object</span>
+<span class="sd">            The object to build into this model.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">built</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">builder</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_callback</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">build_callback</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">built</span></div>
+
+<div class="viewcode-block" id="Model.has_built"><a class="viewcode-back" href="../../../backend_api.html#nengo.builder.Model.has_built">[docs]</a>    <span class="k">def</span> <span class="nf">has_built</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns true if the object has already been built in this model.</span>
+
+<span class="sd">        .. note:: Some objects (e.g. synapses) can be built multiple times,</span>
+<span class="sd">                  and therefore will always result in this method returning</span>
+<span class="sd">                  ``False`` even though they have been built.</span>
+
+<span class="sd">        This check is implemented by checking if the object is in the</span>
+<span class="sd">        ``params`` dictionary. Build function should therefore add themselves</span>
+<span class="sd">        to ``model.params`` if they cannot be built multiple times.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        obj : object</span>
+<span class="sd">            The object to query.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span></div></div>
+
+
+<div class="viewcode-block" id="Builder"><a class="viewcode-back" href="../../../backend_api.html#nengo.builder.Builder">[docs]</a><span class="k">class</span> <span class="nc">Builder</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Manages the build functions known to the Nengo build process.</span>
+
+<span class="sd">    Consists of two class methods to encapsulate the build function registry.</span>
+<span class="sd">    All build functions should use the `.Builder.register` method as a</span>
+<span class="sd">    decorator. For example::</span>
+
+<span class="sd">        @nengo.builder.Builder.register(MyRule)</span>
+<span class="sd">        def build_my_rule(model, my_rule, rule):</span>
+<span class="sd">            ...</span>
+
+<span class="sd">    registers a build function for ``MyRule`` objects.</span>
+
+<span class="sd">    Build functions should not be called directly, but instead called through</span>
+<span class="sd">    the `.Model.build` method. `.Model.build` uses the `.Builder.build` method</span>
+<span class="sd">    to ensure that the correct build function is called based on the type of</span>
+<span class="sd">    the object passed to it.</span>
+<span class="sd">    For example, to build the learning rule type ``my_rule`` from above, do::</span>
+
+<span class="sd">        model.build(my_rule, connection.learning_rule)</span>
+
+<span class="sd">    This will call the ``build_my_rule`` function from above with the arguments</span>
+<span class="sd">    ``model, my_rule, connection.learning_rule``.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    builders : dict</span>
+<span class="sd">        Mapping from types to the build function associated with that type.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">builders</span> <span class="o">=</span> <span class="p">{}</span>
+
+<div class="viewcode-block" id="Builder.build"><a class="viewcode-back" href="../../../backend_api.html#nengo.builder.Builder.build">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Build ``obj`` into ``model``.</span>
+
+<span class="sd">        This method looks up the appropriate build function for ``obj`` and</span>
+<span class="sd">        calls it with the model and other arguments provided.</span>
+
+<span class="sd">        Note that if a build function is not specified for a particular type</span>
+<span class="sd">        (e.g., `.EnsembleArray`), the type&#39;s method resolution order will be</span>
+<span class="sd">        examined to look for superclasses</span>
+<span class="sd">        with defined build functions (e.g., `.Network` in the case of</span>
+<span class="sd">        `.EnsembleArray`).</span>
+
+<span class="sd">        This indirection (calling `.Builder.build` instead of the build</span>
+<span class="sd">        function directly) enables users to augment the build process in their</span>
+<span class="sd">        own models, rather than having to modify Nengo itself.</span>
+
+<span class="sd">        In addition to the parameters listed below, further positional and</span>
+<span class="sd">        keyword arguments will be passed unchanged into the build function.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        model : Model</span>
+<span class="sd">            The `.Model` instance in which to store build artifacts.</span>
+<span class="sd">        obj : object</span>
+<span class="sd">            The object to build into the model.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">has_built</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+            <span class="c1"># TODO: Prevent this at pre-build validation time.</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Object </span><span class="si">%s</span><span class="s2"> has already been built.&quot;</span> <span class="o">%</span> <span class="n">obj</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="k">for</span> <span class="n">obj_cls</span> <span class="ow">in</span> <span class="nb">type</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="o">.</span><span class="vm">__mro__</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">obj_cls</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">builders</span><span class="p">:</span>
+                <span class="k">break</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">BuildError</span><span class="p">(</span>
+                <span class="s2">&quot;Cannot build object of type </span><span class="si">%r</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">builders</span><span class="p">[</span><span class="n">obj_cls</span><span class="p">](</span><span class="n">model</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Builder.register"><a class="viewcode-back" href="../../../backend_api.html#nengo.builder.Builder.register">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">register</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">nengo_class</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;A decorator for adding a class to the build function registry.</span>
+
+<span class="sd">        Raises a warning if a build function already exists for the class.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        nengo_class : Class</span>
+<span class="sd">            The type associated with the build function being decorated.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">def</span> <span class="nf">register_builder</span><span class="p">(</span><span class="n">build_fn</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">nengo_class</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">builders</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Type &#39;</span><span class="si">%s</span><span class="s2">&#39; already has a builder. Overwriting.&quot;</span>
+                              <span class="o">%</span> <span class="n">nengo_class</span><span class="p">)</span>
+            <span class="bp">cls</span><span class="o">.</span><span class="n">builders</span><span class="p">[</span><span class="n">nengo_class</span><span class="p">]</span> <span class="o">=</span> <span class="n">build_fn</span>
+            <span class="k">return</span> <span class="n">build_fn</span>
+        <span class="k">return</span> <span class="n">register_builder</span></div></div>
+</pre></div>
+
+          </div>
+            
+        </div>
+        <div class="clearfix"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+<script type="text/javascript">
+  $("#mobile-toggle a").click(function () {
+    $("#left-column").toggle();
+  });
+</script>
+<script type="text/javascript" src="../../../_static/js/bootstrap.js"></script>
+  <div class="footer">
+    &copy; Copyright 2013-2017, Applied Brain Research. Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+  </div>
+  </body>
+</html>

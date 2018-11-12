@@ -1,0 +1,865 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  
+  <!-- Licensed under the Apache 2.0 License -->
+  <link rel="stylesheet" type="text/css" href="../../_static/fonts/open-sans/stylesheet.css" />
+  <!-- Licensed under the SIL Open Font License -->
+  <link rel="stylesheet" type="text/css" href="../../_static/fonts/source-serif-pro/source-serif-pro.css" />
+  <link rel="stylesheet" type="text/css" href="../../_static/css/bootstrap.min.css" />
+  <link rel="stylesheet" type="text/css" href="../../_static/css/bootstrap-theme.min.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+    <title>Processes and how to use them &#8212; Nengo core 2.8.0 docs</title>
+    <link rel="stylesheet" href="../../_static/guzzle.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '2.8.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Tuning curves" href="../usage/tuning_curves.html" />
+    <link rel="prev" title="Delaying a connection with a node" href="../usage/delay_node.html" />
+<link rel="stylesheet" type="text/css" href="../../_static/custom.css">
+
+
+  
+   
+
+  </head>
+  <body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../usage/tuning_curves.html" title="Tuning curves"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../usage/delay_node.html" title="Delaying a connection with a node"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../examples.html" accesskey="U">Examples</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="container-wrapper">
+
+      <div id="mobile-toggle">
+        <a href="#"><span class="glyphicon glyphicon-align-justify" aria-hidden="true"></span></a>
+      </div>
+  <div id="left-column">
+    <div class="sphinxsidebar">
+        <a href="
+    ../../index.html" class="text-logo">Nengo core 2.8</a>
+        <div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <h2>Table Of Contents</h2>
+  </div>
+  <div class="sidebar-toc">
+    
+    
+      <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide.html">User guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../examples.html">Examples</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="nef_summary.html">NEF summary</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#principle-1-representation">Principle 1: Representation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#principle-2-transformation">Principle 2: Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#principle-3-dynamics">Principle 3: Dynamics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#nodes">Nodes</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../examples.html#processes">Processes</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Processes and how to use them</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#ensembles">Ensembles</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#connections">Connections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#learning">Learning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#networks">Networks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#semantic-pointer-architecture">Semantic Pointer Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#under-the-hood">Under the hood</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#reference">Reference</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing to Nengo</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://www.nengo.ai/projects.html">Nengo ecosystem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../license.html">Nengo license</a></li>
+</ul>
+
+    
+  </div>
+</div>
+        
+<div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <div id="main-search">
+      <form class="form-inline" action="../../search.html" method="GET" role="form">
+        <div class="input-group">
+          <input name="q" type="text" class="form-control" placeholder="Search...">
+        </div>
+        <input type="hidden" name="check_keywords" value="yes" />
+        <input type="hidden" name="area" value="default" />
+      </form>
+    </div>
+  </div>
+</div>
+    </div>
+  </div>
+        <div id="right-column">
+          
+  <div class="header">
+    
+          <div role="navigation" aria-label="breadcrumbs navigation">
+            <ol class="breadcrumb">
+              <li><a href="../../index.html">Docs</a></li>
+              
+                <li><a href="../../examples.html">Examples</a></li>
+              
+              <li>Processes and how to use them</li>
+            </ol>
+          </div>
+          
+    
+      <div style="float: right;">
+        <ol class="breadcrumb">
+          <li><a href="../../_downloads/examples/advanced/processes.ipynb" download>Download example as Jupyter Notebook</a></li>
+        </ol>
+      </div>
+    
+  </div>
+
+          <div class="document clearer body">
+            
+  
+<style>
+/* CSS for nbsphinx extension */
+
+/* remove conflicting styling from Sphinx themes */
+div.nbinput,
+div.nbinput div.prompt,
+div.nbinput div.input_area,
+div.nbinput div[class*=highlight],
+div.nbinput div[class*=highlight] pre,
+div.nboutput,
+div.nbinput div.prompt,
+div.nbinput div.output_area,
+div.nboutput div[class*=highlight],
+div.nboutput div[class*=highlight] pre {
+    background: none;
+    border: none;
+    padding: 0 0;
+    margin: 0;
+    box-shadow: none;
+}
+
+/* avoid gaps between output lines */
+div.nboutput div[class*=highlight] pre {
+    line-height: normal;
+}
+
+/* input/output containers */
+div.nbinput,
+div.nboutput {
+    display: -webkit-flex;
+    display: flex;
+    align-items: flex-start;
+    margin: 0;
+    width: 100%;
+}
+@media (max-width: 540px) {
+    div.nbinput,
+    div.nboutput {
+        flex-direction: column;
+    }
+}
+
+/* input container */
+div.nbinput {
+    padding-top: 5px;
+}
+
+/* last container */
+div.nblast {
+    padding-bottom: 5px;
+}
+
+/* input prompt */
+div.nbinput div.prompt pre {
+    color: #303F9F;
+}
+
+/* output prompt */
+div.nboutput div.prompt pre {
+    color: #D84315;
+}
+
+/* all prompts */
+div.nbinput div.prompt,
+div.nboutput div.prompt {
+    min-width: 9ex;
+    padding-top: 0.4em;
+    padding-right: 0.4em;
+    text-align: right;
+    flex: 0;
+}
+@media (max-width: 540px) {
+    div.nbinput div.prompt,
+    div.nboutput div.prompt {
+        text-align: left;
+        padding: 0.4em;
+    }
+    div.nboutput div.prompt.empty {
+        padding: 0;
+    }
+}
+
+/* disable scrollbars on prompts */
+div.nbinput div.prompt pre,
+div.nboutput div.prompt pre {
+    overflow: hidden;
+}
+
+/* input/output area */
+div.nbinput div.input_area,
+div.nboutput div.output_area {
+    padding: 0.4em;
+    -webkit-flex: 1;
+    flex: 1;
+    overflow: auto;
+}
+@media (max-width: 540px) {
+    div.nbinput div.input_area,
+    div.nboutput div.output_area {
+        width: 100%;
+    }
+}
+
+/* input area */
+div.nbinput div.input_area {
+    border: 1px solid #cfcfcf;
+    border-radius: 2px;
+    background: #f7f7f7;
+}
+
+/* override MathJax center alignment in output cells */
+div.nboutput div[class*=MathJax] {
+    text-align: left !important;
+}
+
+/* override sphinx.ext.pngmath center alignment in output cells */
+div.nboutput div.math p {
+    text-align: left;
+}
+
+/* standard error */
+div.nboutput div.output_area.stderr {
+    background: #fdd;
+}
+
+/* ANSI colors */
+.ansi-black-fg { color: #3E424D; }
+.ansi-black-bg { background-color: #3E424D; }
+.ansi-black-intense-fg { color: #282C36; }
+.ansi-black-intense-bg { background-color: #282C36; }
+.ansi-red-fg { color: #E75C58; }
+.ansi-red-bg { background-color: #E75C58; }
+.ansi-red-intense-fg { color: #B22B31; }
+.ansi-red-intense-bg { background-color: #B22B31; }
+.ansi-green-fg { color: #00A250; }
+.ansi-green-bg { background-color: #00A250; }
+.ansi-green-intense-fg { color: #007427; }
+.ansi-green-intense-bg { background-color: #007427; }
+.ansi-yellow-fg { color: #DDB62B; }
+.ansi-yellow-bg { background-color: #DDB62B; }
+.ansi-yellow-intense-fg { color: #B27D12; }
+.ansi-yellow-intense-bg { background-color: #B27D12; }
+.ansi-blue-fg { color: #208FFB; }
+.ansi-blue-bg { background-color: #208FFB; }
+.ansi-blue-intense-fg { color: #0065CA; }
+.ansi-blue-intense-bg { background-color: #0065CA; }
+.ansi-magenta-fg { color: #D160C4; }
+.ansi-magenta-bg { background-color: #D160C4; }
+.ansi-magenta-intense-fg { color: #A03196; }
+.ansi-magenta-intense-bg { background-color: #A03196; }
+.ansi-cyan-fg { color: #60C6C8; }
+.ansi-cyan-bg { background-color: #60C6C8; }
+.ansi-cyan-intense-fg { color: #258F8F; }
+.ansi-cyan-intense-bg { background-color: #258F8F; }
+.ansi-white-fg { color: #C5C1B4; }
+.ansi-white-bg { background-color: #C5C1B4; }
+.ansi-white-intense-fg { color: #A1A6B2; }
+.ansi-white-intense-bg { background-color: #A1A6B2; }
+
+.ansi-default-inverse-fg { color: #FFFFFF; }
+.ansi-default-inverse-bg { background-color: #000000; }
+
+.ansi-bold { font-weight: bold; }
+.ansi-underline { text-decoration: underline; }
+</style>
+<div class="section" id="Processes-and-how-to-use-them">
+<h1>Processes and how to use them<a class="headerlink" href="#Processes-and-how-to-use-them" title="Permalink to this headline">¶</a></h1>
+<p>Processes in Nengo can be used to describe general functions or
+dynamical systems, including those with randomness. They can be useful
+if you want a <code class="docutils literal"><span class="pre">Node</span></code> output that has a state (like a dynamical
+system), and they’re also used for things like injecting noise into
+Ensembles so that you can not only have “white” noise that samples from
+a distribution, but can also have “colored” noise where subsequent
+samples are correlated with past samples.</p>
+<p>This notebook will first present the basic process interface, then
+demonstrate some of the built-in Nengo processes and how they can be
+used in your code. It will also describe how to create your own custom
+process.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="o">%</span><span class="k">matplotlib</span> inline
+
+<span class="kn">import</span> <span class="nn">nengo</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="Interface">
+<h2>Interface<a class="headerlink" href="#Interface" title="Permalink to this headline">¶</a></h2>
+<p>We will begin by looking at how to run an existing process instance.</p>
+<p>The key functions for running processes are <code class="docutils literal"><span class="pre">run</span></code>, <code class="docutils literal"><span class="pre">run_steps</span></code>, and
+<code class="docutils literal"><span class="pre">apply</span></code>. The first two are for running without an input, and the third
+is for applying the process to an input.</p>
+<p>There are also two helper functions, <code class="docutils literal"><span class="pre">trange</span></code> and <code class="docutils literal"><span class="pre">ntrange</span></code>, which
+return the time points corresponding to a process output, given either a
+length of time or a number of steps, respectively.</p>
+<div class="section" id="run:-running-a-process-for-a-length-of-time">
+<h3><code class="docutils literal"><span class="pre">run</span></code>: running a process for a length of time<a class="headerlink" href="#run:-running-a-process-for-a-length-of-time" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal"><span class="pre">run</span></code> function runs a process for a given length of time, without
+any input. Many of the random processes in <code class="docutils literal"><span class="pre">nengo.processes</span></code> will be
+run this way, since they do not require an input signal.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="c1"># Create a process (details on the FilteredNoise process below)</span>
+<span class="n">process</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">processes</span><span class="o">.</span><span class="n">FilteredNoise</span><span class="p">(</span>
+    <span class="n">synapse</span><span class="o">=</span><span class="n">nengo</span><span class="o">.</span><span class="n">synapses</span><span class="o">.</span><span class="n">Alpha</span><span class="p">(</span><span class="mf">0.1</span><span class="p">),</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="c1"># run the process for two seconds</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">process</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="mf">2.0</span><span class="p">)</span>
+
+<span class="c1"># get a corresponding two-second time range</span>
+<span class="n">t</span> <span class="o">=</span> <span class="n">process</span><span class="o">.</span><span class="n">trange</span><span class="p">(</span><span class="mf">2.0</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;time [s]&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;process output&#39;</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_advanced_processes_6_0.png" src="../../_images/examples_advanced_processes_6_0.png" />
+</div>
+</div>
+</div>
+<div class="section" id="run_steps:-running-a-process-for-a-number-of-steps">
+<h3><code class="docutils literal"><span class="pre">run_steps</span></code>: running a process for a number of steps<a class="headerlink" href="#run_steps:-running-a-process-for-a-number-of-steps" title="Permalink to this headline">¶</a></h3>
+<p>To run the process for a number of steps, use the <code class="docutils literal"><span class="pre">run_steps</span></code>
+function. The length of the generated signal will depend on the
+process’s <code class="docutils literal"><span class="pre">default_dt</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="n">process</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">processes</span><span class="o">.</span><span class="n">FilteredNoise</span><span class="p">(</span>
+    <span class="n">synapse</span><span class="o">=</span><span class="n">nengo</span><span class="o">.</span><span class="n">synapses</span><span class="o">.</span><span class="n">Alpha</span><span class="p">(</span><span class="mf">0.1</span><span class="p">),</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="c1"># run the process for 1000 steps</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">process</span><span class="o">.</span><span class="n">run_steps</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span>
+
+<span class="c1"># get a corresponding 1000-step time range</span>
+<span class="n">t</span> <span class="o">=</span> <span class="n">process</span><span class="o">.</span><span class="n">ntrange</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;time [s]&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;process output&#39;</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_advanced_processes_8_0.png" src="../../_images/examples_advanced_processes_8_0.png" />
+</div>
+</div>
+</div>
+<div class="section" id="apply:-running-a-process-with-an-input">
+<h3><code class="docutils literal"><span class="pre">apply</span></code>: running a process with an input<a class="headerlink" href="#apply:-running-a-process-with-an-input" title="Permalink to this headline">¶</a></h3>
+<p>To run a process with an input, use the <code class="docutils literal"><span class="pre">apply</span></code> function.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="n">process</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">synapses</span><span class="o">.</span><span class="n">Lowpass</span><span class="p">(</span><span class="mf">0.2</span><span class="p">)</span>
+
+<span class="n">t</span> <span class="o">=</span> <span class="n">process</span><span class="o">.</span><span class="n">trange</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">t</span> <span class="o">%</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span> <span class="o">-</span> <span class="p">(</span><span class="n">t</span> <span class="o">%</span> <span class="mi">2</span><span class="p">))</span>  <span class="c1"># sawtooth wave</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">process</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>  <span class="c1"># general to all Processes</span>
+<span class="n">z</span> <span class="o">=</span> <span class="n">process</span><span class="o">.</span><span class="n">filtfilt</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>  <span class="c1"># specific to Synapses</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;input&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;output&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;filtfilt&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;time [s]&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;signal&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">();</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_advanced_processes_10_0.png" src="../../_images/examples_advanced_processes_10_0.png" />
+</div>
+</div>
+<p>Note that Synapses are a special kind of process, and have the
+additional functions <code class="docutils literal"><span class="pre">filt</span></code> and <code class="docutils literal"><span class="pre">filtfilt</span></code>. <code class="docutils literal"><span class="pre">filt</span></code> works mostly
+the same as <code class="docutils literal"><span class="pre">apply</span></code>, but with some additional functionality such as
+the ability to filter along any axis. <code class="docutils literal"><span class="pre">filtfilt</span></code> provides zero-phase
+filtering.</p>
+</div>
+<div class="section" id="Changing-the-time-step-(dt-and-default_dt)">
+<h3>Changing the time-step (<code class="docutils literal"><span class="pre">dt</span></code> and <code class="docutils literal"><span class="pre">default_dt</span></code>)<a class="headerlink" href="#Changing-the-time-step-(dt-and-default_dt)" title="Permalink to this headline">¶</a></h3>
+<p>To run a process with a different time-step, you can either pass the new
+time step (<code class="docutils literal"><span class="pre">dt</span></code>) when calling the functions, or change the
+<code class="docutils literal"><span class="pre">default_dt</span></code> property of the process.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="n">process</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">processes</span><span class="o">.</span><span class="n">FilteredNoise</span><span class="p">(</span>
+    <span class="n">synapse</span><span class="o">=</span><span class="n">nengo</span><span class="o">.</span><span class="n">synapses</span><span class="o">.</span><span class="n">Alpha</span><span class="p">(</span><span class="mf">0.1</span><span class="p">),</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">y1</span> <span class="o">=</span> <span class="n">process</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
+<span class="n">t1</span> <span class="o">=</span> <span class="n">process</span><span class="o">.</span><span class="n">trange</span><span class="p">(</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
+
+<span class="n">process</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">processes</span><span class="o">.</span><span class="n">FilteredNoise</span><span class="p">(</span>
+    <span class="n">synapse</span><span class="o">=</span><span class="n">nengo</span><span class="o">.</span><span class="n">synapses</span><span class="o">.</span><span class="n">Alpha</span><span class="p">(</span><span class="mf">0.1</span><span class="p">),</span> <span class="n">default_dt</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">y2</span> <span class="o">=</span> <span class="n">process</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="mf">2.0</span><span class="p">)</span>
+<span class="n">t2</span> <span class="o">=</span> <span class="n">process</span><span class="o">.</span><span class="n">trange</span><span class="p">(</span><span class="mf">2.0</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t1</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;dt = </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="mf">0.05</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t2</span><span class="p">,</span> <span class="n">y2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;dt = </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="mf">0.1</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;time [s]&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;output&#39;</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_advanced_processes_13_0.png" src="../../_images/examples_advanced_processes_13_0.png" />
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="WhiteSignal">
+<h2><code class="docutils literal"><span class="pre">WhiteSignal</span></code><a class="headerlink" href="#WhiteSignal" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal"><span class="pre">WhiteSignal</span></code> process is used to generate band-limited white
+noise, with only frequencies below a given cutoff frequency.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Network</span><span class="p">()</span> <span class="k">as</span> <span class="n">model</span><span class="p">:</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Node</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">processes</span><span class="o">.</span><span class="n">WhiteSignal</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Node</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">processes</span><span class="o">.</span><span class="n">WhiteSignal</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Node</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">processes</span><span class="o">.</span><span class="n">WhiteSignal</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">rms</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Node</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">processes</span><span class="o">.</span><span class="n">WhiteSignal</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+    <span class="n">ap</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+    <span class="n">bp</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+    <span class="n">cp</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+    <span class="n">dp</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+
+<span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Simulator</span><span class="p">(</span><span class="n">model</span><span class="p">)</span> <span class="k">as</span> <span class="n">sim</span><span class="p">:</span>
+    <span class="n">sim</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">(),</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">ap</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;5 Hz cutoff&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">(),</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">bp</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;10 Hz cutoff&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">(),</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">cp</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;5 Hz cutoff, 0.3 RMS amplitude&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">(),</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">dp</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;5 Hz cutoff, 0.5 s period&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;time [s]&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="mi">2</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_advanced_processes_15_0.png" src="../../_images/examples_advanced_processes_15_0.png" />
+</div>
+</div>
+<p>Note that the 10 Hz signal (green) has similar low frequency
+characteristics as the 5 Hz signal (blue), but with additional
+higher-frequency components. The 0.3 RMS amplitude 5 Hz signal (red) is
+the same as the original 5 Hz signal (blue), but scaled down (the
+default RMS amplitude is 0.5). Finally, the signal with a 0.5 s period
+(instead of a 1 s period like the others) is completely different,
+because changing the period changes the spacing of the random frequency
+components and thus creates a completely different signal. Note how the
+signal with the 0.5 s period repeats itself; for example, the value at
+<span class="math">\(t = 0\)</span> is the same as the value at <span class="math">\(t = 0.5\)</span>, and the value
+at <span class="math">\(t = 0.4\)</span> is the same as the value at <span class="math">\(t = 0.9\)</span>.</p>
+</div>
+<div class="section" id="WhiteNoise">
+<h2><code class="docutils literal"><span class="pre">WhiteNoise</span></code><a class="headerlink" href="#WhiteNoise" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal"><span class="pre">WhiteNoise</span></code> process generates white noise, with equal power
+across all frequencies. By default, it is scaled so that the integral
+process (Brownian noise) will have the same standard deviation
+regardless of <code class="docutils literal"><span class="pre">dt</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="n">process</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">processes</span><span class="o">.</span><span class="n">WhiteNoise</span><span class="p">(</span><span class="n">dist</span><span class="o">=</span><span class="n">nengo</span><span class="o">.</span><span class="n">dists</span><span class="o">.</span><span class="n">Gaussian</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+
+<span class="n">t</span> <span class="o">=</span> <span class="n">process</span><span class="o">.</span><span class="n">trange</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">process</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">y</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_advanced_processes_18_0.png" src="../../_images/examples_advanced_processes_18_0.png" />
+</div>
+</div>
+<p>One use of the <code class="docutils literal"><span class="pre">WhiteNoise</span></code> process is to inject noise into neural
+populations. Here, we create two identical ensembles, but add a bit of
+noise to one and no noise to the other. We plot the membrane voltages of
+both.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="n">process</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">processes</span><span class="o">.</span><span class="n">WhiteNoise</span><span class="p">(</span>
+    <span class="n">dist</span><span class="o">=</span><span class="n">nengo</span><span class="o">.</span><span class="n">dists</span><span class="o">.</span><span class="n">Gaussian</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">),</span> <span class="n">seed</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Network</span><span class="p">()</span> <span class="k">as</span> <span class="n">model</span><span class="p">:</span>
+    <span class="n">ens_args</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">encoders</span><span class="o">=</span><span class="p">[[</span><span class="mi">1</span><span class="p">]],</span> <span class="n">intercepts</span><span class="o">=</span><span class="p">[</span><span class="mf">0.01</span><span class="p">],</span> <span class="n">max_rates</span><span class="o">=</span><span class="p">[</span><span class="mi">100</span><span class="p">])</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">ens_args</span><span class="p">)</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">noise</span><span class="o">=</span><span class="n">process</span><span class="p">,</span> <span class="o">**</span><span class="n">ens_args</span><span class="p">)</span>
+    <span class="n">a_voltage</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">neurons</span><span class="p">,</span> <span class="s1">&#39;voltage&#39;</span><span class="p">)</span>
+    <span class="n">b_voltage</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">neurons</span><span class="p">,</span> <span class="s1">&#39;voltage&#39;</span><span class="p">)</span>
+
+<span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Simulator</span><span class="p">(</span><span class="n">model</span><span class="p">)</span> <span class="k">as</span> <span class="n">sim</span><span class="p">:</span>
+    <span class="n">sim</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="mf">0.15</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">(),</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">a_voltage</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;deterministic&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">(),</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">b_voltage</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;noisy&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;time [s]&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;voltage&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="mi">4</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_advanced_processes_20_0.png" src="../../_images/examples_advanced_processes_20_0.png" />
+</div>
+</div>
+<p>We see that the neuron without noise (blue) approaches its firing
+threshold, but never quite gets there. Adding a bit of noise (green)
+causes the neuron to occasionally jitter above the threshold, resulting
+in two spikes (where the voltage suddenly drops to zero).</p>
+</div>
+<div class="section" id="FilteredNoise">
+<h2><code class="docutils literal"><span class="pre">FilteredNoise</span></code><a class="headerlink" href="#FilteredNoise" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal"><span class="pre">FilteredNoise</span></code> process takes a white noise signal and passes it
+through a filter. Using any type of lowpass filter (e.g. <code class="docutils literal"><span class="pre">Lowpass</span></code>,
+<code class="docutils literal"><span class="pre">Alpha</span></code>) will result in a signal similar to <code class="docutils literal"><span class="pre">WhiteSignal</span></code>, but
+rather than being ideally filtered (i.e.&nbsp;no frequency content above the
+cutoff), the <code class="docutils literal"><span class="pre">FilteredNoise</span></code> signal will have some frequency content
+above the cutoff, with the amount depending on the filter used. Here, we
+can see how an <code class="docutils literal"><span class="pre">Alpha</span></code> filter (a second-order lowpass filter) is much
+better than the <code class="docutils literal"><span class="pre">Lowpass</span></code> filter (a first-order lowpass filter) at
+removing the high-frequency content.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="n">process1</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">processes</span><span class="o">.</span><span class="n">FilteredNoise</span><span class="p">(</span>
+    <span class="n">dist</span><span class="o">=</span><span class="n">nengo</span><span class="o">.</span><span class="n">dists</span><span class="o">.</span><span class="n">Gaussian</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">),</span> <span class="n">synapse</span><span class="o">=</span><span class="n">nengo</span><span class="o">.</span><span class="n">Alpha</span><span class="p">(</span><span class="mf">0.005</span><span class="p">),</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="n">process2</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">processes</span><span class="o">.</span><span class="n">FilteredNoise</span><span class="p">(</span>
+    <span class="n">dist</span><span class="o">=</span><span class="n">nengo</span><span class="o">.</span><span class="n">dists</span><span class="o">.</span><span class="n">Gaussian</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">),</span> <span class="n">synapse</span><span class="o">=</span><span class="n">nengo</span><span class="o">.</span><span class="n">Lowpass</span><span class="p">(</span><span class="mf">0.005</span><span class="p">),</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="n">tlen</span> <span class="o">=</span> <span class="mf">0.5</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">process1</span><span class="o">.</span><span class="n">trange</span><span class="p">(</span><span class="n">tlen</span><span class="p">),</span> <span class="n">process1</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">tlen</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">process2</span><span class="o">.</span><span class="n">trange</span><span class="p">(</span><span class="n">tlen</span><span class="p">),</span> <span class="n">process2</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">tlen</span><span class="p">));</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_advanced_processes_23_0.png" src="../../_images/examples_advanced_processes_23_0.png" />
+</div>
+</div>
+<p>The <code class="docutils literal"><span class="pre">FilteredNoise</span></code> process with an <code class="docutils literal"><span class="pre">Alpha</span></code> synapse (blue) has
+significantly lower high-frequency components than a similar process
+with a <code class="docutils literal"><span class="pre">Lowpass</span></code> synapse (green).</p>
+</div>
+<div class="section" id="PresentInput">
+<h2><code class="docutils literal"><span class="pre">PresentInput</span></code><a class="headerlink" href="#PresentInput" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal"><span class="pre">PresentInput</span></code> process is useful for presenting a series of static
+inputs to a network, where each input is shown for the same length of
+time. Once all the images have been shown, they repeat from the
+beginning. One application is presenting a series of images to a
+classification network.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="n">inputs</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mf">0.1</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.7</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">]]</span>
+<span class="n">process</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">processes</span><span class="o">.</span><span class="n">PresentInput</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">presentation_time</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+
+<span class="n">tlen</span> <span class="o">=</span> <span class="mf">0.8</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">process</span><span class="o">.</span><span class="n">trange</span><span class="p">(</span><span class="n">tlen</span><span class="p">),</span> <span class="n">process</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">tlen</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="n">tlen</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">([</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]);</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_advanced_processes_26_0.png" src="../../_images/examples_advanced_processes_26_0.png" />
+</div>
+</div>
+</div>
+<div class="section" id="Custom-processes">
+<h2>Custom processes<a class="headerlink" href="#Custom-processes" title="Permalink to this headline">¶</a></h2>
+<p>You can create custom processes by inheriting from the <code class="docutils literal"><span class="pre">nengo.Process</span></code>
+class and overloading the <code class="docutils literal"><span class="pre">make_step</span></code> function.</p>
+<p>First, we’ll make a simple custom process that implements a
+two-dimensional oscillator dynamical system. The <code class="docutils literal"><span class="pre">make_step</span></code> function
+defines a <code class="docutils literal"><span class="pre">state</span></code> variable to store the state, and a fixed <code class="docutils literal"><span class="pre">A</span></code>
+matrix that determines how the state changes over time.</p>
+<p>One advantage to using a process over a simple function is that if we
+reset our simulator, <code class="docutils literal"><span class="pre">make_step</span></code> will be called again and the process
+state will be restored to the initial state.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">class</span> <span class="nc">SimpleOscillator</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">Process</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">make_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">shape_in</span><span class="p">,</span> <span class="n">shape_out</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">rng</span><span class="p">):</span>
+        <span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="o">-</span><span class="mf">0.1</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.</span><span class="p">],</span> <span class="p">[</span><span class="mf">1.</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.1</span><span class="p">]])</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">])</span>
+
+        <span class="c1"># define the step function, which will be called</span>
+        <span class="c1"># by the node every time step</span>
+        <span class="k">def</span> <span class="nf">step</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+            <span class="n">state</span><span class="p">[:]</span> <span class="o">+=</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">state</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">state</span>
+
+        <span class="k">return</span> <span class="n">step</span>  <span class="c1"># return the step function</span>
+
+
+<span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Network</span><span class="p">()</span> <span class="k">as</span> <span class="n">model</span><span class="p">:</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Node</span><span class="p">(</span><span class="n">SimpleOscillator</span><span class="p">(),</span> <span class="n">size_in</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">size_out</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">a_p</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+
+<span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Simulator</span><span class="p">(</span><span class="n">model</span><span class="p">)</span> <span class="k">as</span> <span class="n">sim</span><span class="p">:</span>
+    <span class="n">sim</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="mf">20.0</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">(),</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">a_p</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;time [s]&#39;</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_advanced_processes_28_0.png" src="../../_images/examples_advanced_processes_28_0.png" />
+</div>
+</div>
+<p>We can generalize this process to one that can implement arbitrary
+linear dynamical systems, given <code class="docutils literal"><span class="pre">A</span></code> and <code class="docutils literal"><span class="pre">B</span></code> matrices. We will
+overload the <code class="docutils literal"><span class="pre">__init__</span></code> method to take and store these matrices, as
+well as check the matrix shapes and set the default size in and out. The
+advantage of using the default sizes is that when we then create a node
+using the process, or run the process using <code class="docutils literal"><span class="pre">apply</span></code>, we do not need to
+specify the sizes.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">class</span> <span class="nc">LTIProcess</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">Process</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">A</span><span class="p">,</span> <span class="n">B</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">A</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">B</span><span class="p">)</span>
+
+        <span class="c1"># check that the matrix shapes are compatible</span>
+        <span class="k">assert</span> <span class="n">A</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">assert</span> <span class="n">B</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">B</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># store the matrices for `make_step`</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">A</span> <span class="o">=</span> <span class="n">A</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">B</span> <span class="o">=</span> <span class="n">B</span>
+
+        <span class="c1"># pass the default sizes to the Process constructor</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">LTIProcess</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">default_size_in</span><span class="o">=</span><span class="n">B</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">default_size_out</span><span class="o">=</span><span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">make_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">shape_in</span><span class="p">,</span> <span class="n">shape_out</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">rng</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="n">shape_in</span> <span class="o">==</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="p">)</span>
+        <span class="k">assert</span> <span class="n">shape_out</span> <span class="o">==</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">)</span>
+        <span class="n">A</span><span class="p">,</span> <span class="n">B</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">B</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+        <span class="k">def</span> <span class="nf">step</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+            <span class="n">state</span><span class="p">[:]</span> <span class="o">+=</span> <span class="n">dt</span> <span class="o">*</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">state</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">x</span><span class="p">))</span>
+            <span class="k">return</span> <span class="n">state</span>
+
+        <span class="k">return</span> <span class="n">step</span>
+
+
+<span class="c1"># demonstrate the LTIProcess in action</span>
+<span class="n">A</span> <span class="o">=</span> <span class="p">[[</span><span class="o">-</span><span class="mf">0.1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.1</span><span class="p">]]</span>
+<span class="n">B</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">10</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mi">10</span><span class="p">]]</span>
+
+<span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Network</span><span class="p">()</span> <span class="k">as</span> <span class="n">model</span><span class="p">:</span>
+    <span class="n">u</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Node</span><span class="p">(</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">t</span> <span class="o">&lt;</span> <span class="mf">0.1</span> <span class="k">else</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Node</span><span class="p">(</span><span class="n">LTIProcess</span><span class="p">(</span>
+        <span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">))</span>  <span class="c1"># we don&#39;t need to specify size_in and size_out!</span>
+    <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span>
+    <span class="n">a_p</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+
+<span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Simulator</span><span class="p">(</span><span class="n">model</span><span class="p">)</span> <span class="k">as</span> <span class="n">sim</span><span class="p">:</span>
+    <span class="n">sim</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="mf">20.0</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">(),</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">a_p</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;time [s]&#39;</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_advanced_processes_30_0.png" src="../../_images/examples_advanced_processes_30_0.png" />
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+            
+  <div class="footer-relations">
+    
+      <div class="pull-left">
+        <a class="btn btn-default" href="../usage/delay_node.html" title="previous chapter (use the left arrow)">Delaying a connection with a node</a>
+      </div>
+    
+      <div class="pull-right">
+        <a class="btn btn-default" href="../usage/tuning_curves.html" title="next chapter (use the right arrow)">Tuning curves</a>
+      </div>
+    </div>
+    <div class="clearer"></div>
+  
+        </div>
+        <div class="clearfix"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../usage/tuning_curves.html" title="Tuning curves"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../usage/delay_node.html" title="Delaying a connection with a node"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../examples.html" >Examples</a> &#187;</li> 
+      </ul>
+    </div>
+<script type="text/javascript">
+  $("#mobile-toggle a").click(function () {
+    $("#left-column").toggle();
+  });
+</script>
+<script type="text/javascript" src="../../_static/js/bootstrap.js"></script>
+  <div class="footer">
+    &copy; Copyright 2013-2017, Applied Brain Research. Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+  </div>
+  </body>
+</html>

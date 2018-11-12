@@ -1,0 +1,393 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  
+  <!-- Licensed under the Apache 2.0 License -->
+  <link rel="stylesheet" type="text/css" href="_static/fonts/open-sans/stylesheet.css" />
+  <!-- Licensed under the SIL Open Font License -->
+  <link rel="stylesheet" type="text/css" href="_static/fonts/source-serif-pro/source-serif-pro.css" />
+  <link rel="stylesheet" type="text/css" href="_static/css/bootstrap.min.css" />
+  <link rel="stylesheet" type="text/css" href="_static/css/bootstrap-theme.min.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+    <title>Examples &#8212; Nengo core 2.8.0 docs</title>
+    <link rel="stylesheet" href="_static/guzzle.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '2.8.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="NEF summary" href="examples/advanced/nef_summary.html" />
+    <link rel="prev" title="Converting from Nengo 1.4 to Nengo 2.0" href="converting.html" />
+<link rel="stylesheet" type="text/css" href="_static/custom.css">
+
+
+  
+   
+
+  </head>
+  <body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="examples/advanced/nef_summary.html" title="NEF summary"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="converting.html" title="Converting from Nengo 1.4 to Nengo 2.0"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Nengo core 2.8.0 docs</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="container-wrapper">
+
+      <div id="mobile-toggle">
+        <a href="#"><span class="glyphicon glyphicon-align-justify" aria-hidden="true"></span></a>
+      </div>
+  <div id="left-column">
+    <div class="sphinxsidebar">
+        <a href="
+    index.html" class="text-logo">Nengo core 2.8</a>
+        <div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <h2>Table Of Contents</h2>
+  </div>
+  <div class="sidebar-toc">
+    
+    
+      <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user_guide.html">User guide</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Examples</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="examples/advanced/nef_summary.html">NEF summary</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#principle-1-representation">Principle 1: Representation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="examples/basic/single_neuron.html">A single neuron</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples/basic/two_neurons.html">Two neurons</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples/basic/many_neurons.html">Many neurons</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples/basic/2d_representation.html">2-dimensional representation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples/basic/combining.html">Combining</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples/basic/addition.html">Addition</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#principle-2-transformation">Principle 2: Transformation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="examples/basic/communication_channel.html">Communication channel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples/basic/squaring.html">Squaring the input</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples/basic/multiplication.html">Multiplication</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#principle-3-dynamics">Principle 3: Dynamics</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="examples/dynamics/integrator.html">Integrator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples/dynamics/controlled_integrator.html">Controlled integrator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples/dynamics/controlled_integrator2.html">Controlled integrator 2</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples/dynamics/oscillator.html">A simple harmonic oscillator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples/dynamics/controlled_oscillator.html">Controlled oscillator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples/dynamics/lorenz_attractor.html">The Lorenz chaotic attractor</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#nodes">Nodes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="examples/usage/delay_node.html">Delaying a connection with a node</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#processes">Processes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="examples/advanced/processes.html">Processes and how to use them</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#ensembles">Ensembles</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="examples/usage/tuning_curves.html">Tuning curves</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples/advanced/izhikevich.html">Using the Izhikevich neuron model</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#connections">Connections</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="examples/advanced/inhibitory_gating.html">Inhibitory gating of ensembles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples/advanced/functions_and_tuning_curves.html">Improving function approximation by adjusting tuning curves</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#learning">Learning</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="examples/learning/learn_communication_channel.html">Learning a communication channel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples/learning/learn_square.html">Learning to square the input</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples/learning/learn_product.html">Learning to compute a product</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples/learning/learn_unsupervised.html">Unsupervised learning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples/learning/learn_associations.html">Learning new associations</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#networks">Networks</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="examples/networks/ensemble_array.html">Ensemble array</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples/advanced/matrix_multiplication.html">Matrix multiplication</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples/networks/basal_ganglia.html">The basal ganglia</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples/networks/integrator_network.html">Integrator</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#semantic-pointer-architecture">Semantic Pointer Architecture</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="examples/spa/associative_memory.html">Associative memory</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples/spa/convolution.html">Convolution network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples/spa/question.html">Simple question answering</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples/spa/question_control.html">Controlled question answering</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples/spa/question_memory.html">Simple question answering with memory</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples/spa/spa_parser.html">Parsing simple commands</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples/spa/spa_sequence.html">Routing through a sequence</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples/spa/spa_sequence_routed.html">Routed sequencing</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#under-the-hood">Under the hood</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="examples/usage/rectified_linear.html">Adding new objects to Nengo</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples/advanced/nef_algorithm.html">The NEF algorithm</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#reference">Reference</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="examples/usage/exceptions.html">Exceptions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples/usage/strings.html">String representations</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing to Nengo</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://www.nengo.ai/projects.html">Nengo ecosystem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">Nengo license</a></li>
+</ul>
+
+    
+  </div>
+</div>
+        
+<div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <div id="main-search">
+      <form class="form-inline" action="search.html" method="GET" role="form">
+        <div class="input-group">
+          <input name="q" type="text" class="form-control" placeholder="Search...">
+        </div>
+        <input type="hidden" name="check_keywords" value="yes" />
+        <input type="hidden" name="area" value="default" />
+      </form>
+    </div>
+  </div>
+</div>
+    </div>
+  </div>
+        <div id="right-column">
+          
+  <div class="header">
+    
+          <div role="navigation" aria-label="breadcrumbs navigation">
+            <ol class="breadcrumb">
+              <li><a href="index.html">Docs</a></li>
+              
+              <li>Examples</li>
+            </ol>
+          </div>
+          
+    
+  </div>
+
+          <div class="document clearer body">
+            
+  <div class="section" id="examples">
+<h1>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h1>
+<p>Nengo creates these models using the principles of the
+<a class="reference external" href="http://compneuro.uwaterloo.ca/research/nef.html">Neural Engineering Framework</a>.
+The first set of examples explains these three principles:
+<em>representation</em>, <em>transformation</em>, and <em>dynamics</em>.</p>
+<p>For a summary of these principles, see the following example:</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="examples/advanced/nef_summary.html">NEF summary</a></li>
+</ul>
+</div>
+<p>The following examples give a more detailed presentation:</p>
+<div class="section" id="principle-1-representation">
+<h2>Principle 1: Representation<a class="headerlink" href="#principle-1-representation" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="examples/basic/single_neuron.html">A single neuron</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/basic/two_neurons.html">Two neurons</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/basic/many_neurons.html">Many neurons</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/basic/2d_representation.html">2-dimensional representation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/basic/combining.html">Combining</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/basic/addition.html">Addition</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="principle-2-transformation">
+<h2>Principle 2: Transformation<a class="headerlink" href="#principle-2-transformation" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="examples/basic/communication_channel.html">Communication channel</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/basic/squaring.html">Squaring the input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/basic/multiplication.html">Multiplication</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="principle-3-dynamics">
+<h2>Principle 3: Dynamics<a class="headerlink" href="#principle-3-dynamics" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="examples/dynamics/integrator.html">Integrator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/dynamics/controlled_integrator.html">Controlled integrator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/dynamics/controlled_integrator2.html">Controlled integrator 2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/dynamics/oscillator.html">A simple harmonic oscillator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/dynamics/controlled_oscillator.html">Controlled oscillator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/dynamics/lorenz_attractor.html">The Lorenz chaotic attractor</a></li>
+</ul>
+</div>
+<p>Putting these three principles together allows us to scale
+these examples up to larger networks that do more complex functions.
+Below are some of these complex functions,
+as well as other examples that we hope will be helpful
+as reference when building your own Nengo models.</p>
+</div>
+<div class="section" id="nodes">
+<h2>Nodes<a class="headerlink" href="#nodes" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="examples/usage/delay_node.html">Delaying a connection with a node</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="processes">
+<h2>Processes<a class="headerlink" href="#processes" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="examples/advanced/processes.html">Processes and how to use them</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="ensembles">
+<h2>Ensembles<a class="headerlink" href="#ensembles" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="examples/usage/tuning_curves.html">Tuning curves</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/advanced/izhikevich.html">Using the Izhikevich neuron model</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="connections">
+<h2>Connections<a class="headerlink" href="#connections" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="examples/advanced/inhibitory_gating.html">Inhibitory gating of ensembles</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/advanced/functions_and_tuning_curves.html">Improving function approximation by adjusting tuning curves</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="learning">
+<h2>Learning<a class="headerlink" href="#learning" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="examples/learning/learn_communication_channel.html">Learning a communication channel</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/learning/learn_square.html">Learning to square the input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/learning/learn_product.html">Learning to compute a product</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/learning/learn_unsupervised.html">Unsupervised learning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/learning/learn_associations.html">Learning new associations</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="networks">
+<h2>Networks<a class="headerlink" href="#networks" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="examples/networks/ensemble_array.html">Ensemble array</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/advanced/matrix_multiplication.html">Matrix multiplication</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/networks/basal_ganglia.html">The basal ganglia</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/networks/integrator_network.html">Integrator</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="semantic-pointer-architecture">
+<h2>Semantic Pointer Architecture<a class="headerlink" href="#semantic-pointer-architecture" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="examples/spa/associative_memory.html">Associative memory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/spa/convolution.html">Convolution network</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/spa/question.html">Simple question answering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/spa/question_control.html">Controlled question answering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/spa/question_memory.html">Simple question answering with memory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/spa/spa_parser.html">Parsing simple commands</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/spa/spa_sequence.html">Routing through a sequence</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/spa/spa_sequence_routed.html">Routed sequencing</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="under-the-hood">
+<h2>Under the hood<a class="headerlink" href="#under-the-hood" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="examples/usage/rectified_linear.html">Adding new objects to Nengo</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/advanced/nef_algorithm.html">The NEF algorithm</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="reference">
+<h2>Reference<a class="headerlink" href="#reference" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="examples/usage/exceptions.html">Exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/usage/strings.html">String representations</a></li>
+</ul>
+</div>
+</div>
+</div>
+
+
+          </div>
+            
+  <div class="footer-relations">
+    
+      <div class="pull-left">
+        <a class="btn btn-default" href="converting.html" title="previous chapter (use the left arrow)">Converting from Nengo 1.4 to Nengo 2.0</a>
+      </div>
+    
+      <div class="pull-right">
+        <a class="btn btn-default" href="examples/advanced/nef_summary.html" title="next chapter (use the right arrow)">NEF summary</a>
+      </div>
+    </div>
+    <div class="clearer"></div>
+  
+        </div>
+        <div class="clearfix"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="examples/advanced/nef_summary.html" title="NEF summary"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="converting.html" title="Converting from Nengo 1.4 to Nengo 2.0"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Nengo core 2.8.0 docs</a> &#187;</li> 
+      </ul>
+    </div>
+<script type="text/javascript">
+  $("#mobile-toggle a").click(function () {
+    $("#left-column").toggle();
+  });
+</script>
+<script type="text/javascript" src="_static/js/bootstrap.js"></script>
+  <div class="footer">
+    &copy; Copyright 2013-2017, Applied Brain Research. Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+  </div>
+  </body>
+</html>

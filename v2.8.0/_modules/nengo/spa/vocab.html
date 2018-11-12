@@ -1,0 +1,634 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  
+  <!-- Licensed under the Apache 2.0 License -->
+  <link rel="stylesheet" type="text/css" href="../../../_static/fonts/open-sans/stylesheet.css" />
+  <!-- Licensed under the SIL Open Font License -->
+  <link rel="stylesheet" type="text/css" href="../../../_static/fonts/source-serif-pro/source-serif-pro.css" />
+  <link rel="stylesheet" type="text/css" href="../../../_static/css/bootstrap.min.css" />
+  <link rel="stylesheet" type="text/css" href="../../../_static/css/bootstrap-theme.min.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+    <title>nengo.spa.vocab &#8212; Nengo core 2.8.0 docs</title>
+    <link rel="stylesheet" href="../../../_static/guzzle.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '2.8.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+<link rel="stylesheet" type="text/css" href="../../../_static/custom.css">
+
+
+  
+   
+
+  </head>
+  <body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="container-wrapper">
+
+      <div id="mobile-toggle">
+        <a href="#"><span class="glyphicon glyphicon-align-justify" aria-hidden="true"></span></a>
+      </div>
+  <div id="left-column">
+    <div class="sphinxsidebar">
+        <a href="
+    ../../../index.html" class="text-logo">Nengo core 2.8</a>
+        <div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <h2>Table Of Contents</h2>
+  </div>
+  <div class="sidebar-toc">
+    
+    
+      <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../user_guide.html">User guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">Contributing to Nengo</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://www.nengo.ai/projects.html">Nengo ecosystem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../license.html">Nengo license</a></li>
+</ul>
+
+    
+  </div>
+</div>
+        
+<div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <div id="main-search">
+      <form class="form-inline" action="../../../search.html" method="GET" role="form">
+        <div class="input-group">
+          <input name="q" type="text" class="form-control" placeholder="Search...">
+        </div>
+        <input type="hidden" name="check_keywords" value="yes" />
+        <input type="hidden" name="area" value="default" />
+      </form>
+    </div>
+  </div>
+</div>
+    </div>
+  </div>
+        <div id="right-column">
+          
+  <div class="header">
+    
+          <div role="navigation" aria-label="breadcrumbs navigation">
+            <ol class="breadcrumb">
+              <li><a href="../../../index.html">Docs</a></li>
+              
+                <li><a href="../../index.html">Module code</a></li>
+              
+              <li>nengo.spa.vocab</li>
+            </ol>
+          </div>
+          
+    
+  </div>
+
+          <div class="document clearer body">
+            
+  <h1>Source code for nengo.spa.vocab</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">warnings</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">nengo.exceptions</span> <span class="k">import</span> <span class="n">ReadonlyError</span><span class="p">,</span> <span class="n">SpaParseError</span><span class="p">,</span> <span class="n">ValidationError</span>
+<span class="kn">from</span> <span class="nn">nengo.params</span> <span class="k">import</span> <span class="n">Parameter</span>
+<span class="kn">from</span> <span class="nn">nengo.spa</span> <span class="k">import</span> <span class="n">pointer</span>
+<span class="kn">from</span> <span class="nn">nengo.utils.compat</span> <span class="k">import</span> <span class="n">is_iterable</span><span class="p">,</span> <span class="n">is_number</span><span class="p">,</span> <span class="n">is_integer</span><span class="p">,</span> <span class="nb">range</span>
+
+
+<div class="viewcode-block" id="Vocabulary"><a class="viewcode-back" href="../../../spa.html#nengo.spa.Vocabulary">[docs]</a><span class="k">class</span> <span class="nc">Vocabulary</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A collection of semantic pointers, each with their own text label.</span>
+
+<span class="sd">    The Vocabulary can also act as a dictionary, with keys as the names</span>
+<span class="sd">    of the semantic pointers and values as the `.SemanticPointer` objects</span>
+<span class="sd">    themselves. If it is asked for a pointer that does not exist, one will</span>
+<span class="sd">    be automatically created.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    -----------</span>
+<span class="sd">    dimensions : int</span>
+<span class="sd">        Number of dimensions for each semantic pointer.</span>
+<span class="sd">    randomize : bool, optional (Default: True)</span>
+<span class="sd">        Whether to randomly generate pointers. If False, the semantic</span>
+<span class="sd">        pointers will be ``[1, 0, 0, ...], [0, 1, 0, ...], [0, 0, 1, ...]``</span>
+<span class="sd">        and so on.</span>
+<span class="sd">    unitary : bool or list, optional (Default: False)</span>
+<span class="sd">        If True, all generated pointers will be unitary. If a list of</span>
+<span class="sd">        strings, any pointer whose name is in the list will be forced to be</span>
+<span class="sd">        unitary when created.</span>
+<span class="sd">    max_similarity : float, optional (Default: 0.1)</span>
+<span class="sd">        When randomly generating pointers, ensure that the cosine of the</span>
+<span class="sd">        angle between the new pointer and all existing pointers is less</span>
+<span class="sd">        than this amount. If the system is unable to find such a pointer</span>
+<span class="sd">        after 100 tries, a warning message is printed.</span>
+<span class="sd">    include_pairs : bool, optional (Default: False)</span>
+<span class="sd">        Whether to keep track of all pairs of pointers as well. This</span>
+<span class="sd">        is helpful for determining if a vector is similar to ``A*B`` (in</span>
+<span class="sd">        addition to being similar to ``A`` or ``B``), but exponentially</span>
+<span class="sd">        increases the processing time.</span>
+<span class="sd">    rng : `numpy.random.RandomState`, optional (Default: None)</span>
+<span class="sd">        The random number generator to use to create new vectors.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    include_pairs : bool</span>
+<span class="sd">        Whether to keep track of all pairs of pointers as well. This</span>
+<span class="sd">        is helpful for determining if a vector is similar to ``A*B`` (in</span>
+<span class="sd">        addition to being similar to ``A`` or ``B``), but exponentially</span>
+<span class="sd">        increases the processing time.</span>
+<span class="sd">    key_pairs : list</span>
+<span class="sd">        The names of all pairs of semantic pointers</span>
+<span class="sd">        (e.g., ``[&#39;A*B&#39;, &#39;A*C&#39;, &#39;B*C&#39;]``).</span>
+<span class="sd">    keys : list of strings</span>
+<span class="sd">        The names of all known semantic pointers (e.g., ``[&#39;A&#39;, &#39;B&#39;, &#39;C&#39;]``).</span>
+<span class="sd">    vector_pairs : ndarray</span>
+<span class="sd">        The values for each pair of semantic pointers, convolved together,</span>
+<span class="sd">        in the same order as in ``key_pairs``.</span>
+<span class="sd">    vectors : ndarray</span>
+<span class="sd">        All of the semantic pointer values in a matrix, in the same order</span>
+<span class="sd">        as in ``keys``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dimensions</span><span class="p">,</span> <span class="n">randomize</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">unitary</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                 <span class="n">max_similarity</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">include_pairs</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">is_integer</span><span class="p">(</span><span class="n">dimensions</span><span class="p">)</span> <span class="ow">or</span> <span class="n">dimensions</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span><span class="s2">&quot;dimensions must be a positive integer&quot;</span><span class="p">,</span>
+                                  <span class="n">attr</span><span class="o">=</span><span class="s1">&#39;dimensions&#39;</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dimensions</span> <span class="o">=</span> <span class="n">dimensions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">randomize</span> <span class="o">=</span> <span class="n">randomize</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unitary</span> <span class="o">=</span> <span class="n">unitary</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_similarity</span> <span class="o">=</span> <span class="n">max_similarity</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pointers</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">keys</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">key_pairs</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vectors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="n">dimensions</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vector_pairs</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_include_pairs</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">include_pairs</span> <span class="o">=</span> <span class="n">include_pairs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_identity</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rng</span> <span class="o">=</span> <span class="n">rng</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">readonly</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parent</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="Vocabulary.create_pointer"><a class="viewcode-back" href="../../../spa.html#nengo.spa.Vocabulary.create_pointer">[docs]</a>    <span class="k">def</span> <span class="nf">create_pointer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attempts</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">unitary</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create a new semantic pointer.</span>
+
+<span class="sd">        This will take into account the randomize and max_similarity</span>
+<span class="sd">        parameters from self. If a pointer satisfying max_similarity</span>
+<span class="sd">        is not generated after the specified number of attempts, the</span>
+<span class="sd">        candidate pointer with lowest maximum cosine with all existing</span>
+<span class="sd">        pointers is returned.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">randomize</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">vectors</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="n">pointer</span><span class="o">.</span><span class="n">SemanticPointer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dimensions</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rng</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">p_sim</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span>
+                <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">attempts</span><span class="p">):</span>
+                    <span class="n">pp</span> <span class="o">=</span> <span class="n">pointer</span><span class="o">.</span><span class="n">SemanticPointer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dimensions</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rng</span><span class="p">)</span>
+                    <span class="n">pp_sim</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vectors</span><span class="p">,</span> <span class="n">pp</span><span class="o">.</span><span class="n">v</span><span class="p">))</span>
+                    <span class="k">if</span> <span class="n">pp_sim</span> <span class="o">&lt;</span> <span class="n">p_sim</span><span class="p">:</span>
+                        <span class="n">p</span> <span class="o">=</span> <span class="n">pp</span>
+                        <span class="n">p_sim</span> <span class="o">=</span> <span class="n">pp_sim</span>
+                        <span class="k">if</span> <span class="n">p_sim</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_similarity</span><span class="p">:</span>
+                            <span class="k">break</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                        <span class="s1">&#39;Could not create a semantic pointer with &#39;</span>
+                        <span class="s1">&#39;max_similarity=</span><span class="si">%1.2f</span><span class="s1"> (D=</span><span class="si">%d</span><span class="s1">, M=</span><span class="si">%d</span><span class="s1">)&#39;</span>
+                        <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_similarity</span><span class="p">,</span>
+                           <span class="bp">self</span><span class="o">.</span><span class="n">dimensions</span><span class="p">,</span>
+                           <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pointers</span><span class="p">)))</span>
+
+            <span class="c1"># Check and make vector unitary if needed</span>
+            <span class="k">if</span> <span class="n">unitary</span><span class="p">:</span>
+                <span class="n">p</span><span class="o">.</span><span class="n">make_unitary</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">index</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pointers</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">index</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dimensions</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span>
+                    <span class="s2">&quot;Tried to make more semantic pointers than &quot;</span>
+                    <span class="s2">&quot;dimensions with non-randomized Vocabulary&quot;</span><span class="p">,</span>
+                    <span class="n">attr</span><span class="o">=</span><span class="s1">&#39;dimensions&#39;</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="n">pointer</span><span class="o">.</span><span class="n">SemanticPointer</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dimensions</span><span class="p">)[</span><span class="n">index</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">p</span></div>
+
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the semantic pointer with the requested name.</span>
+
+<span class="sd">        If one does not exist, automatically create one. The key must be</span>
+<span class="sd">        a valid semantic pointer name, which is any Python identifier starting</span>
+<span class="sd">        with a capital letter.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">key</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">isupper</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="n">SpaParseError</span><span class="p">(</span>
+                <span class="s2">&quot;Semantic pointers must begin with a capital letter.&quot;</span><span class="p">)</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pointers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">is_iterable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">unitary</span><span class="p">):</span>
+                <span class="n">unitary</span> <span class="o">=</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">unitary</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">unitary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">unitary</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_pointer</span><span class="p">(</span><span class="n">unitary</span><span class="o">=</span><span class="n">unitary</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">value</span>
+
+<div class="viewcode-block" id="Vocabulary.add"><a class="viewcode-back" href="../../../spa.html#nengo.spa.Vocabulary.add">[docs]</a>    <span class="k">def</span> <span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add a new semantic pointer to the vocabulary.</span>
+
+<span class="sd">        The pointer value can be a `.SemanticPointer` or a vector.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">readonly</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ReadonlyError</span><span class="p">(</span><span class="n">attr</span><span class="o">=</span><span class="s1">&#39;Vocabulary&#39;</span><span class="p">,</span>
+                                <span class="n">msg</span><span class="o">=</span><span class="s2">&quot;Cannot add semantic pointer &#39;</span><span class="si">%s</span><span class="s2">&#39; to &quot;</span>
+                                    <span class="s2">&quot;read-only vocabulary.&quot;</span> <span class="o">%</span> <span class="n">key</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">key</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">isupper</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="n">SpaParseError</span><span class="p">(</span>
+                <span class="s2">&quot;Semantic pointers must begin with a capital letter.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">pointer</span><span class="o">.</span><span class="n">SemanticPointer</span><span class="p">):</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="n">pointer</span><span class="o">.</span><span class="n">SemanticPointer</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pointers</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span><span class="s2">&quot;The semantic pointer </span><span class="si">%r</span><span class="s2"> already exists&quot;</span>
+                                  <span class="o">%</span> <span class="n">key</span><span class="p">,</span> <span class="n">attr</span><span class="o">=</span><span class="s1">&#39;pointers&#39;</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">pointers</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">p</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">keys</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vectors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">vectors</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">v</span><span class="p">])</span>
+
+        <span class="c1"># Generate vector pairs</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">include_pairs</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">keys</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">keys</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">key_pairs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">*</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">key</span><span class="p">))</span>
+                <span class="n">v</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pointers</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">*</span> <span class="n">p</span><span class="p">)</span><span class="o">.</span><span class="n">v</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">vector_pairs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">vector_pairs</span><span class="p">,</span> <span class="n">v</span><span class="p">])</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">include_pairs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_include_pairs</span>
+
+    <span class="nd">@include_pairs</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">include_pairs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Adjusts whether key pairs are kept track of by the vocabulary.</span>
+
+<span class="sd">        If this is turned on, we need to compute all the pairs of terms</span>
+<span class="sd">        already existing.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_include_pairs</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_include_pairs</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_include_pairs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">key_pairs</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">vector_pairs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dimensions</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">keys</span><span class="p">)):</span>
+                <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">keys</span><span class="p">[:</span><span class="n">i</span><span class="p">]:</span>
+                    <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">keys</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">key_pairs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">*</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">key</span><span class="p">))</span>
+                    <span class="n">v</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pointers</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">pointers</span><span class="p">[</span><span class="n">key</span><span class="p">])</span><span class="o">.</span><span class="n">v</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">vector_pairs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">vector_pairs</span><span class="p">,</span> <span class="n">v</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">key_pairs</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">vector_pairs</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="Vocabulary.parse"><a class="viewcode-back" href="../../../spa.html#nengo.spa.Vocabulary.parse">[docs]</a>    <span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Evaluate a text string and return the corresponding SemanticPointer.</span>
+
+<span class="sd">        This uses the Python ``eval()`` function, so any Python operators that</span>
+<span class="sd">        have been defined for SemanticPointers are valid (``+``, ``-``, ``*``,</span>
+<span class="sd">        ``~``, ``()``). Any terms do not exist in the vocabulary will be</span>
+<span class="sd">        automatically generated. Valid semantic pointer terms must start</span>
+<span class="sd">        with a capital letter.</span>
+
+<span class="sd">        If the expression returns a scalar (int or float), a scaled version</span>
+<span class="sd">        of the identity SemanticPointer will be returned.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># The following line does everything.  Note that self is being</span>
+        <span class="c1"># passed in as the locals dictionary, and thanks to the __getitem__</span>
+        <span class="c1"># implementation, this will automatically create new semantic</span>
+        <span class="c1"># pointers as needed.</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="p">{},</span> <span class="bp">self</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">SpaParseError</span><span class="p">(</span>
+                <span class="s2">&quot;Semantic pointers must start with a capital letter.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">is_number</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">value</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">identity</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">pointer</span><span class="o">.</span><span class="n">SemanticPointer</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">SpaParseError</span><span class="p">(</span>
+                <span class="s2">&quot;The result of parsing &#39;</span><span class="si">%s</span><span class="s2">&#39; is not a SemanticPointer&quot;</span> <span class="o">%</span> <span class="n">text</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">value</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">identity</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the identity vector.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_identity</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dimensions</span><span class="p">)</span>
+            <span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_identity</span> <span class="o">=</span> <span class="n">pointer</span><span class="o">.</span><span class="n">SemanticPointer</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_identity</span>
+
+<div class="viewcode-block" id="Vocabulary.text"><a class="viewcode-back" href="../../../spa.html#nengo.spa.Vocabulary.text">[docs]</a>    <span class="k">def</span> <span class="nf">text</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">minimum_count</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">maximum_count</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># noqa: C901</span>
+             <span class="n">threshold</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">join</span><span class="o">=</span><span class="s1">&#39;;&#39;</span><span class="p">,</span> <span class="n">terms</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a human-readable text version of the provided vector.</span>
+
+<span class="sd">        This is meant to give a quick text version of a vector for display</span>
+<span class="sd">        purposes. To do this, compute the dot product between the vector</span>
+<span class="sd">        and all the terms in the vocabulary. The top few vectors are</span>
+<span class="sd">        chosen for inclusion in the text. It will try to only return</span>
+<span class="sd">        terms with a match above the threshold, but will always return</span>
+<span class="sd">        at least minimum_count and at most maximum_count terms. Terms</span>
+<span class="sd">        are sorted from most to least similar.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        v : SemanticPointer or ndarray</span>
+<span class="sd">            The vector to convert into text.</span>
+<span class="sd">        minimum_count : int, optional (Default: 1)</span>
+<span class="sd">            Always return at least this many terms in the text.</span>
+<span class="sd">        maximum_count : int, optional (Default: None)</span>
+<span class="sd">            Never return more than this many terms in the text.</span>
+<span class="sd">            If None, all terms will be returned.</span>
+<span class="sd">        threshold : float, optional (Default: 0.1)</span>
+<span class="sd">            How small a similarity for a term to be ignored.</span>
+<span class="sd">        join : str, optional (Default: &#39;;&#39;)</span>
+<span class="sd">            The text separator to use between terms.</span>
+<span class="sd">        terms : list, optional (Default: None)</span>
+<span class="sd">            Only consider terms in this list of strings.</span>
+<span class="sd">        normalize : bool, optional (Default: False)</span>
+<span class="sd">            Whether to normalize the vector before computing similarity.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">pointer</span><span class="o">.</span><span class="n">SemanticPointer</span><span class="p">):</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="n">v</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;float&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">normalize</span><span class="p">:</span>
+            <span class="n">nrm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">nrm</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">v</span> <span class="o">/=</span> <span class="n">nrm</span>
+
+        <span class="n">m</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vectors</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+        <span class="n">matches</span> <span class="o">=</span> <span class="p">[(</span><span class="n">mm</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">keys</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">mm</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">m</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">include_pairs</span><span class="p">:</span>
+            <span class="n">m2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vector_pairs</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+            <span class="n">matches2</span> <span class="o">=</span> <span class="p">[(</span><span class="n">mm2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">key_pairs</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">mm2</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">m2</span><span class="p">)]</span>
+            <span class="n">matches</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">matches2</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">terms</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># TODO: handle the terms parameter more efficiently, so we don&#39;t</span>
+            <span class="c1"># compute a whole bunch of dot products and then throw them out</span>
+            <span class="n">matches</span> <span class="o">=</span> <span class="p">[</span><span class="n">mm</span> <span class="k">for</span> <span class="n">mm</span> <span class="ow">in</span> <span class="n">matches</span> <span class="k">if</span> <span class="n">mm</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="n">terms</span><span class="p">]</span>
+        <span class="n">matches</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+        <span class="n">matches</span><span class="o">.</span><span class="n">reverse</span><span class="p">()</span>
+
+        <span class="n">r</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">matches</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">minimum_count</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">r</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">minimum_count</span><span class="p">:</span>
+                <span class="n">r</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">maximum_count</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">r</span><span class="p">)</span> <span class="o">==</span> <span class="n">maximum_count</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="k">elif</span> <span class="n">threshold</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">m</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">threshold</span><span class="p">:</span>
+                <span class="n">r</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">break</span>
+
+        <span class="k">return</span> <span class="n">join</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s1">&#39;</span><span class="si">%0.2f%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">sim</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span> <span class="k">for</span> <span class="p">(</span><span class="n">sim</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span> <span class="ow">in</span> <span class="n">r</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="Vocabulary.dot"><a class="viewcode-back" href="../../../spa.html#nengo.spa.Vocabulary.dot">[docs]</a>    <span class="k">def</span> <span class="nf">dot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns the dot product with all terms in the Vocabulary.</span>
+
+<span class="sd">        Input parameter can either be a `.SemanticPointer` or a vector.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">pointer</span><span class="o">.</span><span class="n">SemanticPointer</span><span class="p">):</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="n">v</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vectors</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Vocabulary.dot_pairs"><a class="viewcode-back" href="../../../spa.html#nengo.spa.Vocabulary.dot_pairs">[docs]</a>    <span class="k">def</span> <span class="nf">dot_pairs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns the dot product with all pairs of terms in the Vocabulary.</span>
+
+<span class="sd">        Input parameter can either be a `.SemanticPointer` or a vector.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">include_pairs</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span>
+                <span class="s2">&quot;&#39;include_pairs&#39; must be True to call dot_pairs&quot;</span><span class="p">,</span>
+                <span class="n">attr</span><span class="o">=</span><span class="s1">&#39;include_pairs&#39;</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">pointer</span><span class="o">.</span><span class="n">SemanticPointer</span><span class="p">):</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="n">v</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vector_pairs</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Vocabulary.transform_to"><a class="viewcode-back" href="../../../spa.html#nengo.spa.Vocabulary.transform_to">[docs]</a>    <span class="k">def</span> <span class="nf">transform_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="n">keys</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create a linear transform from one Vocabulary to another.</span>
+
+<span class="sd">        This is simply the sum of the outer products of the corresponding</span>
+<span class="sd">        terms in each Vocabulary.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        other : Vocabulary</span>
+<span class="sd">            The other vocabulary to translate into.</span>
+<span class="sd">        keys : list, optional (Default: None)</span>
+<span class="sd">            If None, any term that exists in just one of the Vocabularies</span>
+<span class="sd">            will be created in the other Vocabulary and included. Otherwise,</span>
+<span class="sd">            the transformation will only consider terms in this list. Any</span>
+<span class="sd">            terms in this list that do not exist in the Vocabularies will</span>
+<span class="sd">            be created.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># If the parent vocabs of self and other are the same, then no</span>
+        <span class="c1"># transform is needed between the two vocabularies, so return an</span>
+        <span class="c1"># identity matrix.</span>
+        <span class="n">my_parent</span> <span class="o">=</span> <span class="bp">self</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span>
+        <span class="n">other_parent</span> <span class="o">=</span> <span class="n">other</span> <span class="k">if</span> <span class="n">other</span><span class="o">.</span><span class="n">parent</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">other</span><span class="o">.</span><span class="n">parent</span>
+
+        <span class="k">if</span> <span class="n">my_parent</span> <span class="ow">is</span> <span class="n">other_parent</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dimensions</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">keys</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">readonly</span> <span class="ow">and</span> <span class="n">other</span><span class="o">.</span><span class="n">readonly</span><span class="p">:</span>
+                    <span class="n">keys</span> <span class="o">=</span> <span class="p">[</span><span class="n">k</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">keys</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">other</span><span class="o">.</span><span class="n">keys</span><span class="p">]</span>
+                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">readonly</span><span class="p">:</span>
+                    <span class="n">keys</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">keys</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">other</span><span class="o">.</span><span class="n">readonly</span><span class="p">:</span>
+                    <span class="n">keys</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">keys</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">keys</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">keys</span><span class="p">)</span>
+                    <span class="n">keys</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">k</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">other</span><span class="o">.</span><span class="n">keys</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">keys</span><span class="p">])</span>
+
+            <span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">other</span><span class="o">.</span><span class="n">dimensions</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dimensions</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">:</span>
+                <span class="n">a</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">v</span>
+                <span class="n">b</span> <span class="o">=</span> <span class="n">other</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">v</span>
+                <span class="n">t</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">outer</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">t</span></div>
+
+<div class="viewcode-block" id="Vocabulary.prob_cleanup"><a class="viewcode-back" href="../../../spa.html#nengo.spa.Vocabulary.prob_cleanup">[docs]</a>    <span class="k">def</span> <span class="nf">prob_cleanup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">similarity</span><span class="p">,</span> <span class="n">vocab_size</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="mi">10000</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Estimate the chance of successful cleanup.</span>
+
+<span class="sd">        This returns the chance that, out of vocab_size randomly chosen</span>
+<span class="sd">        vectors, at least one of them will be closer to a particular</span>
+<span class="sd">        vector than the value given by compare. To use this, compare</span>
+<span class="sd">        your noisy vector with the ideal vector, pass that value in as</span>
+<span class="sd">        the similarity parameter, and set ``vocab_size`` to be the number of</span>
+<span class="sd">        competing vectors.</span>
+
+<span class="sd">        The steps parameter sets the accuracy of the approximate integral</span>
+<span class="sd">        needed to compute this.</span>
+
+<span class="sd">        The basic principle used here is that the probability of two random</span>
+<span class="sd">        vectors in a D-dimensional space being a given angle apart is</span>
+<span class="sd">        proportional to ``sin(angle)**(D-2)``.  So we integrate this value</span>
+<span class="sd">        to get a probability of one vector being farther away than the</span>
+<span class="sd">        desired angle, and then raise that to vocab_size to get the</span>
+<span class="sd">        probability that all of them are farther away.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># TODO: test for numerical stability.  We are taking a number</span>
+        <span class="c1"># slightly below 1 and raising it to a large exponent, so there&#39;s</span>
+        <span class="c1"># lots of room for rounding errors.</span>
+
+        <span class="n">angle</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arccos</span><span class="p">(</span><span class="n">similarity</span><span class="p">)</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="n">steps</span><span class="p">)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dimensions</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span>
+
+        <span class="n">total</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+        <span class="n">too_close</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">y</span><span class="p">[:</span><span class="nb">int</span><span class="p">(</span><span class="n">angle</span> <span class="o">*</span> <span class="n">steps</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)])</span>
+
+        <span class="n">perror1</span> <span class="o">=</span> <span class="n">too_close</span> <span class="o">/</span> <span class="n">total</span>
+
+        <span class="n">pcorrect</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">perror1</span><span class="p">)</span> <span class="o">**</span> <span class="n">vocab_size</span>
+        <span class="k">return</span> <span class="n">pcorrect</span></div>
+
+<div class="viewcode-block" id="Vocabulary.extend"><a class="viewcode-back" href="../../../spa.html#nengo.spa.Vocabulary.extend">[docs]</a>    <span class="k">def</span> <span class="nf">extend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keys</span><span class="p">,</span> <span class="n">unitary</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Extends the vocabulary with additional keys.</span>
+
+<span class="sd">        Creates and adds the semantic pointers listed in keys to the</span>
+<span class="sd">        vocabulary.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        keys : list</span>
+<span class="sd">            List of semantic pointer names to be added to the vocabulary.</span>
+<span class="sd">        unitary : bool or list, optional (Default: False)</span>
+<span class="sd">            If True, all generated pointers will be unitary. If a list of</span>
+<span class="sd">            strings, any pointer whose name is on the list will be forced to</span>
+<span class="sd">            be unitary when created.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">is_iterable</span><span class="p">(</span><span class="n">unitary</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">is_iterable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">unitary</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">unitary</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">unitary</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">unitary</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">unitary</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">unitary</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">is_iterable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">unitary</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">unitary</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">unitary</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">keys</span><span class="p">:</span>
+                <span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="Vocabulary.create_subset"><a class="viewcode-back" href="../../../spa.html#nengo.spa.Vocabulary.create_subset">[docs]</a>    <span class="k">def</span> <span class="nf">create_subset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keys</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns the subset of this vocabulary.</span>
+
+<span class="sd">        Creates and returns a subset of the current vocabulary that contains</span>
+<span class="sd">        all the semantic pointers found in keys.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        keys : list</span>
+<span class="sd">            List of semantic pointer names to be copied over to the</span>
+<span class="sd">            new vocabulary.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Make new Vocabulary object</span>
+        <span class="n">subset</span> <span class="o">=</span> <span class="n">Vocabulary</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dimensions</span><span class="p">,</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">randomize</span><span class="p">,</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">unitary</span><span class="p">,</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">max_similarity</span><span class="p">,</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">include_pairs</span><span class="p">,</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">rng</span><span class="p">)</span>
+
+        <span class="c1"># Copy over the new keys</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">:</span>
+            <span class="n">subset</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pointers</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+
+        <span class="c1"># Assign the parent</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">subset</span><span class="o">.</span><span class="n">parent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">subset</span><span class="o">.</span><span class="n">parent</span> <span class="o">=</span> <span class="bp">self</span>
+
+        <span class="c1"># Make the subset read only</span>
+        <span class="n">subset</span><span class="o">.</span><span class="n">readonly</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="k">return</span> <span class="n">subset</span></div></div>
+
+
+<span class="k">class</span> <span class="nc">VocabularyParam</span><span class="p">(</span><span class="n">Parameter</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Can be a Vocabulary.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">coerce</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instance</span><span class="p">,</span> <span class="n">vocab</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="n">instance</span><span class="p">,</span> <span class="n">vocab</span><span class="p">,</span> <span class="n">Vocabulary</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">VocabularyParam</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">coerce</span><span class="p">(</span><span class="n">instance</span><span class="p">,</span> <span class="n">vocab</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+            
+        </div>
+        <div class="clearfix"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+<script type="text/javascript">
+  $("#mobile-toggle a").click(function () {
+    $("#left-column").toggle();
+  });
+</script>
+<script type="text/javascript" src="../../../_static/js/bootstrap.js"></script>
+  <div class="footer">
+    &copy; Copyright 2013-2017, Applied Brain Research. Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+  </div>
+  </body>
+</html>

@@ -1,0 +1,307 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  
+  <!-- Licensed under the Apache 2.0 License -->
+  <link rel="stylesheet" type="text/css" href="../../_static/fonts/open-sans/stylesheet.css" />
+  <!-- Licensed under the SIL Open Font License -->
+  <link rel="stylesheet" type="text/css" href="../../_static/fonts/source-serif-pro/source-serif-pro.css" />
+  <link rel="stylesheet" type="text/css" href="../../_static/css/bootstrap.min.css" />
+  <link rel="stylesheet" type="text/css" href="../../_static/css/bootstrap-theme.min.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+    <title>nengo.rc &#8212; Nengo core 2.8.0 docs</title>
+    <link rel="stylesheet" href="../../_static/guzzle.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '2.8.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+<link rel="stylesheet" type="text/css" href="../../_static/custom.css">
+
+
+  
+   
+
+  </head>
+  <body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="container-wrapper">
+
+      <div id="mobile-toggle">
+        <a href="#"><span class="glyphicon glyphicon-align-justify" aria-hidden="true"></span></a>
+      </div>
+  <div id="left-column">
+    <div class="sphinxsidebar">
+        <a href="
+    ../../index.html" class="text-logo">Nengo core 2.8</a>
+        <div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <h2>Table Of Contents</h2>
+  </div>
+  <div class="sidebar-toc">
+    
+    
+      <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide.html">User guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing to Nengo</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://www.nengo.ai/projects.html">Nengo ecosystem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../license.html">Nengo license</a></li>
+</ul>
+
+    
+  </div>
+</div>
+        
+<div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <div id="main-search">
+      <form class="form-inline" action="../../search.html" method="GET" role="form">
+        <div class="input-group">
+          <input name="q" type="text" class="form-control" placeholder="Search...">
+        </div>
+        <input type="hidden" name="check_keywords" value="yes" />
+        <input type="hidden" name="area" value="default" />
+      </form>
+    </div>
+  </div>
+</div>
+    </div>
+  </div>
+        <div id="right-column">
+          
+  <div class="header">
+    
+          <div role="navigation" aria-label="breadcrumbs navigation">
+            <ol class="breadcrumb">
+              <li><a href="../../index.html">Docs</a></li>
+              
+                <li><a href="../index.html">Module code</a></li>
+              
+              <li>nengo.rc</li>
+            </ol>
+          </div>
+          
+    
+  </div>
+
+          <div class="document clearer body">
+            
+  <h1>Source code for nengo.rc</h1><div class="highlight"><pre>
+<span></span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Certain features of Nengo can be configured globally through RC settings.</span>
+
+<span class="sd">RC settings can be manipulated either through the ``nengo.rc`` object,</span>
+<span class="sd">or through RC configuration files.</span>
+
+<span class="sd">The ``nengo.rc`` object</span>
+<span class="sd">=======================</span>
+
+<span class="sd">The ``nengo.rc`` object gives programmatic access to</span>
+<span class="sd">globally configured features of Nengo.</span>
+
+<span class="sd">.. autodata:: nengo.rc</span>
+
+<span class="sd">Configuration files</span>
+<span class="sd">===================</span>
+
+<span class="sd">``nengo.rc`` is initialized with configuration settings read</span>
+<span class="sd">from the following files with precedence to those listed first:</span>
+
+<span class="sd">1. ``nengorc`` in the current directory. This is intended to allow for project</span>
+<span class="sd">   specific settings without hard coding them in the model script.</span>
+
+<span class="sd">2. An operating system specific file in the user&#39;s home directory.</span>
+
+<span class="sd">   * Windows: ``%userprofile%\.nengo\nengorc``</span>
+
+<span class="sd">   * Other (OS X, Linux): ``~/.config/nengo/nengorc``</span>
+
+<span class="sd">3. ``INSTALL/nengo-data/nengorc`` (where ``INSTALL`` is the</span>
+<span class="sd">   installation directory of the Nengo package).</span>
+
+<span class="sd">The RC file is divided into sections by lines containing the section name</span>
+<span class="sd">in brackets, i.e. ``[section]``. A setting is set by giving the name followed</span>
+<span class="sd">by a ``:`` or ``=`` and the value. All lines starting with ``#`` or ``;`` are</span>
+<span class="sd">comments.</span>
+
+<span class="sd">For example, to set the size of the decoder cache to 512 MB,</span>
+<span class="sd">add the following to a configuration file:</span>
+
+<span class="sd">.. code-block:: ini</span>
+
+<span class="sd">   [decoder_cache]</span>
+<span class="sd">   size = 512 MB</span>
+
+<span class="sd">Configuration options</span>
+<span class="sd">=====================</span>
+
+<span class="sd">All of the configuration options are listed in the example</span>
+<span class="sd">configuration file, which is included with Nengo</span>
+<span class="sd">and copied below.</span>
+
+<span class="sd">Commented lines show the default values for each setting.</span>
+
+<span class="sd">.. _nengorc:</span>
+
+<span class="sd">.. include:: ../nengo-data/nengorc</span>
+<span class="sd">   :literal:</span>
+<span class="sd">   :start-line: 29</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="kn">import</span> <span class="nn">nengo.utils.paths</span>
+<span class="kn">from</span> <span class="nn">nengo.utils.compat</span> <span class="k">import</span> <span class="n">configparser</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="c1"># The default core Nengo RC settings. Access with</span>
+<span class="c1">#   nengo.RC_DEFAULTS[section_name][option_name]</span>
+<span class="n">RC_DEFAULTS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;decoder_cache&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;enabled&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s1">&#39;readonly&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s1">&#39;size&#39;</span><span class="p">:</span> <span class="s1">&#39;512 MB&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;path&#39;</span><span class="p">:</span> <span class="n">nengo</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">paths</span><span class="o">.</span><span class="n">decoder_cache_dir</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="s1">&#39;progress&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;updater&#39;</span><span class="p">:</span> <span class="s1">&#39;auto&#39;</span><span class="p">,</span>  <span class="c1"># Deprecated</span>
+        <span class="s1">&#39;progress_bar&#39;</span><span class="p">:</span> <span class="s1">&#39;auto&#39;</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="s1">&#39;exceptions&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;simplified&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">},</span>
+<span class="p">}</span>
+
+<span class="c1"># The RC files in the order in which they will be read.</span>
+<span class="n">RC_FILES</span> <span class="o">=</span> <span class="p">[</span><span class="n">nengo</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">paths</span><span class="o">.</span><span class="n">nengorc</span><span class="p">[</span><span class="s1">&#39;system&#39;</span><span class="p">],</span>
+            <span class="n">nengo</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">paths</span><span class="o">.</span><span class="n">nengorc</span><span class="p">[</span><span class="s1">&#39;user&#39;</span><span class="p">],</span>
+            <span class="n">nengo</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">paths</span><span class="o">.</span><span class="n">nengorc</span><span class="p">[</span><span class="s1">&#39;project&#39;</span><span class="p">]]</span>
+
+
+<span class="k">class</span> <span class="nc">_RC</span><span class="p">(</span><span class="n">configparser</span><span class="o">.</span><span class="n">SafeConfigParser</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Allows reading from and writing to Nengo RC settings.</span>
+
+<span class="sd">    This object is a :class:`configparser.ConfigParser`, which means that</span>
+<span class="sd">    values can be accessed and manipulated with ``get`` and ``set``::</span>
+
+<span class="sd">        oldsize = nengo.rc.get(&quot;decoder_cache&quot;, &quot;size&quot;)</span>
+<span class="sd">        nengo.rc.set(&quot;decoder_cache&quot;, &quot;size&quot;, &quot;2 GB&quot;)</span>
+
+<span class="sd">    ``get`` and ``set`` return and expect strings. There are also special</span>
+<span class="sd">    getter methods for booleans, ints, and floats::</span>
+
+<span class="sd">        simple = nengo.rc.getboolean(&quot;exceptions&quot;, &quot;simplified&quot;)</span>
+
+<span class="sd">    In addition to the normal :class:`configparser.ConfigParser` methods,</span>
+<span class="sd">    this object also has a ``reload_rc`` method to reset ``nengo.rc``</span>
+<span class="sd">    to default settings::</span>
+
+<span class="sd">        nengo.rc.reload_rc()  # Reads defaults from configuration files</span>
+<span class="sd">        nengo.rc.reload_rc(filenames=[])  # Ignores configuration files</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># configparser uses old-style classes without &#39;super&#39; support</span>
+        <span class="n">configparser</span><span class="o">.</span><span class="n">SafeConfigParser</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reload_rc</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">remove_section</span><span class="p">(</span><span class="n">configparser</span><span class="o">.</span><span class="n">DEFAULTSECT</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">sections</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">remove_section</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_init_defaults</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">section</span><span class="p">,</span> <span class="n">settings</span> <span class="ow">in</span> <span class="n">RC_DEFAULTS</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_section</span><span class="p">(</span><span class="n">section</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">settings</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">section</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">readfp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fp</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">filename</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">fp</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">):</span>
+                <span class="n">filename</span> <span class="o">=</span> <span class="n">fp</span><span class="o">.</span><span class="n">name</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">filename</span> <span class="o">=</span> <span class="s1">&#39;&lt;???&gt;&#39;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Reading configuration from </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">configparser</span><span class="o">.</span><span class="n">SafeConfigParser</span><span class="o">.</span><span class="n">readfp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fp</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filenames</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Reading configuration files </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filenames</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">configparser</span><span class="o">.</span><span class="n">SafeConfigParser</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filenames</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">reload_rc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filenames</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Resets the currently loaded RC settings and loads new RC files.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        filenames: iterable object</span>
+<span class="sd">            Filenames of RC files to load.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">filenames</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">filenames</span> <span class="o">=</span> <span class="n">RC_FILES</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_init_defaults</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">filenames</span><span class="p">)</span>
+
+
+<span class="n">rc</span> <span class="o">=</span> <span class="n">_RC</span><span class="p">()</span>
+</pre></div>
+
+          </div>
+            
+        </div>
+        <div class="clearfix"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+<script type="text/javascript">
+  $("#mobile-toggle a").click(function () {
+    $("#left-column").toggle();
+  });
+</script>
+<script type="text/javascript" src="../../_static/js/bootstrap.js"></script>
+  <div class="footer">
+    &copy; Copyright 2013-2017, Applied Brain Research. Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+  </div>
+  </body>
+</html>

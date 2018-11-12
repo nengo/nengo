@@ -1,0 +1,273 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  
+  <!-- Licensed under the Apache 2.0 License -->
+  <link rel="stylesheet" type="text/css" href="../../../_static/fonts/open-sans/stylesheet.css" />
+  <!-- Licensed under the SIL Open Font License -->
+  <link rel="stylesheet" type="text/css" href="../../../_static/fonts/source-serif-pro/source-serif-pro.css" />
+  <link rel="stylesheet" type="text/css" href="../../../_static/css/bootstrap.min.css" />
+  <link rel="stylesheet" type="text/css" href="../../../_static/css/bootstrap-theme.min.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+    <title>nengo.spa.cortical &#8212; Nengo core 2.8.0 docs</title>
+    <link rel="stylesheet" href="../../../_static/guzzle.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '2.8.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+<link rel="stylesheet" type="text/css" href="../../../_static/custom.css">
+
+
+  
+   
+
+  </head>
+  <body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="container-wrapper">
+
+      <div id="mobile-toggle">
+        <a href="#"><span class="glyphicon glyphicon-align-justify" aria-hidden="true"></span></a>
+      </div>
+  <div id="left-column">
+    <div class="sphinxsidebar">
+        <a href="
+    ../../../index.html" class="text-logo">Nengo core 2.8</a>
+        <div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <h2>Table Of Contents</h2>
+  </div>
+  <div class="sidebar-toc">
+    
+    
+      <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../user_guide.html">User guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">Contributing to Nengo</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://www.nengo.ai/projects.html">Nengo ecosystem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../license.html">Nengo license</a></li>
+</ul>
+
+    
+  </div>
+</div>
+        
+<div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <div id="main-search">
+      <form class="form-inline" action="../../../search.html" method="GET" role="form">
+        <div class="input-group">
+          <input name="q" type="text" class="form-control" placeholder="Search...">
+        </div>
+        <input type="hidden" name="check_keywords" value="yes" />
+        <input type="hidden" name="area" value="default" />
+      </form>
+    </div>
+  </div>
+</div>
+    </div>
+  </div>
+        <div id="right-column">
+          
+  <div class="header">
+    
+          <div role="navigation" aria-label="breadcrumbs navigation">
+            <ol class="breadcrumb">
+              <li><a href="../../../index.html">Docs</a></li>
+              
+                <li><a href="../../index.html">Module code</a></li>
+              
+              <li>nengo.spa.cortical</li>
+            </ol>
+          </div>
+          
+    
+  </div>
+
+          <div class="document clearer body">
+            
+  <h1>Source code for nengo.spa.cortical</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">import</span> <span class="nn">nengo</span>
+<span class="kn">import</span> <span class="nn">nengo.spa.action_build</span>
+<span class="kn">from</span> <span class="nn">nengo.spa.action_objects</span> <span class="k">import</span> <span class="n">Symbol</span><span class="p">,</span> <span class="n">Source</span><span class="p">,</span> <span class="n">Convolution</span>
+<span class="kn">from</span> <span class="nn">nengo.spa.module</span> <span class="k">import</span> <span class="n">Module</span>
+<span class="kn">from</span> <span class="nn">nengo.utils.compat</span> <span class="k">import</span> <span class="n">iteritems</span>
+
+
+<div class="viewcode-block" id="Cortical"><a class="viewcode-back" href="../../../spa.html#nengo.spa.Cortical">[docs]</a><span class="k">class</span> <span class="nc">Cortical</span><span class="p">(</span><span class="n">Module</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A SPA module for forming connections between other modules.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    actions : Actions</span>
+<span class="sd">        The actions to implement.</span>
+<span class="sd">    synapse : float, optional (Default: 0.01)</span>
+<span class="sd">        The synaptic filter to use for the connections.</span>
+<span class="sd">    neurons_cconv : int, optional (Default: 200)</span>
+<span class="sd">        Number of neurons per circular convolution dimension.</span>
+
+<span class="sd">    label : str, optional (Default: None)</span>
+<span class="sd">        A name for the ensemble. Used for debugging and visualization.</span>
+<span class="sd">    seed : int, optional (Default: None)</span>
+<span class="sd">        The seed used for random number generation.</span>
+<span class="sd">    add_to_container : bool, optional (Default: None)</span>
+<span class="sd">        Determines if this Network will be added to the current container.</span>
+<span class="sd">        If None, will be true if currently within a Network.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">actions</span><span class="p">,</span> <span class="n">synapse</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">neurons_cconv</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
+                 <span class="n">label</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">add_to_container</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Cortical</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">seed</span><span class="p">,</span> <span class="n">add_to_container</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">actions</span> <span class="o">=</span> <span class="n">actions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">synapse</span> <span class="o">=</span> <span class="n">synapse</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">neurons_cconv</span> <span class="o">=</span> <span class="n">neurons_cconv</span>
+
+    <span class="k">def</span> <span class="nf">on_add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spa</span><span class="p">):</span>
+        <span class="n">Module</span><span class="o">.</span><span class="n">on_add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spa</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spa</span> <span class="o">=</span> <span class="n">spa</span>
+
+        <span class="c1"># parse the provided class and match it up with the spa model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">actions</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">spa</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">action</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">actions</span><span class="o">.</span><span class="n">actions</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">action</span><span class="o">.</span><span class="n">condition</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Cortical actions do not support &quot;</span>
+                                          <span class="s2">&quot;conditional expressions: </span><span class="si">%s</span><span class="s2">.&quot;</span> <span class="o">%</span>
+                                          <span class="n">action</span><span class="o">.</span><span class="n">condition</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">effects</span> <span class="ow">in</span> <span class="n">iteritems</span><span class="p">(</span><span class="n">action</span><span class="o">.</span><span class="n">effect</span><span class="o">.</span><span class="n">effect</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">effect</span> <span class="ow">in</span> <span class="n">effects</span><span class="o">.</span><span class="n">expression</span><span class="o">.</span><span class="n">items</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">effect</span><span class="p">,</span> <span class="n">Symbol</span><span class="p">):</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">add_direct_effect</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">effect</span><span class="o">.</span><span class="n">symbol</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">effect</span><span class="p">,</span> <span class="n">Source</span><span class="p">):</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">add_route_effect</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">effect</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                                              <span class="n">effect</span><span class="o">.</span><span class="n">transform</span><span class="o">.</span><span class="n">symbol</span><span class="p">,</span>
+                                              <span class="n">effect</span><span class="o">.</span><span class="n">inverted</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">effect</span><span class="p">,</span> <span class="n">Convolution</span><span class="p">):</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">add_conv_effect</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">effect</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                            <span class="s2">&quot;Subexpression &#39;</span><span class="si">%s</span><span class="s2">&#39; from action &#39;</span><span class="si">%s</span><span class="s2">&#39; is not &quot;</span>
+                            <span class="s2">&quot;supported by the cortex.&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">effect</span><span class="p">,</span> <span class="n">action</span><span class="p">))</span>
+
+<div class="viewcode-block" id="Cortical.add_direct_effect"><a class="viewcode-back" href="../../../spa.html#nengo.spa.Cortical.add_direct_effect">[docs]</a>    <span class="k">def</span> <span class="nf">add_direct_effect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_name</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Make a fixed constant input to a module.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        target_name : str</span>
+<span class="sd">            The name of the module input to use.</span>
+<span class="sd">        value : str</span>
+<span class="sd">            A semantic pointer to be sent to the module input.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">target_module</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spa</span><span class="o">.</span><span class="n">get_module</span><span class="p">(</span><span class="n">target_name</span><span class="p">)</span>
+        <span class="n">sink</span><span class="p">,</span> <span class="n">vocab</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spa</span><span class="o">.</span><span class="n">get_module_input</span><span class="p">(</span><span class="n">target_name</span><span class="p">)</span>
+        <span class="n">transform</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">vocab</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="o">.</span><span class="n">v</span><span class="p">])</span><span class="o">.</span><span class="n">T</span>
+
+        <span class="k">with</span> <span class="n">target_module</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">target_module</span><span class="p">,</span> <span class="s1">&#39;bias&#39;</span><span class="p">):</span>
+                <span class="n">target_module</span><span class="o">.</span><span class="n">bias</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Node</span><span class="p">([</span><span class="mi">1</span><span class="p">],</span>
+                                                <span class="n">label</span><span class="o">=</span><span class="n">target_name</span> <span class="o">+</span> <span class="s2">&quot; bias&quot;</span><span class="p">)</span>
+            <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="n">target_module</span><span class="o">.</span><span class="n">bias</span><span class="p">,</span> <span class="n">sink</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">transform</span><span class="p">,</span>
+                             <span class="n">synapse</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">synapse</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Cortical.add_route_effect"><a class="viewcode-back" href="../../../spa.html#nengo.spa.Cortical.add_route_effect">[docs]</a>    <span class="k">def</span> <span class="nf">add_route_effect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_name</span><span class="p">,</span> <span class="n">source_name</span><span class="p">,</span> <span class="n">transform</span><span class="p">,</span> <span class="n">inverted</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Connect a module output to a module input.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        target_name : str</span>
+<span class="sd">            The name of the module input to effect.</span>
+<span class="sd">        source_name : str</span>
+<span class="sd">            The name of the module output to read from. If this output uses</span>
+<span class="sd">            a different vocabulary than the target, a linear transform</span>
+<span class="sd">            will be applied to convert from one to the other.</span>
+<span class="sd">        transform : str</span>
+<span class="sd">            A semantic pointer to convolve with the source value before</span>
+<span class="sd">            sending it into the target. This transform takes</span>
+<span class="sd">            place in the source vocabulary.</span>
+<span class="sd">        inverted : bool</span>
+<span class="sd">            Whether to invert the transform.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">target</span><span class="p">,</span> <span class="n">target_vocab</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spa</span><span class="o">.</span><span class="n">get_module_input</span><span class="p">(</span><span class="n">target_name</span><span class="p">)</span>
+        <span class="n">source</span><span class="p">,</span> <span class="n">source_vocab</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spa</span><span class="o">.</span><span class="n">get_module_output</span><span class="p">(</span><span class="n">source_name</span><span class="p">)</span>
+
+        <span class="n">t</span> <span class="o">=</span> <span class="n">source_vocab</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">transform</span><span class="p">)</span><span class="o">.</span><span class="n">get_convolution_matrix</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">inverted</span><span class="p">:</span>
+            <span class="n">D</span> <span class="o">=</span> <span class="n">source_vocab</span><span class="o">.</span><span class="n">dimensions</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">D</span><span class="p">)[</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">D</span><span class="p">)])</span>
+
+        <span class="k">if</span> <span class="n">target_vocab</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">source_vocab</span><span class="p">:</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">source_vocab</span><span class="o">.</span><span class="n">transform_to</span><span class="p">(</span><span class="n">target_vocab</span><span class="p">),</span> <span class="n">t</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">spa</span><span class="p">:</span>
+            <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">t</span><span class="p">,</span> <span class="n">synapse</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">synapse</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Cortical.add_conv_effect"><a class="viewcode-back" href="../../../spa.html#nengo.spa.Cortical.add_conv_effect">[docs]</a>    <span class="k">def</span> <span class="nf">add_conv_effect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_name</span><span class="p">,</span> <span class="n">effect</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convolve the output of two modules and send result to target.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        target_name : str</span>
+<span class="sd">            The name of the module input to affect</span>
+<span class="sd">        effect : Convolution</span>
+<span class="sd">            The details of the convolution to implement.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">nengo</span><span class="o">.</span><span class="n">spa</span><span class="o">.</span><span class="n">action_build</span><span class="o">.</span><span class="n">convolution</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_name</span><span class="p">,</span> <span class="n">effect</span><span class="p">,</span>
+                                           <span class="bp">self</span><span class="o">.</span><span class="n">neurons_cconv</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">synapse</span><span class="p">)</span></div></div>
+</pre></div>
+
+          </div>
+            
+        </div>
+        <div class="clearfix"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+<script type="text/javascript">
+  $("#mobile-toggle a").click(function () {
+    $("#left-column").toggle();
+  });
+</script>
+<script type="text/javascript" src="../../../_static/js/bootstrap.js"></script>
+  <div class="footer">
+    &copy; Copyright 2013-2017, Applied Brain Research. Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+  </div>
+  </body>
+</html>

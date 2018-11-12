@@ -1,0 +1,408 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  
+  <!-- Licensed under the Apache 2.0 License -->
+  <link rel="stylesheet" type="text/css" href="_static/fonts/open-sans/stylesheet.css" />
+  <!-- Licensed under the SIL Open Font License -->
+  <link rel="stylesheet" type="text/css" href="_static/fonts/source-serif-pro/source-serif-pro.css" />
+  <link rel="stylesheet" type="text/css" href="_static/css/bootstrap.min.css" />
+  <link rel="stylesheet" type="text/css" href="_static/css/bootstrap-theme.min.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+    <title>Converting from Nengo 1.4 to Nengo 2.0 &#8212; Nengo core 2.8.0 docs</title>
+    <link rel="stylesheet" href="_static/guzzle.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '2.8.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Examples" href="examples.html" />
+    <link rel="prev" title="Nengo history" href="history.html" />
+<link rel="stylesheet" type="text/css" href="_static/custom.css">
+
+
+  
+   
+
+  </head>
+  <body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="examples.html" title="Examples"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="history.html" title="Nengo history"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="user_guide.html" accesskey="U">User guide</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="container-wrapper">
+
+      <div id="mobile-toggle">
+        <a href="#"><span class="glyphicon glyphicon-align-justify" aria-hidden="true"></span></a>
+      </div>
+  <div id="left-column">
+    <div class="sphinxsidebar">
+        <a href="
+    index.html" class="text-logo">Nengo core 2.8</a>
+        <div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <h2>Table Of Contents</h2>
+  </div>
+  <div class="sidebar-toc">
+    
+    
+      <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting started</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="user_guide.html">User guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="frontend_api.html">Nengo frontend API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="config.html">Setting parameters with Configs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="networks.html">Reusable networks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="spa.html">Semantic Pointer Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="advanced.html">Advanced topics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="backend_api.html">Nengo backend API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html">Release History</a></li>
+<li class="toctree-l2"><a class="reference internal" href="history.html">Nengo history</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Converting from Nengo 1.4 to Nengo 2.0</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#big-changes">Big changes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id1">Changes to common functions</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing to Nengo</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://www.nengo.ai/projects.html">Nengo ecosystem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">Nengo license</a></li>
+</ul>
+
+    
+  </div>
+</div>
+        
+<div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <div id="main-search">
+      <form class="form-inline" action="search.html" method="GET" role="form">
+        <div class="input-group">
+          <input name="q" type="text" class="form-control" placeholder="Search...">
+        </div>
+        <input type="hidden" name="check_keywords" value="yes" />
+        <input type="hidden" name="area" value="default" />
+      </form>
+    </div>
+  </div>
+</div>
+    </div>
+  </div>
+        <div id="right-column">
+          
+  <div class="header">
+    
+          <div role="navigation" aria-label="breadcrumbs navigation">
+            <ol class="breadcrumb">
+              <li><a href="index.html">Docs</a></li>
+              
+                <li><a href="user_guide.html">User guide</a></li>
+              
+              <li>Converting from Nengo 1.4 to Nengo 2.0</li>
+            </ol>
+          </div>
+          
+    
+  </div>
+
+          <div class="document clearer body">
+            
+  <div class="section" id="converting-from-nengo-1-4-to-nengo-2-0">
+<h1>Converting from Nengo 1.4 to Nengo 2.0<a class="headerlink" href="#converting-from-nengo-1-4-to-nengo-2-0" title="Permalink to this headline">¶</a></h1>
+<p>On this page, we’ll go over the changes between Nengo 1.4 and 2.0.
+They will first be reviewed heuristically in the section Big Changes, before
+being broken down practically in Changes to Common Functions</p>
+<div class="section" id="big-changes">
+<h2>Big changes<a class="headerlink" href="#big-changes" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="objects-instead-of-strings">
+<h3>Objects instead of strings<a class="headerlink" href="#objects-instead-of-strings" title="Permalink to this headline">¶</a></h3>
+<p>In the old API each object had to be assigned it’s own unique string.</p>
+<p>In the new Nengo, you can use strings to identify objects called <code class="docutils literal"><span class="pre">labels</span></code>,
+but they are not unique. Instead, if you want to identify an object, you just
+make sure to assign it a variable in your network</p>
+</div>
+<div class="section" id="no-origins-and-terminations">
+<h3>No Origins and Terminations<a class="headerlink" href="#no-origins-and-terminations" title="Permalink to this headline">¶</a></h3>
+<p>Previously, each object had a set of origins and terminations,
+which determined how the object produced output and
+accepted input, respectively.
+These two things have been collapsed into a single
+Connection object, which contains
+the logic of the origin and termination
+in one place.</p>
+<p>Because the model is defined separately
+from when it’s built,
+the performance advantages of having
+origins and terminations can be accomplished
+during the build phase of the model instead.</p>
+</div>
+<div class="section" id="only-ensembles-nodes-networks-and-probes">
+<h3>Only Ensembles, Nodes, Networks and Probes<a class="headerlink" href="#only-ensembles-nodes-networks-and-probes" title="Permalink to this headline">¶</a></h3>
+<p>Many other objects have been removed,
+in order to start with a very minimal
+set of objects allowing a new user to get up and running without having
+to spend all the effort of memorizing a large API.</p>
+<p>Basically:</p>
+<ul class="simple">
+<li>Anything made with neurons is an Ensemble.</li>
+<li>Anything not made with neurons (inputs, interfaces) are Nodes.</li>
+<li>Probes are how you get data out of Nodes and Ensembles after simulating.</li>
+<li>Networks are dumb containers
+for Ensembles, Nodes, Probes, and other Networks.</li>
+</ul>
+<p>A power user can easily divide his code and stop from repeating themselves
+by encapsulating code that appears in multiple places in a Network.</p>
+</div>
+<div class="section" id="model-and-simulator-separation">
+<h3>Model and Simulator separation<a class="headerlink" href="#model-and-simulator-separation" title="Permalink to this headline">¶</a></h3>
+<p>There is now a clear separation between
+model definition and model creation/simulation.
+The motivation behind this is to allow
+for testing models as they are being created.
+For example, you can create a model,
+add a node and an ensemble,
+and the create a simulator based
+on that model and run it
+to make sure that your node and ensemble
+are doing what you think they’re doing.
+Then, you can continue adding new objects
+to your model—this will not be reflected
+in the simulator that you’ve already created,
+but you can create a new simulator
+with this updated model and run it
+without having to rerun your script
+from the top.
+Basically, it allows for a more
+iterative and interactive modelling process,
+and makes it more explicit which
+decisions are made manually and which
+are automatically determined
+when the simulator is created.
+Additionally, this means that the
+simulator timestep (dt) is not
+defined until the simulator is created,
+meaning that you can run the same model
+with different timesteps to see if
+there is a marked functional difference.</p>
+</div>
+<div class="section" id="changes-to-common-functions">
+<h3>Changes to common functions<a class="headerlink" href="#changes-to-common-functions" title="Permalink to this headline">¶</a></h3>
+<p>Many commonly used functions have been
+simplified or changed to be more explicit.</p>
+</div>
+<div class="section" id="making-ensembles">
+<h3>Making ensembles<a class="headerlink" href="#making-ensembles" title="Permalink to this headline">¶</a></h3>
+<p>Old API signature:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">nef</span><span class="o">.</span><span class="n">Network</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">neurons</span><span class="p">,</span> <span class="n">dimensions</span><span class="p">,</span> <span class="n">tau_rc</span><span class="p">,</span> <span class="n">tau_ref</span><span class="p">,</span> <span class="n">max_rate</span><span class="p">,</span> <span class="n">intercept</span><span class="p">,</span> <span class="n">radius</span><span class="p">,</span> <span class="n">encoders</span><span class="p">,</span> <span class="n">decoder_noise</span><span class="p">,</span> <span class="n">eval_points</span><span class="p">,</span> <span class="n">noise</span><span class="p">,</span> <span class="n">noise_frequency</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">add_to_network</span><span class="p">,</span> <span class="n">node_factory</span><span class="p">,</span> <span class="n">decoder_sign</span><span class="p">,</span> <span class="n">seed</span><span class="p">,</span> <span class="n">quick</span><span class="p">,</span> <span class="n">storage_code</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>A simple example:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">nef</span><span class="o">.</span><span class="n">Network</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;spike&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>New API signature:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">(</span><span class="n">neurons</span><span class="p">,</span> <span class="n">dimensions</span><span class="p">,</span> <span class="n">radius</span><span class="p">,</span> <span class="n">encoders</span><span class="p">,</span> <span class="n">intercepts</span><span class="p">,</span> <span class="n">max_rates</span><span class="p">,</span> <span class="n">eval_points</span><span class="p">,</span> <span class="n">neuron_type</span><span class="p">,</span> <span class="n">seed</span><span class="p">,</span> <span class="n">label</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>A simple example:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">A</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">(</span><span class="mi">40</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">neuron_type</span><span class="o">=</span><span class="n">nengo</span><span class="o">.</span><span class="n">LIF</span><span class="p">(),</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;A&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>See <a class="reference internal" href="frontend_api.html#nengo.Ensemble" title="nengo.Ensemble"><code class="xref py py-class docutils literal"><span class="pre">nengo.Ensemble</span></code></a> for
+a list of properties that can be manipulated.</p>
+</div>
+<div class="section" id="making-ensemble-arrays-i-e-network-arrays">
+<h3>Making ensemble arrays (i.e., network arrays)<a class="headerlink" href="#making-ensemble-arrays-i-e-network-arrays" title="Permalink to this headline">¶</a></h3>
+<p>Network arrays were very tightly coupled
+with the old API. In the new API,
+they have been decoupled and are just dumb containers, which
+you can easily import.
+The functionality should still be identical,
+though the syntax has changed.</p>
+<p>Old API:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">nef</span><span class="o">.</span><span class="n">Network</span><span class="o">.</span><span class="n">make_array</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">neurons</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">dimensions</span><span class="p">,</span> <span class="o">**</span><span class="n">args</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>New API:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">nengo</span><span class="o">.</span><span class="n">networks</span><span class="o">.</span><span class="n">EnsembleArray</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">neurons</span><span class="p">,</span> <span class="n">n_ensembles</span><span class="p">,</span> <span class="n">dimensions_per_ensemble</span><span class="p">,</span> <span class="o">**</span><span class="n">ens_args</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>See <a class="reference internal" href="networks.html#nengo.networks.EnsembleArray" title="nengo.networks.EnsembleArray"><code class="xref py py-class docutils literal"><span class="pre">nengo.networks.EnsembleArray</span></code></a> for more information.</p>
+</div>
+</div>
+<div class="section" id="id1">
+<h2>Changes to common functions<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="making-nodes">
+<h3>Making nodes<a class="headerlink" href="#making-nodes" title="Permalink to this headline">¶</a></h3>
+<p>Previously, there were several different ways
+to provide input to a Nengo model:
+<code class="docutils literal"><span class="pre">SimpleNode</span></code>, <code class="docutils literal"><span class="pre">FunctionInput</span></code>, and others.
+All of these use cases should be covered
+by <a class="reference internal" href="frontend_api.html#nengo.Node" title="nengo.Node"><code class="xref py py-class docutils literal"><span class="pre">nengo.Node</span></code></a>.</p>
+<p>In the old API, you could create your own
+<code class="docutils literal"><span class="pre">SimpleNode</span></code>, or create a <code class="docutils literal"><span class="pre">FunctionInput</span></code> with:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">nef</span><span class="o">.</span><span class="n">Network</span><span class="o">.</span><span class="n">make_input</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="n">zero_after_time</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In the new API, you create a node with:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">nengo</span><span class="o">.</span><span class="n">Node</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal"><span class="pre">output</span></code> is either a constant value
+(float, list, NumPy array), a function, or
+<code class="docutils literal"><span class="pre">None</span></code> when passing through values unchanged.</p>
+<p>See <a class="reference internal" href="frontend_api.html#nengo.Node" title="nengo.Node"><code class="xref py py-class docutils literal"><span class="pre">nengo.Node</span></code></a> for more information.</p>
+</div>
+<div class="section" id="making-inputs">
+<h3>Making inputs<a class="headerlink" href="#making-inputs" title="Permalink to this headline">¶</a></h3>
+<p>In the old API, inputs were defined as:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="c1"># Piecewise example</span>
+<span class="n">net</span><span class="o">.</span><span class="n">make_input</span><span class="p">(</span><span class="s2">&quot;contextinput&quot;</span><span class="p">,</span> <span class="p">{</span><span class="mf">0.0</span><span class="p">:[</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">],</span> <span class="mf">0.5</span><span class="p">:[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="mf">1.0</span><span class="p">:[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]})</span>
+<span class="c1"># Periodic white noise</span>
+<span class="n">net</span><span class="o">.</span><span class="n">make_fourier_input</span><span class="p">(</span><span class="s1">&#39;fin1&#39;</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">power</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Inputs are just nodes whose sole function are to output a function.</p>
+<p>Many of the <a class="reference internal" href="examples.html"><span class="doc">Examples</span></a> use function output nodes.</p>
+</div>
+<div class="section" id="terminations-and-origins">
+<h3>Terminations and Origins<a class="headerlink" href="#terminations-and-origins" title="Permalink to this headline">¶</a></h3>
+<p>Practically, to convert from one to the other, consider this table
+that uses an example ensemble called <code class="docutils literal"><span class="pre">ens</span></code> who’s input needs to be
+transformed by a two-dimensional identity function, <code class="docutils literal"><span class="pre">[[1,0],[0,1]]</span></code>.</p>
+<dl class="docutils">
+<dt>Nengo 1.4::</dt>
+<dd>ens.addDecodedTermination(“term_name”, transform=MU.I(2))</dd>
+<dt>Nengo 2.0::</dt>
+<dd># first create a simple pass-through node
+term_name = nengo.Node(label=”term_name”)
+# now connect the pass-through node to the ensemble
+nengo.Connection(term_name, ens, transform=np.eye(2))</dd>
+</dl>
+<p>Same, thing but instead of a decoded origin, we want one that connects
+directly to the ensemble’s neurons.</p>
+<dl class="docutils">
+<dt>Nengo 1.4::</dt>
+<dd>ens.addTermination(“term_name”, transform=MU.I(2))</dd>
+<dt>Nengo 2.0::</dt>
+<dd># first create a simple pass-through node
+term_name = nengo.Node(label=”term_name”)
+# now connect the pass-through node to the ensemble neurons
+nengo.Connection(term_name, ens.neurons, transform=np.eye(2))</dd>
+</dl>
+<p>One more time, but with an output and no transform.</p>
+<dl class="docutils">
+<dt>Nengo 1.4::</dt>
+<dd>ens.addDecodedOrigin(“origin_name”)</dd>
+<dt>Nengo 2.0::</dt>
+<dd># first create a simple pass-through node
+origin_name = nengo.Node(label=”origin_name”)
+# now connect the pass-through node to the ensemble
+nengo.Connection(ens, origin_name, transform=np.eye(2))</dd>
+</dl>
+</div>
+<div class="section" id="connecting-things">
+<h3>Connecting things<a class="headerlink" href="#connecting-things" title="Permalink to this headline">¶</a></h3>
+<p>A lot of the complexity of the old API
+has been pushed down to the constructors
+of the connection object.
+In general, old API calls of the form:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">nef</span><span class="o">.</span><span class="n">Network</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">pre</span><span class="p">,</span> <span class="n">post</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>are now:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="n">pre</span><span class="p">,</span> <span class="n">post</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>However, there are some changes in the additional arguments.
+The old API used <code class="docutils literal"><span class="pre">weight</span></code>, <code class="docutils literal"><span class="pre">index_pre</span></code> and <code class="docutils literal"><span class="pre">index_post</span></code>
+as a shortcut to define <code class="docutils literal"><span class="pre">transform</span></code>;
+in the new API, only the <code class="docutils literal"><span class="pre">transform</span></code> can be specified.
+There are many NumPy functions that make transforms
+easier to specify.
+Additionally, we now utilize Python’s slice syntax
+to route dimensions easily:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="n">pre_1d</span><span class="p">,</span> <span class="n">post_2d</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>The keyword argument <code class="docutils literal"><span class="pre">pstc</span></code> has been renamed to <code class="docutils literal"><span class="pre">synapse</span></code>.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+            
+  <div class="footer-relations">
+    
+      <div class="pull-left">
+        <a class="btn btn-default" href="history.html" title="previous chapter (use the left arrow)">Nengo history</a>
+      </div>
+    
+      <div class="pull-right">
+        <a class="btn btn-default" href="examples.html" title="next chapter (use the right arrow)">Examples</a>
+      </div>
+    </div>
+    <div class="clearer"></div>
+  
+        </div>
+        <div class="clearfix"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="examples.html" title="Examples"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="history.html" title="Nengo history"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="user_guide.html" >User guide</a> &#187;</li> 
+      </ul>
+    </div>
+<script type="text/javascript">
+  $("#mobile-toggle a").click(function () {
+    $("#left-column").toggle();
+  });
+</script>
+<script type="text/javascript" src="_static/js/bootstrap.js"></script>
+  <div class="footer">
+    &copy; Copyright 2013-2017, Applied Brain Research. Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+  </div>
+  </body>
+</html>

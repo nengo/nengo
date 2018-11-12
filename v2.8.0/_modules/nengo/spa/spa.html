@@ -1,0 +1,389 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  
+  <!-- Licensed under the Apache 2.0 License -->
+  <link rel="stylesheet" type="text/css" href="../../../_static/fonts/open-sans/stylesheet.css" />
+  <!-- Licensed under the SIL Open Font License -->
+  <link rel="stylesheet" type="text/css" href="../../../_static/fonts/source-serif-pro/source-serif-pro.css" />
+  <link rel="stylesheet" type="text/css" href="../../../_static/css/bootstrap.min.css" />
+  <link rel="stylesheet" type="text/css" href="../../../_static/css/bootstrap-theme.min.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+    <title>nengo.spa.spa &#8212; Nengo core 2.8.0 docs</title>
+    <link rel="stylesheet" href="../../../_static/guzzle.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '2.8.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+<link rel="stylesheet" type="text/css" href="../../../_static/custom.css">
+
+
+  
+   
+
+  </head>
+  <body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="container-wrapper">
+
+      <div id="mobile-toggle">
+        <a href="#"><span class="glyphicon glyphicon-align-justify" aria-hidden="true"></span></a>
+      </div>
+  <div id="left-column">
+    <div class="sphinxsidebar">
+        <a href="
+    ../../../index.html" class="text-logo">Nengo core 2.8</a>
+        <div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <h2>Table Of Contents</h2>
+  </div>
+  <div class="sidebar-toc">
+    
+    
+      <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../user_guide.html">User guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">Contributing to Nengo</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://www.nengo.ai/projects.html">Nengo ecosystem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../license.html">Nengo license</a></li>
+</ul>
+
+    
+  </div>
+</div>
+        
+<div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <div id="main-search">
+      <form class="form-inline" action="../../../search.html" method="GET" role="form">
+        <div class="input-group">
+          <input name="q" type="text" class="form-control" placeholder="Search...">
+        </div>
+        <input type="hidden" name="check_keywords" value="yes" />
+        <input type="hidden" name="area" value="default" />
+      </form>
+    </div>
+  </div>
+</div>
+    </div>
+  </div>
+        <div id="right-column">
+          
+  <div class="header">
+    
+          <div role="navigation" aria-label="breadcrumbs navigation">
+            <ol class="breadcrumb">
+              <li><a href="../../../index.html">Docs</a></li>
+              
+                <li><a href="../../index.html">Module code</a></li>
+              
+              <li>nengo.spa.spa</li>
+            </ol>
+          </div>
+          
+    
+  </div>
+
+          <div class="document clearer body">
+            
+  <h1>Source code for nengo.spa.spa</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">warnings</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">import</span> <span class="nn">nengo</span>
+<span class="kn">from</span> <span class="nn">nengo.exceptions</span> <span class="k">import</span> <span class="n">SpaModuleError</span>
+<span class="kn">from</span> <span class="nn">nengo.spa.vocab</span> <span class="k">import</span> <span class="n">Vocabulary</span>
+<span class="kn">from</span> <span class="nn">nengo.spa.module</span> <span class="k">import</span> <span class="n">Module</span>
+<span class="kn">from</span> <span class="nn">nengo.spa.utils</span> <span class="k">import</span> <span class="n">enable_spa_params</span>
+<span class="kn">from</span> <span class="nn">nengo.utils.compat</span> <span class="k">import</span> <span class="n">iteritems</span>
+
+
+<div class="viewcode-block" id="SPA"><a class="viewcode-back" href="../../../spa.html#nengo.spa.SPA">[docs]</a><span class="k">class</span> <span class="nc">SPA</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">Network</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Base class for SPA models.</span>
+
+<span class="sd">    This expands the standard `.Network` system to support structured</span>
+<span class="sd">    connections that use Semantic Pointers and associated vocabularies</span>
+<span class="sd">    in their definitions.</span>
+
+<span class="sd">    To build a SPA model, you can either use ``with`` or create a subclass</span>
+<span class="sd">    of this SPA class.</span>
+
+<span class="sd">    If you use the ``with`` statement, any attribute added to the SPA network</span>
+<span class="sd">    will be accessible for SPA connections.</span>
+
+<span class="sd">    If you chose to create a subclass, any `~.spa.module.Module` object that</span>
+<span class="sd">    is assigned to a member variable will automatically be accessible by the</span>
+<span class="sd">    SPA connection system.</span>
+
+<span class="sd">    As an example, the following code will build three modules</span>
+<span class="sd">    (two buffers and a memory) that can be referred to as ``a``, ``b``,</span>
+<span class="sd">    and ``c``, respectively.</span>
+
+<span class="sd">    First, the example with a ``with`` statement::</span>
+
+<span class="sd">        example = spa.Spa()</span>
+
+<span class="sd">        with example:</span>
+<span class="sd">            example.a = spa.Buffer(dimensions=8)</span>
+<span class="sd">            example.b = spa.Buffer(dimensions=16)</span>
+<span class="sd">            example.c = spa.Memory(dimensions=8)</span>
+
+<span class="sd">    Now, the example with a subclass::</span>
+
+<span class="sd">        class Example(spa.SPA):</span>
+<span class="sd">            def __init__(self):</span>
+<span class="sd">                with self:</span>
+<span class="sd">                    self.a = spa.Buffer(dimensions=8)</span>
+<span class="sd">                    self.b = spa.Buffer(dimensions=16)</span>
+<span class="sd">                    self.c = spa.Memory(dimensions=8)</span>
+
+<span class="sd">    These names can be used by special modules that are aware of these</span>
+<span class="sd">    names. As an example, the `.Cortical` module allows you to form connections</span>
+<span class="sd">    between these modules in ways that are aware of semantic pointers::</span>
+
+<span class="sd">        with example:</span>
+<span class="sd">            example.a = spa.Buffer(dimensions=8)</span>
+<span class="sd">            example.b = spa.Buffer(dimensions=16)</span>
+<span class="sd">            example.c = spa.Memory(dimensions=8)</span>
+<span class="sd">            example.cortical = spa.Cortical(spa.Actions(</span>
+<span class="sd">                    &#39;b=a*CAT&#39;, &#39;c=b*~CAT&#39;))</span>
+
+<span class="sd">    For complex cognitive control, the key modules are the `.spa.BasalGanglia`</span>
+<span class="sd">    and the `.spa.Thalamus`. Together, these allow us to define complex actions</span>
+<span class="sd">    using the `.spa.Action` syntax::</span>
+
+<span class="sd">        class SequenceExample(spa.SPA):</span>
+<span class="sd">            def __init__(self):</span>
+<span class="sd">                self.state = spa.Memory(dimensions=32)</span>
+
+<span class="sd">                actions = spa.Actions(&#39;dot(state, A) --&gt; state=B&#39;,</span>
+<span class="sd">                                      &#39;dot(state, B) --&gt; state=C&#39;,</span>
+<span class="sd">                                      &#39;dot(state, C) --&gt; state=D&#39;,</span>
+<span class="sd">                                      &#39;dot(state, D) --&gt; state=E&#39;,</span>
+<span class="sd">                                      &#39;dot(state, E) --&gt; state=A&#39;)</span>
+
+<span class="sd">                self.bg = spa.BasalGanglia(actions=actions)</span>
+<span class="sd">                self.thal = spa.Thalamus(self.bg)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">add_to_container</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">vocabs</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SPA</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">seed</span><span class="p">,</span> <span class="n">add_to_container</span><span class="p">)</span>
+        <span class="n">vocabs</span> <span class="o">=</span> <span class="p">[]</span> <span class="k">if</span> <span class="n">vocabs</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">vocabs</span>
+        <span class="n">enable_spa_params</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_modules</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_default_vocabs</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">for</span> <span class="n">vo</span> <span class="ow">in</span> <span class="n">vocabs</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">vo</span><span class="o">.</span><span class="n">dimensions</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default_vocabs</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Duplicate vocabularies with dimension </span><span class="si">%d</span><span class="s2">. &quot;</span>
+                              <span class="s2">&quot;Using the last entry in the vocab list with &quot;</span>
+                              <span class="s2">&quot;that dimensionality.&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">vo</span><span class="o">.</span><span class="n">dimensions</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_default_vocabs</span><span class="p">[</span><span class="n">vo</span><span class="o">.</span><span class="n">dimensions</span><span class="p">]</span> <span class="o">=</span> <span class="n">vo</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_initialized</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">def</span> <span class="nf">__setstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="k">if</span> <span class="s1">&#39;_initialized&#39;</span> <span class="ow">in</span> <span class="n">state</span><span class="p">:</span>
+            <span class="k">del</span> <span class="n">state</span><span class="p">[</span><span class="s1">&#39;_initialized&#39;</span><span class="p">]</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SPA</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__setstate__</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_initialized&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;A setattr that handles Modules being added specially.</span>
+
+<span class="sd">        This is so that we can use the variable name for the Module as</span>
+<span class="sd">        the name that all of the SPA system will use to access that module.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_initialized&#39;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">SPA</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">),</span> <span class="n">Module</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">SpaModuleError</span><span class="p">(</span><span class="s2">&quot;Cannot re-assign module-attribute </span><span class="si">%s</span><span class="s2"> to </span><span class="si">%s</span><span class="s2">. &quot;</span>
+                                 <span class="s2">&quot;SPA module-attributes can only be assigned &quot;</span>
+                                 <span class="s2">&quot;once.&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">))</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SPA</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">Module</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">value</span><span class="o">.</span><span class="n">label</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">value</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="n">key</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_modules</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="ow">in</span> <span class="n">iteritems</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">inputs</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">==</span> <span class="nb">int</span><span class="p">:</span>
+                    <span class="n">value</span><span class="o">.</span><span class="n">inputs</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_default_vocab</span><span class="p">(</span><span class="n">v</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span><span class="o">.</span><span class="n">vocab</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">inputs</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="ow">in</span> <span class="n">iteritems</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">outputs</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">==</span> <span class="nb">int</span><span class="p">:</span>
+                    <span class="n">value</span><span class="o">.</span><span class="n">outputs</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_default_vocab</span><span class="p">(</span><span class="n">v</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="n">obj</span><span class="p">]</span><span class="o">.</span><span class="n">vocab</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">outputs</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+
+            <span class="n">value</span><span class="o">.</span><span class="n">on_add</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ex_type</span><span class="p">,</span> <span class="n">ex_value</span><span class="p">,</span> <span class="n">traceback</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SPA</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__exit__</span><span class="p">(</span><span class="n">ex_type</span><span class="p">,</span> <span class="n">ex_value</span><span class="p">,</span> <span class="n">traceback</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">ex_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># re-raise the exception that triggered this __exit__</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="n">module_list</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_modules</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+        <span class="k">for</span> <span class="n">net</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">networks</span><span class="p">:</span>
+            <span class="c1"># Since there are no attributes to distinguish what&#39;s been added</span>
+            <span class="c1"># and what hasn&#39;t, we have to ask the network</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">Module</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">net</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">module_list</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">SpaModuleError</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> must be set as an attribute of &quot;</span>
+                                     <span class="s2">&quot;a SPA network&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">net</span><span class="p">))</span>
+
+<div class="viewcode-block" id="SPA.get_module"><a class="viewcode-back" href="../../../spa.html#nengo.spa.SPA.get_module">[docs]</a>    <span class="k">def</span> <span class="nf">get_module</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the module for the given name.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_modules</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_modules</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="s1">&#39;_&#39;</span> <span class="ow">in</span> <span class="n">name</span><span class="p">:</span>
+            <span class="n">module</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">module</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_modules</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_modules</span><span class="p">[</span><span class="n">module</span><span class="p">]</span>
+        <span class="k">raise</span> <span class="n">SpaModuleError</span><span class="p">(</span><span class="s2">&quot;Could not find module </span><span class="si">%r</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">name</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SPA.get_default_vocab"><a class="viewcode-back" href="../../../spa.html#nengo.spa.SPA.get_default_vocab">[docs]</a>    <span class="k">def</span> <span class="nf">get_default_vocab</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dimensions</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a Vocabulary with the desired dimensions.</span>
+
+<span class="sd">        This will create a new default Vocabulary if one doesn&#39;t exist.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># If seed is set, create rng based off that seed.</span>
+        <span class="c1"># Otherwise, just use the default NumPy rng.</span>
+        <span class="n">rng</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">seed</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">RandomState</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">seed</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">dimensions</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default_vocabs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_default_vocabs</span><span class="p">[</span><span class="n">dimensions</span><span class="p">]</span> <span class="o">=</span> <span class="n">Vocabulary</span><span class="p">(</span><span class="n">dimensions</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="n">rng</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default_vocabs</span><span class="p">[</span><span class="n">dimensions</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="SPA.get_module_input"><a class="viewcode-back" href="../../../spa.html#nengo.spa.SPA.get_module_input">[docs]</a>    <span class="k">def</span> <span class="nf">get_module_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the object to connect into for the given name.</span>
+
+<span class="sd">        The name will be either the same as a module, or of the form</span>
+<span class="sd">        ``&lt;module_name&gt;_&lt;input_name&gt;``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_modules</span> <span class="ow">and</span> <span class="s1">&#39;default&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_modules</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">inputs</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_modules</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">inputs</span><span class="p">[</span><span class="s1">&#39;default&#39;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="s1">&#39;_&#39;</span> <span class="ow">in</span> <span class="n">name</span><span class="p">:</span>
+            <span class="n">module</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">module</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_modules</span><span class="p">:</span>
+                <span class="n">m</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_modules</span><span class="p">[</span><span class="n">module</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">inputs</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">inputs</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+        <span class="k">raise</span> <span class="n">SpaModuleError</span><span class="p">(</span><span class="s2">&quot;Could not find module input </span><span class="si">%r</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">name</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">get_module_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">module</span> <span class="ow">in</span> <span class="n">iteritems</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_modules</span><span class="p">):</span>
+            <span class="k">for</span> <span class="nb">input</span> <span class="ow">in</span> <span class="n">module</span><span class="o">.</span><span class="n">inputs</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">input</span> <span class="o">==</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span>
+                    <span class="k">yield</span> <span class="n">name</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">yield</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">_</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">input</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_input_vocab</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_module_input</span><span class="p">(</span><span class="n">name</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+
+<div class="viewcode-block" id="SPA.get_module_output"><a class="viewcode-back" href="../../../spa.html#nengo.spa.SPA.get_module_output">[docs]</a>    <span class="k">def</span> <span class="nf">get_module_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the object to connect into for the given name.</span>
+
+<span class="sd">        The name will be either the same as a module, or of the form</span>
+<span class="sd">        ``&lt;module_name&gt;_&lt;output_name&gt;``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_modules</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_modules</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">outputs</span><span class="p">[</span><span class="s1">&#39;default&#39;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="s1">&#39;_&#39;</span> <span class="ow">in</span> <span class="n">name</span><span class="p">:</span>
+            <span class="n">module</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">module</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_modules</span><span class="p">:</span>
+                <span class="n">m</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_modules</span><span class="p">[</span><span class="n">module</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">m</span><span class="o">.</span><span class="n">outputs</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">outputs</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+        <span class="k">raise</span> <span class="n">SpaModuleError</span><span class="p">(</span><span class="s2">&quot;Could not find module output </span><span class="si">%r</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">name</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">get_module_outputs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">module</span> <span class="ow">in</span> <span class="n">iteritems</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_modules</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">output</span> <span class="ow">in</span> <span class="n">module</span><span class="o">.</span><span class="n">outputs</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">output</span> <span class="o">==</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span>
+                    <span class="k">yield</span> <span class="n">name</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">yield</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">_</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">output</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_output_vocab</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_module_output</span><span class="p">(</span><span class="n">name</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+
+<div class="viewcode-block" id="SPA.similarity"><a class="viewcode-back" href="../../../spa.html#nengo.spa.SPA.similarity">[docs]</a>    <span class="k">def</span> <span class="nf">similarity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">probe</span><span class="p">,</span> <span class="n">vocab</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the similarity between the probed data and ``vocab``.</span>
+
+<span class="sd">        If no vocabulary is provided, the vocabulary associated with</span>
+<span class="sd">        ``probe.target`` will be used.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        data: ProbeDict</span>
+<span class="sd">            Collection of simulation data returned by sim.run() function call.</span>
+<span class="sd">        probe: Probe</span>
+<span class="sd">            Probe with desired data.</span>
+<span class="sd">        vocab : Vocabulary, optional (Default: None)</span>
+<span class="sd">            The vocabulary to compare with. If None, uses the vocabulary</span>
+<span class="sd">            associated with ``probe.target``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">vocab</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">vocab</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="n">probe</span><span class="o">.</span><span class="n">target</span><span class="p">]</span><span class="o">.</span><span class="n">vocab</span>
+        <span class="k">return</span> <span class="n">nengo</span><span class="o">.</span><span class="n">spa</span><span class="o">.</span><span class="n">similarity</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">probe</span><span class="p">],</span> <span class="n">vocab</span><span class="p">)</span></div></div>
+</pre></div>
+
+          </div>
+            
+        </div>
+        <div class="clearfix"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+<script type="text/javascript">
+  $("#mobile-toggle a").click(function () {
+    $("#left-column").toggle();
+  });
+</script>
+<script type="text/javascript" src="../../../_static/js/bootstrap.js"></script>
+  <div class="footer">
+    &copy; Copyright 2013-2017, Applied Brain Research. Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+  </div>
+  </body>
+</html>

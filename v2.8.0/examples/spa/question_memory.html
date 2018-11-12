@@ -1,0 +1,579 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  
+  <!-- Licensed under the Apache 2.0 License -->
+  <link rel="stylesheet" type="text/css" href="../../_static/fonts/open-sans/stylesheet.css" />
+  <!-- Licensed under the SIL Open Font License -->
+  <link rel="stylesheet" type="text/css" href="../../_static/fonts/source-serif-pro/source-serif-pro.css" />
+  <link rel="stylesheet" type="text/css" href="../../_static/css/bootstrap.min.css" />
+  <link rel="stylesheet" type="text/css" href="../../_static/css/bootstrap-theme.min.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+    <title>Simple question answering with memory &#8212; Nengo core 2.8.0 docs</title>
+    <link rel="stylesheet" href="../../_static/guzzle.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '2.8.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Routing through a sequence" href="spa_sequence.html" />
+    <link rel="prev" title="Controlled question answering" href="question_control.html" />
+<link rel="stylesheet" type="text/css" href="../../_static/custom.css">
+
+
+  
+   
+
+  </head>
+  <body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="spa_sequence.html" title="Routing through a sequence"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="question_control.html" title="Controlled question answering"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../user_guide.html" >User guide</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../spa.html" accesskey="U">Semantic Pointer Architecture</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="container-wrapper">
+
+      <div id="mobile-toggle">
+        <a href="#"><span class="glyphicon glyphicon-align-justify" aria-hidden="true"></span></a>
+      </div>
+  <div id="left-column">
+    <div class="sphinxsidebar">
+        <a href="
+    ../../index.html" class="text-logo">Nengo core 2.8</a>
+        <div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <h2>Table Of Contents</h2>
+  </div>
+  <div class="sidebar-toc">
+    
+    
+      <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">Getting started</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../user_guide.html">User guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../frontend_api.html">Nengo frontend API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../config.html">Setting parameters with Configs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../networks.html">Reusable networks</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../spa.html">Semantic Pointer Architecture</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="convolution.html">Convolution network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="question.html">Simple question answering</a></li>
+<li class="toctree-l3"><a class="reference internal" href="question_control.html">Controlled question answering</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Simple question answering with memory</a></li>
+<li class="toctree-l3"><a class="reference internal" href="spa_sequence.html">Routing through a sequence</a></li>
+<li class="toctree-l3"><a class="reference internal" href="spa_sequence_routed.html">Routed sequencing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="spa_parser.html">Parsing simple commands</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../spa.html#api-reference">API reference</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../advanced.html">Advanced topics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../backend_api.html">Nengo backend API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../changelog.html">Release History</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../history.html">Nengo history</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../converting.html">Converting from Nengo 1.4 to Nengo 2.0</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing to Nengo</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://www.nengo.ai/projects.html">Nengo ecosystem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../license.html">Nengo license</a></li>
+</ul>
+
+    
+  </div>
+</div>
+        
+<div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <div id="main-search">
+      <form class="form-inline" action="../../search.html" method="GET" role="form">
+        <div class="input-group">
+          <input name="q" type="text" class="form-control" placeholder="Search...">
+        </div>
+        <input type="hidden" name="check_keywords" value="yes" />
+        <input type="hidden" name="area" value="default" />
+      </form>
+    </div>
+  </div>
+</div>
+    </div>
+  </div>
+        <div id="right-column">
+          
+  <div class="header">
+    
+          <div role="navigation" aria-label="breadcrumbs navigation">
+            <ol class="breadcrumb">
+              <li><a href="../../index.html">Docs</a></li>
+              
+                <li><a href="../../user_guide.html">User guide</a></li>
+              
+                <li><a href="../../spa.html">Semantic Pointer Architecture</a></li>
+              
+              <li>Simple question answering with memory</li>
+            </ol>
+          </div>
+          
+    
+      <div style="float: right;">
+        <ol class="breadcrumb">
+          <li><a href="../../_downloads/examples/spa/question_memory.ipynb" download>Download example as Jupyter Notebook</a></li>
+        </ol>
+      </div>
+    
+  </div>
+
+          <div class="document clearer body">
+            
+  
+<style>
+/* CSS for nbsphinx extension */
+
+/* remove conflicting styling from Sphinx themes */
+div.nbinput,
+div.nbinput div.prompt,
+div.nbinput div.input_area,
+div.nbinput div[class*=highlight],
+div.nbinput div[class*=highlight] pre,
+div.nboutput,
+div.nbinput div.prompt,
+div.nbinput div.output_area,
+div.nboutput div[class*=highlight],
+div.nboutput div[class*=highlight] pre {
+    background: none;
+    border: none;
+    padding: 0 0;
+    margin: 0;
+    box-shadow: none;
+}
+
+/* avoid gaps between output lines */
+div.nboutput div[class*=highlight] pre {
+    line-height: normal;
+}
+
+/* input/output containers */
+div.nbinput,
+div.nboutput {
+    display: -webkit-flex;
+    display: flex;
+    align-items: flex-start;
+    margin: 0;
+    width: 100%;
+}
+@media (max-width: 540px) {
+    div.nbinput,
+    div.nboutput {
+        flex-direction: column;
+    }
+}
+
+/* input container */
+div.nbinput {
+    padding-top: 5px;
+}
+
+/* last container */
+div.nblast {
+    padding-bottom: 5px;
+}
+
+/* input prompt */
+div.nbinput div.prompt pre {
+    color: #303F9F;
+}
+
+/* output prompt */
+div.nboutput div.prompt pre {
+    color: #D84315;
+}
+
+/* all prompts */
+div.nbinput div.prompt,
+div.nboutput div.prompt {
+    min-width: 9ex;
+    padding-top: 0.4em;
+    padding-right: 0.4em;
+    text-align: right;
+    flex: 0;
+}
+@media (max-width: 540px) {
+    div.nbinput div.prompt,
+    div.nboutput div.prompt {
+        text-align: left;
+        padding: 0.4em;
+    }
+    div.nboutput div.prompt.empty {
+        padding: 0;
+    }
+}
+
+/* disable scrollbars on prompts */
+div.nbinput div.prompt pre,
+div.nboutput div.prompt pre {
+    overflow: hidden;
+}
+
+/* input/output area */
+div.nbinput div.input_area,
+div.nboutput div.output_area {
+    padding: 0.4em;
+    -webkit-flex: 1;
+    flex: 1;
+    overflow: auto;
+}
+@media (max-width: 540px) {
+    div.nbinput div.input_area,
+    div.nboutput div.output_area {
+        width: 100%;
+    }
+}
+
+/* input area */
+div.nbinput div.input_area {
+    border: 1px solid #cfcfcf;
+    border-radius: 2px;
+    background: #f7f7f7;
+}
+
+/* override MathJax center alignment in output cells */
+div.nboutput div[class*=MathJax] {
+    text-align: left !important;
+}
+
+/* override sphinx.ext.pngmath center alignment in output cells */
+div.nboutput div.math p {
+    text-align: left;
+}
+
+/* standard error */
+div.nboutput div.output_area.stderr {
+    background: #fdd;
+}
+
+/* ANSI colors */
+.ansi-black-fg { color: #3E424D; }
+.ansi-black-bg { background-color: #3E424D; }
+.ansi-black-intense-fg { color: #282C36; }
+.ansi-black-intense-bg { background-color: #282C36; }
+.ansi-red-fg { color: #E75C58; }
+.ansi-red-bg { background-color: #E75C58; }
+.ansi-red-intense-fg { color: #B22B31; }
+.ansi-red-intense-bg { background-color: #B22B31; }
+.ansi-green-fg { color: #00A250; }
+.ansi-green-bg { background-color: #00A250; }
+.ansi-green-intense-fg { color: #007427; }
+.ansi-green-intense-bg { background-color: #007427; }
+.ansi-yellow-fg { color: #DDB62B; }
+.ansi-yellow-bg { background-color: #DDB62B; }
+.ansi-yellow-intense-fg { color: #B27D12; }
+.ansi-yellow-intense-bg { background-color: #B27D12; }
+.ansi-blue-fg { color: #208FFB; }
+.ansi-blue-bg { background-color: #208FFB; }
+.ansi-blue-intense-fg { color: #0065CA; }
+.ansi-blue-intense-bg { background-color: #0065CA; }
+.ansi-magenta-fg { color: #D160C4; }
+.ansi-magenta-bg { background-color: #D160C4; }
+.ansi-magenta-intense-fg { color: #A03196; }
+.ansi-magenta-intense-bg { background-color: #A03196; }
+.ansi-cyan-fg { color: #60C6C8; }
+.ansi-cyan-bg { background-color: #60C6C8; }
+.ansi-cyan-intense-fg { color: #258F8F; }
+.ansi-cyan-intense-bg { background-color: #258F8F; }
+.ansi-white-fg { color: #C5C1B4; }
+.ansi-white-bg { background-color: #C5C1B4; }
+.ansi-white-intense-fg { color: #A1A6B2; }
+.ansi-white-intense-bg { background-color: #A1A6B2; }
+
+.ansi-default-inverse-fg { color: #FFFFFF; }
+.ansi-default-inverse-bg { background-color: #000000; }
+
+.ansi-bold { font-weight: bold; }
+.ansi-underline { text-decoration: underline; }
+</style>
+<div class="section" id="Simple-question-answering-with-memory">
+<h1>Simple question answering with memory<a class="headerlink" href="#Simple-question-answering-with-memory" title="Permalink to this headline">¶</a></h1>
+<p>This demo implements a simple form of question answering. Two features
+(color and shape) will be bound by circular convolution and stored in a
+memory population. A cue will be used to determine either one of the
+features by deconvolution.</p>
+<p>When you run the network, it will start by binding <code class="docutils literal"><span class="pre">RED</span></code> and
+<code class="docutils literal"><span class="pre">CIRCLE</span></code> for 0.25 seconds and then binding <code class="docutils literal"><span class="pre">BLUE</span></code> and <code class="docutils literal"><span class="pre">SQUARE</span></code> for
+0.25 seconds. Both bound semantic pointers are stored in a memory
+population. Then the network is asked with the cue. For example, when
+the cue is <code class="docutils literal"><span class="pre">CIRCLE</span></code> the network will respond with <code class="docutils literal"><span class="pre">RED</span></code>.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="o">%</span><span class="k">matplotlib</span> inline
+
+<span class="kn">import</span> <span class="nn">nengo</span>
+<span class="kn">from</span> <span class="nn">nengo</span> <span class="k">import</span> <span class="n">spa</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="Create-the-model">
+<h2>Create the model<a class="headerlink" href="#Create-the-model" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="c1"># Number of dimensions for the Semantic Pointers</span>
+<span class="n">dimensions</span> <span class="o">=</span> <span class="mi">32</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">spa</span><span class="o">.</span><span class="n">SPA</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;Simple question answering&quot;</span><span class="p">)</span>
+
+<span class="k">with</span> <span class="n">model</span><span class="p">:</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">color_in</span> <span class="o">=</span> <span class="n">spa</span><span class="o">.</span><span class="n">State</span><span class="p">(</span><span class="n">dimensions</span><span class="o">=</span><span class="n">dimensions</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">shape_in</span> <span class="o">=</span> <span class="n">spa</span><span class="o">.</span><span class="n">State</span><span class="p">(</span><span class="n">dimensions</span><span class="o">=</span><span class="n">dimensions</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">conv</span> <span class="o">=</span> <span class="n">spa</span><span class="o">.</span><span class="n">State</span><span class="p">(</span><span class="n">dimensions</span><span class="o">=</span><span class="n">dimensions</span><span class="p">,</span>
+                           <span class="n">neurons_per_dimension</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+                           <span class="n">feedback</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                           <span class="n">feedback_synapse</span><span class="o">=</span><span class="mf">0.4</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">cue</span> <span class="o">=</span> <span class="n">spa</span><span class="o">.</span><span class="n">State</span><span class="p">(</span><span class="n">dimensions</span><span class="o">=</span><span class="n">dimensions</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">out</span> <span class="o">=</span> <span class="n">spa</span><span class="o">.</span><span class="n">State</span><span class="p">(</span><span class="n">dimensions</span><span class="o">=</span><span class="n">dimensions</span><span class="p">)</span>
+
+    <span class="c1"># Connect the state populations</span>
+    <span class="n">cortical_actions</span> <span class="o">=</span> <span class="n">spa</span><span class="o">.</span><span class="n">Actions</span><span class="p">(</span>
+        <span class="s1">&#39;conv = color_in * shape_in&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;out = conv * ~cue&#39;</span>
+    <span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">cortical</span> <span class="o">=</span> <span class="n">spa</span><span class="o">.</span><span class="n">Cortical</span><span class="p">(</span><span class="n">cortical_actions</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="Provide-the-input">
+<h2>Provide the input<a class="headerlink" href="#Provide-the-input" title="Permalink to this headline">¶</a></h2>
+<p>The color input will <code class="docutils literal"><span class="pre">RED</span></code> and then <code class="docutils literal"><span class="pre">BLUE</span></code> for 0.25 seconds each
+before being turned off. In the same way the shape input will be
+<code class="docutils literal"><span class="pre">CIRCLE</span></code> and then <code class="docutils literal"><span class="pre">SQUARE</span></code> for 0.25 seconds each. Thus, the network
+will bind alternatingly <code class="docutils literal"><span class="pre">RED</span> <span class="pre">*</span> <span class="pre">CIRCLE</span></code> and <code class="docutils literal"><span class="pre">BLUE</span> <span class="pre">*</span> <span class="pre">SQUARE</span></code> for 0.5
+seconds each.</p>
+<p>The cue for deconvolving bound semantic pointers will be turned off for
+0.5 seconds and then cycles through <code class="docutils literal"><span class="pre">CIRCLE</span></code>, <code class="docutils literal"><span class="pre">RED</span></code>, <code class="docutils literal"><span class="pre">SQUARE</span></code>, and
+<code class="docutils literal"><span class="pre">BLUE</span></code> within one second.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">def</span> <span class="nf">color_input</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">t</span> <span class="o">&lt;</span> <span class="mf">0.25</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">&#39;RED&#39;</span>
+    <span class="k">elif</span> <span class="n">t</span> <span class="o">&lt;</span> <span class="mf">0.5</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">&#39;BLUE&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">&#39;0&#39;</span>
+
+
+<span class="k">def</span> <span class="nf">shape_input</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">t</span> <span class="o">&lt;</span> <span class="mf">0.25</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">&#39;CIRCLE&#39;</span>
+    <span class="k">elif</span> <span class="n">t</span> <span class="o">&lt;</span> <span class="mf">0.5</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">&#39;SQUARE&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">&#39;0&#39;</span>
+
+
+<span class="k">def</span> <span class="nf">cue_input</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">t</span> <span class="o">&lt;</span> <span class="mf">0.5</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">&#39;0&#39;</span>
+    <span class="n">sequence</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;0&#39;</span><span class="p">,</span> <span class="s1">&#39;CIRCLE&#39;</span><span class="p">,</span> <span class="s1">&#39;RED&#39;</span><span class="p">,</span> <span class="s1">&#39;0&#39;</span><span class="p">,</span> <span class="s1">&#39;SQUARE&#39;</span><span class="p">,</span> <span class="s1">&#39;BLUE&#39;</span><span class="p">]</span>
+    <span class="n">idx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(((</span><span class="n">t</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">//</span> <span class="p">(</span><span class="mf">1.</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">sequence</span><span class="p">)))</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">sequence</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">sequence</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+
+
+<span class="k">with</span> <span class="n">model</span><span class="p">:</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">inp</span> <span class="o">=</span> <span class="n">spa</span><span class="o">.</span><span class="n">Input</span><span class="p">(</span>
+        <span class="n">color_in</span><span class="o">=</span><span class="n">color_input</span><span class="p">,</span> <span class="n">shape_in</span><span class="o">=</span><span class="n">shape_input</span><span class="p">,</span> <span class="n">cue</span><span class="o">=</span><span class="n">cue_input</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="Probe-the-output">
+<h2>Probe the output<a class="headerlink" href="#Probe-the-output" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">with</span> <span class="n">model</span><span class="p">:</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">]</span><span class="o">.</span><span class="n">synapse</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Lowpass</span><span class="p">(</span><span class="mf">0.03</span><span class="p">)</span>
+    <span class="n">color_in</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">color_in</span><span class="o">.</span><span class="n">output</span><span class="p">)</span>
+    <span class="n">shape_in</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">shape_in</span><span class="o">.</span><span class="n">output</span><span class="p">)</span>
+    <span class="n">cue</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">cue</span><span class="o">.</span><span class="n">output</span><span class="p">)</span>
+    <span class="n">conv</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">conv</span><span class="o">.</span><span class="n">output</span><span class="p">)</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">out</span><span class="o">.</span><span class="n">output</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="Run-the-model">
+<h2>Run the model<a class="headerlink" href="#Run-the-model" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Simulator</span><span class="p">(</span><span class="n">model</span><span class="p">)</span> <span class="k">as</span> <span class="n">sim</span><span class="p">:</span>
+    <span class="n">sim</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="mf">3.</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="Plot-the-results">
+<h2>Plot the results<a class="headerlink" href="#Plot-the-results" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+<span class="n">vocab</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">get_default_vocab</span><span class="p">(</span><span class="n">dimensions</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">(),</span> <span class="n">model</span><span class="o">.</span><span class="n">similarity</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">color_in</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">get_output_vocab</span><span class="p">(</span><span class="s1">&#39;color_in&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">keys</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="s1">&#39;x-small&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;color&quot;</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">(),</span> <span class="n">model</span><span class="o">.</span><span class="n">similarity</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">shape_in</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">get_output_vocab</span><span class="p">(</span><span class="s1">&#39;shape_in&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">keys</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="s1">&#39;x-small&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;shape&quot;</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">(),</span> <span class="n">model</span><span class="o">.</span><span class="n">similarity</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">cue</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">get_output_vocab</span><span class="p">(</span><span class="s1">&#39;cue&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">keys</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="s1">&#39;x-small&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;cue&quot;</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">pointer</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;RED * CIRCLE&#39;</span><span class="p">,</span> <span class="s1">&#39;BLUE * SQUARE&#39;</span><span class="p">]:</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+        <span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">(),</span>
+        <span class="n">vocab</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">pointer</span><span class="p">)</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">conv</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">),</span>
+        <span class="n">label</span><span class="o">=</span><span class="n">pointer</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">fontsize</span><span class="o">=</span><span class="s1">&#39;x-small&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;convolved&quot;</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">(),</span> <span class="n">spa</span><span class="o">.</span><span class="n">similarity</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">out</span><span class="p">],</span> <span class="n">vocab</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">get_output_vocab</span><span class="p">(</span><span class="s1">&#39;out&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">keys</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="s1">&#39;x-small&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;Output&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;time [s]&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>Out[6]:
+</pre></div>
+</div>
+<div class="output_area highlight-none"><div class="highlight"><pre>
+<span></span>&lt;matplotlib.text.Text at 0x1c697239b38&gt;
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_spa_question_memory_11_1.png" src="../../_images/examples_spa_question_memory_11_1.png" />
+</div>
+</div>
+<p>The plots of <code class="docutils literal"><span class="pre">shape</span></code>, <code class="docutils literal"><span class="pre">color</span></code>, and <code class="docutils literal"><span class="pre">convolved</span></code> show that first
+<code class="docutils literal"><span class="pre">RED</span> <span class="pre">*</span> <span class="pre">CIRCLE</span></code> and then <code class="docutils literal"><span class="pre">BLUE</span> <span class="pre">*</span> <span class="pre">SQUARE</span></code> will be loaded into the
+<code class="docutils literal"><span class="pre">convolved</span></code> buffer so after 0.5 seconds it represents the
+superposition <code class="docutils literal"><span class="pre">RED</span> <span class="pre">*</span> <span class="pre">CIRCLE</span> <span class="pre">+</span> <span class="pre">BLUE</span> <span class="pre">*</span> <span class="pre">SQUARE</span></code>.</p>
+<p>The last plot shows that the output is most similar to the semantic
+pointer bound to the current cue. For example, when <code class="docutils literal"><span class="pre">RED</span></code> and
+<code class="docutils literal"><span class="pre">CIRCLE</span></code> are being convolved and the cue is <code class="docutils literal"><span class="pre">CIRCLE</span></code>, the output is
+most similar to <code class="docutils literal"><span class="pre">RED</span></code>. Thus, it is possible to unbind semantic
+pointers from the superposition stored in <code class="docutils literal"><span class="pre">convolved</span></code>.</p>
+</div>
+</div>
+
+
+          </div>
+            
+  <div class="footer-relations">
+    
+      <div class="pull-left">
+        <a class="btn btn-default" href="question_control.html" title="previous chapter (use the left arrow)">Controlled question answering</a>
+      </div>
+    
+      <div class="pull-right">
+        <a class="btn btn-default" href="spa_sequence.html" title="next chapter (use the right arrow)">Routing through a sequence</a>
+      </div>
+    </div>
+    <div class="clearer"></div>
+  
+        </div>
+        <div class="clearfix"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="spa_sequence.html" title="Routing through a sequence"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="question_control.html" title="Controlled question answering"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../user_guide.html" >User guide</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../spa.html" >Semantic Pointer Architecture</a> &#187;</li> 
+      </ul>
+    </div>
+<script type="text/javascript">
+  $("#mobile-toggle a").click(function () {
+    $("#left-column").toggle();
+  });
+</script>
+<script type="text/javascript" src="../../_static/js/bootstrap.js"></script>
+  <div class="footer">
+    &copy; Copyright 2013-2017, Applied Brain Research. Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+  </div>
+  </body>
+</html>

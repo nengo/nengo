@@ -1,0 +1,522 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  
+  <!-- Licensed under the Apache 2.0 License -->
+  <link rel="stylesheet" type="text/css" href="../../_static/fonts/open-sans/stylesheet.css" />
+  <!-- Licensed under the SIL Open Font License -->
+  <link rel="stylesheet" type="text/css" href="../../_static/fonts/source-serif-pro/source-serif-pro.css" />
+  <link rel="stylesheet" type="text/css" href="../../_static/css/bootstrap.min.css" />
+  <link rel="stylesheet" type="text/css" href="../../_static/css/bootstrap-theme.min.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+    <title>nengo.simulator &#8212; Nengo core 2.8.0 docs</title>
+    <link rel="stylesheet" href="../../_static/guzzle.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '2.8.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+<link rel="stylesheet" type="text/css" href="../../_static/custom.css">
+
+
+  
+   
+
+  </head>
+  <body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="container-wrapper">
+
+      <div id="mobile-toggle">
+        <a href="#"><span class="glyphicon glyphicon-align-justify" aria-hidden="true"></span></a>
+      </div>
+  <div id="left-column">
+    <div class="sphinxsidebar">
+        <a href="
+    ../../index.html" class="text-logo">Nengo core 2.8</a>
+        <div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <h2>Table Of Contents</h2>
+  </div>
+  <div class="sidebar-toc">
+    
+    
+      <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide.html">User guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing to Nengo</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://www.nengo.ai/projects.html">Nengo ecosystem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../license.html">Nengo license</a></li>
+</ul>
+
+    
+  </div>
+</div>
+        
+<div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <div id="main-search">
+      <form class="form-inline" action="../../search.html" method="GET" role="form">
+        <div class="input-group">
+          <input name="q" type="text" class="form-control" placeholder="Search...">
+        </div>
+        <input type="hidden" name="check_keywords" value="yes" />
+        <input type="hidden" name="area" value="default" />
+      </form>
+    </div>
+  </div>
+</div>
+    </div>
+  </div>
+        <div id="right-column">
+          
+  <div class="header">
+    
+          <div role="navigation" aria-label="breadcrumbs navigation">
+            <ol class="breadcrumb">
+              <li><a href="../../index.html">Docs</a></li>
+              
+                <li><a href="../index.html">Module code</a></li>
+              
+              <li>nengo.simulator</li>
+            </ol>
+          </div>
+          
+    
+  </div>
+
+          <div class="document clearer body">
+            
+  <h1>Source code for nengo.simulator</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Reference simulator for nengo models.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">Mapping</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">import</span> <span class="nn">nengo.utils.numpy</span> <span class="k">as</span> <span class="nn">npext</span>
+<span class="kn">from</span> <span class="nn">nengo.builder</span> <span class="k">import</span> <span class="n">Model</span>
+<span class="kn">from</span> <span class="nn">nengo.builder.optimizer</span> <span class="k">import</span> <span class="n">optimize</span> <span class="k">as</span> <span class="n">opmerge_optimize</span>
+<span class="kn">from</span> <span class="nn">nengo.builder.signal</span> <span class="k">import</span> <span class="n">SignalDict</span>
+<span class="kn">from</span> <span class="nn">nengo.cache</span> <span class="k">import</span> <span class="n">get_default_decoder_cache</span>
+<span class="kn">from</span> <span class="nn">nengo.exceptions</span> <span class="k">import</span> <span class="n">ReadonlyError</span><span class="p">,</span> <span class="n">SimulatorClosed</span><span class="p">,</span> <span class="n">ValidationError</span>
+<span class="kn">from</span> <span class="nn">nengo.utils.compat</span> <span class="k">import</span> <span class="nb">range</span><span class="p">,</span> <span class="ne">ResourceWarning</span>
+<span class="kn">from</span> <span class="nn">nengo.utils.graphs</span> <span class="k">import</span> <span class="n">toposort</span>
+<span class="kn">from</span> <span class="nn">nengo.utils.progress</span> <span class="k">import</span> <span class="n">Progress</span><span class="p">,</span> <span class="n">ProgressTracker</span>
+<span class="kn">from</span> <span class="nn">nengo.utils.simulator</span> <span class="k">import</span> <span class="n">operator_dependency_graph</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">ProbeDict</span><span class="p">(</span><span class="n">Mapping</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Map from Probe -&gt; ndarray</span>
+
+<span class="sd">    This is more like a view on the dict that the simulator manipulates.</span>
+<span class="sd">    However, for speed reasons, the simulator uses Python lists,</span>
+<span class="sd">    and we want to return NumPy arrays. Additionally, this mapping</span>
+<span class="sd">    is readonly, which is more appropriate for its purpose.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ProbeDict</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">raw</span> <span class="o">=</span> <span class="n">raw</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span> <span class="ow">or</span>
+                <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="p">[</span><span class="n">key</span><span class="p">])</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">raw</span><span class="p">[</span><span class="n">key</span><span class="p">])):</span>
+            <span class="n">rval</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">raw</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rval</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="n">rval</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">rval</span><span class="p">)</span>
+                <span class="n">rval</span><span class="o">.</span><span class="n">setflags</span><span class="p">(</span><span class="n">write</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">rval</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">raw</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">raw</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">raw</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">raw</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="Simulator"><a class="viewcode-back" href="../../backend_api.html#nengo.Simulator">[docs]</a><span class="k">class</span> <span class="nc">Simulator</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Reference simulator for Nengo models.</span>
+
+<span class="sd">    The simulator takes a `.Network` and builds internal data structures to</span>
+<span class="sd">    run the model defined by that network. Run the simulator with the</span>
+<span class="sd">    `~.Simulator.run` method, and access probed data through the</span>
+<span class="sd">    ``data`` attribute.</span>
+
+<span class="sd">    Building and running the simulation may allocate resources like files</span>
+<span class="sd">    and sockets. To properly free these resources, call the `.Simulator.close`</span>
+<span class="sd">    method. Alternatively, `.Simulator.close` will automatically be called</span>
+<span class="sd">    if you use the ``with`` syntax::</span>
+
+<span class="sd">        with nengo.Simulator(my_network) as sim:</span>
+<span class="sd">            sim.run(0.1)</span>
+<span class="sd">        print(sim.data[my_probe])</span>
+
+<span class="sd">    Note that the ``data`` attribute is still accessible even when a simulator</span>
+<span class="sd">    has been closed. Running the simulator, however, will raise an error.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    network : Network or None</span>
+<span class="sd">        A network object to be built and then simulated. If None,</span>
+<span class="sd">        then a `.Model` with the build model must be provided instead.</span>
+<span class="sd">    dt : float, optional (Default: 0.001)</span>
+<span class="sd">        The length of a simulator timestep, in seconds.</span>
+<span class="sd">    seed : int, optional (Default: None)</span>
+<span class="sd">        A seed for all stochastic operators used in this simulator.</span>
+<span class="sd">        Will be set to ``network.seed + 1`` if not given.</span>
+<span class="sd">    model : Model, optional (Default: None)</span>
+<span class="sd">        A `.Model` that contains build artifacts to be simulated.</span>
+<span class="sd">        Usually the simulator will build this model for you; however, if you</span>
+<span class="sd">        want to build the network manually, or you want to inject build</span>
+<span class="sd">        artifacts in the model before building the network, then you can</span>
+<span class="sd">        pass in a `.Model` instance.</span>
+<span class="sd">    progress_bar : bool or `.ProgressBar` or `.ProgressUpdater`, optional \</span>
+<span class="sd">                   (Default: True)</span>
+<span class="sd">        Progress bar for displaying build and simulation progress.</span>
+
+<span class="sd">        If ``True``, the default progress bar will be used.</span>
+<span class="sd">        If ``False``, the progress bar will be disabled.</span>
+<span class="sd">        For more control over the progress bar, pass in a `.ProgressBar`</span>
+<span class="sd">        or `.ProgressUpdater` instance.</span>
+<span class="sd">    optimize : bool, optional (Default: True)</span>
+<span class="sd">        If ``True``, the builder will run an additional optimization step</span>
+<span class="sd">        that can speed up simulations significantly at the cost of slower</span>
+<span class="sd">        builds. If running models for very small amounts of time,</span>
+<span class="sd">        pass ``False`` to disable the optimizer.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    closed : bool</span>
+<span class="sd">        Whether the simulator has been closed.</span>
+<span class="sd">        Once closed, it cannot be reopened.</span>
+<span class="sd">    data : ProbeDict</span>
+<span class="sd">        The `.ProbeDict` mapping from Nengo objects to the data associated</span>
+<span class="sd">        with those objects. In particular, each `.Probe` maps to the data</span>
+<span class="sd">        probed while running the simulation.</span>
+<span class="sd">    dg : dict</span>
+<span class="sd">        A dependency graph mapping from each `.Operator` to the operators</span>
+<span class="sd">        that depend on that operator.</span>
+<span class="sd">    model : Model</span>
+<span class="sd">        The `.Model` containing the signals and operators necessary to</span>
+<span class="sd">        simulate the network.</span>
+<span class="sd">    signals : SignalDict</span>
+<span class="sd">        The `.SignalDict` mapping from `.Signal` instances to NumPy arrays.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># &#39;unsupported&#39; defines features unsupported by a simulator.</span>
+    <span class="c1"># The format is a list of tuples of the form `(test, reason)` with `test`</span>
+    <span class="c1"># being a string with wildcards (*, ?, [abc], [!abc]) matched against Nengo</span>
+    <span class="c1"># test paths and names, and `reason` is a string describing why the feature</span>
+    <span class="c1"># is not supported by the backend. For example:</span>
+    <span class="c1">#     unsupported = [(&#39;test_pes*&#39;, &#39;PES rule not implemented&#39;)]</span>
+    <span class="c1"># would skip all test whose names start with &#39;test_pes&#39;.</span>
+    <span class="n">unsupported</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">network</span><span class="p">,</span>
+            <span class="n">dt</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">progress_bar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">optimize</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">closed</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># Start closed in case constructor raises exception</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress_bar</span> <span class="o">=</span> <span class="n">progress_bar</span>
+
+        <span class="k">if</span> <span class="n">model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">Model</span><span class="p">(</span><span class="n">dt</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">dt</span><span class="p">),</span>
+                               <span class="n">label</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">, dt=</span><span class="si">%f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">network</span><span class="p">,</span> <span class="n">dt</span><span class="p">),</span>
+                               <span class="n">decoder_cache</span><span class="o">=</span><span class="n">get_default_decoder_cache</span><span class="p">())</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
+
+        <span class="n">pt</span> <span class="o">=</span> <span class="n">ProgressTracker</span><span class="p">(</span><span class="n">progress_bar</span><span class="p">,</span> <span class="n">Progress</span><span class="p">(</span><span class="s2">&quot;Building&quot;</span><span class="p">,</span> <span class="s2">&quot;Build&quot;</span><span class="p">))</span>
+        <span class="k">with</span> <span class="n">pt</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">network</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># Build the network into the model</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="n">network</span><span class="p">,</span>
+                                 <span class="n">progress</span><span class="o">=</span><span class="n">pt</span><span class="o">.</span><span class="n">next_stage</span><span class="p">(</span><span class="s2">&quot;Building&quot;</span><span class="p">,</span> <span class="s2">&quot;Build&quot;</span><span class="p">))</span>
+
+            <span class="c1"># Order the steps (they are made in `Simulator.reset`)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dg</span> <span class="o">=</span> <span class="n">operator_dependency_graph</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">operators</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">optimize</span><span class="p">:</span>
+                <span class="k">with</span> <span class="n">pt</span><span class="o">.</span><span class="n">next_stage</span><span class="p">(</span>
+                        <span class="s1">&#39;Building (running optimizer)&#39;</span><span class="p">,</span> <span class="s1">&#39;Optimization&#39;</span><span class="p">):</span>
+                    <span class="n">opmerge_optimize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dg</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_step_order</span> <span class="o">=</span> <span class="p">[</span><span class="n">op</span> <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">toposort</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dg</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">op</span><span class="p">,</span> <span class="s1">&#39;make_step&#39;</span><span class="p">)]</span>
+
+        <span class="c1"># -- map from Signal.base -&gt; ndarray</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">signals</span> <span class="o">=</span> <span class="n">SignalDict</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">operators</span><span class="p">:</span>
+            <span class="n">op</span><span class="o">.</span><span class="n">init_signals</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">)</span>
+
+        <span class="c1"># Add built states to the probe dictionary</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_probe_outputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">params</span>
+
+        <span class="c1"># Provide a nicer interface to probe outputs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">ProbeDict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_probe_outputs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">seed</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">network</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">network</span><span class="o">.</span><span class="n">seed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">seed</span> <span class="o">=</span> <span class="n">network</span><span class="o">.</span><span class="n">seed</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">seed</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="n">npext</span><span class="o">.</span><span class="n">maxint</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">closed</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__del__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Raise a ResourceWarning if we are deallocated while open.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">closed</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="s2">&quot;Simulator with model=</span><span class="si">%s</span><span class="s2"> was deallocated while open. Please &quot;</span>
+                <span class="s2">&quot;close simulators manually to ensure resources are properly &quot;</span>
+                <span class="s2">&quot;freed.&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="ne">ResourceWarning</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="nf">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_value</span><span class="p">,</span> <span class="n">traceback</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">dt</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;(float) The time step of the simulator.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">dt</span>
+
+    <span class="nd">@dt</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">dt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dummy</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">ReadonlyError</span><span class="p">(</span><span class="n">attr</span><span class="o">=</span><span class="s1">&#39;dt&#39;</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">n_steps</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;(int) The current time step of the simulator.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_steps</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">time</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;(float) The current time of the simulator.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time</span>
+
+<div class="viewcode-block" id="Simulator.close"><a class="viewcode-back" href="../../backend_api.html#nengo.Simulator.close">[docs]</a>    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Closes the simulator.</span>
+
+<span class="sd">        Any call to `.Simulator.run`, `.Simulator.run_steps`,</span>
+<span class="sd">        `.Simulator.step`, and `.Simulator.reset` on a closed simulator raises</span>
+<span class="sd">        a `.SimulatorClosed` exception.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">closed</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">signals</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># signals may no longer exist on some backends</span></div>
+
+    <span class="k">def</span> <span class="nf">_probe</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Copy all probed signals to buffers.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_probe_step_time</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">probe</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">probes</span><span class="p">:</span>
+            <span class="n">period</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="k">if</span> <span class="n">probe</span><span class="o">.</span><span class="n">sample_every</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span>
+                      <span class="n">probe</span><span class="o">.</span><span class="n">sample_every</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_steps</span> <span class="o">%</span> <span class="n">period</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">tmp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">probe</span><span class="p">][</span><span class="s1">&#39;in&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_probe_outputs</span><span class="p">[</span><span class="n">probe</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_probe_step_time</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_n_steps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">step</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">time</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Simulator.reset"><a class="viewcode-back" href="../../backend_api.html#nengo.Simulator.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Reset the simulator state.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        seed : int, optional</span>
+<span class="sd">            A seed for all stochastic operators used in the simulator.</span>
+<span class="sd">            This will change the random sequences generated for noise</span>
+<span class="sd">            or inputs (e.g. from processes), but not the built objects</span>
+<span class="sd">            (e.g. ensembles, connections).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">closed</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">SimulatorClosed</span><span class="p">(</span><span class="s2">&quot;Cannot reset closed Simulator.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">seed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">seed</span> <span class="o">=</span> <span class="n">seed</span>
+
+        <span class="c1"># reset signals</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+
+        <span class="c1"># rebuild steps (resets ops with their own state, like Processes)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">RandomState</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">seed</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_steps</span> <span class="o">=</span> <span class="p">[</span><span class="n">op</span><span class="o">.</span><span class="n">make_step</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rng</span><span class="p">)</span>
+                       <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_step_order</span><span class="p">]</span>
+
+        <span class="c1"># clear probe data</span>
+        <span class="k">for</span> <span class="n">probe</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">probes</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_probe_outputs</span><span class="p">[</span><span class="n">probe</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_probe_step_time</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Simulator.run"><a class="viewcode-back" href="../../backend_api.html#nengo.Simulator.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time_in_seconds</span><span class="p">,</span> <span class="n">progress_bar</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Simulate for the given length of time.</span>
+
+<span class="sd">        If the given length of time is not a multiple of ``dt``,</span>
+<span class="sd">        it will be rounded to the nearest ``dt``. For example, if ``dt``</span>
+<span class="sd">        is 0.001 and ``run`` is called with ``time_in_seconds=0.0006``,</span>
+<span class="sd">        the simulator will advance one timestep, resulting in the actual</span>
+<span class="sd">        simulator time being 0.001.</span>
+
+<span class="sd">        The given length of time must be positive. The simulator cannot</span>
+<span class="sd">        be run backwards.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        time_in_seconds : float</span>
+<span class="sd">            Amount of time to run the simulation for. Must be positive.</span>
+<span class="sd">        progress_bar : bool or `.ProgressBar` or `.ProgressUpdater`, optional \</span>
+<span class="sd">                       (Default: True)</span>
+<span class="sd">            Progress bar for displaying the progress of the simulation run.</span>
+
+<span class="sd">            If True, the default progress bar will be used.</span>
+<span class="sd">            If False, the progress bar will be disabled.</span>
+<span class="sd">            For more control over the progress bar, pass in a `.ProgressBar`</span>
+<span class="sd">            or `.ProgressUpdater` instance.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">time_in_seconds</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span><span class="s2">&quot;Must be positive (got </span><span class="si">%g</span><span class="s2">)&quot;</span>
+                                  <span class="o">%</span> <span class="p">(</span><span class="n">time_in_seconds</span><span class="p">,),</span> <span class="n">attr</span><span class="o">=</span><span class="s2">&quot;time_in_seconds&quot;</span><span class="p">)</span>
+
+        <span class="n">steps</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">time_in_seconds</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">steps</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%g</span><span class="s2"> results in running for 0 timesteps. Simulator &quot;</span>
+                          <span class="s2">&quot;still at time </span><span class="si">%g</span><span class="s2">.&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">time_in_seconds</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Running </span><span class="si">%s</span><span class="s2"> for </span><span class="si">%f</span><span class="s2"> seconds, or </span><span class="si">%d</span><span class="s2"> steps&quot;</span><span class="p">,</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">label</span><span class="p">,</span> <span class="n">time_in_seconds</span><span class="p">,</span> <span class="n">steps</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">run_steps</span><span class="p">(</span><span class="n">steps</span><span class="p">,</span> <span class="n">progress_bar</span><span class="o">=</span><span class="n">progress_bar</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Simulator.run_steps"><a class="viewcode-back" href="../../backend_api.html#nengo.Simulator.run_steps">[docs]</a>    <span class="k">def</span> <span class="nf">run_steps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">steps</span><span class="p">,</span> <span class="n">progress_bar</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Simulate for the given number of ``dt`` steps.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        steps : int</span>
+<span class="sd">            Number of steps to run the simulation for.</span>
+<span class="sd">        progress_bar : bool or `.ProgressBar` or `.ProgressUpdater`, optional \</span>
+<span class="sd">                       (Default: True)</span>
+<span class="sd">            Progress bar for displaying the progress of the simulation run.</span>
+
+<span class="sd">            If True, the default progress bar will be used.</span>
+<span class="sd">            If False, the progress bar will be disabled.</span>
+<span class="sd">            For more control over the progress bar, pass in a `.ProgressBar`</span>
+<span class="sd">            or `.ProgressUpdater` instance.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">progress_bar</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">progress_bar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">progress_bar</span>
+
+        <span class="k">with</span> <span class="n">ProgressTracker</span><span class="p">(</span><span class="n">progress_bar</span><span class="p">,</span> <span class="n">Progress</span><span class="p">(</span>
+                <span class="s2">&quot;Simulating&quot;</span><span class="p">,</span> <span class="s2">&quot;Simulation&quot;</span><span class="p">,</span> <span class="n">steps</span><span class="p">))</span> <span class="k">as</span> <span class="n">pt</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">steps</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+                <span class="n">pt</span><span class="o">.</span><span class="n">total_progress</span><span class="o">.</span><span class="n">step</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Simulator.step"><a class="viewcode-back" href="../../backend_api.html#nengo.Simulator.step">[docs]</a>    <span class="k">def</span> <span class="nf">step</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Advance the simulator by 1 step (``dt`` seconds).&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">closed</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">SimulatorClosed</span><span class="p">(</span><span class="s2">&quot;Simulator cannot run because it is closed.&quot;</span><span class="p">)</span>
+
+        <span class="n">old_err</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">seterr</span><span class="p">(</span><span class="n">invalid</span><span class="o">=</span><span class="s1">&#39;raise&#39;</span><span class="p">,</span> <span class="n">divide</span><span class="o">=</span><span class="s1">&#39;ignore&#39;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">step_fn</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_steps</span><span class="p">:</span>
+                <span class="n">step_fn</span><span class="p">()</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">seterr</span><span class="p">(</span><span class="o">**</span><span class="n">old_err</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_probe</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Simulator.trange"><a class="viewcode-back" href="../../backend_api.html#nengo.Simulator.trange">[docs]</a>    <span class="k">def</span> <span class="nf">trange</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create a vector of times matching probed data.</span>
+
+<span class="sd">        Note that the range does not start at 0 as one might expect, but at</span>
+<span class="sd">        the first timestep (i.e., ``dt``).</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        dt : float, optional (Default: None)</span>
+<span class="sd">            The sampling period of the probe to create a range for.</span>
+<span class="sd">            If None, the simulator&#39;s ``dt`` will be used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="k">if</span> <span class="n">dt</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dt</span>
+        <span class="n">n_steps</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_steps</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">/</span> <span class="n">dt</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">dt</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_steps</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span></div></div>
+</pre></div>
+
+          </div>
+            
+        </div>
+        <div class="clearfix"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+<script type="text/javascript">
+  $("#mobile-toggle a").click(function () {
+    $("#left-column").toggle();
+  });
+</script>
+<script type="text/javascript" src="../../_static/js/bootstrap.js"></script>
+  <div class="footer">
+    &copy; Copyright 2013-2017, Applied Brain Research. Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+  </div>
+  </body>
+</html>

@@ -1,0 +1,216 @@
+{
+ "metadata": {
+  "language_info": {
+   "name": "python",
+   "pygments_lexer": "ipython3"
+  },
+  "name": ""
+ },
+ "nbformat": 3,
+ "nbformat_minor": 0,
+ "worksheets": [
+  {
+   "cells": [
+    {
+     "cell_type": "markdown",
+     "metadata": {},
+     "source": [
+      "# Controlled integrator 2\n",
+      "This demo implements a controlled one-dimensional neural integrator that is functionally the same as the controlled integrator in the previous example. However, the control signal is zero for integration, less than one for low-pass filtering, and greater than 1 for saturation. This behavior maps more directly to the differential equation used to describe an integrator: $\\dot{x} = \\mathrm{Ax}(t) + \\mathrm{Bu}(t)$ The control in this circuit is A in that equation. This is also the controlled integrator described in the book \u201cHow to build a brain.\u201d\n"
+     ]
+    },
+    {
+     "cell_type": "code",
+     "collapsed": false,
+     "input": [
+      "import numpy as np\n",
+      "import matplotlib.pyplot as plt\n",
+      "%matplotlib inline\n",
+      "\n",
+      "import nengo"
+     ],
+     "language": "python",
+     "metadata": {},
+     "outputs": [],
+     "prompt_number": null
+    },
+    {
+     "cell_type": "markdown",
+     "metadata": {},
+     "source": [
+      "## Step 1: Create the network\n",
+      "\n",
+      "As before, we use standard network-creation commands to begin creating our controlled integrator. An ensemble of neurons will represent the state of our integrator, and the connections between the neurons in the ensemble will define the dynamics of our integrator."
+     ]
+    },
+    {
+     "cell_type": "code",
+     "collapsed": false,
+     "input": [
+      "model = nengo.Network(label='Controlled Integrator 2')\n",
+      "with model:\n",
+      "    # Make a population with 225 LIF neurons representing a 2 dimensional signal,\n",
+      "    # with a larger radius to accommodate large inputs\n",
+      "    A = nengo.Ensemble(225, dimensions=2, radius=1.5)"
+     ],
+     "language": "python",
+     "metadata": {},
+     "outputs": [],
+     "prompt_number": null
+    },
+    {
+     "cell_type": "markdown",
+     "metadata": {},
+     "source": [
+      "## Step 2: Define the 'input' signal to integrate\n",
+      "\n",
+      "We will be running 1 second of simulation time again, so we will use the same Python function input_func to define our input signal. This piece-wise function sits at 0 until .2 seconds into the simulation, then jumps up to 5, back to 0, down to -10, back to 0, then up to 5, and then back to 0. Our integrator will respond by ramping up when the input is positive, and descending when the input is negative."
+     ]
+    },
+    {
+     "cell_type": "code",
+     "collapsed": false,
+     "input": [
+      "from nengo.processes import Piecewise\n",
+      "with model:\n",
+      "    # Create a piecewise step function for input\n",
+      "    input_func = Piecewise({\n",
+      "        0.2: 5,\n",
+      "        0.3: 0,\n",
+      "        0.44: -10,\n",
+      "        0.54: 0,\n",
+      "        0.8: 5,\n",
+      "        0.9: 0\n",
+      "    })\n",
+      "    inp = nengo.Node(output=input_func)\n",
+      "\n",
+      "    # Connect the Input signal to ensemble A.\n",
+      "    tau = 0.1\n",
+      "    nengo.Connection(inp, A, transform=[[tau], [0]], synapse=0.1)"
+     ],
+     "language": "python",
+     "metadata": {},
+     "outputs": [],
+     "prompt_number": null
+    },
+    {
+     "cell_type": "markdown",
+     "metadata": {},
+     "source": [
+      "## Step 3: Define the control signal\n",
+      "The control signal will be 0 for the first part of the simulation, and -0.5 for the second part. This means that at the beginning of the simulation, the integrator will act as an optimal integrator, and partway though the simulation (at t = 0.6), it will switch to being a leaky integrator."
+     ]
+    },
+    {
+     "cell_type": "code",
+     "collapsed": false,
+     "input": [
+      "with model:\n",
+      "    # Another piecewise function that changes half way through the run\n",
+      "    control_func = Piecewise({0: 0, 0.6: -0.5})\n",
+      "    control = nengo.Node(output=control_func)\n",
+      "\n",
+      "    # -- Connect the \"Control\" signal to the second of A's two input channels\n",
+      "    nengo.Connection(control, A[1], synapse=0.005)"
+     ],
+     "language": "python",
+     "metadata": {},
+     "outputs": [],
+     "prompt_number": null
+    },
+    {
+     "cell_type": "markdown",
+     "metadata": {},
+     "source": [
+      "## Step 4: Define the integrator dynamics\n",
+      "\n",
+      "We set up integrator by connecting population 'A' to itself.\n",
+      "We set up feedback in the model to handle integration of the input.\n",
+      "The time constant $\\tau$ on the recurrent weights affects both the rate and accuracy of integration."
+     ]
+    },
+    {
+     "cell_type": "code",
+     "collapsed": false,
+     "input": [
+      "with model:\n",
+      "    # Note the changes from the previous example to the function being defined.\n",
+      "    nengo.Connection(\n",
+      "        A, A[0], function=lambda x: x[0] * x[1] + x[0], synapse=tau)\n",
+      "\n",
+      "    # Record both dimensions of A\n",
+      "    A_probe = nengo.Probe(A, 'decoded_output', synapse=0.01)"
+     ],
+     "language": "python",
+     "metadata": {},
+     "outputs": [],
+     "prompt_number": null
+    },
+    {
+     "cell_type": "heading",
+     "level": 2,
+     "metadata": {},
+     "source": [
+      "Step 5: Run the model and plot results"
+     ]
+    },
+    {
+     "cell_type": "code",
+     "collapsed": false,
+     "input": [
+      "with nengo.Simulator(model) as sim:  # Create a simulator\n",
+      "    sim.run(1.4)  # Run for 1.4 seconds"
+     ],
+     "language": "python",
+     "metadata": {},
+     "outputs": [],
+     "prompt_number": null
+    },
+    {
+     "cell_type": "code",
+     "collapsed": false,
+     "input": [
+      "# Plot the value and control signals, along with the exact integral\n",
+      "t = sim.trange()\n",
+      "dt = t[1] - t[0]\n",
+      "input_sig = input_func.run(t[-1], dt=dt)\n",
+      "control_sig = control_func.run(t[-1], dt=dt)\n",
+      "ref = dt * np.cumsum(input_sig)\n",
+      "\n",
+      "plt.figure(figsize=(6, 8))\n",
+      "plt.subplot(2, 1, 1)\n",
+      "plt.plot(t, input_sig, label='Input')\n",
+      "plt.xlim(right=t[-1])\n",
+      "plt.ylim(-11, 11)\n",
+      "plt.ylabel('Input')\n",
+      "plt.legend(loc=\"lower left\", frameon=False)\n",
+      "\n",
+      "plt.subplot(212)\n",
+      "plt.plot(t, ref, 'k--', label='exact')\n",
+      "plt.plot(t, sim.data[A_probe][:, 0], label='A (value)')\n",
+      "plt.plot(t, sim.data[A_probe][:, 1], label='A (control)')\n",
+      "plt.xlim(right=t[-1])\n",
+      "plt.ylim(-1.1, 1.1)\n",
+      "plt.xlabel('Time (s)')\n",
+      "plt.ylabel('x(t)')\n",
+      "plt.legend(loc=\"lower left\", frameon=False)"
+     ],
+     "language": "python",
+     "metadata": {},
+     "outputs": [],
+     "prompt_number": null
+    },
+    {
+     "cell_type": "markdown",
+     "metadata": {},
+     "source": [
+      "The above plot shows the output of our system, specifically the (integrated) value stored by the A population, along with the control signal represented by the A population. The exact value of the integral, as performed by a perfect (non-neural) integrator, is shown for reference.\n",
+      "\n",
+      "When the control value is 0 (t < 0.6), the neural integrator performs near-perfect integration. However, when the control value drops to -0.5 (t > 0.6), the integrator becomes a leaky integrator. This means that with negative input, its stored value drifts towards zero."
+     ]
+    }
+   ],
+   "metadata": {}
+  }
+ ]
+}

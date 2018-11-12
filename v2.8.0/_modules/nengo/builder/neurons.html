@@ -1,0 +1,421 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  
+  <!-- Licensed under the Apache 2.0 License -->
+  <link rel="stylesheet" type="text/css" href="../../../_static/fonts/open-sans/stylesheet.css" />
+  <!-- Licensed under the SIL Open Font License -->
+  <link rel="stylesheet" type="text/css" href="../../../_static/fonts/source-serif-pro/source-serif-pro.css" />
+  <link rel="stylesheet" type="text/css" href="../../../_static/css/bootstrap.min.css" />
+  <link rel="stylesheet" type="text/css" href="../../../_static/css/bootstrap-theme.min.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+    <title>nengo.builder.neurons &#8212; Nengo core 2.8.0 docs</title>
+    <link rel="stylesheet" href="../../../_static/guzzle.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '2.8.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+<link rel="stylesheet" type="text/css" href="../../../_static/custom.css">
+
+
+  
+   
+
+  </head>
+  <body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="container-wrapper">
+
+      <div id="mobile-toggle">
+        <a href="#"><span class="glyphicon glyphicon-align-justify" aria-hidden="true"></span></a>
+      </div>
+  <div id="left-column">
+    <div class="sphinxsidebar">
+        <a href="
+    ../../../index.html" class="text-logo">Nengo core 2.8</a>
+        <div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <h2>Table Of Contents</h2>
+  </div>
+  <div class="sidebar-toc">
+    
+    
+      <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../user_guide.html">User guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">Contributing to Nengo</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://www.nengo.ai/projects.html">Nengo ecosystem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../license.html">Nengo license</a></li>
+</ul>
+
+    
+  </div>
+</div>
+        
+<div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <div id="main-search">
+      <form class="form-inline" action="../../../search.html" method="GET" role="form">
+        <div class="input-group">
+          <input name="q" type="text" class="form-control" placeholder="Search...">
+        </div>
+        <input type="hidden" name="check_keywords" value="yes" />
+        <input type="hidden" name="area" value="default" />
+      </form>
+    </div>
+  </div>
+</div>
+    </div>
+  </div>
+        <div id="right-column">
+          
+  <div class="header">
+    
+          <div role="navigation" aria-label="breadcrumbs navigation">
+            <ol class="breadcrumb">
+              <li><a href="../../../index.html">Docs</a></li>
+              
+                <li><a href="../../index.html">Module code</a></li>
+              
+              <li>nengo.builder.neurons</li>
+            </ol>
+          </div>
+          
+    
+  </div>
+
+          <div class="document clearer body">
+            
+  <h1>Source code for nengo.builder.neurons</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">nengo.builder</span> <span class="k">import</span> <span class="n">Builder</span><span class="p">,</span> <span class="n">Operator</span><span class="p">,</span> <span class="n">Signal</span>
+<span class="kn">from</span> <span class="nn">nengo.neurons</span> <span class="k">import</span> <span class="p">(</span><span class="n">AdaptiveLIF</span><span class="p">,</span> <span class="n">AdaptiveLIFRate</span><span class="p">,</span> <span class="n">Izhikevich</span><span class="p">,</span> <span class="n">LIF</span><span class="p">,</span>
+                           <span class="n">NeuronType</span><span class="p">,</span> <span class="n">SpikingRectifiedLinear</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="SimNeurons"><a class="viewcode-back" href="../../../backend_api.html#nengo.builder.neurons.SimNeurons">[docs]</a><span class="k">class</span> <span class="nc">SimNeurons</span><span class="p">(</span><span class="n">Operator</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Set a neuron model output for the given input current.</span>
+
+<span class="sd">    Implements ``neurons.step_math(dt, J, output, *states)``.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    neurons : NeuronType</span>
+<span class="sd">        The `.NeuronType`, which defines a ``step_math`` function.</span>
+<span class="sd">    J : Signal</span>
+<span class="sd">        The input current.</span>
+<span class="sd">    output : Signal</span>
+<span class="sd">        The neuron output signal that will be set.</span>
+<span class="sd">    states : list, optional (Default: None)</span>
+<span class="sd">        A list of additional neuron state signals set by ``step_math``.</span>
+<span class="sd">    tag : str, optional (Default: None)</span>
+<span class="sd">        A label associated with the operator, for debugging purposes.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    J : Signal</span>
+<span class="sd">        The input current.</span>
+<span class="sd">    neurons : NeuronType</span>
+<span class="sd">        The `.NeuronType`, which defines a ``step_math`` function.</span>
+<span class="sd">    output : Signal</span>
+<span class="sd">        The neuron output signal that will be set.</span>
+<span class="sd">    states : list</span>
+<span class="sd">        A list of additional neuron state signals set by ``step_math``.</span>
+<span class="sd">    tag : str or None</span>
+<span class="sd">        A label associated with the operator, for debugging purposes.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    1. sets ``[output] + states``</span>
+<span class="sd">    2. incs ``[]``</span>
+<span class="sd">    3. reads ``[J]``</span>
+<span class="sd">    4. updates ``[]``</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">neurons</span><span class="p">,</span> <span class="n">J</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="n">states</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tag</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SimNeurons</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">tag</span><span class="o">=</span><span class="n">tag</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">neurons</span> <span class="o">=</span> <span class="n">neurons</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">sets</span> <span class="o">=</span> <span class="p">[</span><span class="n">output</span><span class="p">]</span> <span class="o">+</span> <span class="p">([]</span> <span class="k">if</span> <span class="n">states</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">states</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">incs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reads</span> <span class="o">=</span> <span class="p">[</span><span class="n">J</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updates</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">J</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">reads</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">output</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sets</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">states</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sets</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+
+    <span class="k">def</span> <span class="nf">_descstr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">, </span><span class="si">%s</span><span class="s1">, </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">neurons</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">J</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">make_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">signals</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">rng</span><span class="p">):</span>
+        <span class="n">J</span> <span class="o">=</span> <span class="n">signals</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">J</span><span class="p">]</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="n">signals</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">]</span>
+        <span class="n">states</span> <span class="o">=</span> <span class="p">[</span><span class="n">signals</span><span class="p">[</span><span class="n">state</span><span class="p">]</span> <span class="k">for</span> <span class="n">state</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">states</span><span class="p">]</span>
+
+        <span class="k">def</span> <span class="nf">step_simneurons</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">neurons</span><span class="o">.</span><span class="n">step_math</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span> <span class="n">J</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="o">*</span><span class="n">states</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">step_simneurons</span></div>
+
+
+<div class="viewcode-block" id="build_neurons"><a class="viewcode-back" href="../../../backend_api.html#nengo.builder.neurons.build_neurons">[docs]</a><span class="nd">@Builder</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">NeuronType</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">build_neurons</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">neurontype</span><span class="p">,</span> <span class="n">neurons</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Builds a `.NeuronType` object into a model.</span>
+
+<span class="sd">    This build function works with any `.NeuronType` that does not require</span>
+<span class="sd">    extra state, like `.RectifiedLinear` and `.LIFRate`. This function adds a</span>
+<span class="sd">    `.SimNeurons` operator connecting the input current to the</span>
+<span class="sd">    neural output signals.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    model : Model</span>
+<span class="sd">        The model to build into.</span>
+<span class="sd">    neurontype : NeuronType</span>
+<span class="sd">        Neuron type to build.</span>
+<span class="sd">    neuron : Neurons</span>
+<span class="sd">        The neuron population object corresponding to the neuron type.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Does not modify ``model.params[]`` and can therefore be called</span>
+<span class="sd">    more than once with the same `.NeuronType` instance.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">model</span><span class="o">.</span><span class="n">add_op</span><span class="p">(</span><span class="n">SimNeurons</span><span class="p">(</span><span class="n">neurons</span><span class="o">=</span><span class="n">neurontype</span><span class="p">,</span>
+                            <span class="n">J</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">neurons</span><span class="p">][</span><span class="s1">&#39;in&#39;</span><span class="p">],</span>
+                            <span class="n">output</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">neurons</span><span class="p">][</span><span class="s1">&#39;out&#39;</span><span class="p">]))</span></div>
+
+
+<span class="nd">@Builder</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">SpikingRectifiedLinear</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">build_spikingrectifiedlinear</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">spikingrectifiedlinear</span><span class="p">,</span> <span class="n">neurons</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Builds a `.SpikingRectifiedLinear` object into a model.</span>
+
+<span class="sd">    In addition to adding a `.SimNeurons` operator, this build function sets up</span>
+<span class="sd">    signals to track the voltage for each neuron.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    model : Model</span>
+<span class="sd">        The model to build into.</span>
+<span class="sd">    spikingrectifiedlinear: SpikingRectifiedLinear</span>
+<span class="sd">        Neuron type to build.</span>
+<span class="sd">    neuron : Neurons</span>
+<span class="sd">        The neuron population object corresponding to the neuron type.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Does not modify ``model.params[]`` and can therefore be called</span>
+<span class="sd">    more than once with the same `.SpikingRectifiedLinear` instance.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">neurons</span><span class="p">][</span><span class="s1">&#39;voltage&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">neurons</span><span class="o">.</span><span class="n">size_in</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">.voltage&quot;</span> <span class="o">%</span> <span class="n">neurons</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">add_op</span><span class="p">(</span><span class="n">SimNeurons</span><span class="p">(</span>
+        <span class="n">neurons</span><span class="o">=</span><span class="n">spikingrectifiedlinear</span><span class="p">,</span>
+        <span class="n">J</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">neurons</span><span class="p">][</span><span class="s1">&#39;in&#39;</span><span class="p">],</span>
+        <span class="n">output</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">neurons</span><span class="p">][</span><span class="s1">&#39;out&#39;</span><span class="p">],</span>
+        <span class="n">states</span><span class="o">=</span><span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">neurons</span><span class="p">][</span><span class="s1">&#39;voltage&#39;</span><span class="p">]]))</span>
+
+
+<div class="viewcode-block" id="build_lif"><a class="viewcode-back" href="../../../backend_api.html#nengo.builder.neurons.build_lif">[docs]</a><span class="nd">@Builder</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">LIF</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">build_lif</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">lif</span><span class="p">,</span> <span class="n">neurons</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Builds a `.LIF` object into a model.</span>
+
+<span class="sd">    In addition to adding a `.SimNeurons` operator, this build function sets up</span>
+<span class="sd">    signals to track the voltage and refractory times for each neuron.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    model : Model</span>
+<span class="sd">        The model to build into.</span>
+<span class="sd">    lif : LIF</span>
+<span class="sd">        Neuron type to build.</span>
+<span class="sd">    neuron : Neurons</span>
+<span class="sd">        The neuron population object corresponding to the neuron type.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Does not modify ``model.params[]`` and can therefore be called</span>
+<span class="sd">    more than once with the same `.LIF` instance.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">neurons</span><span class="p">][</span><span class="s1">&#39;voltage&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">neurons</span><span class="o">.</span><span class="n">size_in</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">.voltage&quot;</span> <span class="o">%</span> <span class="n">neurons</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">neurons</span><span class="p">][</span><span class="s1">&#39;refractory_time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">neurons</span><span class="o">.</span><span class="n">size_in</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">.refractory_time&quot;</span> <span class="o">%</span> <span class="n">neurons</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">add_op</span><span class="p">(</span><span class="n">SimNeurons</span><span class="p">(</span>
+        <span class="n">neurons</span><span class="o">=</span><span class="n">lif</span><span class="p">,</span>
+        <span class="n">J</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">neurons</span><span class="p">][</span><span class="s1">&#39;in&#39;</span><span class="p">],</span>
+        <span class="n">output</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">neurons</span><span class="p">][</span><span class="s1">&#39;out&#39;</span><span class="p">],</span>
+        <span class="n">states</span><span class="o">=</span><span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">neurons</span><span class="p">][</span><span class="s1">&#39;voltage&#39;</span><span class="p">],</span>
+                <span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">neurons</span><span class="p">][</span><span class="s1">&#39;refractory_time&#39;</span><span class="p">]]))</span></div>
+
+
+<div class="viewcode-block" id="build_alifrate"><a class="viewcode-back" href="../../../backend_api.html#nengo.builder.neurons.build_alifrate">[docs]</a><span class="nd">@Builder</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">AdaptiveLIFRate</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">build_alifrate</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">alifrate</span><span class="p">,</span> <span class="n">neurons</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Builds an `.AdaptiveLIFRate` object into a model.</span>
+
+<span class="sd">    In addition to adding a `.SimNeurons` operator, this build function sets up</span>
+<span class="sd">    signals to track the adaptation term for each neuron.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    model : Model</span>
+<span class="sd">        The model to build into.</span>
+<span class="sd">    alifrate : AdaptiveLIFRate</span>
+<span class="sd">        Neuron type to build.</span>
+<span class="sd">    neuron : Neurons</span>
+<span class="sd">        The neuron population object corresponding to the neuron type.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Does not modify ``model.params[]`` and can therefore be called</span>
+<span class="sd">    more than once with the same `.AdaptiveLIFRate` instance.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">neurons</span><span class="p">][</span><span class="s1">&#39;adaptation&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">neurons</span><span class="o">.</span><span class="n">size_in</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">.adaptation&quot;</span> <span class="o">%</span> <span class="n">neurons</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">add_op</span><span class="p">(</span><span class="n">SimNeurons</span><span class="p">(</span><span class="n">neurons</span><span class="o">=</span><span class="n">alifrate</span><span class="p">,</span>
+                            <span class="n">J</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">neurons</span><span class="p">][</span><span class="s1">&#39;in&#39;</span><span class="p">],</span>
+                            <span class="n">output</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">neurons</span><span class="p">][</span><span class="s1">&#39;out&#39;</span><span class="p">],</span>
+                            <span class="n">states</span><span class="o">=</span><span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">neurons</span><span class="p">][</span><span class="s1">&#39;adaptation&#39;</span><span class="p">]]))</span></div>
+
+
+<div class="viewcode-block" id="build_alif"><a class="viewcode-back" href="../../../backend_api.html#nengo.builder.neurons.build_alif">[docs]</a><span class="nd">@Builder</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">AdaptiveLIF</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">build_alif</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">alif</span><span class="p">,</span> <span class="n">neurons</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Builds an `.AdaptiveLIF` object into a model.</span>
+
+<span class="sd">    In addition to adding a `.SimNeurons` operator, this build function sets up</span>
+<span class="sd">    signals to track the voltage, refractory time, and adaptation term</span>
+<span class="sd">    for each neuron.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    model : Model</span>
+<span class="sd">        The model to build into.</span>
+<span class="sd">    alif : AdaptiveLIF</span>
+<span class="sd">        Neuron type to build.</span>
+<span class="sd">    neuron : Neurons</span>
+<span class="sd">        The neuron population object corresponding to the neuron type.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Does not modify ``model.params[]`` and can therefore be called</span>
+<span class="sd">    more than once with the same `.AdaptiveLIF` instance.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">neurons</span><span class="p">][</span><span class="s1">&#39;voltage&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">neurons</span><span class="o">.</span><span class="n">size_in</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">.voltage&quot;</span> <span class="o">%</span> <span class="n">neurons</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">neurons</span><span class="p">][</span><span class="s1">&#39;refractory_time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">neurons</span><span class="o">.</span><span class="n">size_in</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">.refractory_time&quot;</span> <span class="o">%</span> <span class="n">neurons</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">neurons</span><span class="p">][</span><span class="s1">&#39;adaptation&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">neurons</span><span class="o">.</span><span class="n">size_in</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">.adaptation&quot;</span> <span class="o">%</span> <span class="n">neurons</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">add_op</span><span class="p">(</span><span class="n">SimNeurons</span><span class="p">(</span><span class="n">neurons</span><span class="o">=</span><span class="n">alif</span><span class="p">,</span>
+                            <span class="n">J</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">neurons</span><span class="p">][</span><span class="s1">&#39;in&#39;</span><span class="p">],</span>
+                            <span class="n">output</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">neurons</span><span class="p">][</span><span class="s1">&#39;out&#39;</span><span class="p">],</span>
+                            <span class="n">states</span><span class="o">=</span><span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">neurons</span><span class="p">][</span><span class="s1">&#39;voltage&#39;</span><span class="p">],</span>
+                                    <span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">neurons</span><span class="p">][</span><span class="s1">&#39;refractory_time&#39;</span><span class="p">],</span>
+                                    <span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">neurons</span><span class="p">][</span><span class="s1">&#39;adaptation&#39;</span><span class="p">]]))</span></div>
+
+
+<div class="viewcode-block" id="build_izhikevich"><a class="viewcode-back" href="../../../backend_api.html#nengo.builder.neurons.build_izhikevich">[docs]</a><span class="nd">@Builder</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">Izhikevich</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">build_izhikevich</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">izhikevich</span><span class="p">,</span> <span class="n">neurons</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Builds an `.Izhikevich` object into a model.</span>
+
+<span class="sd">    In addition to adding a `.SimNeurons` operator, this build function sets up</span>
+<span class="sd">    signals to track the voltage and recovery terms for each neuron.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    model : Model</span>
+<span class="sd">        The model to build into.</span>
+<span class="sd">    izhikevich : Izhikevich</span>
+<span class="sd">        Neuron type to build.</span>
+<span class="sd">    neuron : Neurons</span>
+<span class="sd">        The neuron population object corresponding to the neuron type.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Does not modify ``model.params[]`` and can therefore be called</span>
+<span class="sd">    more than once with the same `.Izhikevich` instance.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">neurons</span><span class="p">][</span><span class="s1">&#39;voltage&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">neurons</span><span class="o">.</span><span class="n">size_in</span><span class="p">)</span> <span class="o">*</span> <span class="n">izhikevich</span><span class="o">.</span><span class="n">reset_voltage</span><span class="p">,</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">.voltage&quot;</span> <span class="o">%</span> <span class="n">neurons</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">neurons</span><span class="p">][</span><span class="s1">&#39;recovery&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">neurons</span><span class="o">.</span><span class="n">size_in</span><span class="p">)</span>
+        <span class="o">*</span> <span class="n">izhikevich</span><span class="o">.</span><span class="n">reset_voltage</span>
+        <span class="o">*</span> <span class="n">izhikevich</span><span class="o">.</span><span class="n">coupling</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">.recovery&quot;</span> <span class="o">%</span> <span class="n">neurons</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">add_op</span><span class="p">(</span><span class="n">SimNeurons</span><span class="p">(</span><span class="n">neurons</span><span class="o">=</span><span class="n">izhikevich</span><span class="p">,</span>
+                            <span class="n">J</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">neurons</span><span class="p">][</span><span class="s1">&#39;in&#39;</span><span class="p">],</span>
+                            <span class="n">output</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">neurons</span><span class="p">][</span><span class="s1">&#39;out&#39;</span><span class="p">],</span>
+                            <span class="n">states</span><span class="o">=</span><span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">neurons</span><span class="p">][</span><span class="s1">&#39;voltage&#39;</span><span class="p">],</span>
+                                    <span class="n">model</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">neurons</span><span class="p">][</span><span class="s1">&#39;recovery&#39;</span><span class="p">]]))</span></div>
+</pre></div>
+
+          </div>
+            
+        </div>
+        <div class="clearfix"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+<script type="text/javascript">
+  $("#mobile-toggle a").click(function () {
+    $("#left-column").toggle();
+  });
+</script>
+<script type="text/javascript" src="../../../_static/js/bootstrap.js"></script>
+  <div class="footer">
+    &copy; Copyright 2013-2017, Applied Brain Research. Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+  </div>
+  </body>
+</html>

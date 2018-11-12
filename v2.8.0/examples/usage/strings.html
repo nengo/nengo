@@ -1,0 +1,939 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  
+  <!-- Licensed under the Apache 2.0 License -->
+  <link rel="stylesheet" type="text/css" href="../../_static/fonts/open-sans/stylesheet.css" />
+  <!-- Licensed under the SIL Open Font License -->
+  <link rel="stylesheet" type="text/css" href="../../_static/fonts/source-serif-pro/source-serif-pro.css" />
+  <link rel="stylesheet" type="text/css" href="../../_static/css/bootstrap.min.css" />
+  <link rel="stylesheet" type="text/css" href="../../_static/css/bootstrap-theme.min.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+    <title>String representations &#8212; Nengo core 2.8.0 docs</title>
+    <link rel="stylesheet" href="../../_static/guzzle.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '2.8.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Contributing to Nengo" href="../../contributing.html" />
+    <link rel="prev" title="Exceptions" href="exceptions.html" />
+<link rel="stylesheet" type="text/css" href="../../_static/custom.css">
+
+
+  
+   
+
+  </head>
+  <body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../contributing.html" title="Contributing to Nengo"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="exceptions.html" title="Exceptions"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../examples.html" accesskey="U">Examples</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="container-wrapper">
+
+      <div id="mobile-toggle">
+        <a href="#"><span class="glyphicon glyphicon-align-justify" aria-hidden="true"></span></a>
+      </div>
+  <div id="left-column">
+    <div class="sphinxsidebar">
+        <a href="
+    ../../index.html" class="text-logo">Nengo core 2.8</a>
+        <div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <h2>Table Of Contents</h2>
+  </div>
+  <div class="sidebar-toc">
+    
+    
+      <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide.html">User guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../examples.html">Examples</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../advanced/nef_summary.html">NEF summary</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#principle-1-representation">Principle 1: Representation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#principle-2-transformation">Principle 2: Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#principle-3-dynamics">Principle 3: Dynamics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#nodes">Nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#processes">Processes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#ensembles">Ensembles</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#connections">Connections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#learning">Learning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#networks">Networks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#semantic-pointer-architecture">Semantic Pointer Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#under-the-hood">Under the hood</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../examples.html#reference">Reference</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="exceptions.html">Exceptions</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">String representations</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing to Nengo</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://www.nengo.ai/projects.html">Nengo ecosystem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../license.html">Nengo license</a></li>
+</ul>
+
+    
+  </div>
+</div>
+        
+<div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <div id="main-search">
+      <form class="form-inline" action="../../search.html" method="GET" role="form">
+        <div class="input-group">
+          <input name="q" type="text" class="form-control" placeholder="Search...">
+        </div>
+        <input type="hidden" name="check_keywords" value="yes" />
+        <input type="hidden" name="area" value="default" />
+      </form>
+    </div>
+  </div>
+</div>
+    </div>
+  </div>
+        <div id="right-column">
+          
+  <div class="header">
+    
+          <div role="navigation" aria-label="breadcrumbs navigation">
+            <ol class="breadcrumb">
+              <li><a href="../../index.html">Docs</a></li>
+              
+                <li><a href="../../examples.html">Examples</a></li>
+              
+              <li>String representations</li>
+            </ol>
+          </div>
+          
+    
+      <div style="float: right;">
+        <ol class="breadcrumb">
+          <li><a href="../../_downloads/examples/usage/strings.ipynb" download>Download example as Jupyter Notebook</a></li>
+        </ol>
+      </div>
+    
+  </div>
+
+          <div class="document clearer body">
+            
+  
+<style>
+/* CSS for nbsphinx extension */
+
+/* remove conflicting styling from Sphinx themes */
+div.nbinput,
+div.nbinput div.prompt,
+div.nbinput div.input_area,
+div.nbinput div[class*=highlight],
+div.nbinput div[class*=highlight] pre,
+div.nboutput,
+div.nbinput div.prompt,
+div.nbinput div.output_area,
+div.nboutput div[class*=highlight],
+div.nboutput div[class*=highlight] pre {
+    background: none;
+    border: none;
+    padding: 0 0;
+    margin: 0;
+    box-shadow: none;
+}
+
+/* avoid gaps between output lines */
+div.nboutput div[class*=highlight] pre {
+    line-height: normal;
+}
+
+/* input/output containers */
+div.nbinput,
+div.nboutput {
+    display: -webkit-flex;
+    display: flex;
+    align-items: flex-start;
+    margin: 0;
+    width: 100%;
+}
+@media (max-width: 540px) {
+    div.nbinput,
+    div.nboutput {
+        flex-direction: column;
+    }
+}
+
+/* input container */
+div.nbinput {
+    padding-top: 5px;
+}
+
+/* last container */
+div.nblast {
+    padding-bottom: 5px;
+}
+
+/* input prompt */
+div.nbinput div.prompt pre {
+    color: #303F9F;
+}
+
+/* output prompt */
+div.nboutput div.prompt pre {
+    color: #D84315;
+}
+
+/* all prompts */
+div.nbinput div.prompt,
+div.nboutput div.prompt {
+    min-width: 9ex;
+    padding-top: 0.4em;
+    padding-right: 0.4em;
+    text-align: right;
+    flex: 0;
+}
+@media (max-width: 540px) {
+    div.nbinput div.prompt,
+    div.nboutput div.prompt {
+        text-align: left;
+        padding: 0.4em;
+    }
+    div.nboutput div.prompt.empty {
+        padding: 0;
+    }
+}
+
+/* disable scrollbars on prompts */
+div.nbinput div.prompt pre,
+div.nboutput div.prompt pre {
+    overflow: hidden;
+}
+
+/* input/output area */
+div.nbinput div.input_area,
+div.nboutput div.output_area {
+    padding: 0.4em;
+    -webkit-flex: 1;
+    flex: 1;
+    overflow: auto;
+}
+@media (max-width: 540px) {
+    div.nbinput div.input_area,
+    div.nboutput div.output_area {
+        width: 100%;
+    }
+}
+
+/* input area */
+div.nbinput div.input_area {
+    border: 1px solid #cfcfcf;
+    border-radius: 2px;
+    background: #f7f7f7;
+}
+
+/* override MathJax center alignment in output cells */
+div.nboutput div[class*=MathJax] {
+    text-align: left !important;
+}
+
+/* override sphinx.ext.pngmath center alignment in output cells */
+div.nboutput div.math p {
+    text-align: left;
+}
+
+/* standard error */
+div.nboutput div.output_area.stderr {
+    background: #fdd;
+}
+
+/* ANSI colors */
+.ansi-black-fg { color: #3E424D; }
+.ansi-black-bg { background-color: #3E424D; }
+.ansi-black-intense-fg { color: #282C36; }
+.ansi-black-intense-bg { background-color: #282C36; }
+.ansi-red-fg { color: #E75C58; }
+.ansi-red-bg { background-color: #E75C58; }
+.ansi-red-intense-fg { color: #B22B31; }
+.ansi-red-intense-bg { background-color: #B22B31; }
+.ansi-green-fg { color: #00A250; }
+.ansi-green-bg { background-color: #00A250; }
+.ansi-green-intense-fg { color: #007427; }
+.ansi-green-intense-bg { background-color: #007427; }
+.ansi-yellow-fg { color: #DDB62B; }
+.ansi-yellow-bg { background-color: #DDB62B; }
+.ansi-yellow-intense-fg { color: #B27D12; }
+.ansi-yellow-intense-bg { background-color: #B27D12; }
+.ansi-blue-fg { color: #208FFB; }
+.ansi-blue-bg { background-color: #208FFB; }
+.ansi-blue-intense-fg { color: #0065CA; }
+.ansi-blue-intense-bg { background-color: #0065CA; }
+.ansi-magenta-fg { color: #D160C4; }
+.ansi-magenta-bg { background-color: #D160C4; }
+.ansi-magenta-intense-fg { color: #A03196; }
+.ansi-magenta-intense-bg { background-color: #A03196; }
+.ansi-cyan-fg { color: #60C6C8; }
+.ansi-cyan-bg { background-color: #60C6C8; }
+.ansi-cyan-intense-fg { color: #258F8F; }
+.ansi-cyan-intense-bg { background-color: #258F8F; }
+.ansi-white-fg { color: #C5C1B4; }
+.ansi-white-bg { background-color: #C5C1B4; }
+.ansi-white-intense-fg { color: #A1A6B2; }
+.ansi-white-intense-bg { background-color: #A1A6B2; }
+
+.ansi-default-inverse-fg { color: #FFFFFF; }
+.ansi-default-inverse-bg { background-color: #000000; }
+
+.ansi-bold { font-weight: bold; }
+.ansi-underline { text-decoration: underline; }
+</style>
+<div class="section" id="String-representations">
+<h1>String representations<a class="headerlink" href="#String-representations" title="Permalink to this headline">¶</a></h1>
+<p>This should be an exhaustive list of the objects that can be created
+with Nengo, and their string representations.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">nengo</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="Core-objects">
+<h2>Core objects<a class="headerlink" href="#Core-objects" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Network</span><span class="p">()</span> <span class="k">as</span> <span class="n">net1</span><span class="p">:</span>
+
+    <span class="n">a</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Network</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;net2&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">net2</span><span class="p">:</span>
+        <span class="n">b</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;b&quot;</span><span class="p">)</span>
+
+    <span class="n">ap</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+    <span class="n">bp</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+
+    <span class="n">c1</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+    <span class="n">c2</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">function</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">)</span>
+
+    <span class="n">n1</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Node</span><span class="p">(</span><span class="n">output</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">)</span>
+    <span class="n">n2</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Node</span><span class="p">(</span><span class="n">output</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;n2&quot;</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  str(obj)&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;============&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;--- Network&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;    </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">net1</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;    </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">net2</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;--- Ensemble&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;    </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">a</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;    </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">b</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;--- Probe&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;    </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">ap</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;    </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">bp</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;--- Connection&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;    </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">c1</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;    </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">c2</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;--- Node&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;    </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n1</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;    </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n2</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;--- Neurons&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;    </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">a</span><span class="o">.</span><span class="n">neurons</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;--- ObjView&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;    </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">b</span><span class="p">[:</span><span class="mi">1</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  repr(obj)  &quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=============&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;--- Network&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;    </span><span class="si">%r</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">net1</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;    </span><span class="si">%r</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">net2</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;--- Ensemble&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;    </span><span class="si">%r</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">a</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;    </span><span class="si">%r</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">b</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;--- Probe&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;    </span><span class="si">%r</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">ap</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;    </span><span class="si">%r</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">bp</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;--- Connection&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;    </span><span class="si">%r</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">c1</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;    </span><span class="si">%r</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">c2</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;--- Node&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;    </span><span class="si">%r</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n1</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;    </span><span class="si">%r</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">n2</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;--- Neurons&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;    </span><span class="si">%r</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">a</span><span class="o">.</span><span class="n">neurons</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;--- ObjView&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;    </span><span class="si">%r</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">b</span><span class="p">[:</span><span class="mi">1</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+  str(obj)
+============
+--- Network
+    &lt;Network (unlabeled) at 0x2b7cf97e1d0&gt;
+    &lt;Network &#34;net2&#34;&gt;
+--- Ensemble
+    &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;
+    &lt;Ensemble &#34;b&#34;&gt;
+--- Probe
+    &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;&gt;
+    &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;
+--- Connection
+    &lt;Connection from &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; to &lt;Ensemble &#34;b&#34;&gt;&gt;
+    &lt;Connection from &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; to &lt;Ensemble &#34;b&#34;&gt; computing &#39;square&#39;&gt;
+--- Node
+    &lt;Node (unlabeled) at 0x2b7bf55cf98&gt;
+    &lt;Node &#34;n2&#34;&gt;
+--- Neurons
+    &lt;Neurons of &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;&gt;
+--- ObjView
+    &lt;Ensemble &#34;b&#34;&gt;[:1]
+
+  repr(obj)
+=============
+--- Network
+    &lt;Network (unlabeled) at 0x2b7cf97e1d0&gt;
+    &lt;Network &#34;net2&#34; at 0x2b7cf97e320&gt;
+--- Ensemble
+    &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;
+    &lt;Ensemble &#34;b&#34; at 0x2b7cf97e390&gt;
+--- Probe
+    &lt;Probe at 0x2b7cf97e4a8 of &#39;decoded_output&#39; of &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;&gt;
+    &lt;Probe at 0x2b7cf97e4e0 of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;
+--- Connection
+    &lt;Connection at 0x2b7cf97e518 from &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; to &lt;Ensemble &#34;b&#34;&gt;&gt;
+    &lt;Connection at 0x2b7bf5c7240 from &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; to &lt;Ensemble &#34;b&#34;&gt; computing &#39;square&#39;&gt;
+--- Node
+    &lt;Node (unlabeled) at 0x2b7bf55cf98&gt;
+    &lt;Node &#34;n2&#34; at 0x2b7beb77198&gt;
+--- Neurons
+    &lt;Neurons at 0x2b7cf9856a0 of &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;&gt;
+--- ObjView
+    &lt;Ensemble &#34;b&#34; at 0x2b7cf97e390&gt;[:1]
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="Neuron-types">
+<h2>Neuron types<a class="headerlink" href="#Neuron-types" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">Direct</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">RectifiedLinear</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">Sigmoid</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">Sigmoid</span><span class="p">(</span><span class="n">tau_ref</span><span class="o">=</span><span class="mf">0.001</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">LIFRate</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">LIFRate</span><span class="p">(</span><span class="n">tau_rc</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">tau_ref</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">LIF</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">LIF</span><span class="p">(</span><span class="n">tau_rc</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">tau_ref</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">AdaptiveLIFRate</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">AdaptiveLIFRate</span><span class="p">(</span><span class="n">tau_rc</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">tau_n</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">inc_n</span><span class="o">=</span><span class="mf">0.02</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">AdaptiveLIF</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">AdaptiveLIF</span><span class="p">(</span><span class="n">tau_rc</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">tau_n</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">inc_n</span><span class="o">=</span><span class="mf">0.02</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">Izhikevich</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span>
+    <span class="n">nengo</span><span class="o">.</span><span class="n">Izhikevich</span><span class="p">(</span>
+        <span class="n">tau_recovery</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">coupling</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">reset_voltage</span><span class="o">=-</span><span class="mi">60</span><span class="p">,</span> <span class="n">reset_recovery</span><span class="o">=</span><span class="mi">6</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Direct()
+RectifiedLinear()
+Sigmoid()
+Sigmoid(tau_ref=0.001)
+LIFRate()
+LIFRate(tau_rc=0.01, tau_ref=0)
+LIF()
+LIF(tau_rc=0.01, tau_ref=0)
+AdaptiveLIFRate()
+AdaptiveLIFRate(tau_rc=0.01, tau_n=0.5, inc_n=0.02)
+AdaptiveLIF()
+AdaptiveLIF(tau_rc=0.01, tau_n=0.5, inc_n=0.02)
+Izhikevich()
+Izhikevich(tau_recovery=0.01, coupling=0.5, reset_voltage=-60, reset_recovery=6)
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="Learning-rules">
+<h2>Learning rules<a class="headerlink" href="#Learning-rules" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">PES</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">PES</span><span class="p">(</span><span class="n">learning_rate</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span> <span class="n">pre_synapse</span><span class="o">=</span><span class="mf">0.01</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">BCM</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">BCM</span><span class="p">(</span>
+    <span class="n">learning_rate</span><span class="o">=</span><span class="mf">1e-8</span><span class="p">,</span> <span class="n">pre_synapse</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">post_synapse</span><span class="o">=</span><span class="mf">0.005</span><span class="p">,</span> <span class="n">theta_synapse</span><span class="o">=</span><span class="mf">10.0</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">Oja</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">Oja</span><span class="p">(</span><span class="n">learning_rate</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span> <span class="n">pre_synapse</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">post_synapse</span><span class="o">=</span><span class="mf">0.005</span><span class="p">,</span> <span class="n">beta</span><span class="o">=</span><span class="mf">0.5</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">Voja</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">Voja</span><span class="p">(</span><span class="n">learning_rate</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span> <span class="n">post_synapse</span><span class="o">=</span><span class="kc">None</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+PES()
+PES(learning_rate=1e-06, pre_synapse=Lowpass(0.01))
+BCM()
+BCM(learning_rate=1e-08, pre_synapse=Lowpass(0.01), post_synapse=Lowpass(0.005), theta_synapse=Lowpass(10.0))
+Oja()
+Oja(learning_rate=1e-05, pre_synapse=Lowpass(0.01), post_synapse=Lowpass(0.005), beta=0.5)
+Voja()
+Voja(learning_rate=1e-05, post_synapse=None)
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="Distributions">
+<h2>Distributions<a class="headerlink" href="#Distributions" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">dists</span><span class="o">.</span><span class="n">PDF</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">]))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">dists</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">dists</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="n">integer</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">dists</span><span class="o">.</span><span class="n">Gaussian</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">dists</span><span class="o">.</span><span class="n">UniformHypersphere</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">dists</span><span class="o">.</span><span class="n">UniformHypersphere</span><span class="p">(</span><span class="n">surface</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">dists</span><span class="o">.</span><span class="n">Choice</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">dists</span><span class="o">.</span><span class="n">Choice</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="n">weights</span><span class="o">=</span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">]))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">dists</span><span class="o">.</span><span class="n">SqrtBeta</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">dists</span><span class="o">.</span><span class="n">SqrtBeta</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">dists</span><span class="o">.</span><span class="n">SubvectorLength</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+PDF(x=array([1., 2.]), p=array([0.4, 0.6]))
+Uniform(low=0, high=1)
+Uniform(low=0, high=5, integer=True)
+Gaussian(mean=1, std=0.1)
+UniformHypersphere()
+UniformHypersphere(surface=True)
+Choice(options=array([1., 2., 3.]))
+Choice(options=array([1., 2., 3.]), weights=array([0.1, 0.5, 0.4]))
+SqrtBeta(n=3, m=1)
+SqrtBeta(n=3, m=2)
+SubvectorLength(3, subdimensions=1)
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="Synapses">
+<h2>Synapses<a class="headerlink" href="#Synapses" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">synapses</span><span class="o">.</span><span class="n">Lowpass</span><span class="p">(</span><span class="mf">0.01</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">synapses</span><span class="o">.</span><span class="n">Alpha</span><span class="p">(</span><span class="mf">0.02</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">synapses</span><span class="o">.</span><span class="n">Triangle</span><span class="p">(</span><span class="mf">0.03</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">synapses</span><span class="o">.</span><span class="n">LinearFilter</span><span class="p">([</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.03</span><span class="p">,</span> <span class="mi">1</span><span class="p">]))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Lowpass(0.01)
+Alpha(0.02)
+Triangle(0.03)
+LinearFilter([1.], [0.03 1.  ], analog=True)
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="Processes">
+<h2>Processes<a class="headerlink" href="#Processes" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="n">gaussian</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">dists</span><span class="o">.</span><span class="n">Gaussian</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">processes</span><span class="o">.</span><span class="n">WhiteNoise</span><span class="p">(</span><span class="n">gaussian</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">processes</span><span class="o">.</span><span class="n">FilteredNoise</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">synapses</span><span class="o">.</span><span class="n">Alpha</span><span class="p">(</span><span class="mf">0.2</span><span class="p">),</span> <span class="n">gaussian</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">processes</span><span class="o">.</span><span class="n">BrownNoise</span><span class="p">(</span><span class="n">gaussian</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">processes</span><span class="o">.</span><span class="n">WhiteSignal</span><span class="p">(</span><span class="mf">0.2</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">rms</span><span class="o">=</span><span class="mf">0.3</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+WhiteNoise(Gaussian(mean=1, std=2), scale=False)
+FilteredNoise(synapse=Alpha(0.2), dist=Gaussian(mean=1, std=2), scale=True)
+BrownNoise(Gaussian(mean=1, std=2))
+WhiteSignal(period=0.2, high=10, rms=0.3)
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="Signals">
+<h2>Signals<a class="headerlink" href="#Signals" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">builder</span><span class="o">.</span><span class="n">signal</span><span class="o">.</span><span class="n">Signal</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">])))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">builder</span><span class="o">.</span><span class="n">signal</span><span class="o">.</span><span class="n">Signal</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">]),</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;one&quot;</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Signal(None, shape=(1,))
+Signal(one, shape=(2,))
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="Operators">
+<h2>Operators<a class="headerlink" href="#Operators" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="n">sig</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">builder</span><span class="o">.</span><span class="n">signal</span><span class="o">.</span><span class="n">Signal</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">]),</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;sig&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">builder</span><span class="o">.</span><span class="n">operator</span><span class="o">.</span><span class="n">TimeUpdate</span><span class="p">(</span><span class="n">sig</span><span class="p">,</span> <span class="n">sig</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">builder</span><span class="o">.</span><span class="n">operator</span><span class="o">.</span><span class="n">TimeUpdate</span><span class="p">(</span><span class="n">sig</span><span class="p">,</span> <span class="n">sig</span><span class="p">,</span> <span class="n">tag</span><span class="o">=</span><span class="s2">&quot;tag&quot;</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">builder</span><span class="o">.</span><span class="n">operator</span><span class="o">.</span><span class="n">Reset</span><span class="p">(</span><span class="n">sig</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">builder</span><span class="o">.</span><span class="n">operator</span><span class="o">.</span><span class="n">Reset</span><span class="p">(</span><span class="n">sig</span><span class="p">,</span> <span class="n">tag</span><span class="o">=</span><span class="s2">&quot;tag&quot;</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">builder</span><span class="o">.</span><span class="n">operator</span><span class="o">.</span><span class="n">Copy</span><span class="p">(</span><span class="n">sig</span><span class="p">,</span> <span class="n">sig</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">builder</span><span class="o">.</span><span class="n">operator</span><span class="o">.</span><span class="n">Copy</span><span class="p">(</span><span class="n">sig</span><span class="p">,</span> <span class="n">sig</span><span class="p">,</span> <span class="n">tag</span><span class="o">=</span><span class="s2">&quot;tag&quot;</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">builder</span><span class="o">.</span><span class="n">operator</span><span class="o">.</span><span class="n">Copy</span><span class="p">(</span><span class="n">sig</span><span class="p">,</span> <span class="n">sig</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">builder</span><span class="o">.</span><span class="n">operator</span><span class="o">.</span><span class="n">Copy</span><span class="p">(</span><span class="n">sig</span><span class="p">,</span> <span class="n">sig</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">tag</span><span class="o">=</span><span class="s2">&quot;tag&quot;</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">builder</span><span class="o">.</span><span class="n">operator</span><span class="o">.</span><span class="n">ElementwiseInc</span><span class="p">(</span><span class="n">sig</span><span class="p">,</span> <span class="n">sig</span><span class="p">,</span> <span class="n">sig</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">builder</span><span class="o">.</span><span class="n">operator</span><span class="o">.</span><span class="n">ElementwiseInc</span><span class="p">(</span><span class="n">sig</span><span class="p">,</span> <span class="n">sig</span><span class="p">,</span> <span class="n">sig</span><span class="p">,</span> <span class="n">tag</span><span class="o">=</span><span class="s2">&quot;tag&quot;</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">builder</span><span class="o">.</span><span class="n">operator</span><span class="o">.</span><span class="n">DotInc</span><span class="p">(</span><span class="n">sig</span><span class="p">,</span> <span class="n">sig</span><span class="p">,</span> <span class="n">sig</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">builder</span><span class="o">.</span><span class="n">operator</span><span class="o">.</span><span class="n">DotInc</span><span class="p">(</span><span class="n">sig</span><span class="p">,</span> <span class="n">sig</span><span class="p">,</span> <span class="n">sig</span><span class="p">,</span> <span class="n">tag</span><span class="o">=</span><span class="s2">&quot;tag&quot;</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">builder</span><span class="o">.</span><span class="n">operator</span><span class="o">.</span><span class="n">SimPyFunc</span><span class="p">(</span><span class="n">sig</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="n">sig</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">builder</span><span class="o">.</span><span class="n">operator</span><span class="o">.</span><span class="n">SimPyFunc</span><span class="p">(</span><span class="n">sig</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="n">sig</span><span class="p">,</span> <span class="n">tag</span><span class="o">=</span><span class="s2">&quot;tag&quot;</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">builder</span><span class="o">.</span><span class="n">learning_rules</span><span class="o">.</span><span class="n">SimBCM</span><span class="p">(</span><span class="n">sig</span><span class="p">,</span> <span class="n">sig</span><span class="p">,</span> <span class="n">sig</span><span class="p">,</span> <span class="n">sig</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">builder</span><span class="o">.</span><span class="n">learning_rules</span><span class="o">.</span><span class="n">SimBCM</span><span class="p">(</span><span class="n">sig</span><span class="p">,</span> <span class="n">sig</span><span class="p">,</span> <span class="n">sig</span><span class="p">,</span> <span class="n">sig</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="n">tag</span><span class="o">=</span><span class="s2">&quot;tag&quot;</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">builder</span><span class="o">.</span><span class="n">learning_rules</span><span class="o">.</span><span class="n">SimOja</span><span class="p">(</span><span class="n">sig</span><span class="p">,</span> <span class="n">sig</span><span class="p">,</span> <span class="n">sig</span><span class="p">,</span> <span class="n">sig</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">builder</span><span class="o">.</span><span class="n">learning_rules</span><span class="o">.</span><span class="n">SimOja</span><span class="p">(</span>
+    <span class="n">sig</span><span class="p">,</span> <span class="n">sig</span><span class="p">,</span> <span class="n">sig</span><span class="p">,</span> <span class="n">sig</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">tag</span><span class="o">=</span><span class="s2">&quot;tag&quot;</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">builder</span><span class="o">.</span><span class="n">neurons</span><span class="o">.</span><span class="n">SimNeurons</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">LIF</span><span class="p">(),</span> <span class="n">sig</span><span class="p">,</span> <span class="n">sig</span><span class="p">,</span> <span class="p">[</span><span class="n">sig</span><span class="p">]))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">builder</span><span class="o">.</span><span class="n">neurons</span><span class="o">.</span><span class="n">SimNeurons</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">LIF</span><span class="p">(),</span> <span class="n">sig</span><span class="p">,</span> <span class="n">sig</span><span class="p">,</span> <span class="p">[</span><span class="n">sig</span><span class="p">],</span> <span class="n">tag</span><span class="o">=</span><span class="s2">&quot;tag&quot;</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">builder</span><span class="o">.</span><span class="n">processes</span><span class="o">.</span><span class="n">SimProcess</span><span class="p">(</span>
+    <span class="n">nengo</span><span class="o">.</span><span class="n">processes</span><span class="o">.</span><span class="n">WhiteNoise</span><span class="p">(),</span> <span class="n">sig</span><span class="p">,</span> <span class="n">sig</span><span class="p">,</span> <span class="n">sig</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">nengo</span><span class="o">.</span><span class="n">builder</span><span class="o">.</span><span class="n">processes</span><span class="o">.</span><span class="n">SimProcess</span><span class="p">(</span>
+    <span class="n">nengo</span><span class="o">.</span><span class="n">processes</span><span class="o">.</span><span class="n">WhiteNoise</span><span class="p">(),</span> <span class="n">sig</span><span class="p">,</span> <span class="n">sig</span><span class="p">,</span> <span class="n">sig</span><span class="p">,</span> <span class="n">tag</span><span class="o">=</span><span class="s2">&quot;tag&quot;</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+TimeUpdate{}
+TimeUpdate{ &#34;tag&#34;}
+Reset{Signal(sig, shape=(1,))}
+Reset{Signal(sig, shape=(1,))  &#34;tag&#34;}
+Copy{Signal(sig, shape=(1,)) -&gt; Signal(sig, shape=(1,)), inc=False}
+Copy{Signal(sig, shape=(1,)) -&gt; Signal(sig, shape=(1,)), inc=False  &#34;tag&#34;}
+Copy{Signal(sig, shape=(1,))[[0]] -&gt; Signal(sig[(slice(0, 1, None),)], shape=(1,)), inc=False}
+Copy{Signal(sig, shape=(1,))[[0]] -&gt; Signal(sig[(slice(0, 1, None),)], shape=(1,)), inc=False  &#34;tag&#34;}
+ElementwiseInc{Signal(sig, shape=(1,)), Signal(sig, shape=(1,)) -&gt; Signal(sig, shape=(1,))}
+ElementwiseInc{Signal(sig, shape=(1,)), Signal(sig, shape=(1,)) -&gt; Signal(sig, shape=(1,))  &#34;tag&#34;}
+DotInc{Signal(sig, shape=(1,)), Signal(sig, shape=(1,)) -&gt; Signal(sig, shape=(1,))}
+DotInc{Signal(sig, shape=(1,)), Signal(sig, shape=(1,)) -&gt; Signal(sig, shape=(1,))  &#34;tag&#34;}
+SimPyFunc{Signal(sig, shape=(1,)) -&gt; Signal(sig, shape=(1,)), fn=&#39;&lt;lambda&gt;&#39;}
+SimPyFunc{Signal(sig, shape=(1,)) -&gt; Signal(sig, shape=(1,)), fn=&#39;&lt;lambda&gt;&#39;  &#34;tag&#34;}
+SimBCM{pre=Signal(sig, shape=(1,)), post=Signal(sig, shape=(1,)) -&gt; Signal(sig, shape=(1,))}
+SimBCM{pre=Signal(sig, shape=(1,)), post=Signal(sig, shape=(1,)) -&gt; Signal(sig, shape=(1,))  &#34;tag&#34;}
+SimOja{pre=Signal(sig, shape=(1,)), post=Signal(sig, shape=(1,)) -&gt; Signal(sig, shape=(1,))}
+SimOja{pre=Signal(sig, shape=(1,)), post=Signal(sig, shape=(1,)) -&gt; Signal(sig, shape=(1,))  &#34;tag&#34;}
+SimNeurons{LIF(), Signal(sig, shape=(1,)), Signal(sig, shape=(1,))}
+SimNeurons{LIF(), Signal(sig, shape=(1,)), Signal(sig, shape=(1,))  &#34;tag&#34;}
+SimProcess{WhiteNoise(Gaussian(mean=0, std=1), scale=True), Signal(sig, shape=(1,)) -&gt; Signal(sig, shape=(1,))}
+SimProcess{WhiteNoise(Gaussian(mean=0, std=1), scale=True), Signal(sig, shape=(1,)) -&gt; Signal(sig, shape=(1,))  &#34;tag&#34;}
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="Simulator">
+<h2>Simulator<a class="headerlink" href="#Simulator" title="Permalink to this headline">¶</a></h2>
+<p>The representation of the <code class="docutils literal"><span class="pre">Simulator</span></code> is not particularly
+illuminating, but you can get a detailed account of the <code class="docutils literal"><span class="pre">Simulator</span></code> by
+printing its sorted list of <code class="docutils literal"><span class="pre">Operator</span></code>s.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Simulator</span><span class="p">(</span><span class="n">net1</span><span class="p">)</span> <span class="k">as</span> <span class="n">sim</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;  * </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">op</span> <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">sim</span><span class="o">.</span><span class="n">_step_order</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+  * Copy{Signal(merged&lt;&lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;.bias, ..., &lt;Ensemble &#34;b&#34;&gt;.bias&gt;, shape=(200,)) -&gt; Signal(merged&lt;&lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;.neuron_in, ..., &lt;Ensemble &#34;b&#34;&gt;.neuron_in&gt;, shape=(200,)), inc=False}
+  * Reset{Signal(merged&lt;&lt;Ensemble &#34;b&#34;&gt;.signal, ..., &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;&gt;&gt;, shape=(4,))}
+  * Reset{Signal(merged&lt;&lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;, ..., &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;.signal&gt;, shape=(6,))}
+  * Reset{Signal(merged&lt;&lt;Connection from &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; to &lt;Ensemble &#34;b&#34;&gt;&gt;.weighted.Lowpass(0.005), ..., &lt;Connection from &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;&gt;&gt;.weighted&gt;[(slice(2, 4, None),)], shape=(2,))}
+  * TimeUpdate{}
+  * DotInc{Signal(&lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;.scaled_encoders, shape=(100, 2)), Signal(merged&lt;&lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;, ..., &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;.signal&gt;[(slice(4, 6, None),)], shape=(2,)) -&gt; Signal(merged&lt;&lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;.neuron_in, ..., &lt;Ensemble &#34;b&#34;&gt;.neuron_in&gt;[(slice(0, 100, None),)], shape=(100,))  &#34;&lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; encoding&#34;}
+  * SimNeurons{LIF(), Signal(merged&lt;&lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;.neuron_in, ..., &lt;Ensemble &#34;b&#34;&gt;.neuron_in&gt;[(slice(0, 100, None),)], shape=(100,)), Signal(merged&lt;&lt;Ensemble &#34;b&#34;&gt;.neuron_out, ..., &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;.neuron_out&gt;[(slice(100, 200, None),)], shape=(100,))}
+  * Reset{Signal(merged&lt;&lt;Connection from &lt;Ensemble &#34;b&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;&gt;.weighted, ..., &lt;Connection from &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; to &lt;Ensemble &#34;b&#34;&gt; computing &#39;square&#39;&gt;.weighted&gt;, shape=(4,))}
+  * Copy{Signal(&lt;Connection from &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; to &lt;Ensemble &#34;b&#34;&gt; computing &#39;square&#39;&gt;.weighted.Lowpass(0.005), shape=(2,)) -&gt; Signal(merged&lt;&lt;Ensemble &#34;b&#34;&gt;.signal, ..., &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;&gt;&gt;[(slice(0, 2, None),)], shape=(2,)), inc=True  &#34;&lt;Connection from &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; to &lt;Ensemble &#34;b&#34;&gt; computing &#39;square&#39;&gt;&#34;}
+  * SimPyFunc{None -&gt; Signal(&lt;Node &#34;n2&#34;&gt;.out, shape=(1,)), fn=&#39;cos&#39;}
+  * DotInc{Signal(&lt;Connection from &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; to &lt;Ensemble &#34;b&#34;&gt;&gt;.weights, shape=(2, 100)), Signal(merged&lt;&lt;Ensemble &#34;b&#34;&gt;.neuron_out, ..., &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;.neuron_out&gt;[(slice(100, 200, None),)], shape=(100,)) -&gt; Signal(merged&lt;&lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;, ..., &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;.signal&gt;[(slice(2, 4, None),)], shape=(2,))  &#34;&lt;Connection from &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; to &lt;Ensemble &#34;b&#34;&gt;&gt;.weights_elementwiseinc&#34;}
+  * DotInc{Signal(&lt;Connection from &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;&gt;&gt;.weights, shape=(2, 100)), Signal(merged&lt;&lt;Ensemble &#34;b&#34;&gt;.neuron_out, ..., &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;.neuron_out&gt;[(slice(100, 200, None),)], shape=(100,)) -&gt; Signal(merged&lt;&lt;Connection from &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; to &lt;Ensemble &#34;b&#34;&gt;&gt;.weighted.Lowpass(0.005), ..., &lt;Connection from &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;&gt;&gt;.weighted&gt;[(slice(2, 4, None),)], shape=(2,))  &#34;&lt;Connection from &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;&gt;&gt;.weights_elementwiseinc&#34;}
+  * SimPyFunc{None -&gt; Signal(&lt;Node (unlabeled) at 0x2b7bf55cf98&gt;.out, shape=(1,)), fn=&#39;sin&#39;}
+  * Copy{Signal(merged&lt;&lt;Connection from &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; to &lt;Ensemble &#34;b&#34;&gt;&gt;.weighted.Lowpass(0.005), ..., &lt;Connection from &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;&gt;&gt;.weighted&gt;, shape=(4,)) -&gt; Signal(merged&lt;&lt;Ensemble &#34;b&#34;&gt;.signal, ..., &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;&gt;&gt;, shape=(4,)), inc=True}
+  * SimProcess{Lowpass(0.005), Signal(merged&lt;&lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;, ..., &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;.signal&gt;[(slice(2, 4, None),)], shape=(2,)) -&gt; Signal(merged&lt;&lt;Connection from &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; to &lt;Ensemble &#34;b&#34;&gt;&gt;.weighted.Lowpass(0.005), ..., &lt;Connection from &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;&gt;&gt;.weighted&gt;[(slice(0, 2, None),)], shape=(2,))}
+  * DotInc{Signal(&lt;Ensemble &#34;b&#34;&gt;.scaled_encoders, shape=(100, 2)), Signal(merged&lt;&lt;Ensemble &#34;b&#34;&gt;.signal, ..., &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;&gt;&gt;[(slice(0, 2, None),)], shape=(2,)) -&gt; Signal(merged&lt;&lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;.neuron_in, ..., &lt;Ensemble &#34;b&#34;&gt;.neuron_in&gt;[(slice(100, 200, None),)], shape=(100,))  &#34;&lt;Ensemble &#34;b&#34;&gt; encoding&#34;}
+  * SimNeurons{LIF(), Signal(merged&lt;&lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;.neuron_in, ..., &lt;Ensemble &#34;b&#34;&gt;.neuron_in&gt;[(slice(100, 200, None),)], shape=(100,)), Signal(merged&lt;&lt;Ensemble &#34;b&#34;&gt;.neuron_out, ..., &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;.neuron_out&gt;[(slice(0, 100, None),)], shape=(100,))}
+  * BsrDotInc{Signal(bsr_merged&lt;&lt;Connection from &lt;Ensemble &#34;b&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;&gt;.weights, ..., &lt;Connection from &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; to &lt;Ensemble &#34;b&#34;&gt; computing &#39;square&#39;&gt;.weights&gt;, shape=(2, 2, 100)), Signal(merged&lt;&lt;Ensemble &#34;b&#34;&gt;.neuron_out, ..., &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;.neuron_out&gt;, shape=(200,)) -&gt; Signal(merged&lt;&lt;Connection from &lt;Ensemble &#34;b&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;&gt;.weighted, ..., &lt;Connection from &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; to &lt;Ensemble &#34;b&#34;&gt; computing &#39;square&#39;&gt;.weighted&gt;, shape=(4,))}
+  * Copy{Signal(merged&lt;&lt;Connection from &lt;Ensemble &#34;b&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;&gt;.weighted, ..., &lt;Connection from &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; to &lt;Ensemble &#34;b&#34;&gt; computing &#39;square&#39;&gt;.weighted&gt;[(slice(0, 2, None),)], shape=(2,)) -&gt; Signal(merged&lt;&lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;, ..., &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;.signal&gt;[(slice(0, 2, None),)], shape=(2,)), inc=True  &#34;&lt;Connection from &lt;Ensemble &#34;b&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;&gt;&#34;}
+  * SimProcess{Lowpass(0.005), Signal(merged&lt;&lt;Connection from &lt;Ensemble &#34;b&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;&gt;.weighted, ..., &lt;Connection from &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; to &lt;Ensemble &#34;b&#34;&gt; computing &#39;square&#39;&gt;.weighted&gt;[(slice(2, 4, None),)], shape=(2,)) -&gt; Signal(&lt;Connection from &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; to &lt;Ensemble &#34;b&#34;&gt; computing &#39;square&#39;&gt;.weighted.Lowpass(0.005), shape=(2,))}
+</pre></div></div>
+</div>
+<p>The diff of two simulators’ sorted ops tells us how two built models
+differ. We can use the <code class="docutils literal"><span class="pre">difflib</span></code> library (included with Python) to do
+a diff directly in Python.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">difflib</span>
+
+<span class="c1"># Setting labels on all of the Nengo objects ensures the strings</span>
+<span class="c1"># stay the same across simulator instances.</span>
+<span class="n">a</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;a&#39;</span>
+<span class="n">n1</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;n1&#39;</span>
+
+<span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Simulator</span><span class="p">(</span><span class="n">net1</span><span class="p">)</span> <span class="k">as</span> <span class="n">sim1</span><span class="p">:</span>
+    <span class="n">sim1_str</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">op</span><span class="p">)</span> <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">sim1</span><span class="o">.</span><span class="n">_step_order</span><span class="p">)</span>
+
+<span class="n">diff</span> <span class="o">=</span> <span class="n">difflib</span><span class="o">.</span><span class="n">unified_diff</span><span class="p">(</span>
+    <span class="n">a</span><span class="o">=</span><span class="nb">sorted</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">op</span><span class="p">)</span> <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">sim</span><span class="o">.</span><span class="n">_step_order</span><span class="p">]),</span> <span class="n">b</span><span class="o">=</span><span class="n">sim1_str</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">diff</span><span class="p">))</span>
+<span class="c1"># Several differences here because labels weren&#39;t set on sim</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+---
+
++++
+
+@@ -1,20 +1,18 @@
+
+-BsrDotInc{Signal(bsr_merged&lt;&lt;Connection from &lt;Ensemble &#34;b&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;&gt;.weights, ..., &lt;Connection from &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; to &lt;Ensemble &#34;b&#34;&gt; computing &#39;square&#39;&gt;.weights&gt;, shape=(2, 2, 100)), Signal(merged&lt;&lt;Ensemble &#34;b&#34;&gt;.neuron_out, ..., &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;.neuron_out&gt;, shape=(200,)) -&gt; Signal(merged&lt;&lt;Connection from &lt;Ensemble &#34;b&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;&gt;.weighted, ..., &lt;Connection from &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; to &lt;Ensemble &#34;b&#34;&gt; computing &#39;square&#39;&gt;.weighted&gt;, shape=(4,))}
+-Copy{Signal(&lt;Connection from &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; to &lt;Ensemble &#34;b&#34;&gt; computing &#39;square&#39;&gt;.weighted.Lowpass(0.005), shape=(2,)) -&gt; Signal(merged&lt;&lt;Ensemble &#34;b&#34;&gt;.signal, ..., &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;&gt;&gt;[(slice(0, 2, None),)], shape=(2,)), inc=True  &#34;&lt;Connection from &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; to &lt;Ensemble &#34;b&#34;&gt; computing &#39;square&#39;&gt;&#34;}
+-Copy{Signal(merged&lt;&lt;Connection from &lt;Ensemble &#34;b&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;&gt;.weighted, ..., &lt;Connection from &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; to &lt;Ensemble &#34;b&#34;&gt; computing &#39;square&#39;&gt;.weighted&gt;[(slice(0, 2, None),)], shape=(2,)) -&gt; Signal(merged&lt;&lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;, ..., &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;.signal&gt;[(slice(0, 2, None),)], shape=(2,)), inc=True  &#34;&lt;Connection from &lt;Ensemble &#34;b&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;&gt;&#34;}
+-Copy{Signal(merged&lt;&lt;Connection from &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; to &lt;Ensemble &#34;b&#34;&gt;&gt;.weighted.Lowpass(0.005), ..., &lt;Connection from &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;&gt;&gt;.weighted&gt;, shape=(4,)) -&gt; Signal(merged&lt;&lt;Ensemble &#34;b&#34;&gt;.signal, ..., &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;&gt;&gt;, shape=(4,)), inc=True}
+-Copy{Signal(merged&lt;&lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;.bias, ..., &lt;Ensemble &#34;b&#34;&gt;.bias&gt;, shape=(200,)) -&gt; Signal(merged&lt;&lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;.neuron_in, ..., &lt;Ensemble &#34;b&#34;&gt;.neuron_in&gt;, shape=(200,)), inc=False}
+-DotInc{Signal(&lt;Connection from &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; to &lt;Ensemble &#34;b&#34;&gt;&gt;.weights, shape=(2, 100)), Signal(merged&lt;&lt;Ensemble &#34;b&#34;&gt;.neuron_out, ..., &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;.neuron_out&gt;[(slice(100, 200, None),)], shape=(100,)) -&gt; Signal(merged&lt;&lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;, ..., &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;.signal&gt;[(slice(2, 4, None),)], shape=(2,))  &#34;&lt;Connection from &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; to &lt;Ensemble &#34;b&#34;&gt;&gt;.weights_elementwiseinc&#34;}
+-DotInc{Signal(&lt;Connection from &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;&gt;&gt;.weights, shape=(2, 100)), Signal(merged&lt;&lt;Ensemble &#34;b&#34;&gt;.neuron_out, ..., &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;.neuron_out&gt;[(slice(100, 200, None),)], shape=(100,)) -&gt; Signal(merged&lt;&lt;Connection from &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; to &lt;Ensemble &#34;b&#34;&gt;&gt;.weighted.Lowpass(0.005), ..., &lt;Connection from &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;&gt;&gt;.weighted&gt;[(slice(2, 4, None),)], shape=(2,))  &#34;&lt;Connection from &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;&gt;&gt;.weights_elementwiseinc&#34;}
+-DotInc{Signal(&lt;Ensemble &#34;b&#34;&gt;.scaled_encoders, shape=(100, 2)), Signal(merged&lt;&lt;Ensemble &#34;b&#34;&gt;.signal, ..., &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;&gt;&gt;[(slice(0, 2, None),)], shape=(2,)) -&gt; Signal(merged&lt;&lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;.neuron_in, ..., &lt;Ensemble &#34;b&#34;&gt;.neuron_in&gt;[(slice(100, 200, None),)], shape=(100,))  &#34;&lt;Ensemble &#34;b&#34;&gt; encoding&#34;}
+-DotInc{Signal(&lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;.scaled_encoders, shape=(100, 2)), Signal(merged&lt;&lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;, ..., &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;.signal&gt;[(slice(4, 6, None),)], shape=(2,)) -&gt; Signal(merged&lt;&lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;.neuron_in, ..., &lt;Ensemble &#34;b&#34;&gt;.neuron_in&gt;[(slice(0, 100, None),)], shape=(100,))  &#34;&lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; encoding&#34;}
+-Reset{Signal(merged&lt;&lt;Connection from &lt;Ensemble &#34;b&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;&gt;.weighted, ..., &lt;Connection from &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; to &lt;Ensemble &#34;b&#34;&gt; computing &#39;square&#39;&gt;.weighted&gt;, shape=(4,))}
+-Reset{Signal(merged&lt;&lt;Connection from &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; to &lt;Ensemble &#34;b&#34;&gt;&gt;.weighted.Lowpass(0.005), ..., &lt;Connection from &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;&gt;&gt;.weighted&gt;[(slice(2, 4, None),)], shape=(2,))}
+-Reset{Signal(merged&lt;&lt;Ensemble &#34;b&#34;&gt;.signal, ..., &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;&gt;&gt;, shape=(4,))}
+-Reset{Signal(merged&lt;&lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;, ..., &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;.signal&gt;, shape=(6,))}
+-SimNeurons{LIF(), Signal(merged&lt;&lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;.neuron_in, ..., &lt;Ensemble &#34;b&#34;&gt;.neuron_in&gt;[(slice(0, 100, None),)], shape=(100,)), Signal(merged&lt;&lt;Ensemble &#34;b&#34;&gt;.neuron_out, ..., &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;.neuron_out&gt;[(slice(100, 200, None),)], shape=(100,))}
+-SimNeurons{LIF(), Signal(merged&lt;&lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;.neuron_in, ..., &lt;Ensemble &#34;b&#34;&gt;.neuron_in&gt;[(slice(100, 200, None),)], shape=(100,)), Signal(merged&lt;&lt;Ensemble &#34;b&#34;&gt;.neuron_out, ..., &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;.neuron_out&gt;[(slice(0, 100, None),)], shape=(100,))}
+-SimProcess{Lowpass(0.005), Signal(merged&lt;&lt;Connection from &lt;Ensemble &#34;b&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;&gt;.weighted, ..., &lt;Connection from &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; to &lt;Ensemble &#34;b&#34;&gt; computing &#39;square&#39;&gt;.weighted&gt;[(slice(2, 4, None),)], shape=(2,)) -&gt; Signal(&lt;Connection from &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; to &lt;Ensemble &#34;b&#34;&gt; computing &#39;square&#39;&gt;.weighted.Lowpass(0.005), shape=(2,))}
+-SimProcess{Lowpass(0.005), Signal(merged&lt;&lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;, ..., &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;.signal&gt;[(slice(2, 4, None),)], shape=(2,)) -&gt; Signal(merged&lt;&lt;Connection from &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; to &lt;Ensemble &#34;b&#34;&gt;&gt;.weighted.Lowpass(0.005), ..., &lt;Connection from &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble (unlabeled) at 0x2b7cf97e240&gt;&gt;&gt;.weighted&gt;[(slice(0, 2, None),)], shape=(2,))}
++BsrDotInc{Signal(bsr_merged&lt;&lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Ensemble &#34;b&#34;&gt; computing &#39;square&#39;&gt;.weights, ..., &lt;Connection from &lt;Ensemble &#34;b&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;&gt;.weights&gt;, shape=(2, 2, 100)), Signal(merged&lt;&lt;Ensemble &#34;a&#34;&gt;.neuron_out, ..., &lt;Ensemble &#34;b&#34;&gt;.neuron_out&gt;, shape=(200,)) -&gt; Signal(merged&lt;&lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Ensemble &#34;b&#34;&gt; computing &#39;square&#39;&gt;.weighted, ..., &lt;Connection from &lt;Ensemble &#34;b&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;&gt;.weighted&gt;, shape=(4,))}
++BsrDotInc{Signal(bsr_merged&lt;&lt;Ensemble &#34;a&#34;&gt;.scaled_encoders, ..., &lt;Ensemble &#34;b&#34;&gt;.scaled_encoders&gt;, shape=(2, 100, 2)), Signal(merged&lt;&lt;Ensemble &#34;a&#34;&gt;.signal, ..., &lt;Ensemble &#34;b&#34;&gt;.signal&gt;, shape=(4,)) -&gt; Signal(merged&lt;&lt;Ensemble &#34;a&#34;&gt;.neuron_in, ..., &lt;Ensemble &#34;b&#34;&gt;.neuron_in&gt;, shape=(200,))}
++Copy{Signal(&lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Ensemble &#34;b&#34;&gt; computing &#39;square&#39;&gt;.weighted.Lowpass(0.005), shape=(2,)) -&gt; Signal(merged&lt;&lt;Ensemble &#34;a&#34;&gt;.signal, ..., &lt;Ensemble &#34;b&#34;&gt;.signal&gt;[(slice(2, 4, None),)], shape=(2,)), inc=True  &#34;&lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Ensemble &#34;b&#34;&gt; computing &#39;square&#39;&gt;&#34;}
++Copy{Signal(&lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Ensemble &#34;b&#34;&gt;&gt;.weighted.Lowpass(0.005), shape=(2,)) -&gt; Signal(merged&lt;&lt;Ensemble &#34;a&#34;&gt;.signal, ..., &lt;Ensemble &#34;b&#34;&gt;.signal&gt;[(slice(2, 4, None),)], shape=(2,)), inc=True  &#34;&lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Ensemble &#34;b&#34;&gt;&gt;&#34;}
++Copy{Signal(merged&lt;&lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Ensemble &#34;b&#34;&gt; computing &#39;square&#39;&gt;.weighted, ..., &lt;Connection from &lt;Ensemble &#34;b&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;&gt;.weighted&gt;[(slice(2, 4, None),)], shape=(2,)) -&gt; Signal(merged&lt;&lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;, ..., &lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;a&#34;&gt;&gt;&gt;.weighted&gt;[(slice(0, 2, None),)], shape=(2,)), inc=True  &#34;&lt;Connection from &lt;Ensemble &#34;b&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;&gt;&#34;}
++Copy{Signal(merged&lt;&lt;Ensemble &#34;a&#34;&gt;.bias, ..., &lt;Ensemble &#34;b&#34;&gt;.bias&gt;, shape=(200,)) -&gt; Signal(merged&lt;&lt;Ensemble &#34;a&#34;&gt;.neuron_in, ..., &lt;Ensemble &#34;b&#34;&gt;.neuron_in&gt;, shape=(200,)), inc=False}
++Copy{Signal(merged&lt;&lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;, ..., &lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;a&#34;&gt;&gt;&gt;.weighted&gt;[(slice(6, 8, None),)], shape=(2,)) -&gt; Signal(merged&lt;&lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;, ..., &lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;a&#34;&gt;&gt;&gt;.weighted&gt;[(slice(2, 4, None),)], shape=(2,)), inc=True  &#34;&lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;a&#34;&gt;&gt;&gt;&#34;}
++DotInc{Signal(&lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Ensemble &#34;b&#34;&gt;&gt;.weights, shape=(2, 100)), Signal(merged&lt;&lt;Ensemble &#34;a&#34;&gt;.neuron_out, ..., &lt;Ensemble &#34;b&#34;&gt;.neuron_out&gt;[(slice(0, 100, None),)], shape=(100,)) -&gt; Signal(merged&lt;&lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;, ..., &lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;a&#34;&gt;&gt;&gt;.weighted&gt;[(slice(4, 6, None),)], shape=(2,))  &#34;&lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Ensemble &#34;b&#34;&gt;&gt;.weights_elementwiseinc&#34;}
++DotInc{Signal(&lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;a&#34;&gt;&gt;&gt;.weights, shape=(2, 100)), Signal(merged&lt;&lt;Ensemble &#34;a&#34;&gt;.neuron_out, ..., &lt;Ensemble &#34;b&#34;&gt;.neuron_out&gt;[(slice(0, 100, None),)], shape=(100,)) -&gt; Signal(merged&lt;&lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;, ..., &lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;a&#34;&gt;&gt;&gt;.weighted&gt;[(slice(6, 8, None),)], shape=(2,))  &#34;&lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;a&#34;&gt;&gt;&gt;.weights_elementwiseinc&#34;}
++Reset{Signal(merged&lt;&lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Ensemble &#34;b&#34;&gt; computing &#39;square&#39;&gt;.weighted, ..., &lt;Connection from &lt;Ensemble &#34;b&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;&gt;.weighted&gt;, shape=(4,))}
++Reset{Signal(merged&lt;&lt;Ensemble &#34;a&#34;&gt;.signal, ..., &lt;Ensemble &#34;b&#34;&gt;.signal&gt;, shape=(4,))}
++Reset{Signal(merged&lt;&lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;, ..., &lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;a&#34;&gt;&gt;&gt;.weighted&gt;, shape=(8,))}
++SimNeurons{LIF(), Signal(merged&lt;&lt;Ensemble &#34;a&#34;&gt;.neuron_in, ..., &lt;Ensemble &#34;b&#34;&gt;.neuron_in&gt;, shape=(200,)), Signal(merged&lt;&lt;Ensemble &#34;a&#34;&gt;.neuron_out, ..., &lt;Ensemble &#34;b&#34;&gt;.neuron_out&gt;, shape=(200,))}
++SimProcess{Lowpass(0.005), Signal(merged&lt;&lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Ensemble &#34;b&#34;&gt; computing &#39;square&#39;&gt;.weighted, ..., &lt;Connection from &lt;Ensemble &#34;b&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;&gt;.weighted&gt;[(slice(0, 2, None),)], shape=(2,)) -&gt; Signal(&lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Ensemble &#34;b&#34;&gt; computing &#39;square&#39;&gt;.weighted.Lowpass(0.005), shape=(2,))}
++SimProcess{Lowpass(0.005), Signal(merged&lt;&lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;, ..., &lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;a&#34;&gt;&gt;&gt;.weighted&gt;[(slice(4, 6, None),)], shape=(2,)) -&gt; Signal(&lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Ensemble &#34;b&#34;&gt;&gt;.weighted.Lowpass(0.005), shape=(2,))}
++SimPyFunc{None -&gt; Signal(&lt;Node &#34;n1&#34;&gt;.out, shape=(1,)), fn=&#39;sin&#39;}
+ SimPyFunc{None -&gt; Signal(&lt;Node &#34;n2&#34;&gt;.out, shape=(1,)), fn=&#39;cos&#39;}
+-SimPyFunc{None -&gt; Signal(&lt;Node (unlabeled) at 0x2b7bf55cf98&gt;.out, shape=(1,)), fn=&#39;sin&#39;}
+ TimeUpdate{}
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre>
+<span></span>In [12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Simulator</span><span class="p">(</span><span class="n">net1</span><span class="p">)</span> <span class="k">as</span> <span class="n">sim2</span><span class="p">:</span>
+    <span class="n">sim2_str</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">op</span><span class="p">)</span> <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">sim2</span><span class="o">.</span><span class="n">_step_order</span><span class="p">)</span>
+<span class="n">diff</span> <span class="o">=</span> <span class="n">difflib</span><span class="o">.</span><span class="n">unified_diff</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="n">sim1_str</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="n">sim2_str</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">diff</span><span class="p">))</span>
+<span class="c1"># No more differences because labels keep representations stable</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+---
+
++++
+
+@@ -2,17 +2,17 @@
+
+ BsrDotInc{Signal(bsr_merged&lt;&lt;Ensemble &#34;a&#34;&gt;.scaled_encoders, ..., &lt;Ensemble &#34;b&#34;&gt;.scaled_encoders&gt;, shape=(2, 100, 2)), Signal(merged&lt;&lt;Ensemble &#34;a&#34;&gt;.signal, ..., &lt;Ensemble &#34;b&#34;&gt;.signal&gt;, shape=(4,)) -&gt; Signal(merged&lt;&lt;Ensemble &#34;a&#34;&gt;.neuron_in, ..., &lt;Ensemble &#34;b&#34;&gt;.neuron_in&gt;, shape=(200,))}
+ Copy{Signal(&lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Ensemble &#34;b&#34;&gt; computing &#39;square&#39;&gt;.weighted.Lowpass(0.005), shape=(2,)) -&gt; Signal(merged&lt;&lt;Ensemble &#34;a&#34;&gt;.signal, ..., &lt;Ensemble &#34;b&#34;&gt;.signal&gt;[(slice(2, 4, None),)], shape=(2,)), inc=True  &#34;&lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Ensemble &#34;b&#34;&gt; computing &#39;square&#39;&gt;&#34;}
+ Copy{Signal(&lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Ensemble &#34;b&#34;&gt;&gt;.weighted.Lowpass(0.005), shape=(2,)) -&gt; Signal(merged&lt;&lt;Ensemble &#34;a&#34;&gt;.signal, ..., &lt;Ensemble &#34;b&#34;&gt;.signal&gt;[(slice(2, 4, None),)], shape=(2,)), inc=True  &#34;&lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Ensemble &#34;b&#34;&gt;&gt;&#34;}
+-Copy{Signal(merged&lt;&lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Ensemble &#34;b&#34;&gt; computing &#39;square&#39;&gt;.weighted, ..., &lt;Connection from &lt;Ensemble &#34;b&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;&gt;.weighted&gt;[(slice(2, 4, None),)], shape=(2,)) -&gt; Signal(merged&lt;&lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;, ..., &lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;a&#34;&gt;&gt;&gt;.weighted&gt;[(slice(0, 2, None),)], shape=(2,)), inc=True  &#34;&lt;Connection from &lt;Ensemble &#34;b&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;&gt;&#34;}
++Copy{Signal(merged&lt;&lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Ensemble &#34;b&#34;&gt; computing &#39;square&#39;&gt;.weighted, ..., &lt;Connection from &lt;Ensemble &#34;b&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;&gt;.weighted&gt;[(slice(2, 4, None),)], shape=(2,)) -&gt; Signal(merged&lt;&lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;a&#34;&gt;&gt;&gt;.weighted, ..., &lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Ensemble &#34;b&#34;&gt;&gt;.weighted&gt;[(slice(2, 4, None),)], shape=(2,)), inc=True  &#34;&lt;Connection from &lt;Ensemble &#34;b&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;&gt;&#34;}
++Copy{Signal(merged&lt;&lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;a&#34;&gt;&gt;&gt;.weighted, ..., &lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Ensemble &#34;b&#34;&gt;&gt;.weighted&gt;[(slice(0, 2, None),)], shape=(2,)) -&gt; Signal(merged&lt;&lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;a&#34;&gt;&gt;&gt;.weighted, ..., &lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Ensemble &#34;b&#34;&gt;&gt;.weighted&gt;[(slice(4, 6, None),)], shape=(2,)), inc=True  &#34;&lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;a&#34;&gt;&gt;&gt;&#34;}
+ Copy{Signal(merged&lt;&lt;Ensemble &#34;a&#34;&gt;.bias, ..., &lt;Ensemble &#34;b&#34;&gt;.bias&gt;, shape=(200,)) -&gt; Signal(merged&lt;&lt;Ensemble &#34;a&#34;&gt;.neuron_in, ..., &lt;Ensemble &#34;b&#34;&gt;.neuron_in&gt;, shape=(200,)), inc=False}
+-Copy{Signal(merged&lt;&lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;, ..., &lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;a&#34;&gt;&gt;&gt;.weighted&gt;[(slice(6, 8, None),)], shape=(2,)) -&gt; Signal(merged&lt;&lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;, ..., &lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;a&#34;&gt;&gt;&gt;.weighted&gt;[(slice(2, 4, None),)], shape=(2,)), inc=True  &#34;&lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;a&#34;&gt;&gt;&gt;&#34;}
+-DotInc{Signal(&lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Ensemble &#34;b&#34;&gt;&gt;.weights, shape=(2, 100)), Signal(merged&lt;&lt;Ensemble &#34;a&#34;&gt;.neuron_out, ..., &lt;Ensemble &#34;b&#34;&gt;.neuron_out&gt;[(slice(0, 100, None),)], shape=(100,)) -&gt; Signal(merged&lt;&lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;, ..., &lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;a&#34;&gt;&gt;&gt;.weighted&gt;[(slice(4, 6, None),)], shape=(2,))  &#34;&lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Ensemble &#34;b&#34;&gt;&gt;.weights_elementwiseinc&#34;}
+-DotInc{Signal(&lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;a&#34;&gt;&gt;&gt;.weights, shape=(2, 100)), Signal(merged&lt;&lt;Ensemble &#34;a&#34;&gt;.neuron_out, ..., &lt;Ensemble &#34;b&#34;&gt;.neuron_out&gt;[(slice(0, 100, None),)], shape=(100,)) -&gt; Signal(merged&lt;&lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;, ..., &lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;a&#34;&gt;&gt;&gt;.weighted&gt;[(slice(6, 8, None),)], shape=(2,))  &#34;&lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;a&#34;&gt;&gt;&gt;.weights_elementwiseinc&#34;}
++DotInc{Signal(&lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Ensemble &#34;b&#34;&gt;&gt;.weights, shape=(2, 100)), Signal(merged&lt;&lt;Ensemble &#34;a&#34;&gt;.neuron_out, ..., &lt;Ensemble &#34;b&#34;&gt;.neuron_out&gt;[(slice(0, 100, None),)], shape=(100,)) -&gt; Signal(merged&lt;&lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;a&#34;&gt;&gt;&gt;.weighted, ..., &lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Ensemble &#34;b&#34;&gt;&gt;.weighted&gt;[(slice(6, 8, None),)], shape=(2,))  &#34;&lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Ensemble &#34;b&#34;&gt;&gt;.weights_elementwiseinc&#34;}
++DotInc{Signal(&lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;a&#34;&gt;&gt;&gt;.weights, shape=(2, 100)), Signal(merged&lt;&lt;Ensemble &#34;a&#34;&gt;.neuron_out, ..., &lt;Ensemble &#34;b&#34;&gt;.neuron_out&gt;[(slice(0, 100, None),)], shape=(100,)) -&gt; Signal(merged&lt;&lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;a&#34;&gt;&gt;&gt;.weighted, ..., &lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Ensemble &#34;b&#34;&gt;&gt;.weighted&gt;[(slice(0, 2, None),)], shape=(2,))  &#34;&lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;a&#34;&gt;&gt;&gt;.weights_elementwiseinc&#34;}
+ Reset{Signal(merged&lt;&lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Ensemble &#34;b&#34;&gt; computing &#39;square&#39;&gt;.weighted, ..., &lt;Connection from &lt;Ensemble &#34;b&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;&gt;.weighted&gt;, shape=(4,))}
++Reset{Signal(merged&lt;&lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;a&#34;&gt;&gt;&gt;.weighted, ..., &lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Ensemble &#34;b&#34;&gt;&gt;.weighted&gt;, shape=(8,))}
+ Reset{Signal(merged&lt;&lt;Ensemble &#34;a&#34;&gt;.signal, ..., &lt;Ensemble &#34;b&#34;&gt;.signal&gt;, shape=(4,))}
+-Reset{Signal(merged&lt;&lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;, ..., &lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;a&#34;&gt;&gt;&gt;.weighted&gt;, shape=(8,))}
+ SimNeurons{LIF(), Signal(merged&lt;&lt;Ensemble &#34;a&#34;&gt;.neuron_in, ..., &lt;Ensemble &#34;b&#34;&gt;.neuron_in&gt;, shape=(200,)), Signal(merged&lt;&lt;Ensemble &#34;a&#34;&gt;.neuron_out, ..., &lt;Ensemble &#34;b&#34;&gt;.neuron_out&gt;, shape=(200,))}
+ SimProcess{Lowpass(0.005), Signal(merged&lt;&lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Ensemble &#34;b&#34;&gt; computing &#39;square&#39;&gt;.weighted, ..., &lt;Connection from &lt;Ensemble &#34;b&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;&gt;.weighted&gt;[(slice(0, 2, None),)], shape=(2,)) -&gt; Signal(&lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Ensemble &#34;b&#34;&gt; computing &#39;square&#39;&gt;.weighted.Lowpass(0.005), shape=(2,))}
+-SimProcess{Lowpass(0.005), Signal(merged&lt;&lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;b&#34;&gt;&gt;, ..., &lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;a&#34;&gt;&gt;&gt;.weighted&gt;[(slice(4, 6, None),)], shape=(2,)) -&gt; Signal(&lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Ensemble &#34;b&#34;&gt;&gt;.weighted.Lowpass(0.005), shape=(2,))}
++SimProcess{Lowpass(0.005), Signal(merged&lt;&lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Probe of &#39;decoded_output&#39; of &lt;Ensemble &#34;a&#34;&gt;&gt;&gt;.weighted, ..., &lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Ensemble &#34;b&#34;&gt;&gt;.weighted&gt;[(slice(6, 8, None),)], shape=(2,)) -&gt; Signal(&lt;Connection from &lt;Ensemble &#34;a&#34;&gt; to &lt;Ensemble &#34;b&#34;&gt;&gt;.weighted.Lowpass(0.005), shape=(2,))}
+ SimPyFunc{None -&gt; Signal(&lt;Node &#34;n1&#34;&gt;.out, shape=(1,)), fn=&#39;sin&#39;}
+ SimPyFunc{None -&gt; Signal(&lt;Node &#34;n2&#34;&gt;.out, shape=(1,)), fn=&#39;cos&#39;}
+ TimeUpdate{}
+</pre></div></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+            
+  <div class="footer-relations">
+    
+      <div class="pull-left">
+        <a class="btn btn-default" href="exceptions.html" title="previous chapter (use the left arrow)">Exceptions</a>
+      </div>
+    
+      <div class="pull-right">
+        <a class="btn btn-default" href="../../contributing.html" title="next chapter (use the right arrow)">Contributing to Nengo</a>
+      </div>
+    </div>
+    <div class="clearer"></div>
+  
+        </div>
+        <div class="clearfix"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../contributing.html" title="Contributing to Nengo"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="exceptions.html" title="Exceptions"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../examples.html" >Examples</a> &#187;</li> 
+      </ul>
+    </div>
+<script type="text/javascript">
+  $("#mobile-toggle a").click(function () {
+    $("#left-column").toggle();
+  });
+</script>
+<script type="text/javascript" src="../../_static/js/bootstrap.js"></script>
+  <div class="footer">
+    &copy; Copyright 2013-2017, Applied Brain Research. Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+  </div>
+  </body>
+</html>

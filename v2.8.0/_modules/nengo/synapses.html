@@ -1,0 +1,661 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  
+  <!-- Licensed under the Apache 2.0 License -->
+  <link rel="stylesheet" type="text/css" href="../../_static/fonts/open-sans/stylesheet.css" />
+  <!-- Licensed under the SIL Open Font License -->
+  <link rel="stylesheet" type="text/css" href="../../_static/fonts/source-serif-pro/source-serif-pro.css" />
+  <link rel="stylesheet" type="text/css" href="../../_static/css/bootstrap.min.css" />
+  <link rel="stylesheet" type="text/css" href="../../_static/css/bootstrap-theme.min.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+    <title>nengo.synapses &#8212; Nengo core 2.8.0 docs</title>
+    <link rel="stylesheet" href="../../_static/guzzle.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '2.8.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+<link rel="stylesheet" type="text/css" href="../../_static/custom.css">
+
+
+  
+   
+
+  </head>
+  <body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="container-wrapper">
+
+      <div id="mobile-toggle">
+        <a href="#"><span class="glyphicon glyphicon-align-justify" aria-hidden="true"></span></a>
+      </div>
+  <div id="left-column">
+    <div class="sphinxsidebar">
+        <a href="
+    ../../index.html" class="text-logo">Nengo core 2.8</a>
+        <div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <h2>Table Of Contents</h2>
+  </div>
+  <div class="sidebar-toc">
+    
+    
+      <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide.html">User guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing to Nengo</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://www.nengo.ai/projects.html">Nengo ecosystem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../license.html">Nengo license</a></li>
+</ul>
+
+    
+  </div>
+</div>
+        
+<div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <div id="main-search">
+      <form class="form-inline" action="../../search.html" method="GET" role="form">
+        <div class="input-group">
+          <input name="q" type="text" class="form-control" placeholder="Search...">
+        </div>
+        <input type="hidden" name="check_keywords" value="yes" />
+        <input type="hidden" name="area" value="default" />
+      </form>
+    </div>
+  </div>
+</div>
+    </div>
+  </div>
+        <div id="right-column">
+          
+  <div class="header">
+    
+          <div role="navigation" aria-label="breadcrumbs navigation">
+            <ol class="breadcrumb">
+              <li><a href="../../index.html">Docs</a></li>
+              
+                <li><a href="../index.html">Module code</a></li>
+              
+              <li>nengo.synapses</li>
+            </ol>
+          </div>
+          
+    
+  </div>
+
+          <div class="document clearer body">
+            
+  <h1>Source code for nengo.synapses</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">collections</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">nengo.base</span> <span class="k">import</span> <span class="n">Process</span>
+<span class="kn">from</span> <span class="nn">nengo.exceptions</span> <span class="k">import</span> <span class="n">ValidationError</span>
+<span class="kn">from</span> <span class="nn">nengo.params</span> <span class="k">import</span> <span class="p">(</span><span class="n">BoolParam</span><span class="p">,</span> <span class="n">NdarrayParam</span><span class="p">,</span> <span class="n">NumberParam</span><span class="p">,</span> <span class="n">Parameter</span><span class="p">,</span>
+                          <span class="n">Unconfigurable</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">nengo.utils.compat</span> <span class="k">import</span> <span class="n">is_number</span>
+<span class="kn">from</span> <span class="nn">nengo.utils.filter_design</span> <span class="k">import</span> <span class="n">cont2discrete</span>
+<span class="kn">from</span> <span class="nn">nengo.utils.numpy</span> <span class="k">import</span> <span class="n">as_shape</span>
+
+
+<div class="viewcode-block" id="Synapse"><a class="viewcode-back" href="../../frontend_api.html#nengo.synapses.Synapse">[docs]</a><span class="k">class</span> <span class="nc">Synapse</span><span class="p">(</span><span class="n">Process</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Abstract base class for synapse models.</span>
+
+<span class="sd">    Conceptually, a synapse model emulates a biological synapse, taking in</span>
+<span class="sd">    input in the form of released neurotransmitter and opening ion channels</span>
+<span class="sd">    to allow more or less current to flow into the neuron.</span>
+
+<span class="sd">    In Nengo, the implementation of a synapse is as a specific case of a</span>
+<span class="sd">    `.Process` in which the input and output shapes are the same.</span>
+<span class="sd">    The input is the current across the synapse, and the output is the current</span>
+<span class="sd">    that will be induced in the postsynaptic neuron.</span>
+
+<span class="sd">    Synapses also contain the `.Synapse.filt` and `.Synapse.filtfilt` methods,</span>
+<span class="sd">    which make it easy to use Nengo&#39;s synapse models outside of Nengo</span>
+<span class="sd">    simulations.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    default_size_in : int, optional (Default: 1)</span>
+<span class="sd">        The size_in used if not specified.</span>
+<span class="sd">    default_size_out : int (Default: None)</span>
+<span class="sd">        The size_out used if not specified.</span>
+<span class="sd">        If None, will be the same as default_size_in.</span>
+<span class="sd">    default_dt : float (Default: 0.001 (1 millisecond))</span>
+<span class="sd">        The simulation timestep used if not specified.</span>
+<span class="sd">    seed : int, optional (Default: None)</span>
+<span class="sd">        Random number seed. Ensures random factors will be the same each run.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    default_dt : float (Default: 0.001 (1 millisecond))</span>
+<span class="sd">        The simulation timestep used if not specified.</span>
+<span class="sd">    default_size_in : int (Default: 0)</span>
+<span class="sd">        The size_in used if not specified.</span>
+<span class="sd">    default_size_out : int (Default: 1)</span>
+<span class="sd">        The size_out used if not specified.</span>
+<span class="sd">    seed : int, optional (Default: None)</span>
+<span class="sd">        Random number seed. Ensures random factors will be the same each run.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">default_size_in</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">default_size_out</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">default_dt</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">default_size_out</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">default_size_out</span> <span class="o">=</span> <span class="n">default_size_in</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Synapse</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">default_size_in</span><span class="o">=</span><span class="n">default_size_in</span><span class="p">,</span>
+                                      <span class="n">default_size_out</span><span class="o">=</span><span class="n">default_size_out</span><span class="p">,</span>
+                                      <span class="n">default_dt</span><span class="o">=</span><span class="n">default_dt</span><span class="p">,</span>
+                                      <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Synapse.filt"><a class="viewcode-back" href="../../frontend_api.html#nengo.synapses.Synapse.filt">[docs]</a>    <span class="k">def</span> <span class="nf">filt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">filtfilt</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Filter ``x`` with this synapse model.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x : array_like</span>
+<span class="sd">            The signal to filter.</span>
+<span class="sd">        dt : float, optional (Default: None)</span>
+<span class="sd">            The timestep of the input signal.</span>
+<span class="sd">            If None, ``default_dt`` will be used.</span>
+<span class="sd">        axis : int, optional (Default: 0)</span>
+<span class="sd">            The axis along which to filter.</span>
+<span class="sd">        y0 : array_like, optional (Default: None)</span>
+<span class="sd">            The starting state of the filter output. If None, the initial</span>
+<span class="sd">            value of the input signal along the axis filtered will be used.</span>
+<span class="sd">        copy : bool, optional (Default: True)</span>
+<span class="sd">            Whether to copy the input data, or simply work in-place.</span>
+<span class="sd">        filtfilt : bool, optional (Default: False)</span>
+<span class="sd">            If True, runs the process forward then backward on the signal,</span>
+<span class="sd">            for zero-phase filtering (like Matlab&#39;s ``filtfilt``).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># This function is very similar to `Process.apply`, but allows for</span>
+        <span class="c1"># a) filtering along any axis, and b) zero-phase filtering (filtfilt).</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_dt</span> <span class="k">if</span> <span class="n">dt</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dt</span>
+        <span class="n">filtered</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="n">copy</span><span class="p">)</span>
+        <span class="n">filt_view</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">rollaxis</span><span class="p">(</span><span class="n">filtered</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">)</span>  <span class="c1"># rolled view on filtered</span>
+
+        <span class="k">if</span> <span class="n">y0</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">y0</span> <span class="o">=</span> <span class="n">filt_view</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">shape_in</span> <span class="o">=</span> <span class="n">shape_out</span> <span class="o">=</span> <span class="n">as_shape</span><span class="p">(</span><span class="n">filt_view</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">min_dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">step</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_step</span><span class="p">(</span>
+            <span class="n">shape_in</span><span class="p">,</span> <span class="n">shape_out</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">y0</span><span class="o">=</span><span class="n">y0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">filtered</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">signal_in</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">filt_view</span><span class="p">):</span>
+            <span class="n">filt_view</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">step</span><span class="p">(</span><span class="n">i</span> <span class="o">*</span> <span class="n">dt</span><span class="p">,</span> <span class="n">signal_in</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">filtfilt</span><span class="p">:</span>  <span class="c1"># Flip the filt_view and filter again</span>
+            <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">filt_view</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+            <span class="n">filt_view</span> <span class="o">=</span> <span class="n">filt_view</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">signal_in</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">filt_view</span><span class="p">):</span>
+                <span class="n">filt_view</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">step</span><span class="p">((</span><span class="n">n</span> <span class="o">-</span> <span class="n">i</span><span class="p">)</span> <span class="o">*</span> <span class="n">dt</span><span class="p">,</span> <span class="n">signal_in</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">filtered</span></div>
+
+<div class="viewcode-block" id="Synapse.filtfilt"><a class="viewcode-back" href="../../frontend_api.html#nengo.synapses.Synapse.filtfilt">[docs]</a>    <span class="k">def</span> <span class="nf">filtfilt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Zero-phase filtering of ``x`` using this filter.</span>
+
+<span class="sd">        Equivalent to `filt(x, filtfilt=True, **kwargs) &lt;.Synapse.filt&gt;`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">filt</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">filtfilt</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Synapse.make_step"><a class="viewcode-back" href="../../frontend_api.html#nengo.synapses.Synapse.make_step">[docs]</a>    <span class="k">def</span> <span class="nf">make_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">shape_in</span><span class="p">,</span> <span class="n">shape_out</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">rng</span><span class="p">,</span> <span class="n">y0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                  <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create function that advances the synapse forward one time step.</span>
+
+<span class="sd">        At a minimum, Synapse subclasses must implement this method.</span>
+<span class="sd">        That implementation should return a callable that will perform</span>
+<span class="sd">        the synaptic filtering operation.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        shape_in : tuple</span>
+<span class="sd">            Shape of the input signal to be filtered.</span>
+<span class="sd">        shape_out : tuple</span>
+<span class="sd">            Shape of the output filtered signal.</span>
+<span class="sd">        dt : float</span>
+<span class="sd">            The timestep of the simulation.</span>
+<span class="sd">        rng : `numpy.random.RandomState`</span>
+<span class="sd">            Random number generator.</span>
+<span class="sd">        y0 : array_like, optional (Default: None)</span>
+<span class="sd">            The starting state of the filter output. If None, each dimension</span>
+<span class="sd">            of the state will start at zero.</span>
+<span class="sd">        dtype : `numpy.dtype` (Default: np.float64)</span>
+<span class="sd">            Type of data used by the synapse model. This is important for</span>
+<span class="sd">            ensuring that certain synapses avoid or force integer division.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Synapses should implement make_step.&quot;</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="LinearFilter"><a class="viewcode-back" href="../../frontend_api.html#nengo.synapses.LinearFilter">[docs]</a><span class="k">class</span> <span class="nc">LinearFilter</span><span class="p">(</span><span class="n">Synapse</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;General linear time-invariant (LTI) system synapse.</span>
+
+<span class="sd">    This class can be used to implement any linear filter, given the</span>
+<span class="sd">    filter&#39;s transfer function. [1]_</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    num : array_like</span>
+<span class="sd">        Numerator coefficients of transfer function.</span>
+<span class="sd">    den : array_like</span>
+<span class="sd">        Denominator coefficients of transfer function.</span>
+<span class="sd">    analog : boolean, optional (Default: True)</span>
+<span class="sd">        Whether the synapse coefficients are analog (i.e. continuous-time),</span>
+<span class="sd">        or discrete. Analog coefficients will be converted to discrete for</span>
+<span class="sd">        simulation using the simulator ``dt``.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    analog : boolean</span>
+<span class="sd">        Whether the synapse coefficients are analog (i.e. continuous-time),</span>
+<span class="sd">        or discrete. Analog coefficients will be converted to discrete for</span>
+<span class="sd">        simulation using the simulator ``dt``.</span>
+<span class="sd">    den : ndarray</span>
+<span class="sd">        Denominator coefficients of transfer function.</span>
+<span class="sd">    num : ndarray</span>
+<span class="sd">        Numerator coefficients of transfer function.</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [1] https://en.wikipedia.org/wiki/Filter_%28signal_processing%29</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">num</span> <span class="o">=</span> <span class="n">NdarrayParam</span><span class="p">(</span><span class="s1">&#39;num&#39;</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="s1">&#39;*&#39;</span><span class="p">)</span>
+    <span class="n">den</span> <span class="o">=</span> <span class="n">NdarrayParam</span><span class="p">(</span><span class="s1">&#39;den&#39;</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="s1">&#39;*&#39;</span><span class="p">)</span>
+    <span class="n">analog</span> <span class="o">=</span> <span class="n">BoolParam</span><span class="p">(</span><span class="s1">&#39;analog&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num</span><span class="p">,</span> <span class="n">den</span><span class="p">,</span> <span class="n">analog</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">LinearFilter</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num</span> <span class="o">=</span> <span class="n">num</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">den</span> <span class="o">=</span> <span class="n">den</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">analog</span> <span class="o">=</span> <span class="n">analog</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">(</span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">, analog=</span><span class="si">%r</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="p">(</span>
+            <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">den</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">analog</span><span class="p">)</span>
+
+<div class="viewcode-block" id="LinearFilter.combine"><a class="viewcode-back" href="../../frontend_api.html#nengo.synapses.LinearFilter.combine">[docs]</a>    <span class="k">def</span> <span class="nf">combine</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Combine in series with another LinearFilter.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">LinearFilter</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span>
+                <span class="s2">&quot;Can only combine with other LinearFilters&quot;</span><span class="p">,</span> <span class="n">attr</span><span class="o">=</span><span class="s1">&#39;obj&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">analog</span> <span class="o">!=</span> <span class="n">obj</span><span class="o">.</span><span class="n">analog</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span>
+                <span class="s2">&quot;Cannot combine analog and digital filters&quot;</span><span class="p">,</span> <span class="n">attr</span><span class="o">=</span><span class="s1">&#39;obj&#39;</span><span class="p">)</span>
+        <span class="n">num</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polymul</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">num</span><span class="p">)</span>
+        <span class="n">den</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polymul</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">den</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">den</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">LinearFilter</span><span class="p">(</span><span class="n">num</span><span class="p">,</span> <span class="n">den</span><span class="p">,</span>
+                            <span class="n">analog</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">analog</span><span class="p">,</span>
+                            <span class="n">default_size_in</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">default_size_in</span><span class="p">,</span>
+                            <span class="n">default_size_out</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">default_size_out</span><span class="p">,</span>
+                            <span class="n">default_dt</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">default_dt</span><span class="p">,</span>
+                            <span class="n">seed</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">seed</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="LinearFilter.evaluate"><a class="viewcode-back" href="../../frontend_api.html#nengo.synapses.LinearFilter.evaluate">[docs]</a>    <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">frequencies</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Evaluate the transfer function at the given frequencies.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+
+<span class="sd">        Using the ``evaluate`` function to make a Bode plot::</span>
+
+<span class="sd">            synapse = nengo.synapses.LinearFilter([1], [0.02, 1])</span>
+<span class="sd">            f = numpy.logspace(-1, 3, 100)</span>
+<span class="sd">            y = synapse.evaluate(f)</span>
+<span class="sd">            plt.subplot(211); plt.semilogx(f, 20*np.log10(np.abs(y)))</span>
+<span class="sd">            plt.xlabel(&#39;frequency [Hz]&#39;); plt.ylabel(&#39;magnitude [dB]&#39;)</span>
+<span class="sd">            plt.subplot(212); plt.semilogx(f, np.angle(y))</span>
+<span class="sd">            plt.xlabel(&#39;frequency [Hz]&#39;); plt.ylabel(&#39;phase [radians]&#39;)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">frequencies</span> <span class="o">=</span> <span class="mf">2.</span><span class="n">j</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">frequencies</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="n">frequencies</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">analog</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">frequencies</span><span class="p">)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyval</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num</span><span class="p">,</span> <span class="n">w</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">polyval</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">den</span><span class="p">,</span> <span class="n">w</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">y</span></div>
+
+<div class="viewcode-block" id="LinearFilter.make_step"><a class="viewcode-back" href="../../frontend_api.html#nengo.synapses.LinearFilter.make_step">[docs]</a>    <span class="k">def</span> <span class="nf">make_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">shape_in</span><span class="p">,</span> <span class="n">shape_out</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">rng</span><span class="p">,</span> <span class="n">y0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                  <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;zoh&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a `.Step` instance that implements the linear filter.&quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">shape_in</span> <span class="o">==</span> <span class="n">shape_out</span>
+
+        <span class="n">num</span><span class="p">,</span> <span class="n">den</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">den</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">analog</span><span class="p">:</span>
+            <span class="n">num</span><span class="p">,</span> <span class="n">den</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">cont2discrete</span><span class="p">((</span><span class="n">num</span><span class="p">,</span> <span class="n">den</span><span class="p">),</span> <span class="n">dt</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">)</span>
+            <span class="n">num</span> <span class="o">=</span> <span class="n">num</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">den</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="mf">1.</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span><span class="s2">&quot;First element of the denominator must be 1&quot;</span><span class="p">,</span>
+                                  <span class="n">attr</span><span class="o">=</span><span class="s1">&#39;den&#39;</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">num</span> <span class="o">=</span> <span class="n">num</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="k">if</span> <span class="n">num</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">num</span>
+        <span class="n">den</span> <span class="o">=</span> <span class="n">den</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>  <span class="c1"># drop first element (equal to 1)</span>
+        <span class="n">num</span><span class="p">,</span> <span class="n">den</span> <span class="o">=</span> <span class="n">num</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">dtype</span><span class="p">),</span> <span class="n">den</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span>
+
+        <span class="n">output</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape_out</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">num</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">den</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">LinearFilter</span><span class="o">.</span><span class="n">NoDen</span><span class="p">(</span><span class="n">num</span><span class="p">,</span> <span class="n">den</span><span class="p">,</span> <span class="n">output</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">num</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">den</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">LinearFilter</span><span class="o">.</span><span class="n">Simple</span><span class="p">(</span><span class="n">num</span><span class="p">,</span> <span class="n">den</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="n">y0</span><span class="o">=</span><span class="n">y0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">LinearFilter</span><span class="o">.</span><span class="n">General</span><span class="p">(</span><span class="n">num</span><span class="p">,</span> <span class="n">den</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="n">y0</span><span class="o">=</span><span class="n">y0</span><span class="p">)</span></div>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_make_zero_step</span><span class="p">(</span><span class="n">shape_in</span><span class="p">,</span> <span class="n">shape_out</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">rng</span><span class="p">,</span> <span class="n">y0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                        <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">):</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape_out</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">y0</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">output</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">y0</span>
+
+        <span class="k">return</span> <span class="n">LinearFilter</span><span class="o">.</span><span class="n">NoDen</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([]),</span> <span class="n">output</span><span class="p">)</span>
+
+<div class="viewcode-block" id="LinearFilter.Step"><a class="viewcode-back" href="../../frontend_api.html#nengo.synapses.LinearFilter.Step">[docs]</a>    <span class="k">class</span> <span class="nc">Step</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Abstract base class for LTI filtering step functions.&quot;&quot;&quot;</span>
+        <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num</span><span class="p">,</span> <span class="n">den</span><span class="p">,</span> <span class="n">output</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">num</span> <span class="o">=</span> <span class="n">num</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">den</span> <span class="o">=</span> <span class="n">den</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">output</span> <span class="o">=</span> <span class="n">output</span>
+
+        <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">signal</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Step functions must implement __call__&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="LinearFilter.NoDen"><a class="viewcode-back" href="../../frontend_api.html#nengo.synapses.LinearFilter.NoDen">[docs]</a>    <span class="k">class</span> <span class="nc">NoDen</span><span class="p">(</span><span class="n">Step</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;An LTI step function for transfer functions with no denominator.</span>
+
+<span class="sd">        This step function should be much faster than the equivalent general</span>
+<span class="sd">        step function.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num</span><span class="p">,</span> <span class="n">den</span><span class="p">,</span> <span class="n">output</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">den</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span><span class="s2">&quot;&#39;den&#39; must be empty (got length </span><span class="si">%d</span><span class="s2">)&quot;</span>
+                                      <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">den</span><span class="p">),</span> <span class="n">attr</span><span class="o">=</span><span class="s1">&#39;den&#39;</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+            <span class="nb">super</span><span class="p">(</span><span class="n">LinearFilter</span><span class="o">.</span><span class="n">NoDen</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">num</span><span class="p">,</span> <span class="n">den</span><span class="p">,</span> <span class="n">output</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">b</span> <span class="o">=</span> <span class="n">num</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">signal</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">b</span> <span class="o">*</span> <span class="n">signal</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">output</span></div>
+
+<div class="viewcode-block" id="LinearFilter.Simple"><a class="viewcode-back" href="../../frontend_api.html#nengo.synapses.LinearFilter.Simple">[docs]</a>    <span class="k">class</span> <span class="nc">Simple</span><span class="p">(</span><span class="n">Step</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;An LTI step function for transfer functions with one num and den.</span>
+
+<span class="sd">        This step function should be much faster than the equivalent general</span>
+<span class="sd">        step function.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num</span><span class="p">,</span> <span class="n">den</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="n">y0</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">num</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span><span class="s2">&quot;&#39;num&#39; must be length 1 (got </span><span class="si">%d</span><span class="s2">)&quot;</span>
+                                      <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">num</span><span class="p">),</span> <span class="n">attr</span><span class="o">=</span><span class="s1">&#39;num&#39;</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">den</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span><span class="s2">&quot;&#39;den&#39; must be length 1 (got </span><span class="si">%d</span><span class="s2">)&quot;</span>
+                                      <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">den</span><span class="p">),</span> <span class="n">attr</span><span class="o">=</span><span class="s1">&#39;den&#39;</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+
+            <span class="nb">super</span><span class="p">(</span><span class="n">LinearFilter</span><span class="o">.</span><span class="n">Simple</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">num</span><span class="p">,</span> <span class="n">den</span><span class="p">,</span> <span class="n">output</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">b</span> <span class="o">=</span> <span class="n">num</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">a</span> <span class="o">=</span> <span class="n">den</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">y0</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="n">y0</span>
+
+        <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">signal</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">output</span> <span class="o">*=</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">a</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">output</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">b</span> <span class="o">*</span> <span class="n">signal</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">output</span></div>
+
+<div class="viewcode-block" id="LinearFilter.General"><a class="viewcode-back" href="../../frontend_api.html#nengo.synapses.LinearFilter.General">[docs]</a>    <span class="k">class</span> <span class="nc">General</span><span class="p">(</span><span class="n">Step</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;An LTI step function for any given transfer function.</span>
+
+<span class="sd">        Implements a discrete-time LTI system using the difference equation</span>
+<span class="sd">        [1]_ for the given transfer function (num, den).</span>
+
+<span class="sd">        References</span>
+<span class="sd">        ----------</span>
+<span class="sd">        .. [1] https://en.wikipedia.org/wiki/Digital_filter#Difference_equation</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num</span><span class="p">,</span> <span class="n">den</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="n">y0</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+            <span class="nb">super</span><span class="p">(</span><span class="n">LinearFilter</span><span class="o">.</span><span class="n">General</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">num</span><span class="p">,</span> <span class="n">den</span><span class="p">,</span> <span class="n">output</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">deque</span><span class="p">(</span><span class="n">maxlen</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">num</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">deque</span><span class="p">(</span><span class="n">maxlen</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">den</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">y0</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="n">y0</span>
+                <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">num</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">appendleft</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">))</span>
+                <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">den</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="o">.</span><span class="n">appendleft</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">))</span>
+
+        <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">signal</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">appendleft</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">signal</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">xk</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">output</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">*</span> <span class="n">xk</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">yk</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">output</span> <span class="o">-=</span> <span class="bp">self</span><span class="o">.</span><span class="n">den</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">*</span> <span class="n">yk</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="o">.</span><span class="n">appendleft</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">))</span>
+
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">output</span></div></div>
+
+
+<div class="viewcode-block" id="Lowpass"><a class="viewcode-back" href="../../frontend_api.html#nengo.synapses.Lowpass">[docs]</a><span class="k">class</span> <span class="nc">Lowpass</span><span class="p">(</span><span class="n">LinearFilter</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Standard first-order lowpass filter synapse.</span>
+
+<span class="sd">    The impulse-response function is given by::</span>
+
+<span class="sd">        f(t) = (1 / tau) * exp(-t / tau)</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    tau : float</span>
+<span class="sd">        The time constant of the filter in seconds.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    tau : float</span>
+<span class="sd">        The time constant of the filter in seconds.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">tau</span> <span class="o">=</span> <span class="n">NumberParam</span><span class="p">(</span><span class="s1">&#39;tau&#39;</span><span class="p">,</span> <span class="n">low</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tau</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Lowpass</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">([</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="n">tau</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tau</span> <span class="o">=</span> <span class="n">tau</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">(</span><span class="si">%r</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tau</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Lowpass.make_step"><a class="viewcode-back" href="../../frontend_api.html#nengo.synapses.Lowpass.make_step">[docs]</a>    <span class="k">def</span> <span class="nf">make_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">shape_in</span><span class="p">,</span> <span class="n">shape_out</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">rng</span><span class="p">,</span> <span class="n">y0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                  <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns an optimized `.LinearFilter.Step` subclass.&quot;&quot;&quot;</span>
+        <span class="c1"># if tau &lt; 0.03 * dt, exp(-dt / tau) &lt; 1e-14, so just make it zero</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tau</span> <span class="o">&lt;=</span> <span class="o">.</span><span class="mi">03</span> <span class="o">*</span> <span class="n">dt</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_zero_step</span><span class="p">(</span>
+                <span class="n">shape_in</span><span class="p">,</span> <span class="n">shape_out</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">rng</span><span class="p">,</span> <span class="n">y0</span><span class="o">=</span><span class="n">y0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">Lowpass</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">make_step</span><span class="p">(</span>
+            <span class="n">shape_in</span><span class="p">,</span> <span class="n">shape_out</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">rng</span><span class="p">,</span> <span class="n">y0</span><span class="o">=</span><span class="n">y0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="Alpha"><a class="viewcode-back" href="../../frontend_api.html#nengo.synapses.Alpha">[docs]</a><span class="k">class</span> <span class="nc">Alpha</span><span class="p">(</span><span class="n">LinearFilter</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Alpha-function filter synapse.</span>
+
+<span class="sd">    The impulse-response function is given by::</span>
+
+<span class="sd">        alpha(t) = (t / tau**2) * exp(-t / tau)</span>
+
+<span class="sd">    and was found by [1]_ to be a good basic model for synapses.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    tau : float</span>
+<span class="sd">        The time constant of the filter in seconds.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    tau : float</span>
+<span class="sd">        The time constant of the filter in seconds.</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [1] Mainen, Z.F. and Sejnowski, T.J. (1995). Reliability of spike timing</span>
+<span class="sd">       in neocortical neurons. Science (New York, NY), 268(5216):1503-6.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">tau</span> <span class="o">=</span> <span class="n">NumberParam</span><span class="p">(</span><span class="s1">&#39;tau&#39;</span><span class="p">,</span> <span class="n">low</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tau</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Alpha</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">([</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="n">tau</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">tau</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tau</span> <span class="o">=</span> <span class="n">tau</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">(</span><span class="si">%r</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tau</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Alpha.make_step"><a class="viewcode-back" href="../../frontend_api.html#nengo.synapses.Alpha.make_step">[docs]</a>    <span class="k">def</span> <span class="nf">make_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">shape_in</span><span class="p">,</span> <span class="n">shape_out</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">rng</span><span class="p">,</span> <span class="n">y0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                  <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns an optimized `.LinearFilter.Step` subclass.&quot;&quot;&quot;</span>
+        <span class="c1"># if tau &lt; 0.03 * dt, exp(-dt / tau) &lt; 1e-14, so just make it zero</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tau</span> <span class="o">&lt;=</span> <span class="o">.</span><span class="mi">03</span> <span class="o">*</span> <span class="n">dt</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_zero_step</span><span class="p">(</span>
+                <span class="n">shape_in</span><span class="p">,</span> <span class="n">shape_out</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">rng</span><span class="p">,</span> <span class="n">y0</span><span class="o">=</span><span class="n">y0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">Alpha</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">make_step</span><span class="p">(</span>
+            <span class="n">shape_in</span><span class="p">,</span> <span class="n">shape_out</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">rng</span><span class="p">,</span> <span class="n">y0</span><span class="o">=</span><span class="n">y0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="Triangle"><a class="viewcode-back" href="../../frontend_api.html#nengo.synapses.Triangle">[docs]</a><span class="k">class</span> <span class="nc">Triangle</span><span class="p">(</span><span class="n">Synapse</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Triangular finite impulse response (FIR) synapse.</span>
+
+<span class="sd">    This synapse has a triangular and finite impulse response. The length of</span>
+<span class="sd">    the triangle is ``t`` seconds; thus the digital filter will have</span>
+<span class="sd">    ``t / dt + 1`` taps.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    t : float</span>
+<span class="sd">        Length of the triangle, in seconds.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    t : float</span>
+<span class="sd">        Length of the triangle, in seconds.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">t</span> <span class="o">=</span> <span class="n">NumberParam</span><span class="p">(</span><span class="s1">&#39;t&#39;</span><span class="p">,</span> <span class="n">low</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Triangle</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">t</span> <span class="o">=</span> <span class="n">t</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">(</span><span class="si">%r</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Triangle.make_step"><a class="viewcode-back" href="../../frontend_api.html#nengo.synapses.Triangle.make_step">[docs]</a>    <span class="k">def</span> <span class="nf">make_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">shape_in</span><span class="p">,</span> <span class="n">shape_out</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">rng</span><span class="p">,</span> <span class="n">y0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                  <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a custom step function.&quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">shape_in</span> <span class="o">==</span> <span class="n">shape_out</span>
+
+        <span class="n">n_taps</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">t</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">dt</span><span class="p">)))</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="n">num</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n_taps</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="n">num</span> <span class="o">/=</span> <span class="n">num</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+
+        <span class="c1"># Minimal multiply implementation finds the difference between</span>
+        <span class="c1"># coefficients and subtracts a scaled signal at each time step.</span>
+        <span class="n">n0</span><span class="p">,</span> <span class="n">ndiff</span> <span class="o">=</span> <span class="n">num</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">dtype</span><span class="p">),</span> <span class="n">num</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">deque</span><span class="p">(</span><span class="n">maxlen</span><span class="o">=</span><span class="n">n_taps</span><span class="p">)</span>
+
+        <span class="n">output</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape_out</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">y0</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">output</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">y0</span>
+
+        <span class="k">def</span> <span class="nf">step_triangle</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">signal</span><span class="p">):</span>
+            <span class="n">output</span><span class="p">[</span><span class="o">...</span><span class="p">]</span> <span class="o">+=</span> <span class="n">n0</span> <span class="o">*</span> <span class="n">signal</span>
+            <span class="k">for</span> <span class="n">xk</span> <span class="ow">in</span> <span class="n">x</span><span class="p">:</span>
+                <span class="n">output</span><span class="p">[</span><span class="o">...</span><span class="p">]</span> <span class="o">-=</span> <span class="n">xk</span>
+            <span class="n">x</span><span class="o">.</span><span class="n">appendleft</span><span class="p">(</span><span class="n">ndiff</span> <span class="o">*</span> <span class="n">signal</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">output</span>
+
+        <span class="k">return</span> <span class="n">step_triangle</span></div></div>
+
+
+<div class="viewcode-block" id="filt"><a class="viewcode-back" href="../../frontend_api.html#nengo.synapses.filt">[docs]</a><span class="k">def</span> <span class="nf">filt</span><span class="p">(</span><span class="n">signal</span><span class="p">,</span> <span class="n">synapse</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">x0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Filter ``signal`` with ``synapse``.</span>
+
+<span class="sd">    .. note:: Deprecated in Nengo 2.1.0.</span>
+<span class="sd">              Use `.Synapse.filt` method instead.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Use ``synapse.filt`` instead&quot;</span><span class="p">,</span> <span class="ne">DeprecationWarning</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">synapse</span><span class="o">.</span><span class="n">filt</span><span class="p">(</span><span class="n">signal</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="n">dt</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="n">y0</span><span class="o">=</span><span class="n">x0</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="n">copy</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="filtfilt"><a class="viewcode-back" href="../../frontend_api.html#nengo.synapses.filtfilt">[docs]</a><span class="k">def</span> <span class="nf">filtfilt</span><span class="p">(</span><span class="n">signal</span><span class="p">,</span> <span class="n">synapse</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">x0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Zero-phase filtering of ``signal`` using the ``synapse`` filter.</span>
+
+<span class="sd">    .. note:: Deprecated in Nengo 2.1.0.</span>
+<span class="sd">              Use `.Synapse.filtfilt` method instead.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Use ``synapse.filtfilt`` instead&quot;</span><span class="p">,</span> <span class="ne">DeprecationWarning</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">synapse</span><span class="o">.</span><span class="n">filtfilt</span><span class="p">(</span><span class="n">signal</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="n">dt</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="n">y0</span><span class="o">=</span><span class="n">x0</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="n">copy</span><span class="p">)</span></div>
+
+
+<span class="k">class</span> <span class="nc">SynapseParam</span><span class="p">(</span><span class="n">Parameter</span><span class="p">):</span>
+    <span class="n">equatable</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span>
+                 <span class="n">default</span><span class="o">=</span><span class="n">Unconfigurable</span><span class="p">,</span> <span class="n">optional</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">readonly</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SynapseParam</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">default</span><span class="p">,</span> <span class="n">optional</span><span class="p">,</span> <span class="n">readonly</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">coerce</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instance</span><span class="p">,</span> <span class="n">synapse</span><span class="p">):</span>
+        <span class="n">synapse</span> <span class="o">=</span> <span class="n">Lowpass</span><span class="p">(</span><span class="n">synapse</span><span class="p">)</span> <span class="k">if</span> <span class="n">is_number</span><span class="p">(</span><span class="n">synapse</span><span class="p">)</span> <span class="k">else</span> <span class="n">synapse</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="n">instance</span><span class="p">,</span> <span class="n">synapse</span><span class="p">,</span> <span class="n">Synapse</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">SynapseParam</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">coerce</span><span class="p">(</span><span class="n">instance</span><span class="p">,</span> <span class="n">synapse</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+            
+        </div>
+        <div class="clearfix"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Nengo core 2.8.0 docs</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+<script type="text/javascript">
+  $("#mobile-toggle a").click(function () {
+    $("#left-column").toggle();
+  });
+</script>
+<script type="text/javascript" src="../../_static/js/bootstrap.js"></script>
+  <div class="footer">
+    &copy; Copyright 2013-2017, Applied Brain Research. Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+  </div>
+  </body>
+</html>
