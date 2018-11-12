@@ -74,6 +74,9 @@ Release History
   (`#1507 <https://github.com/nengo/nengo/pull/1507>`__)
 - Example Jupyter notebooks have been upgraded to notebook format 4.
   (`#1440 <https://github.com/nengo/nengo/pull/1440>`_)
+- Switched documentation to new
+  `nengo-sphinx-theme <https://github.com/nengo/nengo-sphinx-theme>`_.
+  (`#1489 <https://github.com/nengo/nengo/pull/1489>`__)
 
 **Deprecated**
 
