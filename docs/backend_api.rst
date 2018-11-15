@@ -79,6 +79,8 @@ Operators
 
 .. autoclass:: nengo.builder.processes.SimProcess
 
+.. autoclass:: nengo.builder.transforms.ConvInc
+
 Build functions
 ^^^^^^^^^^^^^^^
 
