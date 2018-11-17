@@ -169,6 +169,8 @@ class Convolution(Transform):
     channels_last = BoolParam("channels_last")
     init = DistOrArrayParam("init")
 
+    _param_init_order = ["channels_last", "input_shape"]
+
     def __init__(self, n_filters, input_shape, kernel_size=(3, 3),
                  strides=(1, 1), padding="valid", channels_last=True,
                  init=nengo.dists.Uniform(-1, 1)):

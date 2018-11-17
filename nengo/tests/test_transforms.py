@@ -11,7 +11,13 @@ from nengo._vendor.npconv2d import conv2d
 @pytest.mark.parametrize("channels_last", (True, False))
 @pytest.mark.parametrize("fixed_kernel", (True, False))
 def test_convolution(
-        dimensions, padding, channels_last, fixed_kernel, Simulator, rng):
+        dimensions,
+        padding,
+        channels_last,
+        fixed_kernel,
+        Simulator,
+        rng,
+        seed):
     input_d = 4
     input_channels = 2
     output_channels = 5
@@ -32,7 +38,7 @@ def test_convolution(
         input_shape = tuple(np.roll(input_shape, 1))
         output_shape = tuple(np.roll(output_shape, 1))
 
-    with nengo.Network() as net:
+    with nengo.Network(seed=seed) as net:
         x = rng.randn(*input_shape)
         w = (rng.randn(*kernel_shape) if fixed_kernel
              else nengo.dists.Uniform(-0.1, 0.1))

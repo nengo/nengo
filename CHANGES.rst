@@ -62,6 +62,12 @@ Release History
   if you need to upgrade.
   (`#1481 <https://github.com/nengo/nengo/pull/1481>`__)
 
+**Fixed**
+
+- ``FrozenObjects`` can control parameter initialization order when copying,
+  which fixed a bug encountered when copying convolutional connections.
+  (`#1493 <https://github.com/nengo/nengo/pull/1493>`__)
+
 2.8.0 (June 9, 2018)
 ====================
 

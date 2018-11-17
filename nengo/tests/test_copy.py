@@ -378,3 +378,12 @@ def test_pickle_model(RefSimulator, seed):
     assert np.allclose(u1, u0, **tols)
     assert np.allclose(a1, a0, **tols)
     assert np.allclose(b1, b0, **tols)
+
+
+def test_copy_convolution():
+    x = nengo.Convolution(1, (2, 3, 4), channels_last=False)
+    y = copy(x)
+
+    assert x.n_filters == y.n_filters
+    assert x.input_shape == y.input_shape
+    assert x.channels_last == y.channels_last

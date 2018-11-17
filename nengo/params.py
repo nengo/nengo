@@ -497,10 +497,16 @@ class FrozenObject(object):
     multiple locations, compared, etc.
     """
 
+    # Order in which parameters have to be initialized.
+    # Missing parameters will be initialized last in an undefined order.
+    # This is needed for pickling and copying of Nengo objects when the
+    # parameter initialization order matters.
+    _param_init_order = []
+
     def __init__(self):
-        self._paramdict = {
-            k: v for k, v in inspect.getmembers(type(self))
-            if isinstance(v, Parameter) and not isinstance(v, ObsoleteParam)}
+        self._paramdict = collections.OrderedDict(
+            (k, v) for k, v in inspect.getmembers(type(self))
+            if isinstance(v, Parameter) and not isinstance(v, ObsoleteParam))
         for p in self._params:
             if not p.readonly:
                 msg = "All parameters of a FrozenObject must be readonly"
@@ -530,10 +536,14 @@ class FrozenObject(object):
 
     def __setstate__(self, state):
         FrozenObject.__init__(self)  # set up the param dict
-        for k in self._paramdict:
-            setattr(self, k, state.pop(k))
+
+        for attr in self._param_init_order:
+            setattr(self, attr, state.pop(attr))
+        for attr in set(self._paramdict).difference(self._param_init_order):
+            setattr(self, attr, state.pop(attr))
+
         self.__dict__.update(state)
 
     def __repr__(self):
         return "%s(%s)" % (type(self).__name__, ', '.join(
-            "%s=%r" % (k, getattr(self, k)) for k in sorted(self._paramdict)))
+            "%s=%r" % (k, getattr(self, k)) for k in self._paramdict))
