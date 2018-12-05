@@ -67,6 +67,10 @@ Release History
 - ``FrozenObjects`` can control parameter initialization order when copying,
   which fixed a bug encountered when copying convolutional connections.
   (`#1493 <https://github.com/nengo/nengo/pull/1493>`__)
+- ``nengo.utils.numpy.array_hash`` now supports ``numpy<1.13`` for smaller
+  arrays, which fixed a bug where older environments sometimes encountered
+  issues when using array views for model parameters.
+  (`#1494 <https://github.com/nengo/nengo/pull/1494>`__)
 
 2.8.0 (June 9, 2018)
 ====================
