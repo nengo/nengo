@@ -36,10 +36,10 @@ elif [[ "$COMMAND" == "upload" ]]; then
     if [[ "$TRAVIS_BRANCH" == "$TRAVIS_TAG" ]]; then
         git commit -m "Documentation for release $TRAVIS_TAG"
         git push -q "https://$GH_TOKEN@github.com/nengo/nengo.git" gh-pages-release
-    elif [[ "$TRAVIS_BRANCH" == "master" ]]; then
+    elif [[ "${TRAVIS_PULL_REQUEST_BRANCH:-$TRAVIS_BRANCH}" == "master" ]]; then
         git commit -m "Last update at $(date '+%Y-%m-%d %T')"
         git push -fq "https://$GH_TOKEN@github.com/nengo/nengo.git" gh-pages-release:gh-pages
-    else
+    elif [[ "$TRAVIS_PULL_REQUEST" == "false" ]]; then
         git commit -m "Documentation for branch $TRAVIS_BRANCH"
         git push -fq "https://$GH_TOKEN@github.com/nengo/nengo.git" gh-pages-release:gh-pages-test
     fi
