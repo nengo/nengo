@@ -69,7 +69,7 @@ def array_hash(a, n=100):
 
     if a.size < n:
         # hash all elements
-        v = np.array(a)  # copy for numpy<1.13 (issue #1122)
+        v = a.copy()  # for Python 2.7 and numpy<1.13 (issue #1122)
         v.setflags(write=False)
         return hash(v.data if PY2 else v.data.tobytes())
     else:

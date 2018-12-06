@@ -25,21 +25,22 @@ def test_meshgrid_nd():
     assert np.allclose(expected, actual)
 
 
-@pytest.mark.parametrize("shape", [(50,), (500, 2)])
+@pytest.mark.parametrize("shape", [(5,), (10, 5), (500, 2)])
 def test_array_hash(shape):
+    n = 100  # explicitly pass in array_hash default
     flat = np.arange(np.prod(shape))
     a1 = flat.reshape(shape)
-    a2 = np.array(a1)
+    a2 = a1.copy()
 
     # (a1, a2) have same hash but copies of each other
     assert a1 is not a2
     assert np.all(a1 == a2)
-    assert array_hash(a1) == array_hash(a2)
+    assert array_hash(a1, n) == array_hash(a2, n)
     assert not np.shares_memory(a1, a2)
 
     # (a1, a3) have different hashes but reversed view
-    a3 = flat[::-1].reshape(shape)
+    a3 = flat[::-1].reshape(shape)  # trigger issue #1122
     assert a1 is not a3
     assert not np.all(a1 == a3)
-    assert array_hash(a1) != array_hash(a3)
+    assert array_hash(a1, n) != array_hash(a3, n)
     assert np.shares_memory(a1, a3)
