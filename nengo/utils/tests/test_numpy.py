@@ -25,7 +25,7 @@ def test_meshgrid_nd():
     assert np.allclose(expected, actual)
 
 
-@pytest.mark.parametrize("shape", [(5,), (10, 5), (500, 2)])
+@pytest.mark.parametrize("shape", [(5,), (10, 5), (200,), (500, 2)])
 def test_array_hash(shape):
     n = 100  # explicitly pass in array_hash default
     flat = np.arange(np.prod(shape))
