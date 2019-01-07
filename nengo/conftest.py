@@ -292,15 +292,15 @@ def pytest_generate_tests(metafunc):
 def pytest_collection_modifyitems(session, config, items):
     if config.getvalue('noexamples'):
         deselect_by_condition(
-            lambda item: getattr(item.obj, 'example', None), items, config)
+            lambda item: item.get_closest_marker("example"), items, config)
     if not config.getvalue('slow'):
         skip_slow = pytest.mark.skip("slow tests not requested")
         for item in items:
-            if getattr(item.obj, 'slow', None):
+            if item.get_closest_marker("slow"):
                 item.add_marker(skip_slow)
     if not TestConfig.compare_requested:
         deselect_by_condition(
-            lambda item: getattr(item.obj, 'compare', None), items, config)
+            lambda item: item.get_closest_marker("compare"), items, config)
 
     uses_sim = lambda item: 'Simulator' in item.fixturenames
     uses_refsim = lambda item: 'RefSimulator' in item.fixturenames
@@ -318,7 +318,7 @@ def pytest_collection_modifyitems(session, config, items):
             items, config)
 
     deselect_by_condition(
-        lambda item: getattr(item.obj, 'noassertions', None)
+        lambda item: item.get_closest_marker("noassertions")
         and not any(
             fixture in item.fixturenames and config.getvalue(option)
             for fixture, option in [
