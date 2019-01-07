@@ -430,9 +430,9 @@ class NdarrayParam(Parameter):
             shape = self.shape
 
         if ndarray.ndim != len(shape):
-                raise ValidationError("ndarray must be %dD (got %dD)"
-                                      % (len(shape), ndarray.ndim),
-                                      attr=self.name, obj=instance)
+            raise ValidationError("ndarray must be %dD (got %dD)"
+                                  % (len(shape), ndarray.ndim),
+                                  attr=self.name, obj=instance)
 
         for i, attr in enumerate(shape):
             assert is_integer(attr) or is_string(attr), (

@@ -7,6 +7,7 @@ import os
 import shutil
 import struct
 from subprocess import CalledProcessError
+import sys
 from uuid import uuid1
 import warnings
 
@@ -30,6 +31,10 @@ from nengo.utils.least_squares_solvers import (
 from nengo.utils.lock import FileLock
 
 logger = logging.getLogger(__name__)
+
+if sys.version_info < (3, 3, 0):
+    # there was no PermissionError before 3.3
+    PermissionError = OSError
 
 
 def get_fragment_size(path):
@@ -399,9 +404,8 @@ class WriteableCacheIndex(CacheIndex):
             pickle.dump(self._index, f, pickle.HIGHEST_PROTOCOL)
         try:
             replace(self.index_path + '.part', self.index_path)
-        except CalledProcessError:
-            # May happen with Python 2.7 on Windows where replace is
-            # implemented by a callout to the `move` command. It may fail when
+        except (CalledProcessError, PermissionError):
+            # It may fail when
             # another program like a virus scanner is accessing the file to be
             # moved. There is not a lot we could do about this. See
             # <https://github.com/nengo/nengo/issues/1200> for more info.
@@ -411,10 +415,9 @@ class WriteableCacheIndex(CacheIndex):
                 "software. It is safe to ignore this warning. But if you see "
                 "it a lot, you might want to consider doing one of the "
                 "following for the best Nengo performance:\n"
-                "1. Try using Python 3 instead of Python 2.\n"
-                "2. Configure your anti-virus to ignore the Nengo cache "
+                "1. Configure your anti-virus to ignore the Nengo cache "
                 "folder ('{cache_dir}').\n"
-                "3. Disable the cache.\n"
+                "2. Disable the cache.\n"
                 .format(cache_dir=self.cache_dir), category=CacheIOWarning)
 
         if os.path.exists(self.legacy_path):
