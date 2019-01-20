@@ -139,6 +139,9 @@ Release History
 - Several objects had elements missing from their string representations.
   These strings are now automatically generated and tested to be complete.
   (`#1472 <https://github.com/nengo/nengo/pull/1472>`__)
+- Fixed the progress bar in recent Jupyter Lab versions.
+  (`#1499 <https://github.com/nengo/nengo/issues/1499>`_,
+  `#1500 <https://github.com/nengo/nengo/pull/1500>`_)
 
 2.8.0 (June 9, 2018)
 ====================

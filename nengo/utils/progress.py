@@ -267,7 +267,7 @@ class TerminalProgressBar(ProgressBar):
         sys.stdout.flush()
 
 
-class VdomProgressBar(ProgressBar):
+class VdomProgressBar(ProgressBar):  # pragma: no cover
     """A progress bar using a virtual DOM representation.
 
     This HTML representation can be used in Jupyter lab (>=0.32) environments.
@@ -388,7 +388,7 @@ class VdomProgressBar(ProgressBar):
         }
 
 
-class HtmlProgressBar(ProgressBar):
+class HtmlProgressBar(ProgressBar):  # pragma: no cover
     """A progress bar using a HTML representation.
 
     This HTML representation can be used in Jupyter notebook environments
@@ -525,7 +525,7 @@ class HtmlProgressBar(ProgressBar):
         '''
 
 
-class VdomOrHtmlProgressBar(ProgressBar):
+class VdomOrHtmlProgressBar(ProgressBar):  # pragma: no cover
     """Progress bar using the VDOM or HTML progress bar.
 
     This progress bar will transmit both representations as part of a MIME
@@ -559,12 +559,12 @@ class VdomOrHtmlProgressBar(ProgressBar):
 
     def _get_update_bundle(self, progress):
         bundle = self._vdom._repr_mimebundle_([], [])
-        bundle['application/javascript'] = self._html._js_update(
-            progress)._repr_javascript_()
+        bundle['text/html'] = '<script>' + self._html._js_update(
+            progress)._repr_javascript_() + '</script>'
         return bundle
 
 
-class IPython5ProgressBar(ProgressBar):
+class IPython5ProgressBar(ProgressBar):  # pragma: no cover
     """ProgressBar for IPython>=5 environments.
 
     Provides a VDOM/HTML representation, except for in a pure terminal IPython
