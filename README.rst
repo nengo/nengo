@@ -19,7 +19,7 @@
 Nengo: Large-scale brain modelling in Python
 ********************************************
 
-.. image:: https://www.nengo.ai/design/_images/nef-summary.svg
+.. image:: https://www.nengo.ai/design/_images/general-nef-summary.svg
   :width: 100%
   :target: https://doi.org/10.3389/fninf.2013.00048
   :alt: An illustration of the three principles of the NEF
