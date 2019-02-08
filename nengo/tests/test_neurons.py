@@ -284,6 +284,32 @@ def test_izhikevich(Simulator, plt, seed, rng):
     plot(rz, "Resonator", 6)
 
 
+def test_poisson(Simulator, plt, seed):
+    """Firing rate test for Poisson generator"""
+
+    def test_accuracy(Simulator, rate, seed, T=1):
+        with nengo.Network() as m:
+            ens = nengo.Ensemble(10, 1, neuron_type=nengo.neurons.Poisson(seed=seed),
+                                 encoders=np.ones((10, 1)),
+                                 gain=np.ones((10)),
+                                 bias=np.zeros((10)))
+            nengo.Connection(nengo.Node([rate]), ens)
+            p = nengo.Probe(ens.neurons)
+
+        with Simulator(m, seed=seed+1) as sim:
+            sim.run(T, progress_bar=False)
+
+        return np.mean(sim.data[p])
+
+    rates = np.linspace(0, 1000, 15)
+    result = [test_accuracy(Simulator, r, seed) for r in rates]
+
+    plt.plot(rates, result, label='Poisson firing rate')
+    plt.plot(rates, rates, ls='--', c='k', label='Ideal')
+    plt.legend(loc='best')
+    plt.show()
+
+
 @pytest.mark.parametrize("max_rate,intercept", [(300., 0.0), (100., 1.1)])
 def test_sigmoid_response_curves(Simulator, max_rate, intercept):
     """Check the sigmoid response curve monotonically increases.

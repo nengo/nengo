@@ -679,6 +679,40 @@ class Izhikevich(NeuronType):
         recovery[spiked > 0] = recovery[spiked > 0] + self.reset_recovery
 
 
+class Poisson(NeuronType):
+    """Poisson spiking generator.
+
+    Emits a spike with a probability of ``p(s|x) = x*dt`` where ``x`` is the expected
+    firing rate and ``dt`` is the simulation timestep.
+
+    Parameters
+    ----------
+    amplitude : float, optional (Default: 1)
+        Scaling factor on the neuron output. Corresponds to the relative
+        amplitude of the output of the neuron.
+    seed : int, optional (Default: 1)
+        The seed used for random number generation.
+    """
+
+    probeable = ('spikes',)
+
+    def __init__(self, amplitude=1, seed=1):
+        super(Poisson, self).__init__()
+
+        self.amplitude = amplitude
+        self.rng = np.random.RandomState(seed)
+
+    def rates(self, x, gain, bias):
+        out = self.current(x, gain, bias)
+        out = np.maximum(0, out) * self.amplitude
+        return out
+
+    def step_math(self, dt, J, output):
+        p = J*dt  # find spiking probabilities
+        output[:] = (self.rng.rand(*J.shape) < p).astype(float)  # sample from probabilities
+        output[:] *= self.amplitude / dt
+
+
 class NeuronTypeParam(Parameter):
     def coerce(self, instance, neurons):
         self.check_type(instance, neurons, NeuronType)
