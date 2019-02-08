@@ -37,6 +37,7 @@ class TestConfig(object):
         Direct, LIF, LIFRate, RectifiedLinear, Sigmoid, SpikingRectifiedLinear
     ]
     compare_requested = False
+    run_unsupported = False
 
     @classmethod
     def is_sim_overridden(cls):
@@ -69,6 +70,7 @@ def pytest_configure(config):
         TestConfig.test_seed = config.getoption('seed_offset')[0]
 
     TestConfig.compare_requested = config.getvalue('compare') is not None
+    TestConfig.run_unsupported = config.getvalue('unsupported')
 
 
 def load_class(fully_qualified_name):
@@ -403,7 +405,10 @@ def pytest_runtest_setup(item):  # noqa: C901
             # We add a '*' before test to eliminate the surprise of needing
             # a '*' before the name of a test function.
             if fnmatch(item_name, '*' + test):
-                pytest.xfail(reason)
+                if TestConfig.run_unsupported:
+                    item.add_marker(pytest.mark.xfail)
+                else:
+                    pytest.skip(reason)
 
 
 def pytest_terminal_summary(terminalreporter):

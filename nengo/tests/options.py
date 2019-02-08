@@ -26,3 +26,5 @@ def pytest_addoption(parser):
                      help="Specify offset of the seed values used in tests.")
     parser.addoption('--spa', action='store_true', default=False,
                      help='Run deprecated SPA tests')
+    parser.addoption('--unsupported', action='store_true', default=False,
+                     help='Run tests marked as unsupported by this backend.')
