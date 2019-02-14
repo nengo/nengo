@@ -218,6 +218,28 @@ def test_nnls(Solver, plt, rng):
 
     assert np.allclose(yest, y, atol=3e-2, rtol=1e-3)
     assert rel_rmse < 0.02
+    assert np.all(d >= 0)
+
+
+@pytest.mark.parametrize('Solver', [NnlsL2])
+def test_nnls_weights(Simulator, Solver):
+    """Test NNLS solvers in the context of a network.
+
+    This also acts as a smoke test for general problems with weight solvers,
+    because it cannot be done by solving for decoders first then multiplying
+    by encoders.
+    """
+    pytest.importorskip('scipy')
+
+    with nengo.Network(seed=0) as net:
+        a = nengo.Ensemble(26, 1)
+        b = nengo.Ensemble(29, 1)
+        c = nengo.Connection(a, b, solver=Solver(weights=True))
+
+    with nengo.Simulator(net) as sim:
+        weights = sim.data[c].weights
+
+    assert np.all(weights >= 0)
 
 
 @pytest.mark.slow
