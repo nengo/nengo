@@ -21,18 +21,16 @@ def multiply(x, y):
 
 @Builder.register(Dense)
 def build_dense(model, transform, sig_in,
-                decoders=None, encoders=None, rng=np.random):
-    weights = transform.sample(rng=rng)
+                decoders=None, sample=None, rng=np.random):
+    weights = transform.sample(rng=rng) if sample is None else sample
 
     if decoders is not None:
         weights = multiply(weights, decoders)
-    if encoders is not None:
-        weights = multiply(encoders.T, weights)
 
     # Add operator for applying weights
     weight_sig = Signal(weights, name="%s.weights" % transform, readonly=True)
     weighted = Signal(
-        np.zeros(transform.size_out if encoders is None else weights.shape[0]),
+        np.zeros(transform.size_out),
         name="%s.weighted" % transform)
     model.add_op(Reset(weighted))
 
@@ -45,15 +43,12 @@ def build_dense(model, transform, sig_in,
 
 @Builder.register(Convolution)
 def build_convolution(model, transform, sig_in,
-                      decoders=None, encoders=None, rng=np.random):
+                      decoders=None, sample=None, rng=np.random):
     if decoders is not None:
         raise BuildError("Applying a convolution transform to a decoded "
                          "connection is not supported")
-    if encoders is not None:
-        raise BuildError(
-            "Applying encoders to a convolution transform is not supported")
 
-    weights = transform.sample(rng=rng)
+    weights = transform.sample(rng=rng) if sample is None else sample
     weight_sig = Signal(weights, name="%s.weights" % transform, readonly=True)
     weighted = Signal(
         np.zeros(transform.size_out), name="%s.weighted" % transform)

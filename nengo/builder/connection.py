@@ -7,7 +7,7 @@ from nengo.builder.ensemble import gen_eval_points, get_activities
 from nengo.builder.node import SimPyFunc
 from nengo.builder.operator import Copy, ElementwiseInc
 from nengo.connection import Connection
-from nengo.transforms import Convolution
+from nengo.transforms import Convolution, Dense
 from nengo.ensemble import Ensemble, Neurons
 from nengo.exceptions import BuildError, ObsoleteError
 from nengo.neurons import Direct
@@ -99,7 +99,7 @@ def build_linear_system(model, conn, rng):
     return eval_points, activities, targets
 
 
-def build_decoders(model, conn, rng):
+def build_decoders(model, conn, rng, transform_matrix=None):
     encoders = model.params[conn.pre_obj].encoders
     gain = model.params[conn.pre_obj].gain
     bias = model.params[conn.pre_obj].bias
@@ -108,10 +108,22 @@ def build_decoders(model, conn, rng):
     targets = get_targets(conn, eval_points)
 
     x = np.dot(eval_points, encoders.T / conn.pre_obj.radius)
+    if conn.solver.weights:
+        assert transform_matrix is not None
+
+        # Some weight solvers provide solutions that are not factorizable,
+        # and so cannot be expressed as decoders and encoders. To support this,
+        # we need to pass the encoders (and transform) to the weight solver
+        # to allow it to take these into account when solving.
+        E = model.params[conn.post_obj].scaled_encoders.T[conn.post_slice]
+        E = multiply(transform_matrix.T, E)
+    else:
+        E = None
+
     wrapped_solver = (model.decoder_cache.wrap_solver(solve_for_decoders)
                       if model.seeded[conn] else solve_for_decoders)
     decoders, solver_info = wrapped_solver(
-        conn, gain, bias, x, targets, rng=rng)
+        conn, gain, bias, x, targets, rng=rng, E=E)
 
     return eval_points, decoders.T, solver_info
 
@@ -152,16 +164,22 @@ def slice_signal(model, signal, sl):
 
 
 @Builder.register(Solver)
-def build_solver(model, solver, conn, rng):
-    return build_decoders(model, conn, rng)
+def build_solver(model, solver, conn, rng, transform_matrix=None):
+    return build_decoders(model, conn, rng, transform_matrix=transform_matrix)
 
 
 @Builder.register(NoSolver)
-def build_no_solver(model, solver, conn, rng):
+def build_no_solver(model, solver, conn, rng, transform_matrix=None):
     activities = np.zeros((1, conn.pre_obj.n_neurons))
     targets = np.zeros((1, conn.size_mid))
+    if solver.weights:
+        E = model.params[conn.post_obj].scaled_encoders.T[conn.post_slice]
+        E = multiply(transform_matrix.T, E)
+    else:
+        E = None
+
     # No need to invoke the cache for NoSolver
-    decoders, solver_info = conn.solver(activities, targets, rng=rng)
+    decoders, solver_info = conn.solver(activities, targets, rng=rng, E=E)
     weights = decoders.T
     return None, weights, solver_info
 
@@ -219,12 +237,16 @@ def build_connection(model, conn):
     model.sig[conn]['out'] = get_prepost_signal(is_pre=False)
 
     decoders = None
-    encoders = None
+    # encoders = None
     eval_points = None
     solver_info = None
     post_slice = conn.post_slice
 
+    # Sample transform to have same value whether we use a weight solver or not
+    transform_sample = conn.transform.sample(rng=rng)
+
     # Figure out the signal going across this connection
+    weight_solver_transform = None
     in_signal = model.sig[conn]['in']
     if (isinstance(conn.pre_obj, Node)
             or (isinstance(conn.pre_obj, Ensemble)
@@ -239,26 +261,38 @@ def build_connection(model, conn):
             in_signal = Signal(np.zeros(conn.size_mid), name='%s.func' % conn)
             model.add_op(SimPyFunc(in_signal, conn.function, None, sliced_in))
     elif isinstance(conn.pre_obj, Ensemble):  # Normal decoded connection
-        eval_points, decoders, solver_info = model.build(
-            conn.solver, conn, rng)
         if conn.solver.weights:
+            if not isinstance(conn.transform, Dense):
+                raise NotImplementedError(
+                    "Only Dense transforms supported for weight solvers")
+
+            weight_solver_transform = transform_sample
+
             model.sig[conn]['out'] = model.sig[conn.post_obj.neurons]['in']
-
             if isinstance(conn.post_obj, Ensemble):
-                encoders = model.params[conn.post_obj].scaled_encoders.T
-                encoders = encoders[conn.post_slice]
-
                 # post slice already applied to encoders, don't apply later
                 post_slice = None
+
+        # solve for decoders
+        eval_points, decoders, solver_info = model.build(
+            conn.solver, conn, rng, transform_matrix=weight_solver_transform)
     else:
         in_signal = slice_signal(model, in_signal, conn.pre_slice)
 
-    # Build transform
-    weighted, weights = model.build(conn.transform,
-                                    in_signal,
-                                    decoders=decoders,
-                                    encoders=encoders,
-                                    rng=rng)
+    if weight_solver_transform is not None:
+        # Transform has already been incorporated into `decoders`
+        eye_transform = Dense((decoders.shape[0], decoders.shape[0]), init=1.)
+        weighted, weights = model.build(eye_transform,
+                                        in_signal,
+                                        decoders=decoders,
+                                        rng=rng)
+    else:
+        # Build transform
+        weighted, weights = model.build(conn.transform,
+                                        in_signal,
+                                        decoders=decoders,
+                                        sample=transform_sample,
+                                        rng=rng)
     model.sig[conn]["weights"] = weights
 
     # Build synapse

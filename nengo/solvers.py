@@ -407,7 +407,7 @@ class Nnls(Solver):
 
         tstart = time.time()
         Y, m, n, _, matrix_in = format_system(A, Y)
-        Y = self.mul_encoders(Y, E, copy=True)
+        Y = self.mul_encoders(Y, E)
         d = Y.shape[1]
 
         X = np.zeros((n, d))
@@ -459,7 +459,7 @@ class NnlsL2(Nnls):
 
         tstart = time.time()
         Y, m, n, _, matrix_in = format_system(A, Y)
-        Y = self.mul_encoders(Y, E, copy=True)
+        Y = self.mul_encoders(Y, E)
         d = Y.shape[1]
 
         # form Gram matrix so we can add regularization
