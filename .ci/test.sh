@@ -15,6 +15,7 @@ if [[ "$COMMAND" == "install" ]]; then
     conda install --quiet jupyter matplotlib numpy="$NUMPY"
     if [[ "$SCIPY" == "true" ]]; then
         conda install --quiet scipy
+        pip install scikit-learn
     fi
     pip install pytest
     pip install -e .

@@ -23,7 +23,17 @@ logger = logging.getLogger(__name__)
 
 
 class Solver(with_metaclass(DocstringInheritor, FrozenObject)):
-    """Decoder or weight solver."""
+    """Decoder or weight solver.
+
+    A solver can be compositional or non-compositional. Non-compositional
+    solvers must operate on the whole neuron-to-neuron weight matrix, while
+    compositional solvers operate in the decoded state space, which is then
+    combined with transform/encoders to generate the full weight matrix.
+    See the solver's ``compositional`` class attribute to determine if it is
+    compositional.
+    """
+
+    compositional = True
 
     weights = BoolParam('weights')
 
@@ -242,6 +252,8 @@ class LstsqL1(Solver):
     This method is well suited for creating sparse decoders or weight matrices.
     """
 
+    compositional = False
+
     l1 = NumberParam('l1', low=0)
     l2 = NumberParam('l2', low=0)
 
@@ -311,6 +323,8 @@ class LstsqDrop(Solver):
     This solver first solves for coefficients (decoders/weights) with
     L2 regularization, drops those nearest to zero, and retrains remaining.
     """
+
+    compositional = False
 
     drop = NumberParam('drop', low=0, high=1)
     solver1 = SolverParam('solver1')
@@ -382,6 +396,8 @@ class Nnls(Solver):
     intercepts of the post-population are also non-negative, since neurons with
     negative intercepts will never be silent, affecting output accuracy.
     """
+
+    compositional = False
 
     def __init__(self, weights=False):
         """

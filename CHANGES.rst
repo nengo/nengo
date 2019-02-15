@@ -61,6 +61,10 @@ Release History
   <https://www.nengo.ai/nengo/getting_started.html#installing-numpy>`__
   if you need to upgrade.
   (`#1481 <https://github.com/nengo/nengo/pull/1481>`__)
+- Solvers are now explicitly marked as compositional or non-compositional
+  depending on whether they must act on full connection weight matrices
+  when solving for weights.
+  (`#1507 <https://github.com/nengo/nengo/pull/1507>`__)
 
 **Fixed**
 

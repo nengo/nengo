@@ -7,7 +7,7 @@ from nengo.builder.ensemble import gen_eval_points, get_activities
 from nengo.builder.node import SimPyFunc
 from nengo.builder.operator import Copy, ElementwiseInc
 from nengo.connection import Connection
-from nengo.transforms import Convolution
+from nengo.transforms import Convolution, Dense
 from nengo.ensemble import Ensemble, Neurons
 from nengo.exceptions import BuildError, ObsoleteError
 from nengo.neurons import Direct
@@ -106,6 +106,19 @@ def build_decoders(model, conn, rng):
 
     eval_points = get_eval_points(model, conn, rng)
     targets = get_targets(conn, eval_points)
+
+    if conn.solver.weights and not conn.solver.compositional:
+        # solver is solving for the whole weight matrix, so apply
+        # transform/encoders to targets
+        if not isinstance(conn.transform, Dense):
+            raise BuildError(
+                "Non-compositional solvers only work with Dense transforms")
+        transform = conn.transform.sample(rng=rng)
+        targets = np.dot(targets, transform.T)
+        # weight solvers only allowed on ensemble->ensemble connections
+        assert isinstance(conn.post_obj, Ensemble)
+        post_enc = model.params[conn.post_obj].scaled_encoders
+        targets = np.dot(targets, post_enc.T[conn.post_slice])
 
     x = np.dot(eval_points, encoders.T / conn.pre_obj.radius)
     wrapped_solver = (model.decoder_cache.wrap_solver(solve_for_decoders)
@@ -244,21 +257,33 @@ def build_connection(model, conn):
         if conn.solver.weights:
             model.sig[conn]['out'] = model.sig[conn.post_obj.neurons]['in']
 
-            if isinstance(conn.post_obj, Ensemble):
-                encoders = model.params[conn.post_obj].scaled_encoders.T
-                encoders = encoders[conn.post_slice]
+            # weight solvers only allowed on ensemble->ensemble connections
+            assert isinstance(conn.post_obj, Ensemble)
 
-                # post slice already applied to encoders, don't apply later
-                post_slice = None
+            encoders = model.params[conn.post_obj].scaled_encoders.T
+            encoders = encoders[conn.post_slice]
+
+            # post slice already applied to encoders (either here or in
+            # `build_decoders`), so don't apply later
+            post_slice = None
     else:
         in_signal = slice_signal(model, in_signal, conn.pre_slice)
 
     # Build transform
-    weighted, weights = model.build(conn.transform,
-                                    in_signal,
-                                    decoders=decoders,
-                                    encoders=encoders,
-                                    rng=rng)
+    if conn.solver.weights and not conn.solver.compositional:
+        # special case for non-compositional weight solvers, where
+        # the solver is solving for the full weight matrix. so we don't
+        # need to combine decoders/transform/encoders.
+        weighted, weights = model.build(Dense(decoders.shape, init=decoders),
+                                        in_signal,
+                                        rng=rng)
+    else:
+        weighted, weights = model.build(conn.transform,
+                                        in_signal,
+                                        decoders=decoders,
+                                        encoders=encoders,
+                                        rng=rng)
+
     model.sig[conn]["weights"] = weights
 
     # Build synapse

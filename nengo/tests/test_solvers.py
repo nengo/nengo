@@ -8,7 +8,7 @@ import pytest
 
 import nengo
 from nengo.dists import UniformHypersphere
-from nengo.exceptions import ValidationError
+from nengo.exceptions import BuildError, ValidationError
 from nengo.utils.compat import iteritems, range
 from nengo.utils.numpy import rms, norm
 from nengo.utils.stdlib import Timer
@@ -218,6 +218,30 @@ def test_nnls(Solver, plt, rng):
 
     assert np.allclose(yest, y, atol=3e-2, rtol=1e-3)
     assert rel_rmse < 0.02
+    assert np.all(d >= 0)
+
+
+@pytest.mark.parametrize('Solver', [NnlsL2])
+def test_nnls_weights(Simulator, Solver, seed):
+    """Test NNLS solvers in the context of a network.
+
+    This also acts as a smoke test for general problems with weight solvers,
+    because it cannot be done by solving for decoders first then multiplying
+    by encoders.
+    """
+    pytest.importorskip('scipy')
+
+    with nengo.Network(seed=seed) as net:
+        a = nengo.Ensemble(26, 1)
+        b = nengo.Ensemble(29, 3)
+        c = nengo.Connection(a, b[:2],
+                             solver=Solver(weights=True),
+                             transform=nengo.dists.Uniform(-1, 1))
+
+    with Simulator(net) as sim:
+        sim.step()
+
+    assert np.all(sim.data[c].weights >= 0)
 
 
 @pytest.mark.slow
@@ -550,3 +574,51 @@ def test_nosolver_validation():
         NoSolver(values="test")
     # array_likes are okay
     NoSolver(values=[[1], [1]])
+
+
+@pytest.mark.parametrize('solver', [
+    LstsqDrop(weights=True),
+])
+def test_non_compositional_solver(Simulator, solver, rng, seed, plt):
+    if isinstance(solver, LstsqL1):
+        pytest.importorskip('sklearn')
+    if isinstance(solver, Nnls):
+        pytest.importorskip('scipy')
+
+    assert not solver.compositional
+
+    with nengo.Network(seed=seed) as net:
+        u = nengo.Node(lambda t: 0.9*np.sin(2*np.pi*t))
+        a = nengo.Ensemble(100, 1)
+        b = nengo.Ensemble(101, 1)
+        nengo.Connection(u, a, synapse=None)
+        nengo.Connection(a, b, solver=solver, transform=-1)
+
+        up = nengo.Probe(u, synapse=0.03)
+        bp = nengo.Probe(b, synapse=0.03)
+
+    with Simulator(net) as sim:
+        sim.run(1.0)
+
+    x = sim.data[up]
+    y = sim.data[bp]
+    plt.plot(sim.trange(), -x)
+    plt.plot(sim.trange(), y)
+
+    assert np.allclose(y, -x, atol=0.1)
+
+
+def test_non_compositional_solver_transform_error(Simulator):
+    pytest.importorskip("scipy")
+
+    with nengo.Network() as net:
+        a = nengo.Ensemble(10, 1)
+        b = nengo.Ensemble(10, 1)
+        nengo.Connection(a, b, solver=Nnls(weights=True),
+                         transform=nengo.Convolution(
+                             1, (1, 1), kernel_size=(1,), strides=(1,)))
+
+    # build error for non-compositional solver with non-dense transform
+    with pytest.raises(BuildError, match="Non-compositional solvers"):
+        with Simulator(net):
+            pass
