@@ -14,7 +14,7 @@ from nengo.utils.numpy import rms, norm
 from nengo.utils.stdlib import Timer
 from nengo.utils.testing import allclose
 from nengo.solvers import (
-    lstsq, Lstsq, LstsqNoise, LstsqL2, LstsqL2nz,
+    lstsq, Lstsq, LstsqNoise, LstsqL2, LstsqL2nz, LstsqMultNoise,
     LstsqL1, LstsqDrop, Nnls, NnlsL2, NnlsL2nz, NoSolver)
 
 
@@ -96,7 +96,7 @@ def test_conjgrad(rng):
 
 
 @pytest.mark.parametrize('Solver', [
-    Lstsq, LstsqNoise, LstsqL2, LstsqL2nz, LstsqDrop])
+    Lstsq, LstsqNoise, LstsqL2, LstsqL2nz, LstsqDrop, LstsqMultNoise])
 def test_decoder_solver(Solver, plt, rng):
     solver = Solver()
 
@@ -121,7 +121,9 @@ def test_decoder_solver(Solver, plt, rng):
     plt.plot(test, test - est)
     plt.title("relative RMSE: %0.2e" % rel_rmse)
 
-    atol = 3.5e-2 if isinstance(solver, (LstsqNoise, LstsqDrop)) else 1.5e-2
+    atol = (4e-2
+            if isinstance(solver, (LstsqNoise, LstsqDrop, LstsqMultNoise))
+            else 1.5e-2)
     assert np.allclose(test, est, atol=atol, rtol=1e-3)
     assert rel_rmse < 0.02
 
