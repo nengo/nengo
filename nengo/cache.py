@@ -643,12 +643,12 @@ class DecoderCache(object):
         """
 
         def cached_solver(conn, gain, bias, x, targets,
-                          rng=np.random, E=None, **uncached_kwargs):
+                          rng=np.random, **uncached_kwargs):
             if not self._in_context:
                 warnings.warn("Cannot use cached solver outside of "
                               "`with cache` block.")
                 return solver_fn(conn, gain, bias, x, targets,
-                                 rng=rng, E=E, **uncached_kwargs)
+                                 rng=rng, **uncached_kwargs)
 
             try:
                 key = self._get_cache_key(conn.solver,
@@ -657,12 +657,11 @@ class DecoderCache(object):
                                           bias,
                                           x,
                                           targets,
-                                          rng,
-                                          E)
+                                          rng)
             except FingerprintError as e:
                 logger.debug("Failed to generate cache key: %s", e)
                 return solver_fn(conn, gain, bias, x, targets,
-                                 rng=rng, E=E, **uncached_kwargs)
+                                 rng=rng, **uncached_kwargs)
 
             try:
                 path, start, end = self._index[key]
@@ -677,7 +676,7 @@ class DecoderCache(object):
                 else:
                     logger.exception("Corrupted cache entry [%s].", key)
                 decoders, info = solver_fn(conn, gain, bias, x, targets,
-                                           rng=rng, E=E, **uncached_kwargs)
+                                           rng=rng, **uncached_kwargs)
                 if not self.readonly:
                     fd = self._get_fd()
                     start = fd.tell()
@@ -691,7 +690,7 @@ class DecoderCache(object):
         return cached_solver
 
     def _get_cache_key(
-            self, solver, neuron_type, gain, bias, x, targets, rng, E):
+            self, solver, neuron_type, gain, bias, x, targets, rng):
         h = hashlib.sha1()
 
         if PY2:
@@ -715,8 +714,6 @@ class DecoderCache(object):
         h.update(struct.pack('q', state[3]))  # integer has_gauss
         h.update(struct.pack('d', state[4]))  # float cached_gaussian
 
-        if E is not None:
-            h.update(np.ascontiguousarray(E).data)
         return h.hexdigest()
 
     def _key2path(self, key):

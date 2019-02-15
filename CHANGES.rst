@@ -65,6 +65,10 @@ Release History
   depending on whether they must act on full connection weight matrices
   when solving for weights.
   (`#1507 <https://github.com/nengo/nengo/pull/1507>`__)
+- Solvers no longer take encoders as an argument. Instead, encoders will
+  be applied to the targets before the solve function for compositional solvers
+  and applied by the Transform builder for non-compositional solvers.
+  (`#1507 <https://github.com/nengo/nengo/pull/1507>`__)
 
 **Fixed**
 

@@ -171,7 +171,7 @@ def test_weight_solver(Solver, rng):
     W1 = np.dot(D, Eb)
 
     # find weights directly
-    W2, _ = Solver(weights=True)(Atrain, Xtrain, rng=rng, E=Eb)
+    W2, _ = Solver(weights=True)(Atrain, np.dot(Xtrain, Eb), rng=rng)
 
     # assert that post inputs are close on test points
     test = get_eval_points(n_points, dims, rng=rng)  # testing eval points

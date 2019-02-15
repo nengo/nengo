@@ -129,7 +129,7 @@ def build_decoders(model, conn, rng):
     return eval_points, decoders.T, solver_info
 
 
-def solve_for_decoders(conn, gain, bias, x, targets, rng, E=None):
+def solve_for_decoders(conn, gain, bias, x, targets, rng):
     activities = conn.pre_obj.neuron_type.rates(x, gain, bias)
     if np.count_nonzero(activities) == 0:
         raise BuildError(
@@ -137,7 +137,7 @@ def solve_for_decoders(conn, gain, bias, x, targets, rng, E=None):
             "This is because no evaluation points fall in the firing "
             "ranges of any neurons." % (conn, conn.pre_obj))
 
-    decoders, solver_info = conn.solver(activities, targets, rng=rng, E=E)
+    decoders, solver_info = conn.solver(activities, targets, rng=rng)
     return decoders, solver_info
 
 
