@@ -486,30 +486,34 @@ class NoSolver(Solver):
 
     Parameters
     ----------
-    values : (n_neurons, n_weights) array_like, optional (Default: None)
-        The array of decoders or weights to use.
-        If ``weights`` is ``False``, ``n_weights`` is the expected
-        output dimensionality. If ``weights`` is ``True``,
-        ``n_weights`` is the number of neurons in the post ensemble.
+    values : (n_neurons, size_out) array_like, optional (Default: None)
+        The array of decoders to use.
+        ``size_out`` is the dimensionality of the decoded signal (determined
+        by the connection function).
         If ``None``, which is the default, the solver will return an
         appropriately sized array of zeros.
     weights : bool, optional (Default: False)
-        If False, ``values`` is interpreted as decoders.
-        If True, ``values`` is interpreted as weights.
+        If False, connection will use factored weights (decoders from this
+        solver, transform, and encoders).
+        If True, connection will use a full weight matrix (created by
+        linearly combining decoder, transform, and encoders).
 
     Attributes
     ----------
-    values : (n_neurons, n_weights) array_like, optional (Default: None)
-        The array of decoders or weights to use.
-        If ``weights`` is ``False``, ``n_weights`` is the expected
-        output dimensionality. If ``weights`` is ``True``,
-        ``n_weights`` is the number of neurons in the post ensemble.
+    values : (n_neurons, size_out) array_like, optional (Default: None)
+        The array of decoders to use.
+        ``size_out`` is the dimensionality of the decoded signal (determined
+        by the connection function).
         If ``None``, which is the default, the solver will return an
         appropriately sized array of zeros.
     weights : bool, optional (Default: False)
-        If False, ``values`` is interpreted as decoders.
-        If True, ``values`` is interpreted as weights.
+        If False, connection will use factored weights (decoders from this
+        solver, transform, and encoders).
+        If True, connection will use a full weight matrix (created by
+        linearly combining decoder, transform, and encoders).
     """
+
+    compositional = True
 
     values = NdarrayParam("values", optional=True, shape=("*", "*"))
 
