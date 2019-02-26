@@ -12,8 +12,8 @@ COMMAND=$1
 MINICONDA="http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh"
 
 if [[ "$COMMAND" == "install" ]]; then
-    wget "$MINICONDA" --quiet -O miniconda.sh
-    bash miniconda.sh -b -p "$HOME/miniconda"
+    exe wget "$MINICONDA" --quiet -O miniconda.sh
+    exe bash miniconda.sh -b -p "$HOME/miniconda"
     export PATH="$HOME/miniconda/bin:$PATH"
     exe conda config --set always_yes yes --set changeps1 no
     exe conda update --quiet conda
