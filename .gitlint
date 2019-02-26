@@ -1,0 +1,12 @@
+[general]
+ignore=body-is-missing
+
+[title-max-length]
+line-length=50
+
+[B1]
+# body line length
+line-length=72
+
+[title-match-regex]
+regex=^[A-Z]
