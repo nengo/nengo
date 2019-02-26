@@ -26,7 +26,7 @@ elif [[ "$COMMAND" == "script" ]]; then
         exe sphinx-build -b html docs ../nengo-docs -vW -A building_version=latest -A releases="$RELEASES"
     fi
 elif [[ "$COMMAND" == "after_success" ]]; then
-    cd ../nengo-docs
+    cd ../nengo-docs || exit
     git config --global user.email "travis@travis-ci.org"
     git config --global user.name "TravisCI"
     git add --all
