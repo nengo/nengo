@@ -8,29 +8,30 @@ cache:
 
 env:
   global:
-    - NUMPY="1.14"
+    - MODE="test"
+    - NUMPY="numpy"
     - SCIPY="false"
     - COVERAGE="false"
-    - STATIC="false"
-    - DOCS="false"
 
 jobs:
   include:
-    - stage: test
-      env: PYTHON="2.7" STATIC="true"
-    - env: PYTHON="2.7" COVERAGE="true"
-    - env: PYTHON="2.7" NUMPY="1.11"
+    - stage: basic
+      env: MODE="static" PYTHON="2.7"
+    - env: MODE="test" PYTHON="3.6" COVERAGE="true" SCIPY="true"
+    - env: MODE="test" PYTHON="2.7" COVERAGE="true"
+    - stage: advanced
+      env: MODE="docs" PYTHON="3.6"
+    - env: MODE="test" PYTHON="2.7" NUMPY="numpy=1.11"
       cache: false  # disable the cache for one build to make sure that works
-    - env: PYTHON="2.7" NUMPY="1.12"
-    - env: PYTHON="2.7" NUMPY="1.13"
-    - env: PYTHON="2.7" NUMPY="1.14"
-    - env: PYTHON="3.4" NUMPY="1.11"  # <=1.12 not packaged for py34 in conda
-    - env: PYTHON="3.5"
-    - env: PYTHON="3.6" COVERAGE="true" SCIPY="true"
-    - env: PYTHON="3.6" DOCS="true"
+    - env: MODE="test" PYTHON="2.7" NUMPY="numpy=1.12"
+    - env: MODE="test" PYTHON="2.7" NUMPY="numpy=1.13"
+    - env: MODE="test" PYTHON="2.7" NUMPY="numpy=1.14"
+    # >= 1.12 not packaged for py34 in conda
+    - env: MODE="test" PYTHON="3.4" NUMPY="numpy=1.11"
+    - env: MODE="test" PYTHON="3.5"
     - stage: deploy
       if: branch =~ ^release-candidate-* OR tag =~ ^v[0-9]*
-      env: PYTHON="3.6" DEPLOY="true"
+      env: MODE="deploy" PYTHON="3.6"
       deploy:
         - provider: pypi
           server: https://test.pypi.org/legacy/
@@ -53,41 +54,16 @@ before_install:
   - source .ci/conda.sh install
 
 install:
-  - if [[ "$COVERAGE" == "true" ]]; then
-      .ci/coverage.sh install;
-    fi
-  - if [[ "$DOCS" == "true" ]]; then
-      .ci/docs.sh install;
-    fi
-  - if [[ "$DEPLOY" == "true" ]]; then
-      .ci/deploy.sh install;
-    fi
-  - if [[ "$STATIC" == "true" ]]; then
-      .ci/static.sh install;
-    else
-      .ci/test.sh install;
-    fi
+  - .ci/$MODE.sh install
 
 script:
-  - if [[ "$STATIC" == "true" ]]; then
-      .ci/static.sh run;
-    elif [[ "$COVERAGE" == "true" ]]; then
-      .ci/coverage.sh run;
-    elif [[ "$DOCS" == "true" ]]; then
-      .ci/docs.sh check;
-      .ci/docs.sh run;
-    elif [[ "$DEPLOY" == "true" ]]; then
-      .ci/deploy.sh run;
-    else
-      .ci/test.sh run;
-    fi
+  - .ci/$MODE.sh script
 
 before_cache:
   - conda clean --all
 
 after_success:
-  - if [[ "$COVERAGE" == "true" ]]; then
-      .ci/coverage.sh upload;
-    elif [[ "$DOCS" == "true" ]]; then
-      .ci/docs.sh upload;
-    fi
+  - .ci/$MODE.sh after_success
+
+after_script:
+  - .ci/$MODE.sh after_script

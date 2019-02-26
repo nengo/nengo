@@ -25,3 +25,5 @@ htmlcov
 .vscode
 .idea
 .pytest_cache/
+
+docs/examples/**/*.py  # For .ipynb examples converted to .py
