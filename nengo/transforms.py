@@ -11,6 +11,13 @@ from nengo.utils.compat import is_array_like
 class Transform(FrozenObject):
     """A base class for connection transforms."""
 
+    def __repr__(self):
+        return "%s(%s)" % (type(self).__name__, ", ".join(self._argreprs))
+
+    @property
+    def _argreprs(self):
+        return []
+
     def sample(self, rng=np.random):
         """Returns concrete weights to implement the specified transform.
 
@@ -97,6 +104,10 @@ class Dense(Transform):
                     "shape %s" % (init.shape, expected_shape), attr="init")
 
         self.init = init
+
+    @property
+    def _argreprs(self):
+        return ["shape=%r" % (self.shape,)]
 
     def sample(self, rng=np.random):
         if isinstance(self.init, Distribution):
@@ -198,6 +209,20 @@ class Convolution(Transform):
                     "Kernel shape %s does not match expected shape %s"
                     % (init.shape, self.kernel_shape), attr="init")
 
+    @property
+    def _argreprs(self):
+        argreprs = ["n_filters=%r" % (self.n_filters,),
+                    "input_shape=%s" % (self.input_shape,)]
+        if self.kernel_size != (3, 3):
+            argreprs.append("kernel_size=%r" % (self.kernel_size,))
+        if self.strides != (1, 1):
+            argreprs.append("strides=%r" % (self.strides,))
+        if self.padding != 'valid':
+            argreprs.append("padding=%r" % (self.padding,))
+        if self.channels_last is not True:
+            argreprs.append("channels_last=%r" % (self.channels_last,))
+        return argreprs
+
     def sample(self, rng=np.random):
         if isinstance(self.init, Distribution):
             # we sample this way so that any variancescaling distribution based
@@ -263,9 +288,13 @@ class ChannelShape(object):
         self.shape = tuple(shape)
         self.channels_last = channels_last
 
-    def __str__(self):
+    def __repr__(self):
         return "%s(shape=%s, ch_last=%d)" % (
             type(self).__name__, self.shape, self.channels_last)
+
+    def __str__(self):
+        """String with spatial shape first and channels last"""
+        return str(tuple(self.spatial_shape) + (self.n_channels,))
 
     @property
     def spatial_shape(self):
