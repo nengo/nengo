@@ -3,6 +3,7 @@ import pytest
 
 import nengo
 from nengo.exceptions import ValidationError
+from nengo.transforms import ChannelShape
 from nengo._vendor.npconv2d import conv2d
 
 
@@ -83,3 +84,28 @@ def test_convolution(
         truth = np.moveaxis(truth, -1, 0)
 
     assert np.allclose(sim.data[p][0], np.ravel(truth))
+
+
+def test_argreprs():
+    """Test repr() for each transform type."""
+    assert repr(nengo.Dense((1, 2), init=[[1, 1]])) == "Dense(shape=(1, 2))"
+
+    assert (repr(nengo.Convolution(3, (1, 2, 3)))
+            == "Convolution(n_filters=3, input_shape=(1, 2, 3))")
+    assert (repr(nengo.Convolution(3, (1, 2, 3), kernel_size=(3, 2)))
+            == "Convolution(n_filters=3, input_shape=(1, 2, 3), "
+               "kernel_size=(3, 2))")
+    assert (repr(nengo.Convolution(3, (1, 2, 3), channels_last=False))
+            == "Convolution(n_filters=3, input_shape=(1, 2, 3), "
+               "channels_last=False)")
+
+
+def test_channelshape_str():
+    assert (repr(ChannelShape((1, 2, 3)))
+            == "ChannelShape(shape=(1, 2, 3), channels_last=True)")
+    assert (repr(ChannelShape((1, 2, 3), channels_last=False))
+            == "ChannelShape(shape=(1, 2, 3), channels_last=False)")
+
+    # `str` always has channels last
+    assert str(ChannelShape((1, 2, 3))) == "(1, 2, ch=3)"
+    assert str(ChannelShape((1, 2, 3), channels_last=False)) == "(ch=1, 2, 3)"
