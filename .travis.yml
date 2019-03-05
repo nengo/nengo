@@ -16,6 +16,7 @@ jobs:
     - stage: basic
       env: MODE="static" PYTHON="2.7"
     - env: MODE="test" PYTHON="2.7" COVERAGE="true"
+    - env: MODE="test" PYTHON="3.5"
     - stage: advanced
       env: MODE="test" PYTHON="2.7" NUMPY="1.11"
     - env: MODE="test" PYTHON="2.7" NUMPY="1.12"
@@ -23,7 +24,6 @@ jobs:
     - env: MODE="test" PYTHON="2.7" NUMPY="1.14"
     # <=1.12 not packaged for py34 in conda
     - env: MODE="test" PYTHON="3.4" NUMPY="1.11"
-    - env: MODE="test" PYTHON="3.5"
     - env: MODE="test" PYTHON="3.6" COVERAGE="true" SCIPY="true"
     - env: MODE="docs" PYTHON="3.6"
     - stage: deploy
