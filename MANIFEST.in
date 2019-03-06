@@ -1,13 +1,14 @@
 global-include *.py
 include *.rst
 global-include *.sh
-include *.txt
+
+# Include files for CI and recreating the source dist
 include *.yml
 recursive-include nengo *.rst
 recursive-include nengo *.txt
-
-# Include this file, to ensure we can recreate source distributions
 include MANIFEST.in
+include .gitlint
+include .pylintrc
 
 # Directories to include
 graft docs
@@ -19,6 +20,10 @@ prune dist
 prune .git
 prune .github
 prune .tox
+prune .eggs
+
+# Exclude auto-generated files
+recursive-exclude docs/examples *.py
 
 # Patterns to exclude from any directory
 global-exclude *-checkpoint.ipynb
