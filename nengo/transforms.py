@@ -41,17 +41,8 @@ class ChannelShapeParam(ShapeParam):
     """A parameter where the value must be a shape with channels."""
 
     def coerce(self, transform, shape):
-        if isinstance(shape, ChannelShape):
-            if shape.channels_last != transform.channels_last:
-                raise ValidationError(
-                    "transform has channels_last=%s, but input shape has "
-                    "channels_last=%s"
-                    % (transform.channels_last, shape.channels_last),
-                    attr=self.name, obj=transform)
-            super(ChannelShapeParam, self).coerce(transform, shape.shape)
-        else:
-            super(ChannelShapeParam, self).coerce(transform, shape)
-            shape = ChannelShape(shape, channels_last=transform.channels_last)
+        shape = ChannelShape.cast(shape)
+        super(ChannelShapeParam, self).coerce(transform, shape.shape)
         return shape
 
 
@@ -181,8 +172,8 @@ class Convolution(Transform):
         super(Convolution, self).__init__()
 
         self.n_filters = n_filters
-        self.channels_last = channels_last  # must be set before input_shape
-        self.input_shape = input_shape
+        self.input_shape = ChannelShape.cast(input_shape,
+                                             channels_last=channels_last)
         self.kernel_size = kernel_size
         self.strides = strides
         self.padding = padding
@@ -212,41 +203,23 @@ class Convolution(Transform):
             argreprs.append("strides=%r" % (self.strides,))
         if self.padding != 'valid':
             argreprs.append("padding=%r" % (self.padding,))
-        if self.channels_last is not True:
-            argreprs.append("channels_last=%r" % (self.channels_last,))
+        # if self.channels_last is not True:
+        #     argreprs.append("channels_last=%r" % (self.channels_last,))
         return argreprs
 
-    def sample(self, rng=np.random):
-        if isinstance(self.init, Distribution):
-            # we sample this way so that any variancescaling distribution based
-            # on n/d is scaled appropriately
-            kernel = [
-                self.init.sample(
-                    self.input_shape.n_channels, self.n_filters, rng=rng)
-                for _ in range(np.prod(self.kernel_size))
-            ]
-            kernel = np.reshape(kernel, self.kernel_shape)
-        else:
-            kernel = np.array(self.init)
-        return kernel
-
     @property
-    def kernel_shape(self):
-        """Full shape of kernel."""
-        return self.kernel_size + (self.input_shape.n_channels, self.n_filters)
-
-    @property
-    def size_in(self):
-        return self.input_shape.size
-
-    @property
-    def size_out(self):
-        return self.output_shape.size
+    def channels_last(self):
+        return self.input_shape.channels_last
 
     @property
     def dimensions(self):
         """Dimensionality of convolution."""
         return self.input_shape.dimensions
+
+    @property
+    def kernel_shape(self):
+        """Full shape of kernel."""
+        return self.kernel_size + (self.input_shape.n_channels, self.n_filters)
 
     @property
     def output_shape(self):
@@ -263,6 +236,28 @@ class Convolution(Transform):
 
         return ChannelShape(output_shape, channels_last=self.channels_last)
 
+    @property
+    def size_in(self):
+        return self.input_shape.size
+
+    @property
+    def size_out(self):
+        return self.output_shape.size
+
+    def sample(self, rng=np.random):
+        if isinstance(self.init, Distribution):
+            # we sample this way so that any variancescaling distribution based
+            # on n/d is scaled appropriately
+            kernel = [
+                self.init.sample(
+                    self.input_shape.n_channels, self.n_filters, rng=rng)
+                for _ in range(np.prod(self.kernel_size))
+            ]
+            kernel = np.reshape(kernel, self.kernel_shape)
+        else:
+            kernel = np.array(self.init)
+        return kernel
+
 
 class ChannelShape(object):
     """Represents shape information with variable channel position.
@@ -276,6 +271,19 @@ class ChannelShape(object):
         and the rest are spatial dimensions. Otherwise, the first item in
         ``shape`` is the channel dimension.
     """
+
+    @staticmethod
+    def cast(shape, channels_last=None):
+        if isinstance(shape, ChannelShape):
+            if (channels_last is not None
+                    and shape.channels_last != channels_last):
+                raise ValidationError(
+                    "requested channels_last=%s, but shape already has "
+                    "channels_last=%s" % (channels_last, shape.channels_last),
+                    attr='channels_last', obj=shape)
+            return shape
+        else:
+            return ChannelShape(shape, channels_last=channels_last)
 
     def __init__(self, shape, channels_last=True):
         self.shape = tuple(shape)

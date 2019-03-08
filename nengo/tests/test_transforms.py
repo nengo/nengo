@@ -98,8 +98,7 @@ def test_argreprs():
 
     # repr uses the actual shape, str always shows shape with channels last
     conv = nengo.Convolution(3, (1, 2, 3), channels_last=False)
-    assert (repr(conv) == "Convolution(n_filters=3, input_shape=(ch=1, 2, 3), "
-                          "channels_last=False)")
+    assert repr(conv) == "Convolution(n_filters=3, input_shape=(ch=1, 2, 3))"
 
 
 def test_channelshape_str():
