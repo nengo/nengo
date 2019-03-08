@@ -212,7 +212,7 @@ class Convolution(Transform):
     @property
     def _argreprs(self):
         argreprs = ["n_filters=%r" % (self.n_filters,),
-                    "input_shape=%s" % (self.input_shape,)]
+                    "input_shape=%s" % (self.input_shape.shape,)]
         if self.kernel_size != (3, 3):
             argreprs.append("kernel_size=%r" % (self.kernel_size,))
         if self.strides != (1, 1):
@@ -289,7 +289,7 @@ class ChannelShape(object):
         self.channels_last = channels_last
 
     def __repr__(self):
-        return "%s(shape=%s, ch_last=%d)" % (
+        return "%s(shape=%s, channels_last=%d)" % (
             type(self).__name__, self.shape, self.channels_last)
 
     def __str__(self):
