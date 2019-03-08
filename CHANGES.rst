@@ -19,7 +19,7 @@ Release History
    - Removed
    - Fixed
 
-2.8.1 (unreleased)
+3.0.0 (unreleased)
 ==================
 
 **Added**
