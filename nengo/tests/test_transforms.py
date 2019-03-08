@@ -3,7 +3,7 @@ import pytest
 
 import nengo
 from nengo.exceptions import ValidationError
-from nengo.transforms import ChannelShape
+from nengo.transforms import ChannelShape, ChannelShapeParam
 from nengo._vendor.npconv2d import conv2d
 
 
@@ -110,3 +110,23 @@ def test_channelshape_str():
     # `str` always has channels last
     assert str(ChannelShape((1, 2, 3))) == "(1, 2, ch=3)"
     assert str(ChannelShape((1, 2, 3), channels_last=False)) == "(ch=1, 2, 3)"
+
+
+def test_channelshapeparam_last_persists():
+    class Test:
+        shape = ChannelShapeParam("shape", readonly=False)
+
+        def __init__(self, shape, channels_last=None):
+            self.shape = ChannelShape.cast(shape, channels_last=channels_last)
+
+    a = Test((2, 3, 4), channels_last=False)
+    assert a.shape.channels_last == False
+    assert a.shape.n_channels == 2
+
+    a.shape = (1, 2, 3)
+    assert a.shape.channels_last == False
+    assert a.shape.n_channels == 1
+
+    a.shape = ChannelShape((1, 2, 3), channels_last=True)
+    assert a.shape.channels_last == True
+    assert a.shape.n_channels == 3

@@ -41,7 +41,12 @@ class ChannelShapeParam(ShapeParam):
     """A parameter where the value must be a shape with channels."""
 
     def coerce(self, transform, shape):
-        shape = ChannelShape.cast(shape)
+        kwargs = {}
+        if not isinstance(shape, ChannelShape) and transform in self.data:
+            # keep `channels_last` from current shape
+            current_shape = self.data[transform]
+            kwargs['channels_last'] = current_shape.channels_last
+        shape = ChannelShape.cast(shape, **kwargs)
         super(ChannelShapeParam, self).coerce(transform, shape.shape)
         return shape
 
@@ -161,13 +166,12 @@ class Convolution(Transform):
     kernel_size = ShapeParam("kernel_size", low=1)
     strides = ShapeParam("strides", low=1)
     padding = EnumParam("padding", values=("same", "valid"))
-    channels_last = BoolParam("channels_last")
     init = DistOrArrayParam("init")
 
     _param_init_order = ["channels_last", "input_shape"]
 
     def __init__(self, n_filters, input_shape, kernel_size=(3, 3),
-                 strides=(1, 1), padding="valid", channels_last=True,
+                 strides=(1, 1), padding="valid", channels_last=None,
                  init=nengo.dists.Uniform(-1, 1)):
         super(Convolution, self).__init__()
 
@@ -203,8 +207,6 @@ class Convolution(Transform):
             argreprs.append("strides=%r" % (self.strides,))
         if self.padding != 'valid':
             argreprs.append("padding=%r" % (self.padding,))
-        # if self.channels_last is not True:
-        #     argreprs.append("channels_last=%r" % (self.channels_last,))
         return argreprs
 
     @property
