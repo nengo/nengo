@@ -205,7 +205,7 @@ class Convolution(Transform):
     @property
     def _argreprs(self):
         argreprs = ["n_filters=%r" % (self.n_filters,),
-                    "input_shape=%s" % (self.input_shape.shape,)]
+                    "input_shape=%s" % (self.input_shape,)]
         if self.kernel_size != (3, 3):
             argreprs.append("kernel_size=%r" % (self.kernel_size,))
         if self.strides != (1, 1):
@@ -282,12 +282,13 @@ class ChannelShape(object):
         self.channels_last = channels_last
 
     def __repr__(self):
-        return "%s(shape=%s, channels_last=%d)" % (
+        return "%s(shape=%s, channels_last=%s)" % (
             type(self).__name__, self.shape, self.channels_last)
 
     def __str__(self):
         """String with spatial shape first and channels last"""
-        return str(tuple(self.spatial_shape) + (self.n_channels,))
+        return "(%s)" % ", ".join(
+            [str(s) for s in self.spatial_shape] + ["ch=%d" % self.n_channels])
 
     @property
     def spatial_shape(self):
