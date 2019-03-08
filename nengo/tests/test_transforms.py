@@ -123,10 +123,12 @@ def test_channelshapeparam_last_persists():
     assert a.shape.channels_last == False
     assert a.shape.n_channels == 2
 
+    # value for channels_last should persist if we set `shape` as a tuple
     a.shape = (1, 2, 3)
     assert a.shape.channels_last == False
     assert a.shape.n_channels == 1
 
+    # if we set `shape` as a ChannelShape, we can change `channels_last`
     a.shape = ChannelShape((1, 2, 3), channels_last=True)
     assert a.shape.channels_last == True
     assert a.shape.n_channels == 3
