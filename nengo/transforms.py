@@ -286,9 +286,11 @@ class ChannelShape(object):
             type(self).__name__, self.shape, self.channels_last)
 
     def __str__(self):
-        """String with spatial shape first and channels last"""
-        return "(%s)" % ", ".join(
-            [str(s) for s in self.spatial_shape] + ["ch=%d" % self.n_channels])
+        """Tuple-like string with channel position marked with "ch"."""
+        spatial = [str(s) for s in self.spatial_shape]
+        channel = ["ch=%d" % self.n_channels]
+        return "(%s)" % ", ".join(spatial + channel if self.channels_last else
+                                  channel + spatial)
 
     @property
     def spatial_shape(self):
