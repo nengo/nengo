@@ -5,9 +5,17 @@ import numpy as np
 
 from nengo.exceptions import (
     ConfigError, ObsoleteError, ReadonlyError, ValidationError)
-from nengo.utils.compat import (int_types, is_array, is_array_like, is_integer,
-                                is_number, is_string, itervalues, string_types,
-                                getfullargspec)
+from nengo.utils.compat import (
+    getfullargspec,
+    int_types,
+    is_array,
+    is_array_like,
+    is_integer,
+    is_number,
+    is_string,
+    itervalues,
+    string_types,
+)
 from nengo.utils.numpy import array_hash, compare
 from nengo.utils.stdlib import WeakKeyIDDictionary, checked_call
 
@@ -555,17 +563,14 @@ class FrozenObject(object):
         if self._argrepr_params_defaults is None:
             self._argrepr_params_defaults = self._argrepr_params()
 
-        args = []
-        for k, default in self._argrepr_params_defaults:
-            val = getattr(self, k)
-            if val != default:
-                args.append("%s=%s" % (k, val))
-
-        return args
+        return [
+            "%s=%s" % (k, getattr(self, k))
+            for k, default in self._argrepr_params_defaults
+            if getattr(self, k) != default
+        ]
 
     def _argrepr_params(self):
-        """Params and defaults to be listed in this object's ``repr`` string.
-        """
+        """Params and defaults to be listed in this object's ``repr``."""
 
         # get default values from __init__'s
         arg_order = []
@@ -582,16 +587,12 @@ class FrozenObject(object):
         arg_defaults = dict(arg_defaults[::-1])
 
         # sort parameter attributes by their order in constructor
-        members = inspect.getmembers(type(self))
-        members = sorted(members, key=lambda x: (
-            arg_order.index(x[0]) if x[0] in arg_order else
-            np.iinfo(np.int32).max, x[0]))
+        members = sorted(inspect.getmembers(type(self)), key=lambda x: (
+            arg_order.index(x[0]) if x[0] in arg_order
+            else np.iinfo(np.int32).max, x[0]))
 
-        params_defaults = []
-        for k, v in members:
-            if isinstance(v, Parameter):
-                default = (arg_defaults[v.name] if v.default is Unconfigurable
-                           else v.default)
-                params_defaults.append((k, default))
-
-        return params_defaults
+        return [
+            (k, arg_defaults[v.name] if v.default is Unconfigurable
+             else v.default)
+            for k, v in members if isinstance(v, Parameter)
+        ]
