@@ -55,7 +55,7 @@ intersphinx_mapping = {
     'numpy': ('https://docs.scipy.org/doc/numpy', None),
     'python': ('https://docs.python.org/3', None),
     'scipy': ('https://docs.scipy.org/doc/scipy/reference', None),
-    'sklearn': ('http://scikit-learn.org/dev', None),
+    'sklearn': ('https://scikit-learn.org/dev', None),
 }
 
 # -- sphinx.ext.todo

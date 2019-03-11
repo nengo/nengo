@@ -105,7 +105,7 @@ through ``pip`` when installing Nengo.
    pip install nengo[tests]  # For running the test suite
    pip install nengo[all]  # All of the above
 
-.. _Anaconda: https://www.anaconda.com/download/
+.. _Anaconda: https://www.anaconda.com/distribution/#download-section
 .. _Homebrew: https://brew.sh/
 
 Usage

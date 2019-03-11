@@ -231,7 +231,7 @@ class LstsqL1(Solver):
 
     def __init__(self, weights=False, l1=1e-4, l2=1e-6, max_iter=1000):
         """
-        .. note:: Requires `scikit-learn <http://scikit-learn.org/stable/>`_.
+        .. note:: Requires `scikit-learn <https://scikit-learn.org/stable/>`_.
 
         Parameters
         ----------

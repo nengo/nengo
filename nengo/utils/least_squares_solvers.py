@@ -91,8 +91,8 @@ class ConjgradScipy(LeastSquaresSolver):
 
     References
     ----------
-    .. [1] scipy.sparse.linalg.cg documentation, https://docs.scipy.org/
-        doc/scipy/reference/generated/scipy.sparse.linalg.cg.html
+    .. [1] scipy.sparse.linalg.cg documentation,
+        https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.cg.html
     """
 
     tol = NumberParam('tol', low=0)
