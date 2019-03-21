@@ -83,6 +83,8 @@ Release History
 - Added new pytest config option, ``nengo_test_unsupported`` (replacing the
   previous ``Simulator.unsupported`` functionality).
   (`#1521 <https://github.com/nengo/nengo/pull/1521>`_)
+- Switched to nengo-bones templating system for TravisCI config/scripts.
+  (`#1514 <https://github.com/nengo/nengo/pull/1514>`_)
 
 **Deprecated**
 
