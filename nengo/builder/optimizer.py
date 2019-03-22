@@ -100,7 +100,8 @@ def optimize(model, dg, max_passes=None):
         mean_reduction_rate = float(n_initial_ops - after) / cum_duration
         last_reduction_rate = float(before - after) / t.duration
         threshold = 0.01
-        if 0. < last_reduction_rate < threshold * mean_reduction_rate:
+        scaled_rate = threshold * mean_reduction_rate
+        if 0. < last_reduction_rate < scaled_rate:  # pragma: no cover
             logger.info(
                 "Operator reduction rate fell below {} mean reduction rate. "
                 "Stopping optimizer.".format(threshold))

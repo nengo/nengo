@@ -37,12 +37,12 @@ ci_scripts:
   - template: test
     conda_install:
       - $NUMPY_VERSION
-  - template: test
+  - template: coverage
     output_name: test-coverage
     conda_install:
       - $NUMPY_VERSION
     coverage: true
-  - template: test
+  - template: coverage
     output_name: test-coverage-scipy
     conda_install:
       - $NUMPY_VERSION
