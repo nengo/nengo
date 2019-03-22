@@ -25,9 +25,6 @@ travis_yml:
         NUMPY_VERSION: numpy=1.13
     - env:
         NUMPY_VERSION: numpy=1.14
-    - python_version: "3.4"
-      env:
-        NUMPY_VERSION: numpy=1.11 # >= 1.12 not packaged for py34 in conda
     - python_version: "3.5"
 
 ci_scripts:

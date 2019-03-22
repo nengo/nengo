@@ -62,10 +62,6 @@ jobs:
       NUMPY_VERSION="numpy=1.14"
   -
     env:
-      NUMPY_VERSION="numpy=1.11"
-      PYTHON_VERSION="3.4"
-  -
-    env:
       PYTHON_VERSION="3.5"
 
 before_install:
