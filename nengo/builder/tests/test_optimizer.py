@@ -124,6 +124,9 @@ def test_optimizer_does_not_change_result(seed, net):
     model = net()
     model.seed = seed
 
+    print("TEST")
+    print(seed)
+
     with model:
         # Add the default probe for every non-Probe object
         probes = [nengo.Probe(obj) for obj in model.all_objects
