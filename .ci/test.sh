@@ -16,16 +16,18 @@ if [[ "$COMMAND" == "install" ]]; then
         exe conda install --quiet scipy
         exe pip install scikit-learn
     fi
-    exe pip install pytest
+    exe pip install pytest pytest-xdist
     if [[ "$COVERAGE" == "true" ]]; then
-        exe pip install coverage
+        exe pip install coverage pytest-cov
     fi
     exe pip install -e . --no-deps
 elif [[ "$COMMAND" == "script" ]]; then
     exe python -c "import numpy; numpy.show_config()"
     if [[ "$COVERAGE" == "true" ]]; then
-        exe coverage run -m pytest nengo -v --duration 20 --color=yes --plots
-        exe coverage report -m
+        export COV_CORE_SOURCE=
+        export COV_CORE_CONFIG=.coveragerc
+        export COV_CORE_DATAFILE=.coverage.eager
+        exe pytest  -v -n 2 --color=yes --durations 20 --cov=nengo --cov-append --cov-report=term-missing
     else
         exe pytest nengo -v --duration 20 --color=yes
     fi
