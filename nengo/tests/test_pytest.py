@@ -1,12 +1,12 @@
+import nengo.conftest
 import nengo.utils.numpy as npext
-from nengo.conftest import TestConfig
 
 pytest_plugins = ["pytester"]
 
 
 def test_seed_fixture(seed):
     """The seed should be the same on all machines"""
-    i = (seed - TestConfig.test_seed) % npext.maxint
+    i = (seed - nengo.conftest.TestConfig.test_seed) % npext.maxint
     assert i == 1832276344
 
 
@@ -35,3 +35,6 @@ def test_unsupported(testdir):
     assert outcomes["deselected"] > 700
     assert "passed" not in outcomes
     assert "failed" not in outcomes
+
+    # runpytest runs in-process, so we have to undo changes to TestConfig
+    nengo.conftest.TestConfig.Simulator = nengo.Simulator
