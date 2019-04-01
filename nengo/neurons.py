@@ -538,19 +538,27 @@ class AdaptiveLIFRate(LIFRate):
     tau_n = NumberParam('tau_n', low=0, low_open=True)
     inc_n = NumberParam('inc_n', low=0)
 
-    def __init__(self, tau_n=1, inc_n=0.01, **lif_args):
-        super(AdaptiveLIFRate, self).__init__(**lif_args)
+    def __init__(
+        self,
+        tau_n=1,
+        inc_n=0.01,
+        tau_rc=0.02,
+        tau_ref=0.002,
+        amplitude=1,
+    ):
+        super(AdaptiveLIFRate, self).__init__(
+            tau_rc=tau_rc, tau_ref=tau_ref, amplitude=amplitude)
         self.tau_n = tau_n
         self.inc_n = inc_n
 
     def step_math(self, dt, J, output, adaptation):
         """Implement the AdaptiveLIFRate nonlinearity."""
         n = adaptation
-        LIFRate.step_math(self, dt, J - n, output)
+        super(AdaptiveLIFRate, self).step_math(dt, J - n, output)
         n += (dt / self.tau_n) * (self.inc_n * output - n)
 
 
-class AdaptiveLIF(AdaptiveLIFRate, LIF):
+class AdaptiveLIF(LIF):
     """Adaptive spiking version of the LIF neuron model.
 
     Works as the LIF model, except with adapation state ``n``, which is
@@ -590,10 +598,31 @@ class AdaptiveLIF(AdaptiveLIFRate, LIF):
 
     probeable = ('spikes', 'adaptation', 'voltage', 'refractory_time')
 
+    tau_n = NumberParam('tau_n', low=0, low_open=True)
+    inc_n = NumberParam('inc_n', low=0)
+
+    def __init__(
+        self,
+        tau_n=1,
+        inc_n=0.01,
+        tau_rc=0.02,
+        tau_ref=0.002,
+        min_voltage=0,
+        amplitude=1,
+    ):
+        super(AdaptiveLIF, self).__init__(
+            tau_rc=tau_rc,
+            tau_ref=tau_ref,
+            min_voltage=min_voltage,
+            amplitude=amplitude,
+        )
+        self.tau_n = tau_n
+        self.inc_n = inc_n
+
     def step_math(self, dt, J, output, voltage, ref, adaptation):
         """Implement the AdaptiveLIF nonlinearity."""
         n = adaptation
-        LIF.step_math(self, dt, J - n, output, voltage, ref)
+        super(AdaptiveLIF, self).step_math(dt, J - n, output, voltage, ref)
         n += (dt / self.tau_n) * (self.inc_n * output - n)
 
 
