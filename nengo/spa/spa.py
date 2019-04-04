@@ -7,7 +7,6 @@ from nengo.exceptions import SpaModuleError
 from nengo.spa.vocab import Vocabulary
 from nengo.spa.module import Module
 from nengo.spa.utils import enable_spa_params
-from nengo.utils.compat import iteritems
 
 
 class SPA(nengo.Network):
@@ -124,11 +123,11 @@ class SPA(nengo.Network):
             if value.label is None:
                 value.label = key
             self._modules[key] = value
-            for k, (obj, v) in iteritems(value.inputs):
+            for k, (obj, v) in value.inputs.items():
                 if type(v) == int:
                     value.inputs[k] = (obj, self.get_default_vocab(v))
                 self.config[obj].vocab = value.inputs[k][1]
-            for k, (obj, v) in iteritems(value.outputs):
+            for k, (obj, v) in value.outputs.items():
                 if type(v) == int:
                     value.outputs[k] = (obj, self.get_default_vocab(v))
                 self.config[obj].vocab = value.outputs[k][1]
@@ -190,7 +189,7 @@ class SPA(nengo.Network):
         raise SpaModuleError("Could not find module input %r" % name)
 
     def get_module_inputs(self):
-        for name, module in iteritems(self._modules):
+        for name, module in self._modules.items():
             for input in module.inputs:
                 if input == 'default':
                     yield name
@@ -217,7 +216,7 @@ class SPA(nengo.Network):
         raise SpaModuleError("Could not find module output %r" % name)
 
     def get_module_outputs(self):
-        for name, module in iteritems(self._modules):
+        for name, module in self._modules.items():
             for output in module.outputs:
                 if output == 'default':
                     yield name

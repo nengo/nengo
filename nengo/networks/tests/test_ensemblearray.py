@@ -4,7 +4,6 @@ import pytest
 import nengo
 from nengo.dists import Choice, UniformHypersphere
 from nengo.exceptions import ValidationError
-from nengo.utils.compat import range
 
 
 def test_multidim(Simulator, plt, seed, rng):

@@ -5,7 +5,6 @@ import numpy as np
 import nengo
 from nengo.exceptions import ObsoleteError, ValidationError
 from nengo.networks.product import Product
-from nengo.utils.compat import range
 
 
 def circconv(a, b, invert_a=False, invert_b=False, axis=-1):

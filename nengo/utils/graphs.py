@@ -37,7 +37,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from collections import defaultdict
 
-from .compat import iteritems
 from ..exceptions import BuildError
 
 
@@ -131,7 +130,7 @@ def toposort(edges):
     [2] https://en.wikipedia.org/wiki/Toposort#Algorithms
     """
     incoming_edges = reverse_edges(edges)
-    incoming_edges = {k: set(val) for k, val in iteritems(incoming_edges)}
+    incoming_edges = {k: set(val) for k, val in incoming_edges.items()}
     vertices = {v for v in edges
                 if v not in incoming_edges or not incoming_edges[v]}
     ordered = []

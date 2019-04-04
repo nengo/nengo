@@ -7,7 +7,6 @@ import numpy as np
 
 from nengo.exceptions import SimulationError, ValidationError
 from nengo.params import Parameter, NumberParam, FrozenObject
-from nengo.utils.compat import range
 
 logger = logging.getLogger(__name__)
 

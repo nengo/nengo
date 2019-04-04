@@ -1,9 +1,8 @@
 from __future__ import absolute_import
 
+from io import StringIO
 import logging
 import sys
-
-from .compat import TextIO
 
 console_formatter = logging.Formatter('[%(levelname)s] %(message)s')
 file_formatter = logging.Formatter(
@@ -70,7 +69,7 @@ class CaptureLogHandler(logging.StreamHandler):
         """Creates a new log handler."""
         logging.StreamHandler.__init__(self)
         self.records = []
-        self.stream = TextIO()
+        self.stream = StringIO()
 
     def close(self):
         """Close this log handler and its underlying stream."""

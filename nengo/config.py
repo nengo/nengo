@@ -18,7 +18,6 @@ import sys
 from nengo.exceptions import ConfigError, ValidationError
 from nengo.params import Default, is_param, iter_params
 from nengo.rc import rc
-from nengo.utils.compat import itervalues, reraise
 from nengo.utils.threading import ThreadLocalStack
 
 
@@ -366,7 +365,7 @@ class Config(object):
         return "<%s(%s)>" % (type(self).__name__, ', '.join(classes))
 
     def __str__(self):
-        return "\n".join(str(v) for v in itervalues(self.params))
+        return "\n".join(str(v) for v in self.params.values())
 
     @staticmethod
     def all_defaults(nengo_cls=None):
@@ -453,6 +452,6 @@ class SupportDefaultsMixin(object):
                 super(SupportDefaultsMixin, self).__setattr__(name, val)
             except ValidationError:
                 exc_info = sys.exc_info()
-                reraise(exc_info[0], exc_info[1], None)
+                raise exc_info[1].with_traceback(None)
         else:
             super(SupportDefaultsMixin, self).__setattr__(name, val)

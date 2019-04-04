@@ -9,7 +9,7 @@ from nengo.exceptions import ValidationError
 from nengo.params import (
     BoolParam, DictParam, EnumParam, NdarrayParam, NumberParam)
 from nengo.synapses import LinearFilter, Lowpass, SynapseParam
-from nengo.utils.compat import is_number, iteritems, itervalues
+from nengo.utils.numpy import is_number
 
 
 class WhiteNoise(Process):
@@ -277,7 +277,7 @@ class PiecewiseDataParam(DictParam):
         data = super(PiecewiseDataParam, self).coerce(instance, data)
 
         size_out = None
-        for time, value in iteritems(data):
+        for time, value in data.items():
             if not is_number(time):
                 raise ValidationError("Keys must be times (floats or ints), "
                                       "not %r" % type(time).__name__,
@@ -396,7 +396,7 @@ class Piecewise(Process):
         needs_scipy = ('linear', 'nearest', 'slinear', 'quadratic', 'cubic')
         if interpolation in needs_scipy:
             self.sp_interpolate = None
-            if any(callable(val) for val in itervalues(self.data)):
+            if any(callable(val) for val in self.data.values()):
                 warnings.warn("%r interpolation cannot be applied because "
                               "a callable was supplied for some piece of the "
                               "function. Using 'zero' interpolation instead."
@@ -418,12 +418,12 @@ class Piecewise(Process):
 
     @property
     def size_out(self):
-        time, value = next(iteritems(self.data))
+        time, value = next(iter(self.data.items()))
         value = np.ravel(value(time)) if callable(value) else value
         return value.size
 
     def make_step(self, shape_in, shape_out, dt, rng):
-        tp, yp = zip(*sorted(iteritems(self.data)))
+        tp, yp = zip(*sorted(self.data.items()))
         assert shape_in == (0,)
         assert shape_out == (self.size_out,)
 

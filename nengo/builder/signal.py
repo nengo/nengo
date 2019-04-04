@@ -1,10 +1,11 @@
 from __future__ import division
 
+from io import StringIO
+
 import numpy as np
 
-import nengo.utils.numpy as npext
 from nengo.exceptions import SignalError
-from nengo.utils.compat import StringIO, is_integer
+import nengo.utils.numpy as npext
 
 
 class Signal(object):
@@ -93,10 +94,10 @@ class Signal(object):
         if not isinstance(item, tuple):
             item = (item,)
 
-        if not all(is_integer(i) or isinstance(i, slice) for i in item):
+        if not all(npext.is_integer(i) or isinstance(i, slice) for i in item):
             raise SignalError("Can only index or slice into signals")
 
-        if all(map(is_integer, item)):
+        if all(npext.is_integer(i) for i in item):
             # turn one index into slice to get a view from numpy
             item = item[:-1] + (slice(item[-1], item[-1]+1),)
 

@@ -4,7 +4,6 @@ import nengo
 from nengo.dists import Uniform
 from nengo.spa.action_objects import Symbol, Source, Convolution
 from nengo.spa.module import Module
-from nengo.utils.compat import iteritems
 
 
 class Thalamus(nengo.networks.Thalamus, Module):
@@ -106,7 +105,7 @@ class Thalamus(nengo.networks.Thalamus, Module):
 
         # implement the various effects
         for i, action in enumerate(self.bg.actions.actions):
-            for name, effects in iteritems(action.effect.effect):
+            for name, effects in action.effect.effect.items():
                 for effect in effects.expression.items:
                     if isinstance(effect, (int, float)):
                         effect = Symbol('%g' % effect)

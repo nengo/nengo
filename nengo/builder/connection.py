@@ -13,7 +13,7 @@ from nengo.exceptions import BuildError, ObsoleteError
 from nengo.neurons import Direct
 from nengo.node import Node
 from nengo.solvers import NoSolver, Solver
-from nengo.utils.compat import is_iterable, itervalues
+from nengo.utils.numpy import is_iterable
 
 built_attrs = ['eval_points', 'solver_info', 'weights', 'transform']
 
@@ -317,7 +317,7 @@ def build_connection(model, conn):
         rule = conn.learning_rule
         rule = [rule] if not is_iterable(rule) else rule
         targets = []
-        for r in itervalues(rule) if isinstance(rule, dict) else rule:
+        for r in rule.values() if isinstance(rule, dict) else rule:
             model.build(r)
             targets.append(r.modifies)
 

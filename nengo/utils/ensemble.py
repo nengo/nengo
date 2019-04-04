@@ -3,7 +3,6 @@ from __future__ import absolute_import
 import numpy as np
 
 from . import numpy as npext
-from .compat import range
 
 
 def tuning_curves(ens, sim, inputs=None):

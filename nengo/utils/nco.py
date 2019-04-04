@@ -36,11 +36,11 @@ end of the array data).
 from __future__ import absolute_import
 
 import os
+import pickle
 import struct
 
 import numpy as np
 
-from .compat import ensure_bytes, pickle
 from .cache import byte_align
 from ..exceptions import CacheIOError
 
@@ -95,7 +95,7 @@ class Subfile(object):
         return self.fileobj.tell() - self.start
 
 
-MAGIC_STRING = ensure_bytes('NCO')
+MAGIC_STRING = 'NCO'.encode('utf-8')
 SUPPORTED_PROTOCOLS = [0]
 HEADER_FORMAT = '@{}sBLLLL'.format(len(MAGIC_STRING))
 HEADER_SIZE = struct.calcsize(HEADER_FORMAT)

@@ -10,6 +10,7 @@ Note
 This IPython extension cannot be unloaded.
 """
 
+from html import escape
 import warnings
 
 import IPython
@@ -20,7 +21,6 @@ except ImportError:
     notebook_version = IPython.version_info
 
 from nengo.rc import rc
-from nengo.utils.compat import escape
 from nengo.utils.ipython import has_ipynb_widgets
 from nengo.utils.progress import ProgressBar, timestamp2timedelta
 

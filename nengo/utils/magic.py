@@ -46,8 +46,6 @@ POSSIBILITY OF SUCH DAMAGE.
 import functools
 import inspect
 
-from .compat import iteritems, with_metaclass
-
 
 class ObjectProxyMethods(object):
     """Properly override __module__ and __doc__.
@@ -88,7 +86,7 @@ class ObjectProxyMeta(type):
         return type.__new__(metacls, name, bases, dictionary)
 
 
-class ObjectProxy(with_metaclass(ObjectProxyMeta)):
+class ObjectProxy(metaclass=ObjectProxyMeta):
     """A transparent object proxy for creating decorator descriptors.
 
     This is used in lieu of ``functools.update_wrapper``, which copies
@@ -278,7 +276,7 @@ class DocstringInheritor(type):
                 if doc:
                     clsdict['__doc__'] = doc
                     break
-        for attr, attribute in iteritems(clsdict):
+        for attr, attribute in clsdict.items():
             if not attribute.__doc__:
                 for mro_cls in (
                         mro_cls for base in bases for mro_cls in base.mro()

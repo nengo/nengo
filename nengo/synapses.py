@@ -5,11 +5,10 @@ import numpy as np
 
 from nengo.base import Process
 from nengo.exceptions import ValidationError
-from nengo.params import (BoolParam, NdarrayParam, NumberParam, Parameter,
-                          Unconfigurable)
-from nengo.utils.compat import is_number
+from nengo.params import (
+    BoolParam, NdarrayParam, NumberParam, Parameter, Unconfigurable)
 from nengo.utils.filter_design import cont2discrete
-from nengo.utils.numpy import as_shape
+from nengo.utils.numpy import as_shape, is_number
 
 
 class Synapse(Process):

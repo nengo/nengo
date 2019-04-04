@@ -13,8 +13,6 @@ import sys
 import time
 import weakref
 
-from .compat import iteritems, itervalues
-
 
 class WeakKeyDefaultDict(collections.MutableMapping):
     """WeakKeyDictionary that allows to define a default."""
@@ -67,7 +65,7 @@ class WeakKeyIDDictionary(collections.MutableMapping):
         return k is self._keyrefs.get(id(k))
 
     def __iter__(self):
-        return itervalues(self._keyrefs)
+        return self._keyrefs.values()
 
     def __len__(self):
         return len(self._keyrefs)
@@ -109,10 +107,10 @@ class WeakKeyIDDictionary(collections.MutableMapping):
         return self._keyvalues[id(k)] if k in self else default
 
     def keys(self):
-        return itervalues(self._keyrefs)
+        return self._keyrefs.values()
 
     def iterkeys(self):
-        return itervalues(self._keyrefs)
+        return self._keyrefs.values()
 
     def items(self):
         for k in self:
@@ -124,7 +122,7 @@ class WeakKeyIDDictionary(collections.MutableMapping):
 
     def update(self, in_dict=None, **kwargs):
         if in_dict is not None:
-            for key, value in iteritems(in_dict):
+            for key, value in in_dict.items():
                 self.__setitem__(key, value)
         if len(kwargs) > 0:
             self.update(kwargs)
@@ -241,7 +239,7 @@ def groupby(objects, key, hashable=None, force_list=True):
         groups = {}
         for obj in objects:
             groups.setdefault(key(obj), []).append(obj)
-        return list(groups.items()) if force_list else iteritems(groups)
+        return list(groups.items()) if force_list else groups.items()
     else:
         keygroupers = itertools.groupby(sorted(objects, key=key), key=key)
         if force_list:

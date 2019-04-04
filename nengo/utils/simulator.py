@@ -1,7 +1,6 @@
 from collections import defaultdict
 import itertools
 
-from .compat import iteritems
 from .graphs import add_edges
 from .stdlib import groupby
 
@@ -49,7 +48,7 @@ def operator_dependency_graph(operators):  # noqa: C901
     dg = {op: set() for op in operators}  # ops are nodes of the graph
 
     # -- incs depend on sets
-    for sig, post_ops in iteritems(incs):
+    for sig, post_ops in incs.items():
         pre_ops = list(sets[sig])
         for sig2 in by_base_sets[sig.base]:
             if sig.may_share_memory(sig2):
@@ -57,7 +56,7 @@ def operator_dependency_graph(operators):  # noqa: C901
         add_edges(dg, itertools.product(set(pre_ops), post_ops))
 
     # -- reads depend on writes (sets and incs)
-    for sig, post_ops in iteritems(reads):
+    for sig, post_ops in reads.items():
         pre_ops = sets[sig] + incs[sig]
         for sig2 in by_base_writes[sig.base]:
             if sig.may_share_memory(sig2):
@@ -65,7 +64,7 @@ def operator_dependency_graph(operators):  # noqa: C901
         add_edges(dg, itertools.product(set(pre_ops), post_ops))
 
     # -- updates depend on reads, sets, and incs.
-    for sig, post_ops in iteritems(ups):
+    for sig, post_ops in ups.items():
         pre_ops = sets[sig] + incs[sig] + reads[sig]
         for sig2 in by_base_reads[sig.base].union(by_base_writes[sig.base]):
             if sig.may_share_memory(sig2):

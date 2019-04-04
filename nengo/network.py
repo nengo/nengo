@@ -9,7 +9,6 @@ from nengo.exceptions import (
 from nengo.node import Node
 from nengo.params import IntParam, StringParam
 from nengo.probe import Probe
-from nengo.utils.compat import iteritems
 from nengo.utils.threading import ThreadLocalStack
 
 
@@ -219,7 +218,7 @@ class Network(object):
         return state
 
     def __setstate__(self, state):
-        for k, v in iteritems(state):
+        for k, v in state.items():
             setattr(self, k, v)
         if len(Network.context) > 0:
             warnings.warn(NotAddedToNetworkWarning(self))

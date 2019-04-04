@@ -3,7 +3,6 @@ import pytest
 
 import nengo
 from nengo.exceptions import ObsoleteError
-from nengo.utils.compat import range
 from nengo.utils.stdlib import Timer
 
 

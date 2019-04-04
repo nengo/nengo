@@ -1,7 +1,7 @@
 import numpy as np
 
 from nengo.exceptions import ValidationError
-from nengo.utils.compat import is_integer, is_number, range
+from nengo.utils.numpy import is_integer, is_number
 
 
 class SemanticPointer(object):

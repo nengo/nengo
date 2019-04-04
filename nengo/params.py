@@ -5,18 +5,8 @@ import numpy as np
 
 from nengo.exceptions import (
     ConfigError, ObsoleteError, ReadonlyError, ValidationError)
-from nengo.utils.compat import (
-    getfullargspec,
-    int_types,
-    is_array,
-    is_array_like,
-    is_integer,
-    is_number,
-    is_string,
-    itervalues,
-    string_types,
-)
-from nengo.utils.numpy import array_hash, compare
+from nengo.utils.numpy import (
+    array_hash, compare, is_array, is_array_like, is_integer, is_number)
 from nengo.utils.stdlib import WeakKeyIDDictionary, checked_call
 
 
@@ -88,7 +78,7 @@ class Parameter(object):
         # freeze Unconfigurables by default
         readonly = default is Unconfigurable if readonly is None else readonly
 
-        if not is_string(name):
+        if not isinstance(name, str):
             raise ValueError("'name' must be a string (got %r)" % name)
         if not isinstance(optional, bool):
             raise ValueError("'optional' must be boolean (got %r)" % optional)
@@ -280,7 +270,7 @@ class IntParam(NumberParam):
     """A parameter where the value is an integer."""
 
     def coerce(self, instance, num):
-        self.check_type(instance, num, int_types + (np.integer,))
+        self.check_type(instance, num, (int, np.integer))
         return super(IntParam, self).coerce(instance, num)
 
 
@@ -290,7 +280,7 @@ class StringParam(Parameter):
     equatable = True
 
     def coerce(self, instance, string):
-        self.check_type(instance, string, string_types)
+        self.check_type(instance, string, (str,))
         return super(StringParam, self).coerce(instance, string)
 
 
@@ -299,7 +289,7 @@ class EnumParam(StringParam):
 
     def __init__(self, name, default=Unconfigurable, values=(), lower=True,
                  optional=False, readonly=None):
-        assert all(is_string(s) for s in values)
+        assert all(isinstance(s, str) for s in values)
         if lower:
             values = tuple(s.lower() for s in values)
         value_set = set(values)
@@ -448,7 +438,7 @@ class NdarrayParam(Parameter):
                                   attr=self.name, obj=instance)
 
         for i, attr in enumerate(shape):
-            assert is_integer(attr) or is_string(attr), (
+            assert is_integer(attr) or isinstance(attr, str), (
                 "shape can only be an int or str representing an attribute")
             if attr == '*':
                 continue
@@ -528,7 +518,7 @@ class FrozenObject(object):
 
     @property
     def _params(self):
-        return list(itervalues(self._paramdict))
+        return list(self._paramdict.values())
 
     def __eq__(self, other):
         if self is other:  # quick check for speed
@@ -559,7 +549,7 @@ class FrozenObject(object):
         self.__dict__.update(state)
 
     def __repr__(self):
-        if is_string(self._argreprs):
+        if isinstance(self._argreprs, str):
             return "<%s at 0x%x>" % (type(self).__name__, id(self))
         return "%s(%s)" % (type(self).__name__, ", ".join(self._argreprs))
 
@@ -569,7 +559,7 @@ class FrozenObject(object):
             return self.__argreprs
 
         # get arguments to display from __init__ functions
-        spec = getfullargspec(type(self).__init__)
+        spec = inspect.getfullargspec(type(self).__init__)
         defaults = {}
         if spec.defaults is not None:
             defaults.update(

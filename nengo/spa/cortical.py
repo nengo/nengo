@@ -4,7 +4,6 @@ import nengo
 import nengo.spa.action_build
 from nengo.spa.action_objects import Symbol, Source, Convolution
 from nengo.spa.module import Module
-from nengo.utils.compat import iteritems
 
 
 class Cortical(Module):
@@ -46,7 +45,7 @@ class Cortical(Module):
                 raise NotImplementedError("Cortical actions do not support "
                                           "conditional expressions: %s." %
                                           action.condition)
-            for name, effects in iteritems(action.effect.effect):
+            for name, effects in action.effect.effect.items():
                 for effect in effects.expression.items:
                     if isinstance(effect, Symbol):
                         self.add_direct_effect(name, effect.symbol)

@@ -8,7 +8,7 @@ from nengo.base import NengoObject, ObjView
 from nengo.exceptions import ValidationError
 from nengo.params import Default, IntParam, Parameter
 from nengo.processes import Process
-from nengo.utils.compat import getfullargspec, is_array_like
+from nengo.utils.numpy import is_array_like
 from nengo.utils.stdlib import checked_call
 
 
@@ -96,7 +96,7 @@ class OutputParam(Parameter):
     def check_callable_args_list(self, node, output):
         # not all callables provide an argspec, such as numpy
         try:
-            func_argspec = getfullargspec(output)
+            func_argspec = inspect.getfullargspec(output)
         except (TypeError, ValueError):
             pass
         else:

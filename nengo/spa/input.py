@@ -1,6 +1,5 @@
 import nengo
 from nengo.spa.module import Module
-from nengo.utils.compat import iteritems
 
 
 def make_parse_func(func, vocab):
@@ -56,7 +55,7 @@ class Input(Module):
         """Create the connections and nodes."""
         Module.on_add(self, spa)
 
-        for name, value in iteritems(self.kwargs):
+        for name, value in self.kwargs.items():
             target, vocab = spa.get_module_input(name)
             if callable(value):
                 val = make_parse_func(value, vocab)

@@ -8,7 +8,6 @@ import numpy as np
 import nengo.utils.least_squares_solvers as lstsq
 from nengo.params import (
     BoolParam, FrozenObject, NdarrayParam, NumberParam, Parameter)
-from nengo.utils.compat import range, with_metaclass
 from nengo.utils.least_squares_solvers import (
     format_system, rmses, LeastSquaresSolverParam)
 from nengo.utils.magic import DocstringInheritor
@@ -16,7 +15,7 @@ from nengo.utils.magic import DocstringInheritor
 logger = logging.getLogger(__name__)
 
 
-class Solver(with_metaclass(DocstringInheritor, FrozenObject)):
+class Solver(FrozenObject, metaclass=DocstringInheritor):
     """Decoder or weight solver.
 
     A solver can be compositional or non-compositional. Non-compositional

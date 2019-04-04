@@ -34,10 +34,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import numpy as np
 
-import nengo.utils.numpy as npext
-from nengo.utils.compat import is_array_like
-from nengo.utils.functions import function_name
 from nengo.exceptions import BuildError, SimulationError
+from nengo.utils.functions import function_name
+import nengo.utils.numpy as npext
 
 
 class Operator(object):
@@ -394,7 +393,7 @@ class Copy(Operator):
 
         # If there are repeated indices in dst_slice, special handling needed.
         repeats = False
-        if is_array_like(dst_slice):
+        if npext.is_array_like(dst_slice):
             dst_slice = np.array(dst_slice)  # copy because we might modify it
             if dst_slice.dtype.kind != "b":
                 # get canonical, positive indices first

@@ -3,6 +3,7 @@
 from __future__ import absolute_import, division
 
 from datetime import timedelta
+from html import escape
 import importlib
 import os
 import sys
@@ -13,7 +14,6 @@ import warnings
 
 import numpy as np
 
-from .compat import escape
 from .stdlib import get_terminal_size
 from .ipython import check_ipy_version, get_ipython
 from ..exceptions import ValidationError

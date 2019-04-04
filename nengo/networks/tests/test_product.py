@@ -2,7 +2,6 @@ import numpy as np
 import pytest
 
 import nengo
-from nengo.utils.compat import range
 from nengo.utils.functions import HilbertCurve
 from nengo.utils.numpy import rmse, maxint
 

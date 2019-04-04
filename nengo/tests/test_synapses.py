@@ -1,3 +1,5 @@
+from inspect import getfullargspec
+
 import numpy as np
 from numpy import array  # pylint: disable=unused-import
 import pytest
@@ -6,7 +8,6 @@ import nengo
 from nengo.processes import WhiteSignal
 from nengo.synapses import (
     Alpha, LinearFilter, Lowpass, SynapseParam, Triangle)
-from nengo.utils.compat import getfullargspec
 from nengo.utils.testing import allclose
 
 

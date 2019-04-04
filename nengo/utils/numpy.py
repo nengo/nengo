@@ -2,13 +2,42 @@
 Extra functions to extend the capabilities of Numpy.
 """
 from __future__ import absolute_import
+import collections
 
 import numpy as np
 
-from .compat import PY2, is_integer, is_iterable
 from ..exceptions import ValidationError
 
 maxint = np.iinfo(np.int32).max
+
+
+def is_integer(obj):
+    return isinstance(obj, (int, np.integer))
+
+
+def is_iterable(obj):
+    if isinstance(obj, np.ndarray):
+        return obj.ndim > 0  # 0-d arrays give error if iterated over
+    else:
+        return isinstance(obj, collections.Iterable)
+
+
+def is_number(obj, check_complex=False):
+    types = ((float, complex, np.number) if check_complex else
+             (float, np.floating))
+    return is_integer(obj) or isinstance(obj, types)
+
+
+def is_array(obj):
+    # np.generic allows us to return true for scalars as well as true arrays
+    return isinstance(obj, (np.ndarray, np.generic))
+
+
+def is_array_like(obj):
+    # While it's possible that there are some iterables other than list/tuple
+    # that can be made into arrays, it's very likely that those arrays
+    # will have dtype=object, which is likely to cause unexpected issues.
+    return is_array(obj) or is_number(obj) or isinstance(obj, (list, tuple))
 
 
 def compare(a, b):
@@ -71,14 +100,14 @@ def array_hash(a, n=100):
         # hash all elements
         v = a.view()
         v.setflags(write=False)
-        return hash(v.data if PY2 else v.data.tobytes())
+        return hash(v.data.tobytes())
     else:
         # pick random elements to hash
         rng = np.random.RandomState(a.size)
         inds = tuple(rng.randint(0, a.shape[i], size=n) for i in range(a.ndim))
         v = a[inds]
         v.setflags(write=False)
-        return hash(v.data if PY2 else v.data.tobytes())
+        return hash(v.data.tobytes())
 
 
 def array_offset(x):

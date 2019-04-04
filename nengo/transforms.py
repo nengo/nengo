@@ -4,8 +4,8 @@ import nengo
 from nengo.base import FrozenObject
 from nengo.dists import Distribution, DistOrArrayParam
 from nengo.exceptions import ValidationError
-from nengo.params import ShapeParam, IntParam, EnumParam, BoolParam
-from nengo.utils.compat import is_array_like
+from nengo.params import BoolParam, EnumParam, IntParam, ShapeParam
+from nengo.utils.numpy import is_array_like
 
 
 class Transform(FrozenObject):

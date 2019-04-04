@@ -6,7 +6,7 @@ import warnings
 import numpy as np
 
 from nengo.exceptions import ValidationError
-from nengo.utils.compat import is_number, iteritems
+from nengo.utils.numpy import is_number
 
 
 def function_name(func):
@@ -122,7 +122,7 @@ def piecewise(data):
 
     # make a default output of 0 when t before what was passed
     data[np.finfo(float).min] = np.zeros(output_length)
-    ordered_data = OrderedDict(sorted(iteritems(data)))
+    ordered_data = OrderedDict(sorted(data.items()))
 
     # build the function to return
     def piecewise_function(t, data=ordered_data):

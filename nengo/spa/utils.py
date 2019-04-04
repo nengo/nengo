@@ -6,7 +6,6 @@ import nengo
 import nengo.utils.numpy as npext
 from nengo.exceptions import ValidationError
 from nengo.spa.vocab import VocabularyParam
-from nengo.utils.compat import is_iterable
 
 
 def enable_spa_params(model):
@@ -44,7 +43,7 @@ def similarity(data, vocab, normalize=False):
 
     if isinstance(vocab, Vocabulary):
         vectors = vocab.vectors
-    elif is_iterable(vocab):
+    elif npext.is_iterable(vocab):
         vectors = np.array(vocab, copy=False, ndmin=2)
     else:
         raise ValidationError("%r object is not a valid vocabulary"

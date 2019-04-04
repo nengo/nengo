@@ -59,10 +59,10 @@ Commented lines show the default values for each setting.
 
 """
 
+import configparser
 import logging
 
 import nengo.utils.paths
-from nengo.utils.compat import configparser
 
 logger = logging.getLogger(__name__)
 

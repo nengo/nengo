@@ -1,6 +1,7 @@
 """Operator graph optimizers."""
 
 from collections import defaultdict, Mapping, namedtuple
+from itertools import zip_longest
 import logging
 import warnings
 
@@ -10,7 +11,6 @@ from nengo.builder.neurons import SimNeurons
 from nengo.builder import operator
 from nengo.builder.operator import DotInc, ElementwiseInc, Copy
 from nengo.builder.signal import Signal
-from nengo.utils.compat import iteritems, itervalues, zip_longest
 from nengo.utils.graphs import BidirectionalDAG, transitive_closure
 from nengo.utils.stdlib import Timer, WeakKeyDefaultDict, WeakSet
 
@@ -76,7 +76,7 @@ def optimize(model, dg, max_passes=None):
         i += 1
 
         if logger.isEnabledFor(logging.DEBUG):
-            for tp, ops in iteritems(groupby(dg, type)):
+            for tp, ops in groupby(dg, type).items():
                 logger.debug("%s: %d", tp, len(ops))
 
         only_merge_ops_with_view = before is None or before != after
@@ -108,7 +108,7 @@ def optimize(model, dg, max_passes=None):
             break
 
     # Update model signals
-    for sigdict in itervalues(model.sig):
+    for sigdict in model.sig.values():
         for name in sigdict:
             while sigdict[name] in single_pass.sig_replacements:
                 sigdict[name] = single_pass.sig_replacements[sigdict[name]]
@@ -208,7 +208,7 @@ class OpMergePass(object):
                 # If we're only merging views, then we get rid of this subset.
                 del by_view[None]
 
-            for view_subset in itervalues(by_view):
+            for view_subset in by_view.values():
                 if len(view_subset) > 1:
                     self.perform_merges_for_view_subset(view_subset)
         elif None in by_view and len(by_view[None]) > 1:
@@ -348,7 +348,7 @@ class OpMergePass(object):
             if s.is_view:
                 self.base2views[s.base].add(s)
 
-        for from_sig, to_sig in iteritems(replaced_signals):
+        for from_sig, to_sig in replaced_signals.items():
             self.sig2ops[to_sig] = self.sig2ops[from_sig]
             if to_sig.is_view:
                 self.base2views[to_sig.base].add(to_sig)

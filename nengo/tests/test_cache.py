@@ -13,7 +13,6 @@ from nengo.cache import (CacheIndex, DecoderCache, Fingerprint,
                          get_fragment_size, WriteableCacheIndex)
 from nengo.exceptions import CacheIOWarning, FingerprintError
 from nengo.solvers import LstsqL2
-from nengo.utils.compat import int_types
 
 
 class SolverMock(object):
@@ -272,6 +271,7 @@ def dummy_fn(arg):
     (True, True, False),             # bool
     (False, False, True),            # bool
     (1.0, 1.0, 2.0),                 # float
+    (1, 1, 2),                       # int
     (1.0 + 2.0j, 1 + 2j, 2.0 + 1j),  # complex
     (b'a', b'a', b'b'),              # bytes
     ((0, 1), (0, 1), (0, 2)),        # tuple
@@ -281,7 +281,7 @@ def dummy_fn(arg):
     (DummyA(), DummyA(), DummyB()),  # object instance
     (DummyA(1), DummyA(1), DummyA(2)),     # object instance
     (LstsqL2(reg=.1), LstsqL2(reg=.1), LstsqL2(reg=.2)),     # solver
-) + tuple((typ(1), typ(1), typ(2)) for typ in int_types))
+))
 def test_fingerprinting(reference, equal, different):
     assert str(Fingerprint(reference)) == str(Fingerprint(equal))
     assert str(Fingerprint(reference)) != str(Fingerprint(different))
@@ -655,7 +655,7 @@ def test_writeablecacheindex_warning(monkeypatch, tmpdir):
     def raise_error(*args, **kwargs):
         raise CalledProcessError(-1, "move")
 
-    monkeypatch.setattr(nengo.cache, "replace", raise_error)
+    monkeypatch.setattr(os, "replace", raise_error)
     with pytest.warns(CacheIOWarning):
         with WriteableCacheIndex(cache_dir=str(tmpdir)):
             pass

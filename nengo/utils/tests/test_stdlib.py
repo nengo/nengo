@@ -4,10 +4,14 @@ import weakref
 import numpy as np
 import pytest
 
-from nengo.utils.compat import range
 from nengo.utils.stdlib import (
-    checked_call, groupby, Timer,
-    WeakKeyDefaultDict, WeakKeyIDDictionary, WeakSet)
+    checked_call,
+    groupby,
+    Timer,
+    WeakKeyDefaultDict,
+    WeakKeyIDDictionary,
+    WeakSet,
+)
 
 
 def test_checked_call():

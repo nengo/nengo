@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+from inspect import getfullargspec
 import itertools
 import logging
 import os
@@ -10,7 +11,6 @@ import time
 
 import numpy as np
 
-from .compat import getfullargspec, is_string, reraise
 from .logging import CaptureLogHandler, console_formatter
 
 
@@ -241,7 +241,7 @@ def allclose(t, targets, signals,  # noqa: C901
     if plt is not None:
         if labels is None:
             labels = [None] * len(signals)
-        elif is_string(labels):
+        elif isinstance(labels, str):
             labels = [labels]
 
         colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
@@ -321,7 +321,7 @@ def find_modules(root_path, prefix=None, pattern='^test_.*\\.py$'):
         containing the module path.
     """
     prefix = [] if prefix is None else prefix
-    if is_string(prefix):
+    if isinstance(prefix, str):
         prefix = [prefix]
     elif not isinstance(prefix, list):
         raise TypeError("Invalid prefix type '%s'" % type(prefix).__name__)
@@ -436,7 +436,7 @@ class ThreadedAssertion(object):
         for t in threads:
             t.join()
             if not t.assertion_result:
-                reraise(*t.exc_info)
+                raise self.exc_info[1].with_traceback(self.exc_info[2])
 
     def init_thread(self, worker):
         pass

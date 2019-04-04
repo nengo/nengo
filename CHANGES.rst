@@ -103,6 +103,8 @@ Release History
   networks are officially deprecated. Use ``input_a`` and ``input_b`` instead.
   (`#887 <https://github.com/nengo/nengo/issues/887>`__,
   `#1179 <https://github.com/nengo/nengo/pull/1179>`__)
+- ``nengo.utils.compat`` will be removed in the next minor release.
+  (`#1520 <https://github.com/nengo/nengo/pull/1520>`_)
 
 **Removed**
 

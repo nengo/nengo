@@ -1,3 +1,5 @@
+from inspect import getfullargspec
+
 import numpy as np
 from numpy import array  # pylint: disable=unused-import
 import pytest
@@ -17,7 +19,6 @@ from nengo.dists import (
 )
 import nengo.utils.numpy as npext
 from nengo.exceptions import ValidationError
-from nengo.utils.compat import getfullargspec
 
 
 def test_pdf(rng):

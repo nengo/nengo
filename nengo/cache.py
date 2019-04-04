@@ -4,6 +4,7 @@ import errno
 import hashlib
 import logging
 import os
+import pickle
 import shutil
 import struct
 from subprocess import CalledProcessError
@@ -15,16 +16,31 @@ import numpy as np
 
 from nengo.exceptions import (
     CacheIOError, CacheIOWarning, FingerprintError, TimeoutError)
-from nengo.neurons import (AdaptiveLIF, AdaptiveLIFRate, Direct, Izhikevich,
-                           LIF, LIFRate, RectifiedLinear, Sigmoid)
+from nengo.neurons import (
+    AdaptiveLIF,
+    AdaptiveLIFRate,
+    Direct,
+    Izhikevich,
+    LIF,
+    LIFRate,
+    RectifiedLinear,
+    Sigmoid,
+)
 from nengo.rc import rc
-from nengo.solvers import (Lstsq, LstsqL1, Nnls, NnlsL2,
-                           NnlsL2nz, LstsqNoise, LstsqMultNoise, LstsqL2,
-                           LstsqL2nz, LstsqDrop)
+from nengo.solvers import (
+    Lstsq,
+    LstsqDrop,
+    LstsqL1,
+    LstsqL2,
+    LstsqL2nz,
+    LstsqMultNoise,
+    LstsqNoise,
+    Nnls,
+    NnlsL2,
+    NnlsL2nz,
+)
 from nengo.utils import nco
 from nengo.utils.cache import byte_align, bytes2human, human2bytes
-from nengo.utils.compat import (
-    int_types, is_string, iteritems, pickle, replace, PY2, string_types)
 from nengo.utils.least_squares_solvers import (
     Cholesky, ConjgradScipy, LSMRScipy, Conjgrad,
     BlockConjgrad, SVD, RandomizedSVD)
@@ -149,8 +165,7 @@ class Fingerprint(object):
     )
 
     WHITELIST = set(
-        (bool, float, complex, bytes, list, tuple, np.ndarray)
-        + int_types + string_types
+        (bool, float, complex, bytes, list, tuple, np.ndarray, int, str)
         + SOLVERS + LSTSQ_METHODS + NEURON_TYPES
     )
     CHECKS = dict([
@@ -403,7 +418,7 @@ class WriteableCacheIndex(CacheIndex):
             # performance.
             pickle.dump(self._index, f, pickle.HIGHEST_PROTOCOL)
         try:
-            replace(self.index_path + '.part', self.index_path)
+            os.replace(self.index_path + '.part', self.index_path)
         except (CalledProcessError, PermissionError):
             # It may fail when
             # another program like a virus scanner is accessing the file to be
@@ -441,7 +456,7 @@ class WriteableCacheIndex(CacheIndex):
                 self._index.update(self._updates)
                 for key in self._deletes:
                     del self._index[key]
-                self._index = {k: v for k, v in iteritems(self._index)
+                self._index = {k: v for k, v in self._index.items()
                                if v[0] not in self._removed_files}
 
                 self._write_index()
@@ -595,7 +610,7 @@ class DecoderCache(object):
 
         if limit is None:
             limit = rc.get('decoder_cache', 'size')
-        if is_string(limit):
+        if isinstance(limit, str):
             limit = human2bytes(limit)
 
         self._close_fd()
@@ -693,12 +708,8 @@ class DecoderCache(object):
             self, solver, neuron_type, gain, bias, x, targets, rng):
         h = hashlib.sha1()
 
-        if PY2:
-            h.update(str(Fingerprint(solver)))
-            h.update(str(Fingerprint(neuron_type)))
-        else:
-            h.update(str(Fingerprint(solver)).encode('utf-8'))
-            h.update(str(Fingerprint(neuron_type)).encode('utf-8'))
+        h.update(str(Fingerprint(solver)).encode('utf-8'))
+        h.update(str(Fingerprint(neuron_type)).encode('utf-8'))
 
         h.update(np.ascontiguousarray(gain).data)
         h.update(np.ascontiguousarray(bias).data)

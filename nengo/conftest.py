@@ -16,7 +16,6 @@ import nengo.utils.numpy as npext
 from nengo.neurons import (Direct, LIF, LIFRate, RectifiedLinear,
                            Sigmoid, SpikingRectifiedLinear)
 from nengo.rc import rc
-from nengo.utils.compat import ensure_bytes, is_string
 from nengo.utils.testing import Analytics, Logger, Plotter
 
 
@@ -110,7 +109,7 @@ def recorder_dirname(request, name):
     artifacts should not be saved.
     """
     record = request.config.getvalue(name)
-    if is_string(record):
+    if isinstance(record, str):
         return record
     elif not record:
         return None
@@ -233,8 +232,8 @@ def function_seed(function, mod=0):
 
     # take start of md5 hash of function file and name, should be unique
     hash_list = os.path.normpath(path).split(os.path.sep) + [c.co_name]
-    hash_string = ensure_bytes('/'.join(hash_list))
-    i = int(hashlib.md5(hash_string).hexdigest()[:15], 16)
+    hash_bytes = '/'.join(hash_list).encode('utf-8')
+    i = int(hashlib.md5(hash_bytes).hexdigest()[:15], 16)
     s = (i + mod) % npext.maxint
     int_s = int(s)  # numpy 1.8.0 bug when RandomState on long type inputs
     assert type(int_s) == int  # should not still be a long because < maxint

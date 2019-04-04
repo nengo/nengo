@@ -9,13 +9,23 @@ import pytest
 import nengo
 from nengo.dists import UniformHypersphere
 from nengo.exceptions import BuildError, ValidationError
-from nengo.utils.compat import iteritems, range
 from nengo.utils.numpy import rms, norm
 from nengo.utils.stdlib import Timer
 from nengo.utils.testing import allclose
 from nengo.solvers import (
-    lstsq, Lstsq, LstsqNoise, LstsqL2, LstsqL2nz, LstsqMultNoise,
-    LstsqL1, LstsqDrop, Nnls, NnlsL2, NnlsL2nz, NoSolver)
+    lstsq,
+    Lstsq,
+    LstsqDrop,
+    LstsqL1,
+    LstsqL2,
+    LstsqL2nz,
+    LstsqMultNoise,
+    LstsqNoise,
+    Nnls,
+    NnlsL2,
+    NnlsL2nz,
+    NoSolver,
+)
 
 
 class Factory(object):
@@ -28,7 +38,7 @@ class Factory(object):
     def __call__(self):
         args = [v() if isinstance(v, Factory) else v for v in self.args]
         kwargs = {k: v() if isinstance(v, Factory) else v
-                  for k, v in iteritems(self.kwargs)}
+                  for k, v in self.kwargs.items()}
         return self.klass(*args, **kwargs)
 
     def __str__(self):

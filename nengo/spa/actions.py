@@ -6,7 +6,6 @@ from collections import OrderedDict
 
 from nengo.exceptions import SpaParseError
 from nengo.spa.action_objects import Symbol, Source, DotProduct, Summation
-from nengo.utils.compat import iteritems
 
 
 class Expression(object):
@@ -112,7 +111,7 @@ class Effect(object):
             self.effect[sink] = Expression(sources, rvalue)
 
     def __str__(self):
-        return ", ".join("%s=%s" % x for x in iteritems(self.effect))
+        return ", ".join("%s=%s" % x for x in self.effect.items())
 
 
 class Action(object):

@@ -5,7 +5,7 @@ from nengo.builder.operator import Reset, SimPyFunc
 from nengo.exceptions import BuildError
 from nengo.node import Node
 from nengo.processes import Process
-from nengo.utils.compat import is_array_like
+from nengo.utils.numpy import is_array_like
 
 
 @Builder.register(Node)

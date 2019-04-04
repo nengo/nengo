@@ -1,3 +1,5 @@
+from inspect import getfullargspec
+
 import numpy as np
 import pytest
 
@@ -18,7 +20,6 @@ from nengo.neurons import (
 )
 from nengo.processes import WhiteSignal
 from nengo.solvers import LstsqL2nz
-from nengo.utils.compat import getfullargspec
 from nengo.utils.ensemble import tuning_curves
 from nengo.utils.matplotlib import implot, rasterplot
 from nengo.utils.numpy import rms, rmse

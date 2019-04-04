@@ -5,14 +5,7 @@ import time
 
 import pytest
 
-from nengo.utils.compat import PY2
 from nengo.utils.lock import FileLock, TimeoutError
-
-if PY2:
-    filter_resourcewarning = lambda fn: fn
-else:
-    filter_resourcewarning = pytest.mark.filterwarnings(
-        'ignore::ResourceWarning')
 
 
 def acquire_lock(filename):
@@ -43,7 +36,7 @@ def test_can_acquire_filelock_at_most_once(tmpdir):
     assert p.exitcode == 0
 
 
-@filter_resourcewarning
+@pytest.mark.filterwarnings('ignore::ResourceWarning')
 def test_process_termination_releases_lock(tmpdir):
     filename = os.path.join(str(tmpdir), 'lock')
     p = multiprocessing.Process(target=acquire_lock_and_idle, args=(filename,))

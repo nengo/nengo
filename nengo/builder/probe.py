@@ -7,7 +7,6 @@ from nengo.ensemble import Ensemble, Neurons
 from nengo.exceptions import BuildError
 from nengo.node import Node
 from nengo.probe import Probe
-from nengo.utils.compat import iteritems
 
 
 def conn_probe(model, probe):
@@ -97,7 +96,7 @@ def build_probe(model, probe):
     """
 
     # find the right parent class in `objtypes`, using `isinstance`
-    for nengotype, probeables in iteritems(probemap):
+    for nengotype, probeables in probemap.items():
         if isinstance(probe.obj, nengotype):
             break
     else:

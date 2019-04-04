@@ -4,7 +4,7 @@ import nengo
 from nengo.exceptions import ValidationError
 from nengo.spa.action_objects import DotProduct, Source
 from nengo.spa.module import Module
-from nengo.utils.compat import is_number
+from nengo.utils.numpy import is_number
 
 
 class BasalGanglia(nengo.networks.BasalGanglia, Module):

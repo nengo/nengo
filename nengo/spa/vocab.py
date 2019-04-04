@@ -5,7 +5,7 @@ import numpy as np
 from nengo.exceptions import ReadonlyError, SpaParseError, ValidationError
 from nengo.params import Parameter
 from nengo.spa import pointer
-from nengo.utils.compat import is_iterable, is_number, is_integer, range
+from nengo.utils.numpy import is_iterable, is_number, is_integer
 
 
 class Vocabulary(object):

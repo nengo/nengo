@@ -12,7 +12,6 @@ from nengo.builder.optimizer import optimize as opmerge_optimize
 from nengo.builder.signal import SignalDict
 from nengo.cache import get_default_decoder_cache
 from nengo.exceptions import ReadonlyError, SimulatorClosed, ValidationError
-from nengo.utils.compat import range, ResourceWarning
 from nengo.utils.graphs import toposort
 from nengo.utils.progress import Progress, ProgressTracker
 from nengo.utils.simulator import operator_dependency_graph

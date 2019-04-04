@@ -4,7 +4,6 @@ import pytest
 import nengo
 from nengo import params
 from nengo.exceptions import ObsoleteError, ValidationError
-from nengo.utils.compat import iteritems, PY2
 
 
 def test_default():
@@ -158,20 +157,19 @@ def test_intparam():
 
 
 def test_stringparam():
-    """StringParams must be strings (bytes or unicode)."""
+    """StringParams must be strings."""
     class Test(object):
         sp = params.StringParam('sp', default="Hi")
 
     inst = Test()
     assert inst.sp == "Hi"
 
-    # Bytes OK on Python 2
-    if PY2:
-        inst.sp = b"hello"
-        assert inst.sp == b"hello"
-    # Unicode OK on both
     inst.sp = u"goodbye"
     assert inst.sp == u"goodbye"
+
+    # Bytes no good
+    with pytest.raises(ValidationError):
+        inst.sp = b"hello"
 
     # Non-strings no good
     with pytest.raises(ValidationError):
@@ -355,7 +353,7 @@ def test_configure_all_nengo_parameters():
                     or attr.default is params.Unconfigurable):
                 continue
 
-            for param, func in iteritems(conv_func):
+            for param, func in conv_func.items():
                 if isinstance(attr, param):
                     val = func(attr)
                     break

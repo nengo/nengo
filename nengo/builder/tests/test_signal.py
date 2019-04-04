@@ -5,7 +5,6 @@ import nengo
 from nengo.builder import Model
 from nengo.builder.signal import Signal, SignalDict
 from nengo.exceptions import SignalError
-from nengo.utils.compat import itervalues
 
 
 def test_signaldict():
@@ -186,7 +185,7 @@ def test_commonsig_readonly():
     model.build(net)
     signals = SignalDict()
 
-    for sig in itervalues(model.sig['common']):
+    for sig in model.sig['common'].values():
         signals.init(sig)
         with pytest.raises((ValueError, RuntimeError)):
             signals[sig] = np.array([-1])

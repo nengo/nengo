@@ -1,6 +1,5 @@
 import inspect
 
-from nengo.utils.compat import getfullargspec
 from nengo.utils.magic import decorator
 
 state = None  # Used to make sure decorators are running
@@ -37,7 +36,7 @@ def test_function():
     _test_decorated(f)
 
     # Make sure introspection works
-    assert getfullargspec(f).args == ['a', 'b']
+    assert inspect.getfullargspec(f).args == ['a', 'b']
     assert inspect.getsource(f) == ('    @test_decorator\n'
                                     '    def f(a, b):\n'
                                     '        """Return 1."""\n'
@@ -64,7 +63,7 @@ def test_boundfunction():
     _test_decorated(inst.f)
 
     # Make sure introspection works
-    assert getfullargspec(inst.f).args == ['self', 'a', 'b']
+    assert inspect.getfullargspec(inst.f).args == ['self', 'a', 'b']
     assert inspect.getsource(inst.f) == ('        @test_decorator\n'
                                          '        def f(self, a, b):\n'
                                          '            """Return 1."""\n'
@@ -93,7 +92,7 @@ def test_staticmethod():
     _test_decorated(inst.f)
 
     # Make sure introspection works
-    assert getfullargspec(inst.f).args == ['a', 'b']
+    assert inspect.getfullargspec(inst.f).args == ['a', 'b']
     assert inspect.getsource(inst.f) == ('        @test_decorator\n'
                                          '        @staticmethod\n'
                                          '        def f(a, b):\n'
@@ -113,7 +112,7 @@ def test_staticmethod():
     _test_decorated(inst.f)
 
     # Make sure introspection works
-    assert getfullargspec(inst.f).args == ['a', 'b']
+    assert inspect.getfullargspec(inst.f).args == ['a', 'b']
     assert inspect.getsource(inst.f) == ('        @staticmethod\n'
                                          '        @test_decorator\n'
                                          '        def f(a, b):\n'
@@ -145,7 +144,7 @@ def test_classmethod():
     _test_decorated(inst.f)
 
     # Make sure introspection works
-    assert getfullargspec(inst.f).args == ['cls', 'a', 'b']
+    assert inspect.getfullargspec(inst.f).args == ['cls', 'a', 'b']
     assert inspect.getsource(inst.f) == ('        @test_decorator\n'
                                          '        @classmethod\n'
                                          '        def f(cls, a, b):\n'
@@ -165,7 +164,7 @@ def test_classmethod():
     _test_decorated(inst.f)
 
     # Make sure introspection works
-    assert getfullargspec(inst.f).args == ['cls', 'a', 'b']
+    assert inspect.getfullargspec(inst.f).args == ['cls', 'a', 'b']
     assert inspect.getsource(inst.f) == ('        @classmethod\n'
                                          '        @test_decorator\n'
                                          '        def f(cls, a, b):\n'
