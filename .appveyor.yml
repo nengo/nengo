@@ -1,6 +1,5 @@
 environment:
   matrix:
-    - PYTHON: "C:\\Miniconda"
     - PYTHON: "C:\\Miniconda36"
     - PYTHON: "C:\\Miniconda36-x64"
 
@@ -17,5 +16,5 @@ install:
 build: false  # Not a C# project
 
 test_script:
-  - python setup.py -q develop
+  - pip install -e .
   - pytest nengo -v --durations=20

@@ -38,10 +38,13 @@ Release History
 
 **Changed**
 
+- Python 2 is no longer supported. The oldest supported Python version is 3.5.
+  (`#1520 <https://github.com/nengo/nengo/pull/1520>`__,
+  `python3statement.org <https://python3statement.org/>`__)
 - Nengo no longer supports Python 3.4.
   Official 3.4 support ended in March 2019.
   (`PEP-429 <https://www.python.org/dev/peps/pep-0429/>`__,
-  `#1520 <https://github.com/nengo/nengo/pull/1520>`__)
+  `#1514 <https://github.com/nengo/nengo/pull/1514>`__)
 - Replaced the ``dt`` argument to ``Simulator.trange`` with ``sample_every``
   because ``dt`` would return values that the simulator had not simulated.
   ``dt`` is now an alias for ``sample_every`` and will be removed in the future.
