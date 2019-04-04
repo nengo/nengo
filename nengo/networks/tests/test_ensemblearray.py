@@ -93,8 +93,8 @@ def test_multifunc(Simulator, plt, seed, rng):
                  lambda x: [-x, -x*2],
                  lambda x: [.5*x]]
     output = []
-    for i in range(len(functions)):
-        output.extend(functions[i](inp[i]))
+    for i, func in enumerate(functions):
+        output.extend(func(inp[i]))
 
     model = nengo.Network(seed=seed)
     with model:
