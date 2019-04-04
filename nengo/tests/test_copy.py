@@ -237,7 +237,7 @@ def test_pickle_obj_view_in_connection():
     (make_learning_connection, assert_is_copy),
     (make_network, assert_is_copy),
 ])
-class TestCopy(object):
+class TestCopy:
     """A basic set of tests that should pass for all objects."""
 
     def test_copy_in_network(self, make_f, assert_f):
@@ -279,7 +279,7 @@ class TestCopy(object):
 @pytest.mark.parametrize('make_f', (
     make_ensemble, make_probe, make_node, make_connection, make_network
 ))
-class TestPickle(object):
+class TestPickle:
     """A basic set of tests that should pass for all objects."""
 
     def test_pickle_roundtrip(self, make_f):
@@ -309,7 +309,7 @@ class TestPickle(object):
     nengo.synapses.Alpha(0.005),
     nengo.synapses.Triangle(0.005),
 ])
-class TestFrozenObjectCopies(object):
+class TestFrozenObjectCopies:
 
     def test_copy(self, original):
         assert_is_copy(copy(original), original)

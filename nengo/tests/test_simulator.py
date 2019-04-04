@@ -302,7 +302,7 @@ def test_sim_seed_set_by_network_seed(Simulator, seed):
 def test_simulator_progress_bars(RefSimulator):
     class ProgressBarInvariants(ProgressBar):
         def __init__(self):
-            super(ProgressBarInvariants, self).__init__()
+            super().__init__()
             self.progress = None
             self.max_steps = None
             self.n_steps = 0

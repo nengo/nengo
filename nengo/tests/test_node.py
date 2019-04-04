@@ -300,7 +300,7 @@ def test_set_callable_output(Simulator):
         noreturn_func = nengo.Node(noreturn)
         assert noreturn_func.size_out == 0
 
-    class TestObject(object):
+    class TestObject:
 
         def __init__(self):
             self.val = 0
@@ -352,7 +352,7 @@ def test_delay(Simulator, plt):
 
 
 def test_args(Simulator):
-    class Fn(object):
+    class Fn:
         def __init__(self):
             self.last_x = None
 

@@ -66,7 +66,7 @@ class NengoObject(SupportDefaultsMixin, metaclass=NetworkMember):
     seed = IntParam('seed', default=None, optional=True)
 
     def __init__(self, label, seed):
-        super(NengoObject, self).__init__()
+        super().__init__()
         self._initialized = False
         self.label = label
         self.seed = seed
@@ -104,7 +104,7 @@ class NengoObject(SupportDefaultsMixin, metaclass=NetworkMember):
                 "Creating new attribute '%s' on '%s'. "
                 "Did you mean to change an existing attribute?" % (name, self),
                 SyntaxWarning)
-        super(NengoObject, self).__setattr__(name, val)
+        super().__setattr__(name, val)
 
     def __str__(self):
         return self._str(
@@ -137,7 +137,7 @@ class NengoObject(SupportDefaultsMixin, metaclass=NetworkMember):
         return c
 
 
-class ObjView(object):
+class ObjView:
     """Container for a slice with respect to some object.
 
     This is used by the __getitem__ of Neurons, Node, and Ensemble, in order
@@ -205,8 +205,7 @@ class NengoObjectParam(Parameter):
         default = Unconfigurable  # These can't have defaults
         self.nonzero_size_in = nonzero_size_in
         self.nonzero_size_out = nonzero_size_out
-        super(NengoObjectParam, self).__init__(
-            name, default, optional, readonly)
+        super().__init__(name, default, optional, readonly)
 
     def coerce(self, instance, nengo_obj):
         nengo_objects = (
@@ -224,7 +223,7 @@ class NengoObjectParam(Parameter):
         if self.nonzero_size_out and nengo_obj.size_out < 1:
             raise ValidationError("'%s' must have size_out > 0." % nengo_obj,
                                   attr=self.name, obj=instance)
-        return super(NengoObjectParam, self).coerce(instance, nengo_obj)
+        return super().coerce(instance, nengo_obj)
 
 
 class Process(FrozenObject):
@@ -269,7 +268,7 @@ class Process(FrozenObject):
 
     def __init__(self, default_size_in=0, default_size_out=1,
                  default_dt=0.001, seed=None):
-        super(Process, self).__init__()
+        super().__init__()
         self.default_size_in = default_size_in
         self.default_size_out = default_size_out
         self.default_dt = default_dt
@@ -415,4 +414,4 @@ class ProcessParam(Parameter):
 
     def coerce(self, instance, process):
         self.check_type(instance, process, Process)
-        return super(ProcessParam, self).coerce(instance, process)
+        return super().coerce(instance, process)

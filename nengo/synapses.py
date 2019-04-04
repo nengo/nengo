@@ -55,10 +55,10 @@ class Synapse(Process):
                  default_dt=0.001, seed=None):
         if default_size_out is None:
             default_size_out = default_size_in
-        super(Synapse, self).__init__(default_size_in=default_size_in,
-                                      default_size_out=default_size_out,
-                                      default_dt=default_dt,
-                                      seed=seed)
+        super().__init__(default_size_in=default_size_in,
+                         default_size_out=default_size_out,
+                         default_dt=default_dt,
+                         seed=seed)
 
     def filt(self, x, dt=None, axis=0, y0=None, copy=True, filtfilt=False):
         """Filter ``x`` with this synapse model.
@@ -178,7 +178,7 @@ class LinearFilter(Synapse):
     analog = BoolParam('analog')
 
     def __init__(self, num, den, analog=True, **kwargs):
-        super(LinearFilter, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.num = num
         self.den = den
         self.analog = analog
@@ -254,7 +254,7 @@ class LinearFilter(Synapse):
 
         return LinearFilter.NoDen(np.array([1.]), np.array([]), output)
 
-    class Step(object):
+    class Step:
         """Abstract base class for LTI filtering step functions."""
         def __init__(self, num, den, output):
             self.num = num
@@ -274,7 +274,7 @@ class LinearFilter(Synapse):
             if len(den) > 0:
                 raise ValidationError("'den' must be empty (got length %d)"
                                       % len(den), attr='den', obj=self)
-            super(LinearFilter.NoDen, self).__init__(num, den, output)
+            super().__init__(num, den, output)
             self.b = num[0]
 
         def __call__(self, t, signal):
@@ -295,7 +295,7 @@ class LinearFilter(Synapse):
                 raise ValidationError("'den' must be length 1 (got %d)"
                                       % len(den), attr='den', obj=self)
 
-            super(LinearFilter.Simple, self).__init__(num, den, output)
+            super().__init__(num, den, output)
             self.b = num[0]
             self.a = den[0]
             if y0 is not None:
@@ -317,7 +317,7 @@ class LinearFilter(Synapse):
         .. [1] https://en.wikipedia.org/wiki/Digital_filter#Difference_equation
         """
         def __init__(self, num, den, output, y0=None):
-            super(LinearFilter.General, self).__init__(num, den, output)
+            super().__init__(num, den, output)
             self.x = collections.deque(maxlen=len(num))
             self.y = collections.deque(maxlen=len(den))
             if y0 is not None:
@@ -360,7 +360,7 @@ class Lowpass(LinearFilter):
     tau = NumberParam('tau', low=0)
 
     def __init__(self, tau, **kwargs):
-        super(Lowpass, self).__init__([1], [tau, 1], **kwargs)
+        super().__init__([1], [tau, 1], **kwargs)
         self.tau = tau
 
     def make_step(self, shape_in, shape_out, dt, rng, y0=None,
@@ -370,7 +370,7 @@ class Lowpass(LinearFilter):
         if self.tau <= .03 * dt:
             return self._make_zero_step(
                 shape_in, shape_out, dt, rng, y0=y0, dtype=dtype)
-        return super(Lowpass, self).make_step(
+        return super().make_step(
             shape_in, shape_out, dt, rng, y0=y0, dtype=dtype, **kwargs)
 
 
@@ -402,7 +402,7 @@ class Alpha(LinearFilter):
     tau = NumberParam('tau', low=0)
 
     def __init__(self, tau, **kwargs):
-        super(Alpha, self).__init__([1], [tau**2, 2*tau, 1], **kwargs)
+        super().__init__([1], [tau**2, 2*tau, 1], **kwargs)
         self.tau = tau
 
     def make_step(self, shape_in, shape_out, dt, rng, y0=None,
@@ -412,7 +412,7 @@ class Alpha(LinearFilter):
         if self.tau <= .03 * dt:
             return self._make_zero_step(
                 shape_in, shape_out, dt, rng, y0=y0, dtype=dtype)
-        return super(Alpha, self).make_step(
+        return super().make_step(
             shape_in, shape_out, dt, rng, y0=y0, dtype=dtype, **kwargs)
 
 
@@ -437,7 +437,7 @@ class Triangle(Synapse):
     t = NumberParam('t', low=0)
 
     def __init__(self, t, **kwargs):
-        super(Triangle, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.t = t
 
     def make_step(self, shape_in, shape_out, dt, rng, y0=None,
@@ -493,9 +493,9 @@ class SynapseParam(Parameter):
 
     def __init__(self, name,
                  default=Unconfigurable, optional=True, readonly=None):
-        super(SynapseParam, self).__init__(name, default, optional, readonly)
+        super().__init__(name, default, optional, readonly)
 
     def coerce(self, instance, synapse):
         synapse = Lowpass(synapse) if is_number(synapse) else synapse
         self.check_type(instance, synapse, Synapse)
-        return super(SynapseParam, self).coerce(instance, synapse)
+        return super().coerce(instance, synapse)

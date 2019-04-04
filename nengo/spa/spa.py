@@ -79,7 +79,7 @@ class SPA(nengo.Network):
 
     def __init__(self, label=None, seed=None, add_to_container=None,
                  vocabs=None):
-        super(SPA, self).__init__(label, seed, add_to_container)
+        super().__init__(label, seed, add_to_container)
 
         warnings.warn(DeprecationWarning(
             "The nengo.spa module is deprecated. Please switch to using the "
@@ -102,7 +102,7 @@ class SPA(nengo.Network):
     def __setstate__(self, state):
         if '_initialized' in state:
             del state['_initialized']
-        super(SPA, self).__setstate__(state)
+        super().__setstate__(state)
         setattr(self, '_initialized', True)
 
     def __setattr__(self, key, value):
@@ -112,13 +112,13 @@ class SPA(nengo.Network):
         the name that all of the SPA system will use to access that module.
         """
         if not hasattr(self, '_initialized'):
-            return super(SPA, self).__setattr__(key, value)
+            return super().__setattr__(key, value)
 
         if hasattr(self, key) and isinstance(getattr(self, key), Module):
             raise SpaModuleError("Cannot re-assign module-attribute %s to %s. "
                                  "SPA module-attributes can only be assigned "
                                  "once." % (key, value))
-        super(SPA, self).__setattr__(key, value)
+        super().__setattr__(key, value)
         if isinstance(value, Module):
             if value.label is None:
                 value.label = key
@@ -135,7 +135,7 @@ class SPA(nengo.Network):
             value.on_add(self)
 
     def __exit__(self, ex_type, ex_value, traceback):
-        super(SPA, self).__exit__(ex_type, ex_value, traceback)
+        super().__exit__(ex_type, ex_value, traceback)
         if ex_type is not None:
             # re-raise the exception that triggered this __exit__
             return False

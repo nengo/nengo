@@ -55,7 +55,7 @@ class AssociativeMemory(Module):
                  wta_inhibit_scale=3.0, wta_synapse=0.005,
                  threshold_output=False, label=None, seed=None,
                  add_to_container=None):
-        super(AssociativeMemory, self).__init__(label, seed, add_to_container)
+        super().__init__(label, seed, add_to_container)
 
         if input_keys is None:
             input_keys = input_vocab.keys

@@ -7,7 +7,7 @@ from nengo.exceptions import ValidationError
 
 def test_nengoobjectparam():
     """NengoObjectParam must be a Nengo object and is readonly by default."""
-    class Test(object):
+    class Test:
         nop = NengoObjectParam('nop')
     inst = Test()
 
@@ -27,7 +27,7 @@ def test_nengoobjectparam():
 
 def test_nengoobjectparam_nonzero():
     """Can check that objects have nonzero size in/out."""
-    class Test(object):
+    class Test:
         nin = NengoObjectParam('nin', nonzero_size_in=True)
         nout = NengoObjectParam('nout', nonzero_size_out=True)
 

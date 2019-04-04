@@ -1,5 +1,3 @@
-from __future__ import division
-
 from io import StringIO
 
 import numpy as np
@@ -8,7 +6,7 @@ from nengo.exceptions import SignalError
 import nengo.utils.numpy as npext
 
 
-class Signal(object):
+class Signal:
     """Represents data or views onto data within a Nengo simulation.
 
     Signals are tightly coupled to NumPy arrays, which is how live data is

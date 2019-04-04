@@ -181,7 +181,7 @@ def test_linearfilter_combine(rng):
 
 def test_synapseparam():
     """SynapseParam must be a Synapse, and converts numbers to LowPass."""
-    class Test(object):
+    class Test:
         sp = SynapseParam('sp', default=Lowpass(0.1))
 
     inst = Test()

@@ -374,7 +374,7 @@ def test_reset(Simulator, learning_rule, plt, seed, rng):
 
 def test_learningruletypeparam():
     """LearningRuleTypeParam must be one or many learning rules."""
-    class Test(object):
+    class Test:
         lrp = LearningRuleTypeParam('lrp', default=None)
 
     inst = Test()
@@ -554,7 +554,7 @@ def test_custom_type(Simulator):
         modifies = 'decoders'
 
         def __init__(self):
-            super(TestRule, self).__init__(1.0, size_in=3)
+            super().__init__(1.0, size_in=3)
 
     @Builder.register(TestRule)
     def build_test_rule(model, test_rule, rule):

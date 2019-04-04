@@ -1,7 +1,5 @@
 """Utilities for progress tracking and display to the user."""
 
-from __future__ import absolute_import, division
-
 from datetime import timedelta
 from html import escape
 import importlib
@@ -43,7 +41,7 @@ def _load_class(name):
     return getattr(mod, cls_name)
 
 
-class Progress(object):
+class Progress:
     """Stores and tracks information about the progress of some process.
 
     This class is to be used as part of a ``with`` statement. Use ``step()`` to
@@ -167,7 +165,7 @@ class Progress(object):
         self.n_steps += n
 
 
-class ProgressBar(object):
+class ProgressBar:
     """Visualizes the progress of a process.
 
     This is an abstract base class that progress bar classes some inherit from.
@@ -276,7 +274,7 @@ class VdomProgressBar(ProgressBar):
     """
 
     def __init__(self):
-        super(VdomProgressBar, self).__init__()
+        super().__init__()
         self._uuid = uuid.uuid4()
         self._handle = None
         self.progress = None
@@ -402,7 +400,7 @@ class HtmlProgressBar(ProgressBar):
     """
 
     def __init__(self):
-        super(HtmlProgressBar, self).__init__()
+        super().__init__()
         self._uuid = uuid.uuid4()
         self._handle = None
 
@@ -413,7 +411,7 @@ class HtmlProgressBar(ProgressBar):
         else:
             self._handle.update(self._js_update(progress))
 
-    class _HtmlBase(object):
+    class _HtmlBase:
         def __init__(self, uuid):
             self.uuid = uuid
 
@@ -537,7 +535,7 @@ class VdomOrHtmlProgressBar(ProgressBar):
     """
 
     def __init__(self):
-        super(VdomOrHtmlProgressBar, self).__init__()
+        super().__init__()
         self._handle = None
         self._vdom = VdomProgressBar()
         self._html = HtmlProgressBar()
@@ -579,9 +577,9 @@ class IPython5ProgressBar(ProgressBar):
     """
 
     def __init__(self):
-        super(IPython5ProgressBar, self).__init__()
+        super().__init__()
 
-        class Displayable(object):
+        class Displayable:
             def __init__(self):
                 self.display_requested = False
 
@@ -613,7 +611,7 @@ class WriteProgressToFile(ProgressBar):
 
     def __init__(self, filename):
         self.filename = filename
-        super(WriteProgressToFile, self).__init__()
+        super().__init__()
 
     def update(self, progress):
         if progress.finished:
@@ -643,7 +641,7 @@ class AutoProgressBar(ProgressBar):
     def __init__(self, delegate, min_eta=1.):
         self.delegate = delegate
 
-        super(AutoProgressBar, self).__init__()
+        super().__init__()
 
         self.min_eta = min_eta
         self._visible = False
@@ -662,7 +660,7 @@ class AutoProgressBar(ProgressBar):
         self.delegate.close()
 
 
-class ProgressTracker(object):
+class ProgressTracker:
     """Tracks the progress of some process with a progress bar.
 
     Parameters

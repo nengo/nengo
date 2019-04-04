@@ -6,8 +6,6 @@ For example::
 
 """
 
-from __future__ import absolute_import
-
 import numpy as np
 
 import nengo.utils.numpy as npext
@@ -43,7 +41,7 @@ class Cholesky(LeastSquaresSolver):
     transpose = BoolParam('transpose', optional=True)
 
     def __init__(self, transpose=None):
-        super(Cholesky, self).__init__()
+        super().__init__()
         self.transpose = transpose
 
     def __call__(self, A, Y, sigma, rng=None):
@@ -99,7 +97,7 @@ class ConjgradScipy(LeastSquaresSolver):
     atol = NumberParam('atol', low=0)
 
     def __init__(self, tol=1e-4, atol=1e-8):
-        super(ConjgradScipy, self).__init__()
+        super().__init__()
         self.tol = tol
         self.atol = atol
 
@@ -142,7 +140,7 @@ class LSMRScipy(LeastSquaresSolver):
     tol = NumberParam('tol', low=0)
 
     def __init__(self, tol=1e-4):
-        super(LSMRScipy, self).__init__()
+        super().__init__()
         self.tol = tol
 
     def __call__(self, A, Y, sigma, rng=None):
@@ -168,7 +166,7 @@ class Conjgrad(LeastSquaresSolver):
     X0 = NdarrayParam('X0', shape=('*', '*'), optional=True)
 
     def __init__(self, tol=1e-2, maxiters=None, X0=None):
-        super(Conjgrad, self).__init__()
+        super().__init__()
         self.tol = tol
         self.maxiters = maxiters
         self.X0 = X0
@@ -234,7 +232,7 @@ class BlockConjgrad(LeastSquaresSolver):
     X0 = NdarrayParam('X0', shape=('*', '*'), optional=True)
 
     def __init__(self, tol=1e-2, X0=None):
-        super(BlockConjgrad, self).__init__()
+        super().__init__()
         self.tol = tol
         self.X0 = X0
 
@@ -318,7 +316,7 @@ class RandomizedSVD(LeastSquaresSolver):
     def __init__(self, n_components=60, n_oversamples=10, n_iter=0):
         from sklearn.utils.extmath import randomized_svd
         assert randomized_svd
-        super(RandomizedSVD, self).__init__()
+        super().__init__()
         self.n_components = n_components
         self.n_oversamples = n_oversamples
         self.n_iter = n_iter
@@ -343,4 +341,4 @@ class RandomizedSVD(LeastSquaresSolver):
 class LeastSquaresSolverParam(Parameter):
     def coerce(self, instance, solver):
         self.check_type(instance, solver, LeastSquaresSolver)
-        return super(LeastSquaresSolverParam, self).coerce(instance, solver)
+        return super().coerce(instance, solver)

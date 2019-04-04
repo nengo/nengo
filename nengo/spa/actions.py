@@ -8,7 +8,7 @@ from nengo.exceptions import SpaParseError
 from nengo.spa.action_objects import Symbol, Source, DotProduct, Summation
 
 
-class Expression(object):
+class Expression:
     """Parses an Action expression given a set of module outputs.
 
     Parameters
@@ -71,7 +71,7 @@ class Expression(object):
         return str(self.expression)
 
 
-class Effect(object):
+class Effect:
     """Parses an action effect given a set of module outputs.
 
     The following, in an `.Action` string, are valid effects::
@@ -114,7 +114,7 @@ class Effect(object):
         return ", ".join("%s=%s" % x for x in self.effect.items())
 
 
-class Action(object):
+class Action:
     """A single action.
 
     Consists of a conditional `.Expression` (optional) and an `.Effect`.
@@ -148,7 +148,7 @@ class Action(object):
             self.name, self.condition, self.effect)
 
 
-class Actions(object):
+class Actions:
     """A collection of Action objects.
 
     The ``*args`` and ``**kwargs`` are treated as unnamed and named actions,

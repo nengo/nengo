@@ -8,7 +8,7 @@ from nengo.spa import pointer
 from nengo.utils.numpy import is_iterable, is_number, is_integer
 
 
-class Vocabulary(object):
+class Vocabulary:
     """A collection of semantic pointers, each with their own text label.
 
     The Vocabulary can also act as a dictionary, with keys as the names
@@ -485,4 +485,4 @@ class VocabularyParam(Parameter):
 
     def coerce(self, instance, vocab):
         self.check_type(instance, vocab, Vocabulary)
-        return super(VocabularyParam, self).coerce(instance, vocab)
+        return super().coerce(instance, vocab)

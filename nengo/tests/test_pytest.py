@@ -88,7 +88,7 @@ def test_pyargs(testdir):
         """
         import nengo.conftest
 
-        class MockSimulator(object):
+        class MockSimulator:
             pass
 
         nengo.conftest.TestConfig.Simulator = MockSimulator

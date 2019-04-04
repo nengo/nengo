@@ -65,7 +65,7 @@ class Product(nengo.Network):
         if 'net' in kwargs:
             raise ObsoleteError("The 'net' argument is no longer supported.")
         kwargs.setdefault('label', "Product")
-        super(Product, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         with self:
             self.input_a = nengo.Node(size_in=dimensions, label="input_a")

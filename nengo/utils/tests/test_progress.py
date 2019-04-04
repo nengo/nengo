@@ -8,14 +8,14 @@ from nengo.utils.progress import AutoProgressBar, Progress, ProgressBar
 
 class ProgressBarMock(ProgressBar):
     def __init__(self):
-        super(ProgressBarMock, self).__init__()
+        super().__init__()
         self.n_update_calls = 0
 
     def update(self, progress):
         self.n_update_calls += 1
 
 
-class TestProgress(object):
+class TestProgress:
     def test_progress_calculation(self):
         with Progress(max_steps=10) as p:
             assert p.progress == 0.
@@ -82,8 +82,8 @@ class TestProgress(object):
         assert p.elapsed_seconds() == 9.
 
 
-class TestAutoProgressBar(object):
-    class ProgressMock(object):
+class TestAutoProgressBar:
+    class ProgressMock:
         def __init__(self, eta, time_start=1234.5):
             self.eta = lambda: eta
             self.elapsed_seconds = lambda: 0

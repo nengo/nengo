@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 from collections import OrderedDict
 import warnings
 
@@ -137,7 +135,7 @@ def piecewise(data):
     return piecewise_function
 
 
-class HilbertCurve(object):
+class HilbertCurve:
     """Hilbert curve function.
 
     Pre-calculates the Hilbert space filling curve with a given number

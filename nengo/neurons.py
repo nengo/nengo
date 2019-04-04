@@ -1,5 +1,3 @@
-from __future__ import division
-
 import logging
 import warnings
 
@@ -270,7 +268,7 @@ class RectifiedLinear(NeuronType):
     amplitude = NumberParam('amplitude', low=0, low_open=True)
 
     def __init__(self, amplitude=1):
-        super(RectifiedLinear, self).__init__()
+        super().__init__()
 
         self.amplitude = amplitude
 
@@ -340,7 +338,7 @@ class Sigmoid(NeuronType):
     tau_ref = NumberParam('tau_ref', low=0)
 
     def __init__(self, tau_ref=0.0025):
-        super(Sigmoid, self).__init__()
+        super().__init__()
         self.tau_ref = tau_ref
 
     def gain_bias(self, max_rates, intercepts):
@@ -389,7 +387,7 @@ class LIFRate(NeuronType):
     amplitude = NumberParam('amplitude', low=0, low_open=True)
 
     def __init__(self, tau_rc=0.02, tau_ref=0.002, amplitude=1):
-        super(LIFRate, self).__init__()
+        super().__init__()
         self.tau_rc = tau_rc
         self.tau_ref = tau_ref
         self.amplitude = amplitude
@@ -463,8 +461,7 @@ class LIF(LIFRate):
     min_voltage = NumberParam('min_voltage', high=0)
 
     def __init__(self, tau_rc=0.02, tau_ref=0.002, min_voltage=0, amplitude=1):
-        super(LIF, self).__init__(
-            tau_rc=tau_rc, tau_ref=tau_ref, amplitude=amplitude)
+        super().__init__(tau_rc=tau_rc, tau_ref=tau_ref, amplitude=amplitude)
         self.min_voltage = min_voltage
 
     def step_math(self, dt, J, spiked, voltage, refractory_time):
@@ -545,15 +542,14 @@ class AdaptiveLIFRate(LIFRate):
         tau_ref=0.002,
         amplitude=1,
     ):
-        super(AdaptiveLIFRate, self).__init__(
-            tau_rc=tau_rc, tau_ref=tau_ref, amplitude=amplitude)
+        super().__init__(tau_rc=tau_rc, tau_ref=tau_ref, amplitude=amplitude)
         self.tau_n = tau_n
         self.inc_n = inc_n
 
     def step_math(self, dt, J, output, adaptation):
         """Implement the AdaptiveLIFRate nonlinearity."""
         n = adaptation
-        super(AdaptiveLIFRate, self).step_math(dt, J - n, output)
+        super().step_math(dt, J - n, output)
         n += (dt / self.tau_n) * (self.inc_n * output - n)
 
 
@@ -609,7 +605,7 @@ class AdaptiveLIF(LIF):
         min_voltage=0,
         amplitude=1,
     ):
-        super(AdaptiveLIF, self).__init__(
+        super().__init__(
             tau_rc=tau_rc,
             tau_ref=tau_ref,
             min_voltage=min_voltage,
@@ -621,7 +617,7 @@ class AdaptiveLIF(LIF):
     def step_math(self, dt, J, output, voltage, ref, adaptation):
         """Implement the AdaptiveLIF nonlinearity."""
         n = adaptation
-        super(AdaptiveLIF, self).step_math(dt, J - n, output, voltage, ref)
+        super().step_math(dt, J - n, output, voltage, ref)
         n += (dt / self.tau_n) * (self.inc_n * output - n)
 
 
@@ -674,7 +670,7 @@ class Izhikevich(NeuronType):
 
     def __init__(self, tau_recovery=0.02, coupling=0.2,
                  reset_voltage=-65., reset_recovery=8.):
-        super(Izhikevich, self).__init__()
+        super().__init__()
         self.tau_recovery = tau_recovery
         self.coupling = coupling
         self.reset_voltage = reset_voltage
@@ -715,4 +711,4 @@ class Izhikevich(NeuronType):
 class NeuronTypeParam(Parameter):
     def coerce(self, instance, neurons):
         self.check_type(instance, neurons, NeuronType)
-        return super(NeuronTypeParam, self).coerce(instance, neurons)
+        return super().coerce(instance, neurons)

@@ -4,7 +4,7 @@ from nengo.utils.testing import ThreadedAssertion
 from nengo.utils.threading import ThreadLocalStack
 
 
-class TestThreadLocalStack(object):
+class TestThreadLocalStack:
     def test_threadsafety(self):
         stack = ThreadLocalStack()
         stack.append(1)

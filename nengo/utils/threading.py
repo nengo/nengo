@@ -1,12 +1,10 @@
-from __future__ import absolute_import
-
 import collections
 import threading
 
 
 class ThreadLocalStack(threading.local, collections.Sequence):
     def __init__(self, maxsize=None):
-        super(ThreadLocalStack, self).__init__()
+        super().__init__()
         self.maxsize = maxsize
         self._context = []
 

@@ -47,7 +47,7 @@ class SimProcess(Operator):
     4. updates ``[output] if output is not None and mode=='update' else []``
     """
     def __init__(self, process, input, output, t, mode='set', tag=None):
-        super(SimProcess, self).__init__(tag=tag)
+        super().__init__(tag=tag)
         self.process = process
         self.mode = mode
 

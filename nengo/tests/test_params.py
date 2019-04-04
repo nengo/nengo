@@ -9,7 +9,7 @@ from nengo.exceptions import ObsoleteError, ValidationError
 def test_default():
     """A default value is immediately available, but can be overridden."""
 
-    class Test(object):
+    class Test:
         p = params.Parameter('p', default=1)
 
     inst1 = Test()
@@ -24,7 +24,7 @@ def test_default():
 def test_optional():
     """Optional Parameters can bet set to None."""
 
-    class Test(object):
+    class Test:
         m = params.Parameter('m', default=1, optional=False)
         o = params.Parameter('o', default=1, optional=True)
 
@@ -39,7 +39,7 @@ def test_optional():
 def test_readonly():
     """Readonly Parameters can only be set once."""
 
-    class Test(object):
+    class Test:
         p = params.Parameter('p', default=1, readonly=False)
         r = params.Parameter('r', default=None, readonly=True)
 
@@ -60,7 +60,7 @@ def test_readonly():
 def test_obsoleteparam():
     """ObsoleteParams must not be set."""
 
-    class Test(object):
+    class Test:
         ab = params.ObsoleteParam('ab', "msg")
 
     inst = Test()
@@ -78,7 +78,7 @@ def test_obsoleteparam():
 def test_boolparam():
     """BoolParams can only be booleans."""
 
-    class Test(object):
+    class Test:
         bp = params.BoolParam('bp', default=False)
 
     inst = Test()
@@ -92,7 +92,7 @@ def test_boolparam():
 def test_numberparam():
     """NumberParams can be numbers constrained to a range."""
 
-    class Test(object):
+    class Test:
         np = params.NumberParam('np', default=1.0)
         np_l = params.NumberParam('np_l', default=1.0, low=0.0)
         np_h = params.NumberParam('np_h', default=-1.0, high=0.0)
@@ -143,7 +143,7 @@ def test_numberparam():
 
 def test_intparam():
     """IntParams are like NumberParams but must be an int."""
-    class Test(object):
+    class Test:
         ip = params.IntParam('ip', default=1, low=0, high=2)
 
     inst = Test()
@@ -158,14 +158,14 @@ def test_intparam():
 
 def test_stringparam():
     """StringParams must be strings."""
-    class Test(object):
+    class Test:
         sp = params.StringParam('sp', default="Hi")
 
     inst = Test()
     assert inst.sp == "Hi"
 
-    inst.sp = u"goodbye"
-    assert inst.sp == u"goodbye"
+    inst.sp = "goodbye"
+    assert inst.sp == "goodbye"
 
     # Bytes no good
     with pytest.raises(ValidationError):
@@ -177,7 +177,7 @@ def test_stringparam():
 
 
 def test_enumparam():
-    class Test(object):
+    class Test:
         ep = params.EnumParam('ep', default='a', values=('a', 'b', 'c'))
 
     inst = Test()
@@ -195,7 +195,7 @@ def test_enumparam():
 
 
 def test_tupleparam():
-    class Test(object):
+    class Test:
         tp = params.TupleParam('tp', default=(0, 0, 0))
         tp3 = params.TupleParam('tp3', default=(0, 0, 0), length=3)
 
@@ -213,7 +213,7 @@ def test_tupleparam():
 
 
 def test_shapeparam():
-    class Test(object):
+    class Test:
         sp2 = params.ShapeParam('sp2', default=(0, 0), length=2, low=None)
         sp3 = params.ShapeParam('sp3', default=(0, 0, 0), length=3)
 
@@ -234,7 +234,7 @@ def test_shapeparam():
 
 def test_dictparam():
     """DictParams must be dictionaries."""
-    class Test(object):
+    class Test:
         dp = params.DictParam('dp', default={'a': 1})
 
     inst1 = Test()
@@ -252,7 +252,7 @@ def test_dictparam():
 
 def test_ndarrayparam():
     """NdarrayParams must be able to be made into float ndarrays."""
-    class Test(object):
+    class Test:
         ndp = params.NdarrayParam('ndp', default=None, shape=('*',))
         ella = params.NdarrayParam('ella', default=None, shape=(3, '...'))
         ellb = params.NdarrayParam('ellb', default=None, shape=(3, '...', 2))
@@ -283,7 +283,7 @@ def test_ndarrayparam():
 
 def test_ndarrayparam_sample_shape():
     """sample_shape dictates the shape of the sample that can be set."""
-    class Test(object):
+    class Test:
         ndp = params.NdarrayParam('ndp', default=None, shape=[10, 'd2'])
         d2 = 3
 
@@ -298,7 +298,7 @@ def test_ndarrayparam_sample_shape():
 
 def test_functionparam():
     """FunctionParam must be a function, and accept one scalar argument."""
-    class Test(object):
+    class Test:
         fp = params.FunctionParam('fp', default=None)
 
     inst = Test()
@@ -315,7 +315,7 @@ def test_functionparam():
 
 
 def test_iter_params_does_not_list_obsolete_params():
-    class Test(object):
+    class Test:
         p1 = params.IntParam('p1')
         p2 = params.IntParam('p2')
         obsolete = params.ObsoleteParam('obsolete', 'not included in params')
@@ -379,7 +379,7 @@ def test_frozenobject_reprs():
         b = params.NumberParam('b')
 
         def __init__(self, a, b=4):
-            super(TestFO, self).__init__()
+            super().__init__()
             self.a = a
             self.b = b
 
@@ -395,7 +395,7 @@ def test_frozenobject_missing_arg_repr():
         a = params.NumberParam('a', default=3, readonly=True)
 
         def __init__(self, a, b=4):
-            super(TestFO, self).__init__()
+            super().__init__()
             self.a = a
 
     fo = TestFO(3)

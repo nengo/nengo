@@ -15,7 +15,7 @@ from nengo.exceptions import CacheIOWarning, FingerprintError
 from nengo.solvers import LstsqL2
 
 
-class SolverMock(object):
+class SolverMock:
     n_calls = {}
 
     def __init__(self):
@@ -247,7 +247,7 @@ def test_decoder_cache_with_E_argument_to_solver(tmpdir):
         assert solver_info1 == solver_info2
 
 
-class DummyA(object):
+class DummyA:
     def __init__(self, attr=0):
         self.attr = attr
 
@@ -255,7 +255,7 @@ class DummyA(object):
 nengo.cache.Fingerprint.whitelist(DummyA)
 
 
-class DummyB(object):
+class DummyB:
     def __init__(self, attr=0):
         self.attr = attr
 
@@ -276,7 +276,7 @@ def dummy_fn(arg):
     (b'a', b'a', b'b'),              # bytes
     ((0, 1), (0, 1), (0, 2)),        # tuple
     ([0, 1], [0, 1], [0, 2]),        # list
-    (u'a', u'a', u'b'),              # unicode string
+    ('a', 'a', 'b'),                 # str
     (np.eye(2), np.eye(2), np.array([[0, 1], [1, 0]])),      # array
     (DummyA(), DummyA(), DummyB()),  # object instance
     (DummyA(1), DummyA(1), DummyA(2)),     # object instance
@@ -363,7 +363,7 @@ def reject_outliers(data):
     return np.asarray(data)[np.logical_and(data > limits[0], data < limits[1])]
 
 
-class TestCacheBenchmark(object):
+class TestCacheBenchmark:
     n_trials = 25
 
     setup = '''
@@ -520,7 +520,7 @@ with nengo.Simulator(model):
         plt.legend(loc='best')
 
 
-class TestCacheShrinkBenchmark(object):
+class TestCacheShrinkBenchmark:
     n_trials = 50
 
     setup = '''

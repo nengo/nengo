@@ -31,7 +31,7 @@ class Solver(FrozenObject, metaclass=DocstringInheritor):
     weights = BoolParam('weights')
 
     def __init__(self, weights=False):
-        super(Solver, self).__init__()
+        super().__init__()
         self.weights = weights
 
     def __call__(self, A, Y, rng=np.random):
@@ -64,7 +64,7 @@ class Solver(FrozenObject, metaclass=DocstringInheritor):
 class SolverParam(Parameter):
     def coerce(self, instance, solver):
         self.check_type(instance, solver, Solver)
-        return super(SolverParam, self).coerce(instance, solver)
+        return super().coerce(instance, solver)
 
 
 class Lstsq(Solver):
@@ -88,7 +88,7 @@ class Lstsq(Solver):
     rcond = NumberParam('noise', low=0)
 
     def __init__(self, weights=False, rcond=0.01):
-        super(Lstsq, self).__init__(weights=weights)
+        super().__init__(weights=weights)
         self.rcond = rcond
 
     def __call__(self, A, Y, rng=np.random):
@@ -128,7 +128,7 @@ class _LstsqNoiseSolver(Solver):
         weights : bool
             If False, solve for decoders. If True, solve for weights.
         """
-        super(_LstsqNoiseSolver, self).__init__(weights=weights)
+        super().__init__(weights=weights)
         self.noise = noise
         self.solver = solver
 
@@ -182,7 +182,7 @@ class _LstsqL2Solver(Solver):
         weights : bool
             If False, solve for decoders. If True, solve for weights.
         """
-        super(_LstsqL2Solver, self).__init__(weights=weights)
+        super().__init__(weights=weights)
         self.reg = reg
         self.solver = solver
 
@@ -256,7 +256,7 @@ class LstsqL1(Solver):
         """
         import sklearn.linear_model  # noqa F401, import to check existence
         assert sklearn.linear_model
-        super(LstsqL1, self).__init__(weights=weights)
+        super().__init__(weights=weights)
         self.l1 = l1
         self.l2 = l2
         self.max_iter = max_iter
@@ -326,7 +326,7 @@ class LstsqDrop(Solver):
         weights : bool
             If False, solve for decoders. If True, solve for weights.
         """
-        super(LstsqDrop, self).__init__(weights=weights)
+        super().__init__(weights=weights)
         self.drop = drop
         self.solver1 = solver1
         self.solver2 = solver2
@@ -385,7 +385,7 @@ class Nnls(Solver):
         """
         import scipy.optimize  # import here too to throw error early
         assert scipy.optimize
-        super(Nnls, self).__init__(weights=weights)
+        super().__init__(weights=weights)
 
     def __call__(self, A, Y, rng=np.random):
         import scipy.optimize
@@ -435,7 +435,7 @@ class NnlsL2(Nnls):
         weights : bool
             If False, solve for decoders. If True, solve for weights.
         """
-        super(NnlsL2, self).__init__(weights=weights)
+        super().__init__(weights=weights)
         self.reg = reg
 
     def _solve(self, A, Y, sigma=0.):
@@ -517,7 +517,7 @@ class NoSolver(Solver):
     values = NdarrayParam("values", optional=True, shape=("*", "*"))
 
     def __init__(self, values=None, weights=False):
-        super(NoSolver, self).__init__(weights=weights)
+        super().__init__(weights=weights)
         self.values = values
 
     def __call__(self, A, Y, rng=None):

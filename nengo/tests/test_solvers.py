@@ -28,7 +28,7 @@ from nengo.solvers import (
 )
 
 
-class Factory(object):
+class Factory:
 
     def __init__(self, klass, *args, **kwargs):
         self.klass = klass

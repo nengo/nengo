@@ -39,7 +39,7 @@ from nengo.utils.functions import function_name
 import nengo.utils.numpy as npext
 
 
-class Operator(object):
+class Operator:
     """Base class for operator instances understood by Nengo.
 
     During one simulator timestep, a `.Signal` can experience
@@ -221,7 +221,7 @@ class TimeUpdate(Operator):
     """
 
     def __init__(self, step, time, tag=None):
-        super(TimeUpdate, self).__init__(tag=tag)
+        super().__init__(tag=tag)
         self.sets = [step, time]
         self.incs = []
         self.reads = []
@@ -278,7 +278,7 @@ class Reset(Operator):
     """
 
     def __init__(self, dst, value=0, tag=None):
-        super(Reset, self).__init__(tag=tag)
+        super().__init__(tag=tag)
         self.value = float(value)
 
         self.sets = [dst]
@@ -350,7 +350,7 @@ class Copy(Operator):
 
     def __init__(self, src, dst,
                  src_slice=None, dst_slice=None, inc=False, tag=None):
-        super(Copy, self).__init__(tag=tag)
+        super().__init__(tag=tag)
 
         if isinstance(src_slice, slice):
             src = src[src_slice]
@@ -453,7 +453,7 @@ class ElementwiseInc(Operator):
     """
 
     def __init__(self, A, X, Y, tag=None):
-        super(ElementwiseInc, self).__init__(tag=tag)
+        super().__init__(tag=tag)
         self.sets = []
         self.incs = [Y]
         self.reads = [A, X]
@@ -562,7 +562,7 @@ class DotInc(Operator):
     """
 
     def __init__(self, A, X, Y, reshape=None, tag=None):
-        super(DotInc, self).__init__(tag=tag)
+        super().__init__(tag=tag)
 
         if X.ndim >= 2 and any(d > 1 for d in X.shape[1:]):
             raise BuildError("X must be a column vector")
@@ -664,7 +664,7 @@ class BsrDotInc(DotInc):
         from scipy.sparse import bsr_matrix
         self.bsr_matrix = bsr_matrix
 
-        super(BsrDotInc, self).__init__(A, X, Y, reshape=reshape, tag=tag)
+        super().__init__(A, X, Y, reshape=reshape, tag=tag)
 
         self.indices = indices
         self.indptr = indptr
@@ -731,7 +731,7 @@ class SimPyFunc(Operator):
     """
 
     def __init__(self, output, fn, t, x, tag=None):
-        super(SimPyFunc, self).__init__(tag=tag)
+        super().__init__(tag=tag)
         self.fn = fn
         self.t_passed = t is not None
         self.x_passed = x is not None

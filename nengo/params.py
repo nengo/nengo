@@ -42,7 +42,7 @@ def equal(a, b):
         return a == b
 
 
-class Parameter(object):
+class Parameter:
     """Simple descriptor for storing configuration parameters.
 
     Parameters
@@ -199,7 +199,7 @@ class ObsoleteParam(Parameter):
         self.short_msg = short_msg
         self.since = since
         self.url = url
-        super(ObsoleteParam, self).__init__(name, optional=True)
+        super().__init__(name, optional=True)
 
     def __get__(self, instance, type_):
         if instance is None:
@@ -224,7 +224,7 @@ class BoolParam(Parameter):
 
     def coerce(self, instance, value):
         self.check_type(instance, value, bool)
-        return super(BoolParam, self).coerce(instance, value)
+        return super().coerce(instance, value)
 
 
 class NumberParam(Parameter):
@@ -239,7 +239,7 @@ class NumberParam(Parameter):
         self.high = high
         self.low_open = low_open
         self.high_open = high_open
-        super(NumberParam, self).__init__(name, default, optional, readonly)
+        super().__init__(name, default, optional, readonly)
 
     def coerce(self, instance, num):
         if num is not None:
@@ -263,7 +263,7 @@ class NumberParam(Parameter):
                         "" if self.high_open else "or equal to ",
                         self.high,
                         num), attr=self.name, obj=instance)
-        return super(NumberParam, self).coerce(instance, num)
+        return super().coerce(instance, num)
 
 
 class IntParam(NumberParam):
@@ -271,7 +271,7 @@ class IntParam(NumberParam):
 
     def coerce(self, instance, num):
         self.check_type(instance, num, (int, np.integer))
-        return super(IntParam, self).coerce(instance, num)
+        return super().coerce(instance, num)
 
 
 class StringParam(Parameter):
@@ -281,7 +281,7 @@ class StringParam(Parameter):
 
     def coerce(self, instance, string):
         self.check_type(instance, string, (str,))
-        return super(StringParam, self).coerce(instance, string)
+        return super().coerce(instance, string)
 
 
 class EnumParam(StringParam):
@@ -297,10 +297,10 @@ class EnumParam(StringParam):
         self.values = values
         self.value_set = value_set
         self.lower = lower
-        super(EnumParam, self).__init__(name, default, optional, readonly)
+        super().__init__(name, default, optional, readonly)
 
     def coerce(self, instance, string):
-        string = super(EnumParam, self).coerce(instance, string)
+        string = super().coerce(instance, string)
         string = string.lower() if self.lower else string
         if string not in self.value_set:
             raise ValidationError("String %r must be one of %s"
@@ -315,10 +315,10 @@ class TupleParam(Parameter):
     def __init__(self, name, default=Unconfigurable, length=None,
                  optional=False, readonly=None):
         self.length = length
-        super(TupleParam, self).__init__(name, default, optional, readonly)
+        super().__init__(name, default, optional, readonly)
 
     def coerce(self, instance, value):
-        value = super(TupleParam, self).coerce(instance, value)
+        value = super().coerce(instance, value)
         try:
             value = tuple(value)
         except TypeError:
@@ -339,12 +339,15 @@ class ShapeParam(TupleParam):
 
     def __init__(self, name, default=Unconfigurable, length=None, low=0,
                  optional=False, readonly=None):
-        super(ShapeParam, self).__init__(name, default=default, length=length,
-                                         optional=optional, readonly=readonly)
+        super().__init__(name,
+                         default=default,
+                         length=length,
+                         optional=optional,
+                         readonly=readonly)
         self.low = low
 
     def coerce(self, instance, value):
-        value = super(ShapeParam, self).coerce(instance, value)
+        value = super().coerce(instance, value)
         for i, v in enumerate(value):
             if not is_integer(v):
                 raise ValidationError("Element %d must be an int (got type %r)"
@@ -363,7 +366,7 @@ class DictParam(Parameter):
 
     def coerce(self, instance, value):
         self.check_type(instance, value, dict)
-        return super(DictParam, self).coerce(instance, value)
+        return super().coerce(instance, value)
 
 
 class NdarrayParam(Parameter):
@@ -382,7 +385,7 @@ class NdarrayParam(Parameter):
             assert shape.count('...') <= 1, (
                 "Cannot have more than one ellipsis")
         self.shape = shape
-        super(NdarrayParam, self).__init__(name, default, optional, readonly)
+        super().__init__(name, default, optional, readonly)
 
     @property
     def coerce_defaults(self):
@@ -397,7 +400,7 @@ class NdarrayParam(Parameter):
     def coerce(self, instance, value):
         if value is not None:
             value = self.coerce_ndarray(instance, value)
-        return super(NdarrayParam, self).coerce(instance, value)
+        return super().coerce(instance, value)
 
     def coerce_ndarray(self, instance, ndarray):  # noqa: C901
         if isinstance(ndarray, np.ndarray):
@@ -477,7 +480,7 @@ class FunctionParam(Parameter):
         return (np.zeros(1),)
 
     def coerce(self, instance, function):
-        function = super(FunctionParam, self).coerce(instance, function)
+        function = super().coerce(instance, function)
         if isinstance(function, FunctionInfo):
             function_info = function
             function = function_info.function
@@ -493,7 +496,7 @@ class FunctionParam(Parameter):
         return function_info
 
 
-class FrozenObject(object):
+class FrozenObject:
     """An object with parameters that cannot change value after instantiation.
 
     Since such objects are read-only ("frozen"), they can be safely used in

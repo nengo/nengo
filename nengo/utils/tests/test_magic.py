@@ -53,7 +53,7 @@ def test_boundfunction():
         assert type(instance).__name__ == 'Test'
         return wrapped(*args, **kwargs)
 
-    class Test(object):
+    class Test:
         @test_decorator
         def f(self, a, b):
             """Return 1."""
@@ -80,7 +80,7 @@ def test_staticmethod():
         return wrapped(*args, **kwargs)
 
     # --- Decorator before staticmethod
-    class TestBeforeStaticmethod(object):
+    class TestBeforeStaticmethod:
         @test_decorator
         @staticmethod
         def f(a, b):
@@ -100,7 +100,7 @@ def test_staticmethod():
                                          '            return 1\n')
 
     # --- Decorator after staticmethod
-    class TestAfterStaticmethod(object):
+    class TestAfterStaticmethod:
         @staticmethod
         @test_decorator
         def f(a, b):
@@ -132,7 +132,7 @@ def test_classmethod():
         return wrapped(*args, **kwargs)
 
     # --- Decorator before classmethod
-    class TestBeforeStaticmethod(object):
+    class TestBeforeStaticmethod:
         @test_decorator
         @classmethod
         def f(cls, a, b):
@@ -152,7 +152,7 @@ def test_classmethod():
                                          '            return 1\n')
 
     # --- Decorator after staticmethod
-    class TestAfterStaticmethod(object):
+    class TestAfterStaticmethod:
         @classmethod
         @test_decorator
         def f(cls, a, b):
@@ -184,7 +184,7 @@ def test_class():
         return inst
 
     @test_decorator
-    class f(object):
+    class f:
         """Return 1."""
         def __init__(self, a, b):
             self.a = a
@@ -199,7 +199,7 @@ def test_class():
 
     # Make sure introspection works
     # Note: for classes, the decorator isn't part of the source. Weird!
-    assert inspect.getsource(f) == ('    class f(object):\n'
+    assert inspect.getsource(f) == ('    class f:\n'
                                     '        """Return 1."""\n'
                                     '        def __init__(self, a, b):\n'
                                     '            self.a = a\n'

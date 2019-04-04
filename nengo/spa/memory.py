@@ -47,7 +47,7 @@ class Memory(Buffer):
                  label=None, seed=None, add_to_container=None):
         warnings.warn("Memory is deprecated in favour of spa.State",
                       DeprecationWarning)
-        super(Memory, self).__init__(
+        super().__init__(
             dimensions=dimensions,
             subdimensions=subdimensions,
             neurons_per_dimension=neurons_per_dimension,

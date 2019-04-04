@@ -24,7 +24,8 @@ def test_sine_waves(Simulator, plt, seed):
         sim.run(1.0)
 
     t = sim.trange()
-    ideal = np.asarray(list(map(func_a, t))) * np.asarray(list(map(func_b, t)))
+    ideal = (np.asarray([func_a(tt) for tt in t])
+             * np.asarray([func_b(tt) for tt in t]))
     delay = 0.013
     offset = np.where(t >= delay)[0]
 
@@ -60,7 +61,8 @@ def test_direct_mode_with_single_neuron(Simulator, plt, seed):
         sim.run(1.0)
 
     t = sim.trange()
-    ideal = np.asarray(list(map(func_a, t))) * np.asarray(list(map(func_b, t)))
+    ideal = (np.asarray([func_a(tt) for tt in t])
+             * np.asarray([func_b(tt) for tt in t]))
     delay = 0.013
     offset = np.where(t >= delay)[0]
 

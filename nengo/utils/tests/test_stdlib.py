@@ -26,7 +26,7 @@ def test_checked_call():
 
     func4 = lambda x=[0]: sum(x)
 
-    class A(object):
+    class A:
         def __call__(self, a, b):
             return a + b
 
@@ -62,7 +62,7 @@ def test_checked_call():
 
 
 def test_checked_call_errors():
-    class A(object):
+    class A:
         def __call__(self, a):
             raise NotImplementedError()
 
@@ -99,12 +99,12 @@ def test_groupby(hashable, force_list, rng):
     # call groupby
     keygroups = groupby(pairs, lambda p: p[0], force_list=force_list)
 
-    keys2 = sorted(map(lambda x: x[0], keygroups))
+    keys2 = sorted([x[0] for x in keygroups])
     assert keys2 == keys
 
     for key2, keygroup2 in keygroups:
         group = groups[keys.index(key2)]
-        group2 = map(lambda x: x[1], keygroup2)
+        group2 = [x[1] for x in keygroup2]
         assert sorted(group2) == sorted(group)
 
 

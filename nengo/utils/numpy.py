@@ -1,9 +1,7 @@
 """
 Extra functions to extend the capabilities of Numpy.
 """
-from __future__ import absolute_import
 import collections
-
 import numpy as np
 
 from ..exceptions import ValidationError

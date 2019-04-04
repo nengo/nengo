@@ -21,7 +21,7 @@ from nengo.rc import rc
 from nengo.utils.threading import ThreadLocalStack
 
 
-class ClassParams(object):
+class ClassParams:
     """A class to store extra parameters and defaults on configured classes.
 
     This is used by `.Config` to associate defaults and new `.Parameter`
@@ -47,7 +47,7 @@ class ClassParams(object):
 
     def __delattr__(self, key):
         if key.startswith("_"):
-            super(ClassParams, self).__delattr__(key)
+            super().__delattr__(key)
         else:
             self.get_param(key).del_default(self)
 
@@ -64,7 +64,7 @@ class ClassParams(object):
         Everything not starting with _ is assumed to be a parameter.
         """
         if key.startswith("_"):
-            super(ClassParams, self).__setattr__(key, value)
+            super().__setattr__(key, value)
         else:
             param = self.get_param(key)
             if not param.configurable:
@@ -149,7 +149,7 @@ class ClassParams(object):
             setattr(self, key, d[key])
 
 
-class InstanceParams(object):
+class InstanceParams:
     """A class to store parameter value on configured objects.
 
     In contrast to `.ClassParams`, the only thing that can be done with
@@ -167,7 +167,7 @@ class InstanceParams(object):
 
     def __delattr__(self, key):
         if key.startswith("_"):
-            super(InstanceParams, self).__delattr__(key)
+            super().__delattr__(key)
         elif key in dir(self._configures):
             # Disallow configuring attributes the instance already has
             raise ConfigError(
@@ -191,7 +191,7 @@ class InstanceParams(object):
     def __setattr__(self, key, value):
         """Everything not starting with _ is assumed to be a parameter."""
         if key.startswith("_"):
-            super(InstanceParams, self).__setattr__(key, value)
+            super().__setattr__(key, value)
         elif key in dir(self._configures):
             # Disallow configuring attributes the instance already has
             raise ConfigError(
@@ -244,7 +244,7 @@ class InstanceParams(object):
                           % type(self._configures).__name__)
 
 
-class Config(object):
+class Config:
     """Configures network-level defaults and additional parameters.
 
     Every `.Network` contains an associated ``Config`` object which can
@@ -298,7 +298,7 @@ class Config(object):
 
     To configure a new type of object::
 
-        class SynapseInfo(object):
+        class SynapseInfo:
             label = nengo.params.StringParam('label')
         gaba.configures(SynapseInfo)
         gaba[SynapseInfo].label = "GABA"  # Set default label
@@ -433,7 +433,7 @@ class Config(object):
             self.params[klass] = ClassParams(klass)
 
 
-class SupportDefaultsMixin(object):
+class SupportDefaultsMixin:
     """Mixin to support assigning `.Default` to parameters.
 
     Implements ``__setattr__`` to do so. If the inheriting class overrides
@@ -449,9 +449,9 @@ class SupportDefaultsMixin(object):
 
         if rc.getboolean('exceptions', 'simplified'):
             try:
-                super(SupportDefaultsMixin, self).__setattr__(name, val)
+                super().__setattr__(name, val)
             except ValidationError:
                 exc_info = sys.exc_info()
                 raise exc_info[1].with_traceback(None)
         else:
-            super(SupportDefaultsMixin, self).__setattr__(name, val)
+            super().__setattr__(name, val)

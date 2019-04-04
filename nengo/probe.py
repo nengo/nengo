@@ -21,14 +21,14 @@ class TargetParam(NengoObjectParam):
             # TODO: this special case should be able to be removed with #1310
             return Parameter.coerce(self, probe, target)
         else:
-            return super(TargetParam, self).coerce(probe, target)
+            return super().coerce(probe, target)
 
 
 class AttributeParam(StringParam):
     coerce_defaults = False
 
     def coerce(self, probe, attr):
-        value = super(AttributeParam, self).coerce(probe, attr)
+        value = super().coerce(probe, attr)
         if attr in ('decoders', 'transform'):
             raise ObsoleteError("'decoders' and 'transform' are now combined "
                                 "into 'weights'. Probe 'weights' instead.",
@@ -45,7 +45,7 @@ class ProbeSolverParam(SolverParam):
     def coerce(self, conn, solver):
         if solver is ConnectionDefault:
             solver = Config.default(Connection, 'solver')
-        solver = super(ProbeSolverParam, self).coerce(conn, solver)
+        solver = super().coerce(conn, solver)
         if solver is not None and solver.weights:
             raise ValidationError("weight solvers only work for ensemble to "
                                   "ensemble connections, not probes",
@@ -121,7 +121,7 @@ class Probe(NengoObject):
 
     def __init__(self, target, attr=None, sample_every=Default,
                  synapse=Default, solver=Default, label=Default, seed=Default):
-        super(Probe, self).__init__(label=label, seed=seed)
+        super().__init__(label=label, seed=seed)
         self.target = target
         self.attr = attr if attr is not None else self.obj.probeable[0]
         self.sample_every = sample_every

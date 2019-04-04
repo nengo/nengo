@@ -19,7 +19,7 @@ from nengo.rc import rc
 from nengo.utils.testing import Analytics, Logger, Plotter
 
 
-class TestConfig(object):
+class TestConfig:
     """Parameters affecting all Nengo tests.
 
     These are essentially global variables used by py.test to modify aspects

@@ -61,7 +61,7 @@ class InputGatedMemory(nengo.Network):
         if 'net' in kwargs:
             raise ObsoleteError("The 'net' argument is no longer supported.")
         kwargs.setdefault('label', "Input gated memory")
-        super(InputGatedMemory, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         if difference_synapse is None:
             difference_synapse = recurrent_synapse

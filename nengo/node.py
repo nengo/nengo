@@ -15,7 +15,7 @@ from nengo.utils.stdlib import checked_call
 class OutputParam(Parameter):
     def __init__(self, name, default, optional=True, readonly=False):
         assert optional  # None has meaning (passthrough node)
-        super(OutputParam, self).__init__(name, default, optional, readonly)
+        super().__init__(name, default, optional, readonly)
 
     def _fn_args_validation_error(self, output, attr, node):
         n_args = 2 if node.size_in > 0 else 1
@@ -40,7 +40,7 @@ class OutputParam(Parameter):
                                   attr=self.name, obj=node)
 
     def coerce(self, node, output):
-        output = super(OutputParam, self).coerce(node, output)
+        output = super().coerce(node, output)
 
         size_in_set = node.size_in is not None
         node.size_in = node.size_in if size_in_set else 0
@@ -174,7 +174,7 @@ class Node(NengoObject):
         if not (seed is Default or seed is None):
             raise NotImplementedError(
                 "Changing the seed of a node has no effect")
-        super(Node, self).__init__(label=label, seed=seed)
+        super().__init__(label=label, seed=seed)
 
         self.size_in = size_in
         self.size_out = size_out

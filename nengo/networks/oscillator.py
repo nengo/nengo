@@ -32,7 +32,7 @@ class Oscillator(nengo.Network):
         if 'net' in kwargs:
             raise ObsoleteError("The 'net' argument is no longer supported.")
         kwargs.setdefault('label', "Oscillator")
-        super(Oscillator, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         with self:
             self.input = nengo.Node(label="In", size_in=2)

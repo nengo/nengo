@@ -44,7 +44,7 @@ class Buffer(Module):
                  add_to_container=None):
         warnings.warn("Buffer is deprecated in favour of spa.State",
                       DeprecationWarning)
-        super(Buffer, self).__init__(label, seed, add_to_container)
+        super().__init__(label, seed, add_to_container)
 
         if vocab is None:
             # use the default one for this dimensionality

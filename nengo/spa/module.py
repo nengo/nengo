@@ -13,7 +13,7 @@ class Module(nengo.Network):
     """
 
     def __init__(self, label=None, seed=None, add_to_container=None):
-        super(Module, self).__init__(label, seed, add_to_container)
+        super().__init__(label, seed, add_to_container)
         self.inputs = {}
         self.outputs = {}
 

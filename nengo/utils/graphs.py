@@ -47,7 +47,7 @@ def graph(edges=None):
     return g
 
 
-class BidirectionalDAG(object):
+class BidirectionalDAG:
     """Directed acyclic graph supporting bidirectional traversal.
 
     Parameters

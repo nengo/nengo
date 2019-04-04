@@ -33,8 +33,6 @@ order as each one gives the start of the next header (corresponding to the
 end of the array data).
 """
 
-from __future__ import absolute_import
-
 import os
 import pickle
 import struct
@@ -45,7 +43,7 @@ from .cache import byte_align
 from ..exceptions import CacheIOError
 
 
-class Subfile(object):
+class Subfile:
     """A file-like object for limiting reads to a subrange of a file.
 
     This class only supports reading and seeking. Writing is not supported.

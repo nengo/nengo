@@ -63,7 +63,7 @@ class SimBCM(Operator):
 
     def __init__(self, pre_filtered, post_filtered, theta, delta,
                  learning_rate, tag=None):
-        super(SimBCM, self).__init__(tag=tag)
+        super().__init__(tag=tag)
         self.learning_rate = learning_rate
 
         self.sets = []
@@ -163,7 +163,7 @@ class SimOja(Operator):
 
     def __init__(self, pre_filtered, post_filtered, weights, delta,
                  learning_rate, beta, tag=None):
-        super(SimOja, self).__init__(tag=tag)
+        super().__init__(tag=tag)
         self.learning_rate = learning_rate
         self.beta = beta
 
@@ -266,7 +266,7 @@ class SimVoja(Operator):
 
     def __init__(self, pre_decoded, post_filtered, scaled_encoders, delta,
                  scale, learning_signal, learning_rate, tag=None):
-        super(SimVoja, self).__init__(tag=tag)
+        super().__init__(tag=tag)
         self.scale = scale
         self.learning_rate = learning_rate
 

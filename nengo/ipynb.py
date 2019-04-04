@@ -63,7 +63,7 @@ class IPythonProgressWidget(DOMWidget):
     if notebook_version[0] >= 4:
         _view_module = traitlets.Unicode('nengo', sync=True)
     progress = traitlets.Float(0., sync=True)
-    text = traitlets.Unicode(u'', sync=True)
+    text = traitlets.Unicode('', sync=True)
 
     WIDGET = '''
       var NengoProgressBar = widgets.DOMWidgetView.extend({
@@ -164,7 +164,7 @@ class IPython2ProgressBar(ProgressBar):
         warnings.warn(
             "IPython2ProgressBar is deprecated. Please upgrade to IPython "
             "version 5 or later.", DeprecationWarning)
-        super(IPython2ProgressBar, self).__init__(task)
+        super().__init__(task)
         self._escaped_task = escape(task)
         self._widget = IPythonProgressWidget()
         self._initialized = False

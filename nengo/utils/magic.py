@@ -47,7 +47,7 @@ import functools
 import inspect
 
 
-class ObjectProxyMethods(object):
+class ObjectProxyMethods:
     """Properly override __module__ and __doc__.
 
     If we add these in ObjectProxy, the derived class __dict__ will
@@ -154,7 +154,7 @@ class BoundFunctionWrapper(ObjectProxy):
     __slots__ = ('instance', 'wrapper', 'binding', 'parent')
 
     def __init__(self, wrapped, instance, wrapper, binding, parent):
-        super(BoundFunctionWrapper, self).__init__(wrapped)
+        super().__init__(wrapped)
         # Using object.__setattr__ to subvert ObjectProxy.__setattr__
         object.__setattr__(self, 'instance', instance)
         object.__setattr__(self, 'wrapper', wrapper)
@@ -193,7 +193,7 @@ class FunctionWrapper(ObjectProxy):
     __slots__ = ('wrapper', 'binding')
 
     def __init__(self, wrapped, wrapper):
-        super(FunctionWrapper, self).__init__(wrapped)
+        super().__init__(wrapped)
         # Using object.__setattr__ to subvert ObjectProxy.__setattr__
         object.__setattr__(self, 'wrapper', wrapper)
         if isinstance(wrapped, classmethod):
@@ -243,7 +243,7 @@ def decorator(wrapper):
         def my_decorator(wrapped, instance, args, kwargs):
             return wrapped(*args, **kwargs)
 
-        class MyClass(object):
+        class MyClass:
             @my_decorator
             def f(self):
                 return self.num + 1

@@ -161,7 +161,7 @@ def test_config_property():
 
 
 def test_external_class():
-    class A(object):
+    class A:
         thing = Parameter('thing', default='hey')
 
     inst = A()
@@ -179,7 +179,7 @@ def test_external_class():
 
 def test_instance_fallthrough():
     """If the class default is set, instances should use that."""
-    class A(object):
+    class A:
         pass
 
     inst1 = A()
@@ -207,7 +207,7 @@ def test_instance_fallthrough():
 
 
 def test_contains():
-    class A(object):
+    class A:
         pass
 
     cfg = nengo.Config(A)

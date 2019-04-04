@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import warnings
 
 import numpy as np
@@ -60,7 +58,7 @@ class PDF(Distribution):
     p = NdarrayParam('p', shape='*')
 
     def __init__(self, x, p):
-        super(PDF, self).__init__()
+        super().__init__()
 
         psum = np.sum(p)
         if np.abs(psum - 1) > 1e-8:
@@ -109,7 +107,7 @@ class Uniform(Distribution):
     integer = BoolParam('integer')
 
     def __init__(self, low, high, integer=False):
-        super(Uniform, self).__init__()
+        super().__init__()
         self.low = low
         self.high = high
         self.integer = integer
@@ -144,7 +142,7 @@ class Gaussian(Distribution):
     std = NumberParam('std', low=0, low_open=True)
 
     def __init__(self, mean, std):
-        super(Gaussian, self).__init__()
+        super().__init__()
         self.mean = mean
         self.std = std
 
@@ -191,7 +189,7 @@ class Exponential(Distribution):
     high = NumberParam('high')
 
     def __init__(self, scale, shift=0., high=np.inf):
-        super(Exponential, self).__init__()
+        super().__init__()
         self.scale = scale
         self.shift = shift
         self.high = high
@@ -225,7 +223,7 @@ class UniformHypersphere(Distribution):
     min_magnitude = NumberParam('min_magnitude', low=0, high=1, high_open=True)
 
     def __init__(self, surface=False, min_magnitude=0):
-        super(UniformHypersphere, self).__init__()
+        super().__init__()
         if surface and min_magnitude > 0:
             warnings.warn("min_magnitude ignored because surface is True")
         self.surface = surface
@@ -271,7 +269,7 @@ class Choice(Distribution):
     weights = NdarrayParam('weights', shape=('*'), optional=True)
 
     def __init__(self, options, weights=None):
-        super(Choice, self).__init__()
+        super().__init__()
         self.options = options
         self.weights = weights
 
@@ -322,7 +320,7 @@ class Samples(Distribution):
     samples = NdarrayParam('samples', shape=('...',))
 
     def __init__(self, samples):
-        super(Samples, self).__init__()
+        super().__init__()
         self.samples = samples
 
     def sample(self, n, d=None, rng=np.random):
@@ -373,7 +371,7 @@ class SqrtBeta(Distribution):
     m = IntParam('m', low=0)
 
     def __init__(self, n, m=1):
-        super(SqrtBeta, self).__init__()
+        super().__init__()
         self.n = n
         self.m = m
 
@@ -457,8 +455,7 @@ class SubvectorLength(SqrtBeta):
     """
 
     def __init__(self, dimensions, subdimensions=1):
-        super(SubvectorLength, self).__init__(
-            dimensions - subdimensions, subdimensions)
+        super().__init__(dimensions - subdimensions, subdimensions)
 
     @property
     def dimensions(self):
@@ -508,21 +505,21 @@ class CosineSimilarity(SubvectorLength):
     """
 
     def __init__(self, dimensions):
-        super(CosineSimilarity, self).__init__(dimensions)
+        super().__init__(dimensions)
 
     def sample(self, num, d=None, rng=np.random):
         shape = self._sample_shape(num, d)
         sign = Choice((1, -1)).sample(np.prod(shape), rng=rng).reshape(*shape)
-        return sign * super(CosineSimilarity, self).sample(num, d, rng=rng)
+        return sign * super().sample(num, d, rng=rng)
 
     def cdf(self, x):
-        return (super(CosineSimilarity, self).cdf(x) * np.sign(x) + 1) / 2.0
+        return (super().cdf(x) * np.sign(x) + 1) / 2.0
 
     def pdf(self, x):
-        return super(CosineSimilarity, self).pdf(x) / 2.0
+        return super().pdf(x) / 2.0
 
     def ppf(self, y):
-        x = super(CosineSimilarity, self).ppf(abs(y*2 - 1))
+        x = super().ppf(abs(y*2 - 1))
         return np.where(y > 0.5, x, -x)
 
 
@@ -533,7 +530,7 @@ class DistributionParam(Parameter):
 
     def coerce(self, instance, dist):
         self.check_type(instance, dist, Distribution)
-        return super(DistributionParam, self).coerce(instance, dist)
+        return super().coerce(instance, dist)
 
 
 class DistOrArrayParam(NdarrayParam):
@@ -541,13 +538,12 @@ class DistOrArrayParam(NdarrayParam):
 
     def __init__(self, name, default=Unconfigurable, sample_shape=None,
                  optional=False, readonly=None):
-        super(DistOrArrayParam, self).__init__(
-            name, default, sample_shape, optional, readonly)
+        super().__init__(name, default, sample_shape, optional, readonly)
 
     def coerce(self, instance, distorarray):
         if isinstance(distorarray, Distribution):
             return Parameter.coerce(self, instance, distorarray)
-        return super(DistOrArrayParam, self).coerce(instance, distorarray)
+        return super().coerce(instance, distorarray)
 
 
 def get_samples(dist_or_samples, n, d=None, rng=np.random):

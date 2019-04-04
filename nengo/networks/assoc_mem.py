@@ -52,7 +52,7 @@ class AssociativeMemory(nengo.Network):
                  n_neurons=50, threshold=0.3, input_scales=1.0,
                  inhibitable=False,
                  label=None, seed=None, add_to_container=None):
-        super(AssociativeMemory, self).__init__(label, seed, add_to_container)
+        super().__init__(label, seed, add_to_container)
 
         # --- Put arguments in canonical form
         if output_vectors is None:

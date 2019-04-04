@@ -4,7 +4,7 @@ from nengo.exceptions import SpaParseError
 from nengo.utils.numpy import is_number
 
 
-class Symbol(object):
+class Symbol:
     """A set of semantic pointer symbols and associated math.
 
     This is an abstract semantic pointer (not associated with a particular
@@ -69,7 +69,7 @@ class Symbol(object):
         return str(self.symbol)
 
 
-class Source(object):
+class Source:
     """A particular source of a vector for the action system.
 
     This will always refer to a particular named output from a
@@ -127,7 +127,7 @@ class Source(object):
         return "%s%s" % (trans_text, self.name)
 
 
-class DotProduct(object):
+class DotProduct:
     """The dot product of a Source and a Source or a Source and a Symbol.
 
     This represents a similarity measure for computing the utility of
@@ -195,7 +195,7 @@ class DotProduct(object):
         return "%sdot(%s, %s)" % (scale_text, self.item1, self.item2)
 
 
-class Convolution(object):
+class Convolution:
     """The convolution of two sources together."""
 
     def __init__(self, source1, source2, transform=Symbol('1')):
@@ -232,7 +232,7 @@ class Convolution(object):
             self.source1, self.source2, self.transform)
 
 
-class Summation(object):
+class Summation:
     """A summation over all subexpressions."""
 
     def __init__(self, items):

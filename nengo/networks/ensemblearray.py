@@ -87,7 +87,7 @@ class EnsembleArray(nengo.Network):
                 "the number of dimensions per ensemble, use 'ens_dimensions'.",
                 attr='dimensions', obj=self)
 
-        super(EnsembleArray, self).__init__(label, seed, add_to_container)
+        super().__init__(label, seed, add_to_container)
 
         for param in ens_kwargs:
             if is_iterable(ens_kwargs[param]):

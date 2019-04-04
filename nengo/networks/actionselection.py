@@ -10,7 +10,7 @@ from nengo.solvers import NnlsL2nz
 
 
 # connection weights from (Gurney, Prescott, & Redgrave, 2001)
-class Weights(object):
+class Weights:
     mm = 1
     mp = 1
     me = 1
@@ -156,7 +156,7 @@ class BasalGanglia(nengo.Network):
         if 'net' in kwargs:
             raise ObsoleteError("The 'net' argument is no longer supported.")
         kwargs.setdefault('label', "Basal Ganglia")
-        super(BasalGanglia, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         ampa_config, override_ampa = config_with_default_synapse(
             ampa_config, nengo.Lowpass(0.002))
@@ -297,7 +297,7 @@ class Thalamus(nengo.Network):
         if 'net' in kwargs:
             raise ObsoleteError("The 'net' argument is no longer supported.")
         kwargs.setdefault('label', "Thalamus")
-        super(Thalamus, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         with self:
             self.actions = EnsembleArray(n_neurons_per_ensemble, dimensions,

@@ -4,7 +4,7 @@ from nengo.exceptions import ValidationError
 from nengo.utils.numpy import is_integer, is_number
 
 
-class SemanticPointer(object):
+class SemanticPointer:
     """A Semantic Pointer, based on Holographic Reduced Representations.
 
     Operators are overloaded so that ``+`` and ``-`` are addition,

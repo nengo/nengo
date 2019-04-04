@@ -12,7 +12,7 @@ from nengo.probe import Probe
 from nengo.utils.threading import ThreadLocalStack
 
 
-class Network(object):
+class Network:
     """A network contains ensembles, nodes, connections, and other networks.
 
     A network is primarily used for grouping together related

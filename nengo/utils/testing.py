@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 from inspect import getfullargspec
 import itertools
 import logging
@@ -14,7 +12,7 @@ import numpy as np
 from .logging import CaptureLogHandler, console_formatter
 
 
-class Mock(object):
+class Mock:
     def __init__(self, *args, **kwargs):
         pass
 
@@ -42,7 +40,7 @@ class Mock(object):
             return Mock()
 
 
-class Recorder(object):
+class Recorder:
     def __init__(self, dirname, module_name, function_name):
         self.dirname = dirname
         self.module_name = module_name
@@ -122,7 +120,7 @@ class Analytics(Recorder):
     DOC_KEY = 'documentation'
 
     def __init__(self, dirname, module_name, function_name):
-        super(Analytics, self).__init__(dirname, module_name, function_name)
+        super().__init__(dirname, module_name, function_name)
 
         self.data = {}
         self.doc = {}
@@ -395,7 +393,7 @@ def load_functions(modules, pattern='^test_', arg_pattern='^Simulator$'):
     return tests
 
 
-class ThreadedAssertion(object):
+class ThreadedAssertion:
     """Performs assertions in parallel.
 
     Starts a number of threads, waits for each thread to execute some
@@ -404,7 +402,7 @@ class ThreadedAssertion(object):
 
     class AssertionWorker(threading.Thread):
         def __init__(self, parent, barriers, n):
-            super(ThreadedAssertion.AssertionWorker, self).__init__()
+            super().__init__()
             self.parent = parent
             self.barriers = barriers
             self.n = n

@@ -25,8 +25,7 @@ class LearningRuleTypeSizeInParam(IntParam):
                     % (size_in, self.strings), attr=self.name, obj=instance)
             return size_in
         else:
-            return super(LearningRuleTypeSizeInParam, self).coerce(
-                instance, size_in)  # IntParam validation
+            return super().coerce(instance, size_in)  # IntParam validation
 
 
 class LearningRuleType(FrozenObject, SupportDefaultsMixin):
@@ -84,7 +83,7 @@ class LearningRuleType(FrozenObject, SupportDefaultsMixin):
     size_in = LearningRuleTypeSizeInParam('size_in', low=0)
 
     def __init__(self, learning_rate=Default, size_in=0):
-        super(LearningRuleType, self).__init__()
+        super().__init__()
         self.learning_rate = learning_rate
         self.size_in = size_in
 
@@ -156,7 +155,7 @@ class PES(LearningRuleType):
 
     def __init__(self, learning_rate=Default, pre_synapse=Default,
                  pre_tau=Unconfigurable):
-        super(PES, self).__init__(learning_rate, size_in='post_state')
+        super().__init__(learning_rate, size_in='post_state')
         if learning_rate is not Default and learning_rate >= 1.0:
             warnings.warn("This learning rate is very high, and can result "
                           "in floating point errors from too much current.")
@@ -235,7 +234,7 @@ class BCM(LearningRuleType):
                  post_synapse=Default, theta_synapse=Default,
                  pre_tau=Unconfigurable, post_tau=Unconfigurable,
                  theta_tau=Unconfigurable):
-        super(BCM, self).__init__(learning_rate, size_in=0)
+        super().__init__(learning_rate, size_in=0)
 
         if pre_tau is Unconfigurable:
             self.pre_synapse = pre_synapse
@@ -321,7 +320,7 @@ class Oja(LearningRuleType):
     def __init__(self, learning_rate=Default, pre_synapse=Default,
                  post_synapse=Default, beta=Default,
                  pre_tau=Unconfigurable, post_tau=Unconfigurable):
-        super(Oja, self).__init__(learning_rate, size_in=0)
+        super().__init__(learning_rate, size_in=0)
 
         self.beta = beta
 
@@ -381,7 +380,7 @@ class Voja(LearningRuleType):
 
     def __init__(self, learning_rate=Default, post_synapse=Default,
                  post_tau=Unconfigurable):
-        super(Voja, self).__init__(learning_rate, size_in=1)
+        super().__init__(learning_rate, size_in=1)
 
         if post_tau is Unconfigurable:
             self.post_synapse = post_synapse
@@ -410,4 +409,4 @@ class LearningRuleTypeParam(Parameter):
                 self.check_rule(instance, r)
         elif rule is not None:
             self.check_rule(instance, rule)
-        return super(LearningRuleTypeParam, self).coerce(instance, rule)
+        return super().coerce(instance, rule)

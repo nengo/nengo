@@ -102,7 +102,7 @@ class ConvInc(Operator):
     4. updates ``[]``
     """
     def __init__(self, W, X, Y, conv, tag=None):
-        super(ConvInc, self).__init__(tag=tag)
+        super().__init__(tag=tag)
 
         self.conv = conv
 

@@ -34,7 +34,7 @@ class PrePostParam(NengoObjectParam):
                 "Cannot connect to or from connections. "
                 "Did you mean to connect to the connection's learning rule?",
                 attr=self.name, obj=conn)
-        return super(PrePostParam, self).coerce(conn, nengo_obj)
+        return super().coerce(conn, nengo_obj)
 
 
 class ConnectionLearningRuleTypeParam(LearningRuleTypeParam):
@@ -43,7 +43,7 @@ class ConnectionLearningRuleTypeParam(LearningRuleTypeParam):
     coerce_defaults = False
 
     def check_rule(self, conn, rule):
-        super(ConnectionLearningRuleTypeParam, self).check_rule(conn, rule)
+        super().check_rule(conn, rule)
 
         # --- Check pre object
         pre = conn.pre_obj
@@ -106,7 +106,7 @@ class ConnectionSolverParam(SolverParam):
     coerce_defaults = False
 
     def coerce(self, conn, solver):
-        solver = super(ConnectionSolverParam, self).coerce(conn, solver)
+        solver = super().coerce(conn, solver)
         if solver is not None:
             if solver.weights and not isinstance(conn.pre_obj, Ensemble):
                 raise ValidationError(
@@ -130,7 +130,7 @@ class EvalPointsParam(DistOrArrayParam):
             msg = ("eval_points are only valid on connections from ensembles "
                    "(got type '%s')" % type(conn.pre).__name__)
             raise ValidationError(msg, attr=self.name, obj=conn)
-        return super(EvalPointsParam, self).coerce(conn, distorarray)
+        return super().coerce(conn, distorarray)
 
 
 class ConnectionFunctionParam(Parameter):
@@ -173,7 +173,7 @@ class ConnectionFunctionParam(Parameter):
                     attr=self.name, obj=conn)
 
     def coerce(self, conn, function):
-        function = super(ConnectionFunctionParam, self).coerce(conn, function)
+        function = super().coerce(conn, function)
 
         if function is None:
             function_info = FunctionInfo(function=None, size=None)
@@ -187,7 +187,7 @@ class ConnectionFunctionParam(Parameter):
             function_info = FunctionInfo(
                 function=function, size=self.determine_size(conn, function))
             # TODO: necessary?
-            super(ConnectionFunctionParam, self).coerce(conn, function_info)
+            super().coerce(conn, function_info)
         else:
             raise ValidationError("Invalid connection function type %r "
                                   "(must be callable or array-like)"
@@ -261,7 +261,7 @@ class ConnectionTransformParam(Parameter):
                     "Output object selection has repeated indices",
                     attr=self.name, obj=conn)
 
-        return super(ConnectionTransformParam, self).coerce(conn, transform)
+        return super().coerce(conn, transform)
 
 
 class Connection(NengoObject):
@@ -421,7 +421,7 @@ class Connection(NengoObject):
                  transform=Default, solver=Default, learning_rule_type=Default,
                  eval_points=Default, scale_eval_points=Default,
                  label=Default, seed=Default, modulatory=Unconfigurable):
-        super(Connection, self).__init__(label=label, seed=seed)
+        super().__init__(label=label, seed=seed)
 
         self.pre = pre
         self.post = post
@@ -539,7 +539,7 @@ class Connection(NengoObject):
         return self.post.size_in
 
 
-class LearningRule(object):
+class LearningRule:
     """An interface for making connections to a learning rule.
 
     Connections to a learning rule are to allow elements of the network to

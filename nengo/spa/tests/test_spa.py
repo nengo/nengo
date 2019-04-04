@@ -56,7 +56,7 @@ def test_spa_module_exception():
 
     class TestModule(spa.module.Module):
         def __init__(self):
-            super(TestModule, self).__init__()
+            super().__init__()
             raise MyException()
 
     with pytest.raises(MyException):

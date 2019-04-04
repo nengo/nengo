@@ -792,7 +792,7 @@ def test_eval_points_scaling(Simulator, sample, radius, seed, rng, scale):
 
 def test_solverparam():
     """SolverParam must be a solver."""
-    class Test(object):
+    class Test:
         sp = ConnectionSolverParam('sp', default=None)
 
     inst = Test()

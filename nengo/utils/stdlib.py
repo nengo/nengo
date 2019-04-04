@@ -2,8 +2,6 @@
 Functions that extend the Python Standard Library.
 """
 
-from __future__ import absolute_import
-
 import collections
 import inspect
 import itertools
@@ -18,7 +16,7 @@ class WeakKeyDefaultDict(collections.MutableMapping):
     """WeakKeyDictionary that allows to define a default."""
 
     def __init__(self, default_factory, items=None, **kwargs):
-        super(WeakKeyDefaultDict, self).__init__()
+        super().__init__()
         self.default_factory = default_factory
         self._data = weakref.WeakKeyDictionary(items, **kwargs)
 
@@ -51,7 +49,7 @@ class WeakKeyIDDictionary(collections.MutableMapping):
     """
 
     def __init__(self, *args, **kwargs):
-        super(WeakKeyIDDictionary, self).__init__()
+        super().__init__()
         self._keyrefs = weakref.WeakValueDictionary()
         self._keyvalues = {}
         self._ref2id = {}
@@ -132,7 +130,7 @@ class WeakSet(collections.MutableSet):
     """Uses weak references to store the items in the set."""
 
     def __init__(self, items=None):
-        super(WeakSet, self).__init__()
+        super().__init__()
         self._data = weakref.WeakKeyDictionary()
         if items is not None:
             self |= items
@@ -277,7 +275,7 @@ else:
         return terminal_size(w, h)
 
 
-class Timer(object):
+class Timer:
     """A context manager for timing a block of code.
 
     Attributes

@@ -9,7 +9,7 @@ from nengo.cache import NoDecoderCache
 from nengo.exceptions import BuildError
 
 
-class Model(object):
+class Model:
     """Stores artifacts from the build process, which are used by `.Simulator`.
 
     Parameters
@@ -144,7 +144,7 @@ class Model(object):
         return obj in self.params
 
 
-class Builder(object):
+class Builder:
     """Manages the build functions known to the Nengo build process.
 
     Consists of two class methods to encapsulate the build function registry.

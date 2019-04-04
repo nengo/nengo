@@ -29,7 +29,7 @@ class ProbeDict(Mapping):
     """
 
     def __init__(self, raw):
-        super(ProbeDict, self).__init__()
+        super().__init__()
         self.raw = raw
         self._cache = {}
 
@@ -59,7 +59,7 @@ class ProbeDict(Mapping):
         self._cache.clear()
 
 
-class Simulator(object):
+class Simulator:
     """Reference simulator for Nengo models.
 
     The simulator takes a `.Network` and builds internal data structures to

@@ -76,8 +76,8 @@ source_suffix = '.rst'
 source_encoding = 'utf-8'
 master_doc = 'index'
 
-project = u'Nengo'
-authors = u'Applied Brain Research'
+project = 'Nengo'
+authors = 'Applied Brain Research'
 copyright = nengo.__copyright__
 version = '.'.join(nengo.__version__.split('.')[:2])  # Short X.Y version
 release = nengo.__version__  # Full version, with tags

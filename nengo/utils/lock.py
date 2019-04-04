@@ -2,7 +2,7 @@ from nengo.exceptions import TimeoutError
 from nengo._vendor import portalocker
 
 
-class FileLock(object):
+class FileLock:
     def __init__(self, filename, timeout=10., poll=0.1):
         self.filename = filename
         self.timeout = timeout

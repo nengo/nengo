@@ -1,11 +1,9 @@
-from __future__ import absolute_import
-
-import warnings
 from distutils.version import LooseVersion
+import warnings
 
-import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+import numpy as np
 
 from nengo.utils.ensemble import tuning_curves
 

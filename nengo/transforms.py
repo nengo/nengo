@@ -48,9 +48,9 @@ class ChannelShapeParam(ShapeParam):
                     "channels_last=%s"
                     % (transform.channels_last, shape.channels_last),
                     attr=self.name, obj=transform)
-            super(ChannelShapeParam, self).coerce(transform, shape.shape)
+            super().coerce(transform, shape.shape)
         else:
-            super(ChannelShapeParam, self).coerce(transform, shape)
+            super().coerce(transform, shape)
             shape = ChannelShape(shape, channels_last=transform.channels_last)
         return shape
 
@@ -73,7 +73,7 @@ class Dense(Transform):
     init = DistOrArrayParam("init")
 
     def __init__(self, shape, init=1.0):
-        super(Dense, self).__init__()
+        super().__init__()
 
         self.shape = shape
 
@@ -178,7 +178,7 @@ class Convolution(Transform):
     def __init__(self, n_filters, input_shape, kernel_size=(3, 3),
                  strides=(1, 1), padding="valid", channels_last=True,
                  init=nengo.dists.Uniform(-1, 1)):
-        super(Convolution, self).__init__()
+        super().__init__()
 
         self.n_filters = n_filters
         self.channels_last = channels_last  # must be set before input_shape
@@ -264,7 +264,7 @@ class Convolution(Transform):
         return ChannelShape(output_shape, channels_last=self.channels_last)
 
 
-class ChannelShape(object):
+class ChannelShape:
     """Represents shape information with variable channel position.
 
     Parameters

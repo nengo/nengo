@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import sys
 
 import numpy as np
@@ -17,7 +15,7 @@ from nengo.synapses import Lowpass
 
 class DistributionMock(Distribution):
     def __init__(self, retval):
-        super(DistributionMock, self).__init__()
+        super().__init__()
         self.retval = retval
         self.sample_calls = []
 
@@ -339,7 +337,7 @@ def test_present_input(Simulator, rng):
         assert np.allclose(image, images[ii], rtol=1e-4, atol=1e-7), (k, ii)
 
 
-class TestPiecewise(object):
+class TestPiecewise:
 
     def run_sim(self, data, interpolation, Simulator):
         process = Piecewise(data, interpolation=interpolation)

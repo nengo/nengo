@@ -20,7 +20,7 @@ def testfile(data, tmpdir):
     return f
 
 
-class TestSubfile(object):
+class TestSubfile:
     def test_reads_only_from_start_to_end(self, data, testfile):
         with testfile.open() as f:
             assert Subfile(f, 2, 6).read() == data[2:6]

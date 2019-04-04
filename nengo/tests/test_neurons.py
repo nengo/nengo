@@ -449,7 +449,7 @@ def test_reset(Simulator, nl_nodirect, seed, rng):
 
 def test_neurontypeparam():
     """NeuronTypeParam must be a neuron type."""
-    class Test(object):
+    class Test:
         ntp = NeuronTypeParam('ntp', default=None)
 
     inst = Test()

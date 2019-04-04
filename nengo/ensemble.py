@@ -144,7 +144,7 @@ class Ensemble(NengoObject):
                  n_eval_points=Default, neuron_type=Default, gain=Default,
                  bias=Default, noise=Default, normalize_encoders=Default,
                  label=Default, seed=Default):
-        super(Ensemble, self).__init__(label=label, seed=seed)
+        super().__init__(label=label, seed=seed)
         self.n_neurons = n_neurons
         self.dimensions = dimensions
         self.radius = radius
@@ -185,7 +185,7 @@ class Ensemble(NengoObject):
         return self.dimensions
 
 
-class Neurons(object):
+class Neurons:
     """An interface for making connections directly to an ensemble's neurons.
 
     This should only ever be accessed through the ``neurons`` attribute of an

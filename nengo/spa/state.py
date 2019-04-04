@@ -50,7 +50,7 @@ class State(Module):
     def __init__(self, dimensions, subdimensions=16, neurons_per_dimension=50,
                  feedback=0.0, feedback_synapse=0.1, vocab=None, label=None,
                  seed=None, add_to_container=None):
-        super(State, self).__init__(label, seed, add_to_container)
+        super().__init__(label, seed, add_to_container)
 
         if vocab is None:
             # use the default one for this dimensionality

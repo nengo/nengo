@@ -37,7 +37,7 @@ class WhiteNoise(Process):
     scale = BoolParam('scale')
 
     def __init__(self, dist=Gaussian(mean=0, std=1), scale=True, **kwargs):
-        super(WhiteNoise, self).__init__(default_size_in=0, **kwargs)
+        super().__init__(default_size_in=0, **kwargs)
         self.dist = dist
         self.scale = scale
 
@@ -90,7 +90,7 @@ class FilteredNoise(Process):
     def __init__(self,
                  synapse=Lowpass(tau=0.005), dist=Gaussian(mean=0, std=1),
                  scale=True, synapse_kwargs=None, **kwargs):
-        super(FilteredNoise, self).__init__(default_size_in=0, **kwargs)
+        super().__init__(default_size_in=0, **kwargs)
         self.synapse = synapse
         self.synapse_kwargs = {} if synapse_kwargs is None else synapse_kwargs
         self.dist = dist
@@ -133,7 +133,7 @@ class BrownNoise(FilteredNoise):
     """
 
     def __init__(self, dist=Gaussian(mean=0, std=1), **kwargs):
-        super(BrownNoise, self).__init__(
+        super().__init__(
             synapse=LinearFilter([1], [1, 0]),
             synapse_kwargs=dict(method='euler'),
             dist=dist, **kwargs)
@@ -176,7 +176,7 @@ class WhiteSignal(Process):
     y0 = NumberParam('y0', optional=True)
 
     def __init__(self, period, high, rms=0.5, y0=None, **kwargs):
-        super(WhiteSignal, self).__init__(default_size_in=0, **kwargs)
+        super().__init__(default_size_in=0, **kwargs)
         self.period = period
         self.high = high
         self.rms = rms
@@ -248,7 +248,7 @@ class PresentInput(Process):
     def __init__(self, inputs, presentation_time, **kwargs):
         self.inputs = inputs
         self.presentation_time = presentation_time
-        super(PresentInput, self).__init__(
+        super().__init__(
             default_size_in=0, default_size_out=self.inputs[0].size, **kwargs)
 
     def make_step(self, shape_in, shape_out, dt, rng):
@@ -274,7 +274,7 @@ class PiecewiseDataParam(DictParam):
     """
 
     def coerce(self, instance, data):
-        data = super(PiecewiseDataParam, self).coerce(instance, data)
+        data = super().coerce(instance, data)
 
         size_out = None
         for time, value in data.items():
@@ -413,7 +413,7 @@ class Piecewise(Process):
                     interpolation = 'zero'
         self.interpolation = interpolation
 
-        super(Piecewise, self).__init__(
+        super().__init__(
             default_size_in=0, default_size_out=self.size_out, **kwargs)
 
     @property

@@ -40,7 +40,7 @@ class Bind(Module):
     def __init__(self, dimensions, vocab=None, n_neurons=200, invert_a=False,
                  invert_b=False, input_magnitude=1.0, label=None, seed=None,
                  add_to_container=None):
-        super(Bind, self).__init__(label, seed, add_to_container)
+        super().__init__(label, seed, add_to_container)
         if vocab is None:
             # use the default vocab for this number of dimensions
             vocab = dimensions

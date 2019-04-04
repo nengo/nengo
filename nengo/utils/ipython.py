@@ -1,7 +1,5 @@
 """Functions for easy interactions with IPython and IPython notebooks."""
 
-from __future__ import absolute_import
-
 import io
 
 import numpy as np
@@ -127,13 +125,13 @@ def export_py(nb, dest_path=None):
     body, resources = exporter.from_notebook_node(nb)
 
     # Remove all lines with get_ipython
-    while u"get_ipython()" in body:
-        ind0 = body.find(u"get_ipython()")
-        ind1 = body.find(u"\n", ind0)
+    while "get_ipython()" in body:
+        ind0 = body.find("get_ipython()")
+        ind1 = body.find("\n", ind0)
         body = body[:ind0] + body[(ind1 + 1):]
 
-    if u"plt" in body:
-        body += u"\nplt.show()\n"
+    if "plt" in body:
+        body += "\nplt.show()\n"
 
     if dest_path is not None:
         with io.open(dest_path, 'w', encoding='utf-8') as f:

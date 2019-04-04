@@ -186,7 +186,7 @@ class CircularConvolution(nengo.Network):
         if 'net' in kwargs:
             raise ObsoleteError("The 'net' argument is no longer supported.")
         kwargs.setdefault('label', "Circular convolution")
-        super(CircularConvolution, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         tr_a = transform_in(dimensions, 'A', invert_a)
         tr_b = transform_in(dimensions, 'B', invert_b)
