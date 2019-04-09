@@ -79,3 +79,39 @@ def test_unsupported(xfail, testdir):
         assert "xfailed" not in outcomes
     assert "failed" not in outcomes
     assert outcomes["passed"] == 2
+
+
+def test_pyargs(testdir):
+    # create a simulator that does not support any tests
+    # (we don't actually want to run all the tests)
+    testdir.makeconftest(
+        """
+        import nengo.conftest
+
+        class MockSimulator(object):
+            pass
+
+        nengo.conftest.TestConfig.Simulator = MockSimulator
+        """)
+
+    # mark all the tests as unsupported
+    testdir.makefile(".ini", pytest="""
+        [pytest]
+        nengo_test_unsupported =
+            *
+                "Using mock simulator"
+        """)
+
+    try:
+        outcomes = testdir.runpytest(
+            "-p", "nengo.tests.options",
+            "--pyargs", "nengo",
+        ).parseoutcomes()
+    finally:
+        # runpytest runs in-process, so we have to undo changes to TestConfig
+        nengo.conftest.TestConfig.Simulator = nengo.Simulator
+
+    assert "failed" not in outcomes
+    assert "passed" not in outcomes
+    assert outcomes["skipped"] > 350
+    assert outcomes["deselected"] > 700
