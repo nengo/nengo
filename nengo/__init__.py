@@ -63,5 +63,5 @@ try:
 except AttributeError:
     pass
 
-__copyright__ = "2013-2017, Applied Brain Research"
+__copyright__ = "2013-2019, Applied Brain Research"
 __license__ = "Free for non-commercial use; see LICENSE.rst"
