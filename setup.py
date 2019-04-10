@@ -80,6 +80,7 @@ setup(
     },
     classifiers=[  # https://pypi.python.org/pypi?%3Aaction=list_classifiers
         "Development Status :: 5 - Production/Stable",
+        "Framework :: Nengo",
         "Intended Audience :: Science/Research",
         "License :: Free for non-commercial use",
         "Operating System :: OS Independent",
