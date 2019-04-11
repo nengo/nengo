@@ -246,33 +246,11 @@ def groupby(objects, key, hashable=None, force_list=True):
             return keygroupers
 
 
-# terminal_size was introduced in Python 3.3
-if hasattr(os, 'terminal_size'):
-    terminal_size = os.terminal_size
-else:
-    terminal_size = collections.namedtuple(
-        'terminal_size', ['columns', 'lines'])
-
-
-# get_terminal_size was introduced in Python 3.3
-if hasattr(shutil, 'get_terminal_size'):
-    def get_terminal_size(fallback=(80, 24)):
-        try:
-            return shutil.get_terminal_size(fallback)
-        except Exception:
-            return terminal_size(fallback)
-else:
-    def get_terminal_size(fallback=(80, 24)):
-        w, h = fallback
-        try:
-            w = int(os.environ['COLUMNS'])
-        except (KeyError, ValueError):
-            pass
-        try:
-            h = int(os.environ['LINES'])
-        except (KeyError, ValueError):
-            pass
-        return terminal_size(w, h)
+def get_terminal_size(fallback=(80, 24)):
+    try:
+        return shutil.get_terminal_size(fallback)
+    except Exception:  # pragma: no cover
+        return os.terminal_size(fallback)
 
 
 class Timer:
