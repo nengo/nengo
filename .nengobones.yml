@@ -2,7 +2,7 @@ pkg_name: nengo
 repo_name: nengo/nengo
 
 travis_yml:
-  python_version: "3.6"
+  python: 3.6
   global_vars:
     NUMPY_VERSION: numpy
   jobs:
@@ -12,21 +12,21 @@ travis_yml:
       test_args: --plots
     - script: test-coverage
       test_args: --plots
-      python_version: "3.5"
+      python: 3.5
     - stage: advanced
       script: docs
     - env:
-        NUMPY_VERSION: numpy=1.11
+        NUMPY_VERSION: numpy==1.11
       cache: false  # disable the cache for one build to make sure that works
     - env:
-        NUMPY_VERSION: numpy=1.12
+        NUMPY_VERSION: numpy==1.12
     - env:
-        NUMPY_VERSION: numpy=1.13
+        NUMPY_VERSION: numpy==1.13
     - env:
-        NUMPY_VERSION: numpy=1.14
+        NUMPY_VERSION: numpy==1.14
     - env:
-        NUMPY_VERSION: numpy=1.15
-    - python_version: "3.5"
+        NUMPY_VERSION: numpy==1.15
+    - python: 3.5
 
 ci_scripts:
   - template: static
@@ -36,23 +36,22 @@ ci_scripts:
       - flake8 nengo
       - flake8 --ignore=E703,W391 docs
   - template: test
-    conda_install:
+    pip_install:
       - $NUMPY_VERSION
   - template: coverage
     output_name: test-coverage
-    conda_install:
+    pip_install:
       - $NUMPY_VERSION
     coverage: true
   - template: coverage
     output_name: test-coverage-scipy
-    conda_install:
+    pip_install:
       - $NUMPY_VERSION
       - scipy
-    pip_install:
       - scikit-learn
     coverage: true
   - template: docs
-    conda_install:
+    pip_install:
       - $NUMPY_VERSION
       - scipy
       - matplotlib
