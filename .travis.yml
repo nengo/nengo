@@ -73,7 +73,7 @@ before_install:
   # upgrade pip
   - pip install pip --upgrade
   # install/run nengo-bones
-  - pip install nengo-bones
+  - pip install git+https://github.com/nengo/nengo-bones@no-conda
   - generate-bones --output-dir .ci --template-dir .ci ci-scripts
   - check-bones
   # display environment info
