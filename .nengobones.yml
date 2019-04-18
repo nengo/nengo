@@ -154,7 +154,8 @@ travis_yml:
         NUMPY: numpy==1.14
     - env:
         NUMPY: numpy==1.15
-    - python: 3.5
+    - dist: xenial
+      python: 3.7
 
 ci_scripts:
   - template: static

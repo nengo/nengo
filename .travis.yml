@@ -61,7 +61,8 @@ jobs:
     env:
       NUMPY="numpy==1.15"
   -
-    python: 3.5
+    dist: xenial
+    python: 3.7
 
 before_install:
   # export travis_terminate for use in scripts
