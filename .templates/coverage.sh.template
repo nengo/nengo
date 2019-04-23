@@ -1,4 +1,4 @@
-{% extends "test.sh.template" %}
+{% extends "templates/test.sh.template" %}
 
 {% block script %}
     {# pytest-cov doesn't work well with -p nengo.tests.options #}
