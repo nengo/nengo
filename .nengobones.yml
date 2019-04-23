@@ -1,5 +1,133 @@
+project_name: Nengo
 pkg_name: nengo
 repo_name: nengo/nengo
+description: Tools for building and simulating large-scale neural models
+
+copyright_start: 2013
+
+license_rst: {}
+
+contributing_rst: {}
+
+contributors_rst: {}
+
+manifest_in:
+  graft:
+    - nengo-data
+  recursive-include:
+    - nengo *.rst
+    - nengo *.txt
+
+setup_py:
+  package_data:
+    nengo:
+      - nengo-data/nengorc
+  entry_points:
+    nengo.backends:
+      - reference = nengo:Simulator
+  install_req:
+    - numpy>=1.11
+  doc_req:
+    - sphinx>=1.8
+    - jupyter
+    - matplotlib>=1.4
+    - nbsphinx
+    - numpydoc>=0.6
+    - nengo_sphinx_theme>=0.8
+  optional_req:
+    - scipy>=0.13
+    - scikit-learn
+  test_req:
+    - jupyter
+    - matplotlib>=1.4
+    - pytest>=3.6
+  classifiers:
+    - "Development Status :: 5 - Production/Stable"
+    - "Framework :: Nengo"
+    - "Intended Audience :: Science/Research"
+    - "License :: Free for non-commercial use"
+    - "Operating System :: OS Independent"
+    - "Programming Language :: Python :: 3 :: Only"
+    - "Programming Language :: Python :: 3.5"
+    - "Programming Language :: Python :: 3.6"
+    - "Programming Language :: Python :: 3.7"
+    - "Topic :: Scientific/Engineering :: Artificial Intelligence"
+
+setup_cfg:
+  coverage:
+    omit_files:
+      - "nengo/_vendor/*"
+      - "nengo/spa/*"
+  flake8:
+    exclude:
+      - compat.py
+      - nengo/_vendor
+  pytest:
+    norecursedirs:
+      - "*.analytics"
+      - "*.logs"
+      - "*.plots"
+      - "nengo/_vendor"
+    filterwarnings:
+      - "ignore::ImportWarning"
+      - "ignore:(Buffer|Memory|The nengo\\.spa):DeprecationWarning"
+      - "ignore:Skipping some optimization steps"
+      - "ignore:SciPy is not installed"
+      - "ignore:numpy.(dtype|ufunc) size changed"
+    markers:
+      example:
+        Mark a test as an example.
+      noassertions:
+        Mark a test without assertions. It will only be run if plots or
+        analytics data are produced.
+      slow:
+        Mark a test as slow to skip it per default.
+  pylint:
+    ignore:
+      - _vendor
+      - compat.py
+      - nengo/spa
+    disable:
+      # TODO: fix these and start checking for them
+      - abstract-method
+      - bad-continuation
+      - bad-string-format-type
+      - broad-except
+      - not-callable
+      - chained-comparison
+      - consider-iterating-dictionary
+      - consider-merging-isinstance
+      - consider-using-in
+      - cyclic-import
+      - eval-used
+      - exec-used
+      - expression-not-assigned
+      - global-statement
+      - inconsistent-return-statements
+      - invalid-unary-operand-type
+      - keyword-arg-before-vararg
+      - logging-format-interpolation
+      - missing-docstring
+      - nonexistent-operator
+      - pointless-statement
+      - redefined-argument-from-local
+      - redefined-outer-name
+      - reimported
+      - single-string-used-for-slots
+      - superfluous-parens
+      - too-many-ancestors
+      - trailing-comma-tuple
+      - undefined-loop-variable
+      - unexpected-special-method-signature
+      - unnecessary-pass
+      - unused-variable
+    known_third_party:
+      - mpl_toolkits
+
+docs_conf_py:
+  intersphinx_mapping:
+    scipy: 'https://docs.scipy.org/doc/scipy/reference'
+    sklearn: 'https://scikit-learn.org/dev'
 
 travis_yml:
   python: 3.6
@@ -32,11 +160,6 @@ travis_yml:
 
 ci_scripts:
   - template: static
-    pip_install:
-      - flake8
-    post_commands:
-      - flake8 nengo
-      - flake8 --ignore=E703,W391 docs
   - template: test
     pip_install:
       - $NUMPY_VERSION
