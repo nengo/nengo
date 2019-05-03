@@ -131,7 +131,7 @@ docs_conf_py:
 
 travis_yml:
   python: 3.6
-  bones_install: git+https://github.com/nengo/nengo-bones@no-conda
+  bones_install: git+https://github.com/nengo/nengo-bones@template-other-files
   global_vars:
     NUMPY_VERSION: numpy
   jobs:
