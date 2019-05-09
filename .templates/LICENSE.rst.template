@@ -1,4 +1,4 @@
-{% include "LICENSE.rst.template" %}
+{% include "bones/LICENSE.rst.template" %}
 
 Licensed code
 =============
