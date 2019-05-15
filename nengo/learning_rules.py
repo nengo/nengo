@@ -307,7 +307,7 @@ class Oja(LearningRuleType):
     probeable = ('pre_filtered', 'post_filtered', 'delta')
 
     learning_rate = NumberParam(
-        'learning_rate', low=0, readonly=True, default=1e-6)
+        'learning_rate', low=None, readonly=True, default=1e-6)
     pre_synapse = SynapseParam(
         'pre_synapse', default=Lowpass(tau=0.005), readonly=True)
     post_synapse = SynapseParam(
