@@ -398,6 +398,6 @@ def test_frozenobject_missing_arg_repr():
             super().__init__()
             self.a = a
 
-    fo = TestFO(3)
-    assert repr(fo).startswith("<TestFO at")
-    assert fo._argreprs == "Cannot find 'b'"
+    fobj = TestFO(3)
+    assert repr(fobj).startswith("<TestFO at")
+    assert fobj._argreprs == "Cannot find 'b'"

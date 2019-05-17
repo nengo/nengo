@@ -54,7 +54,7 @@ def build_network(model, network, progress=None):
         seed_network(network, seeds=model.seeds, seeded=model.seeded)
 
         if progress is not None:
-            # number of sub-objects, plus 1 to accont for this network
+            # number of sub-objects, plus 1 to account for this network
             progress.max_steps = len(network.all_objects) + 1
 
             def build_callback(obj):
