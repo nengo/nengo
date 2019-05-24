@@ -35,6 +35,8 @@ Release History
 - Added version tracking to documentation, so that documentation from old
   versions remains available.
   (`#1488 <https://github.com/nengo/nengo/pull/1488>`__)
+- Added support for sparse connections.
+  (`#1532 <https://github.com/nengo/nengo/pull/1532>`__)
 
 **Changed**
 

@@ -7,7 +7,7 @@ from nengo.builder.ensemble import gen_eval_points, get_activities
 from nengo.builder.node import SimPyFunc
 from nengo.builder.operator import Copy, ElementwiseInc
 from nengo.connection import Connection
-from nengo.transforms import Convolution, Dense
+from nengo.transforms import Dense
 from nengo.ensemble import Ensemble, Neurons
 from nengo.exceptions import BuildError, ObsoleteError
 from nengo.neurons import Direct
@@ -310,9 +310,10 @@ def build_connection(model, conn):
     # Build learning rules
     if conn.learning_rule is not None:
         # TODO: provide a general way for transforms to expose learnable params
-        if isinstance(conn.transform, Convolution):
+        if not isinstance(conn.transform, Dense):
             raise NotImplementedError(
-                "Learning on convolutional connections is not supported")
+                "Learning on connections with %s transforms is not supported"
+                % (type(conn.transform).__name__))
 
         rule = conn.learning_rule
         rule = [rule] if not is_iterable(rule) else rule

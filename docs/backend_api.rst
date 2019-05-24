@@ -63,6 +63,8 @@ Operators
 
 .. autoclass:: nengo.builder.operator.DotInc
 
+.. autoclass:: nengo.builder.operator.SparseDotInc
+
 .. autoclass:: nengo.builder.operator.BsrDotInc
 
 .. autoclass:: nengo.builder.operator.TimeUpdate

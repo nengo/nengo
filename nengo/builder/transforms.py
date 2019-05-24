@@ -1,9 +1,9 @@
 import numpy as np
 
-from nengo.builder import Operator, Builder, Signal
-from nengo.builder.operator import Reset, ElementwiseInc, DotInc
+from nengo.builder import Builder, Operator, Signal
+from nengo.builder.operator import DotInc, ElementwiseInc, Reset, SparseDotInc
 from nengo.exceptions import BuildError
-from nengo.transforms import Dense, Convolution
+from nengo.transforms import Convolution, Dense, Sparse
 from nengo._vendor.npconv2d import conv2d
 
 
@@ -44,6 +44,35 @@ def build_dense(model, transform, sig_in,
     return weighted, weight_sig
 
 
+@Builder.register(Sparse)
+def build_sparse(model, transform, sig_in,
+                 decoders=None, encoders=None, rng=np.random):
+    if decoders is not None:
+        raise BuildError("Applying a sparse transform to a decoded "
+                         "connection is not supported")
+
+    # Shouldn't be possible for encoders to be non-None, since that only
+    # occurs for a connection solver with weights=True, and those can only
+    # be applied to decoded connections (which are disallowed above)
+    assert encoders is None
+
+    # Add output signal
+    weighted = Signal(np.zeros(transform.size_out),
+                      name="%s.weighted" % transform)
+    model.add_op(Reset(weighted))
+
+    weights = transform.sample(rng=rng)
+    assert weights.ndim == 2
+
+    # Add operator for applying weights
+    weight_sig = Signal(weights, name="%s.weights" % transform,
+                        readonly=True)
+    model.add_op(SparseDotInc(weight_sig, sig_in, weighted,
+                              tag="%s.apply_weights" % transform))
+
+    return weighted, weight_sig
+
+
 @Builder.register(Convolution)
 def build_convolution(model, transform, sig_in,
                       decoders=None, encoders=None, rng=np.random):
@@ -51,7 +80,7 @@ def build_convolution(model, transform, sig_in,
         raise BuildError("Applying a convolution transform to a decoded "
                          "connection is not supported")
 
-    # shouldn't be possible for encoders to be non-None, since that only
+    # Shouldn't be possible for encoders to be non-None, since that only
     # occurs for a connection solver with weights=True, and those can only
     # be applied to decoded connections (which are disallowed above)
     assert encoders is None

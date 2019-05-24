@@ -7,6 +7,7 @@ from nengo.builder.optimizer import SigMerger
 from nengo.builder.signal import Signal
 from nengo.spa.tests.test_thalamus import thalamus_net
 from nengo.tests.test_learning_rules import learning_net
+from nengo.transforms import SparseMatrix
 
 
 def test_sigmerger_check():
@@ -43,6 +44,10 @@ def test_sigmerger_check():
 
     # compatible views
     assert SigMerger.check([s1[:2], s1[2:]])
+
+    # sparse signals not mergeable
+    assert not SigMerger.check([Signal(SparseMatrix([[0, 0]], 1.0, (1, 1))),
+                                Signal(SparseMatrix([[0, 0]], 1.0, (1, 1)))])
 
 
 def test_sigmerger_check_signals():

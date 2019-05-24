@@ -86,6 +86,7 @@ Transforms
 
    nengo.transforms.Transform
    nengo.transforms.Dense
+   nengo.transforms.Sparse
    nengo.transforms.Convolution
    nengo.transforms.ChannelShape
 
@@ -95,6 +96,8 @@ Transforms
    .. automethod:: nengo.transforms.Transform.sample(rng=np.random)
 
 .. autoclass:: nengo.transforms.Dense
+
+.. autoclass:: nengo.transforms.Sparse
 
 .. autoclass:: nengo.transforms.Convolution
 

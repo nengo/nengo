@@ -759,6 +759,9 @@ class SigMerger:
         if any(s.is_view for s in signals):
             raise ValueError("Cannot merge views.")
 
+        if any(s.sparse for s in signals):
+            raise ValueError("Cannot merge sparse Signals")
+
         for s in signals:
             if s.ndim != signals[0].ndim:
                 raise ValueError(

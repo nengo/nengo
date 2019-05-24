@@ -1,11 +1,20 @@
+import warnings
+
 import numpy as np
 
 import nengo
 from nengo.base import FrozenObject
 from nengo.dists import Distribution, DistOrArrayParam
 from nengo.exceptions import ValidationError
-from nengo.params import BoolParam, EnumParam, IntParam, ShapeParam
-from nengo.utils.numpy import is_array_like
+from nengo.params import (
+    BoolParam,
+    EnumParam,
+    IntParam,
+    NdarrayParam,
+    Parameter,
+    ShapeParam,
+)
+from nengo.utils.numpy import is_array_like, scipy_sparse
 
 
 class Transform(FrozenObject):
@@ -56,7 +65,7 @@ class ChannelShapeParam(ShapeParam):
 
 
 class Dense(Transform):
-    """A dense transformation between an input and output signal.
+    """A dense matrix transformation between an input and output signal.
 
     Parameters
     ----------
@@ -113,6 +122,187 @@ class Dense(Transform):
         """The shape of the initial value."""
         return (self.shape if isinstance(self.init, Distribution)
                 else self.init.shape)
+
+    @property
+    def size_in(self):
+        return self.shape[1]
+
+    @property
+    def size_out(self):
+        return self.shape[0]
+
+
+class SparseInitParam(Parameter):
+    def coerce(self, instance, value):
+        if not (isinstance(value, SparseMatrix) or (
+                scipy_sparse is not None
+                and isinstance(value, scipy_sparse.spmatrix))):
+            raise ValidationError(
+                "Must be `nengo.transforms.SparseMatrix` or "
+                "`scipy.sparse.spmatrix`, got %s" % type(value),
+                attr="init", obj=instance)
+        return super().coerce(instance, value)
+
+
+class SparseMatrix(FrozenObject):
+    """Represents a sparse matrix.
+
+    Parameters
+    ----------
+    indices : array_like of int
+        An Nx2 array of integers indicating the (row,col) coordinates for the
+        N non-zero elements in the matrix.
+    data : array_like or `.Distribution`
+        An Nx1 array defining the value of the nonzero elements in the matrix
+        (corresponding to ``indices``), or a `.Distribution` that will be
+        used to initialize the nonzero elements.
+    shape : tuple of int
+        Shape of the full matrix.
+    """
+
+    indices = NdarrayParam("indices", shape=("*", 2), dtype=np.int64)
+    data = DistOrArrayParam("data", sample_shape=("*",))
+    shape = ShapeParam("shape", length=2)
+
+    def __init__(self, indices, data, shape):
+        super().__init__()
+
+        self.indices = indices
+        self.shape = shape
+
+        # if data is not a distribution
+        if is_array_like(data):
+            data = np.asarray(data)
+
+            # convert scalars to vectors
+            if data.size == 1:
+                data = data.item() * np.ones(self.indices.shape[0],
+                                             dtype=data.dtype)
+
+            if data.ndim != 1 or data.shape[0] != self.indices.shape[0]:
+                raise ValidationError(
+                    "Must be a vector of the same length as `indices`",
+                    attr="data", obj=self)
+
+        self.data = data
+        self._allocated = None
+        self._dense = None
+
+    @property
+    def dtype(self):
+        return self.data.dtype
+
+    @property
+    def ndim(self):
+        return len(self.shape)
+
+    @property
+    def size(self):
+        return self.indices.shape[0]
+
+    def allocate(self):
+        """Return a `scipy.sparse.csr_matrix` or dense matrix equivalent.
+
+        We mark this data as readonly to be consistent with how other
+        data associated with signals are allocated. If this allocated
+        data is to be modified, it should be copied first.
+        """
+
+        if self._allocated is not None:
+            return self._allocated
+
+        if scipy_sparse is None:
+            warnings.warn("Sparse operations require Scipy, which is not "
+                          "installed. Using dense matrices instead.")
+            self._allocated = self.toarray().view()
+        else:
+            self._allocated = scipy_sparse.csr_matrix(
+                (self.data, self.indices.T), shape=self.shape
+            )
+            self._allocated.data.setflags(write=False)
+
+        return self._allocated
+
+    def sample(self, rng=np.random):
+        """Convert `.Distribution` data to fixed array.
+
+        Parameters
+        ----------
+        rng : `.numpy.random.RandomState`
+            Random number generator that will be used when
+            sampling distribution.
+
+        Returns
+        -------
+        matrix : `.SparseMatrix`
+            A new `SparseMatrix` instance with `Distribution` converted to
+            array if ``self.data`` is a `.Distribution`, otherwise simply
+            returns ``self``.
+        """
+        if isinstance(self.data, Distribution):
+            return SparseMatrix(
+                self.indices, self.data.sample(self.indices.shape[0], rng=rng),
+                self.shape)
+        else:
+            return self
+
+    def toarray(self):
+        """Return the dense matrix equivalent of this matrix."""
+
+        if self._dense is not None:
+            return self._dense
+
+        self._dense = np.zeros(self.shape, dtype=self.dtype)
+        self._dense[self.indices[:, 0], self.indices[:, 1]] = self.data
+        # Mark as readonly, if the user wants to modify they should copy first
+        self._dense.setflags(write=False)
+        return self._dense
+
+
+class Sparse(Transform):
+    """A sparse matrix transformation between an input and output signal.
+
+    Parameters
+    ----------
+    shape : tuple of int
+        The full shape of the sparse matrix: ``(size_out, size_in)``.
+    inds : array_like of int
+        The indices of
+    init : `.Distribution` or array_like, optional (Default: 1.0)
+        A Distribution used to initialize the transform matrix, or a concrete
+        instantiation for the matrix. If the matrix is square we also allow a
+        scalar (equivalent to ``np.eye(n) * init``) or a vector (equivalent to
+        ``np.diag(init)``) to represent the matrix more compactly.
+    """
+
+    shape = ShapeParam("shape", length=2, low=1)
+    init = SparseInitParam("init")
+
+    def __init__(self, shape, indices=None, init=1.0):
+        super().__init__()
+
+        self.shape = shape
+
+        if scipy_sparse and isinstance(init, scipy_sparse.spmatrix):
+            assert indices is None
+            assert init.shape == self.shape
+            self.init = init
+        elif indices is not None:
+            self.init = SparseMatrix(indices, init, shape)
+        else:
+            raise ValidationError(
+                "Either `init` must be a `scipy.sparse.spmatrix`, "
+                "or `indices` must be specified.", attr="init")
+
+    @property
+    def _argreprs(self):
+        return ["shape=%r" % (self.shape,)]
+
+    def sample(self, rng=np.random):
+        if scipy_sparse and isinstance(self.init, scipy_sparse.spmatrix):
+            return self.init
+        else:
+            return self.init.sample(rng=rng)
 
     @property
     def size_in(self):

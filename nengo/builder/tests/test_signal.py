@@ -1,3 +1,5 @@
+import pickle
+
 import numpy as np
 import pytest
 
@@ -5,6 +7,7 @@ import nengo
 from nengo.builder import Model
 from nengo.builder.signal import Signal, SignalDict
 from nengo.exceptions import SignalError
+from nengo.utils.numpy import scipy_sparse
 
 
 def test_signaldict():
@@ -204,3 +207,148 @@ def test_signal_offset():
     assert s.offset == 0
     assert s[0:].offset == 0
     assert s[1:].offset == value.strides[1]
+
+
+def make_signal(sig_type, shape, indices, data):
+    dense = np.zeros(shape)
+    dense[indices[:, 0], indices[:, 1]] = data
+    if sig_type == "sparse_scipy":
+        m = scipy_sparse.csr_matrix((data, indices.T), shape=shape)
+    elif sig_type == "sparse_nengo":
+        m = nengo.transforms.SparseMatrix(
+            data=data, indices=indices, shape=shape)
+    else:
+        m = dense
+    return Signal(m, name="MySignal"), dense
+
+
+@pytest.mark.parametrize("sig_type", ("dense", "sparse_scipy", "sparse_nengo"))
+def test_signal_initial_value(sig_type, tmpdir):
+    if sig_type == "sparse_scipy":
+        pytest.importorskip("scipy.sparse")
+
+    sig, dense = make_signal(
+        sig_type,
+        shape=(3, 3),
+        indices=np.asarray([[0, 0], [0, 2], [1, 1], [2, 2]]),
+        data=[1., 2., 1., 1.5],
+    )
+
+    # check initial_value equality
+    assert np.allclose(
+        sig.initial_value.toarray() if sig_type.startswith("sparse")
+        else sig.initial_value,
+        dense)
+
+    # cannot change once set
+    with pytest.raises(SignalError, match="Cannot change initial value"):
+        sig.initial_value = sig.initial_value
+
+    # check signal pickles correctly
+    pkl_path = str(tmpdir.join("tmp.pkl"))
+    with open(pkl_path, "wb") as f:
+        pickle.dump(sig, f)
+
+    with open(pkl_path, "rb") as f:
+        pkl_sig = pickle.load(f)
+
+    # initial_value still matches after pickle/unpickle
+    assert np.allclose(
+        sig.initial_value.toarray() if sig_type.startswith("sparse")
+        else sig.initial_value,
+        pkl_sig.initial_value.toarray() if sig_type.startswith("sparse")
+        else pkl_sig.initial_value)
+
+
+@pytest.mark.parametrize("sig_type", ("dense", "sparse_scipy", "sparse_nengo"))
+def test_signal_slice_reshape(sig_type):
+    if sig_type == "sparse_scipy":
+        pytest.importorskip("scipy.sparse")
+
+    sig, dense = make_signal(
+        sig_type,
+        shape=(3, 3),
+        indices=np.asarray([[0, 0], [0, 2], [1, 1], [2, 2]]),
+        data=[1., 2., 1., 1.5],
+    )
+
+    # check slicing
+    if sig_type == "dense":
+        sig_slice = sig[:2]
+        assert sig_slice.shape == (2, 3)
+        assert sig_slice.base is sig
+        assert sig.may_share_memory(sig_slice)
+    else:
+        with pytest.raises(SignalError, match="sparse Signal"):
+            sig[:2]
+
+    # check reshaping
+    if sig_type == "dense":
+        sig_reshape = sig.reshape((1, 9))
+        assert sig_reshape.shape == (1, 9)
+        assert sig_reshape.base is sig
+        assert sig.may_share_memory(sig_reshape)
+    else:
+        with pytest.raises(SignalError, match="sparse Signal"):
+            sig.reshape((1, 9))
+
+
+@pytest.mark.parametrize("sig_type", ("dense", "sparse_scipy", "sparse_nengo"))
+def test_signal_properties(sig_type):
+    if sig_type == "sparse_scipy":
+        pytest.importorskip("scipy.sparse")
+
+    sig, dense = make_signal(
+        sig_type,
+        shape=(3, 3),
+        indices=np.asarray([[0, 0], [0, 2], [1, 1], [2, 2]]),
+        data=[1., 2., 1., 1.5],
+    )
+
+    # check properties
+    assert sig.base is sig
+    assert sig.dtype == sig.initial_value.dtype == np.float64
+    assert sig.elemoffset == 0
+    assert sig.elemstrides == ((3, 1) if sig_type == "dense" else None)
+    assert not sig.is_view
+    assert sig.itemsize == 8
+    assert sig.name == "MySignal"
+    assert sig.nbytes == sig.itemsize * sig.size
+    assert sig.ndim == 2
+    assert sig.offset == 0
+    assert not sig.readonly
+    assert sig.shape == (3, 3)
+    assert sig.size == (np.sum(sig.initial_value.toarray() != 0)
+                        if sig_type.startswith("sparse")
+                        else np.prod((3, 3)))
+    assert sig.strides == ((3 * sig.itemsize, sig.itemsize)
+                           if sig_type == "dense" else None)
+    assert sig.sparse if sig_type.startswith("sparse") else not sig.sparse
+
+    # modifying properties
+    sig.name = "NewName"
+    assert sig.name == "NewName"
+    sig.readonly = True
+    assert sig.readonly
+
+
+@pytest.mark.parametrize("sig_type", ("dense", "sparse_scipy", "sparse_nengo"))
+def test_signal_init(sig_type):
+    if sig_type == "sparse_scipy":
+        pytest.importorskip("scipy.sparse")
+
+    sig, dense = make_signal(
+        sig_type,
+        shape=(3, 3),
+        indices=np.asarray([[0, 0], [0, 2], [1, 1], [2, 2]]),
+        data=[1., 2., 1., 1.5],
+    )
+    signals = SignalDict()
+    signals.init(sig)
+    assert np.all(signals[sig] == dense)
+
+    sig.readonly = True
+    signals = SignalDict()
+    signals.init(sig)
+    with pytest.raises((ValueError, RuntimeError, TypeError)):
+        signals[sig].data[0] = -1

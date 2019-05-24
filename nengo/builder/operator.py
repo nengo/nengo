@@ -520,7 +520,7 @@ def reshape_dot(A, X, Y, tag=None):
                          % (tag, A.shape, X.shape, Y.shape))
 
     # Reshape to handle case when np.dot(A, X) and Y are both scalars
-    return (np.dot(A, X)).size == Y.size == 1
+    return A.dot(X).size == Y.size == 1
 
 
 class DotInc(Operator):
@@ -600,11 +600,22 @@ class DotInc(Operator):
         Y = signals[self.Y]
 
         def step_dotinc():
-            inc = np.dot(A, X)
+            inc = A.dot(X)
             if self.reshape:
-                inc = np.asarray(inc).reshape(Y.shape)
+                inc = inc.reshape(Y.shape)
             Y[...] += inc
         return step_dotinc
+
+
+class SparseDotInc(DotInc):
+    """Like `.DotInc` but ``A`` is a sparse matrix."""
+
+    def __init__(self, A, X, Y, tag=None):
+        if not A.sparse:
+            raise BuildError("%s: A must be a sparse Signal")
+
+        # Disallow reshaping
+        super().__init__(A, X, Y, reshape=False, tag=tag)
 
 
 class BsrDotInc(DotInc):

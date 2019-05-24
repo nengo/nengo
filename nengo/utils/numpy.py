@@ -2,9 +2,25 @@
 Extra functions to extend the capabilities of Numpy.
 """
 import collections
+import logging
+
 import numpy as np
 
 from ..exceptions import ValidationError
+
+logger = logging.getLogger(__name__)
+try:
+    import scipy.sparse as scipy_sparse
+
+    def is_spmatrix(obj):
+        return isinstance(obj, scipy_sparse.spmatrix)
+
+except ImportError as e:
+    logger.info("Could not import scipy.sparse:\n%s", str(e))
+    scipy_sparse = None
+
+    def is_spmatrix(obj):
+        return False
 
 maxint = np.iinfo(np.int32).max
 
@@ -84,13 +100,7 @@ def array(x, dims=None, min_dims=0, readonly=False, **kwargs):
     return y
 
 
-def array_hash(a, n=100):
-    """Simple fast array hash function.
-
-    For arrays with size larger than ``n``, pick ``n`` elements at random
-    to hash. This strategy should work well for dense matrices, but for
-    sparse ones it is more likely to give hash collisions.
-    """
+def _array_hash(a, n=100):
     if not isinstance(a, np.ndarray):
         return hash(a)
 
@@ -106,6 +116,37 @@ def array_hash(a, n=100):
         v = a[inds]
         v.setflags(write=False)
         return hash(v.data.tobytes())
+
+
+def array_hash(a, n=100):
+    """Simple fast array hash function.
+
+    For arrays with size larger than ``n``, pick ``n`` elements at random
+    to hash. This strategy should work well for dense arrays, but for
+    sparse arrays (those with few non-zero elements) it is more likely to
+    give hash collisions.
+
+    For sparse matrices, we apply the same logic on the underlying elements
+    (data, indices) of the sparse matrix.
+    """
+    if scipy_sparse and isinstance(a, scipy_sparse.spmatrix):
+        if isinstance(a, (scipy_sparse.csr_matrix, scipy_sparse.csc_matrix,
+                          scipy_sparse.bsr_matrix)):
+            return hash((
+                _array_hash(a.data, n=n),
+                _array_hash(a.indices, n=n),
+                _array_hash(a.indptr, n=n),
+            ))
+        else:
+            if not isinstance(a, scipy_sparse.coo_matrix):
+                a = a.tocoo()
+            return hash((
+                _array_hash(a.data, n=n),
+                _array_hash(a.row, n=n),
+                _array_hash(a.col, n=n),
+            ))
+
+    return _array_hash(a, n=n)
 
 
 def array_offset(x):
