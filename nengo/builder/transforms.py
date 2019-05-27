@@ -49,9 +49,11 @@ def build_convolution(model, transform, sig_in,
     if decoders is not None:
         raise BuildError("Applying a convolution transform to a decoded "
                          "connection is not supported")
-    if encoders is not None:
-        raise BuildError(
-            "Applying encoders to a convolution transform is not supported")
+
+    # shouldn't be possible for encoders to be non-None, since that only
+    # occurs for a connection solver with weights=True, and those can only
+    # be applied to decoded connections (which are disallowed above)
+    assert encoders is None
 
     weights = transform.sample(rng=rng)
     weight_sig = Signal(weights, name="%s.weights" % transform, readonly=True)

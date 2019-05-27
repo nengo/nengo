@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 import nengo
-from nengo.exceptions import ValidationError
+from nengo.exceptions import BuildError, ValidationError
 from nengo.transforms import ChannelShape
 from nengo._vendor.npconv2d import conv2d
 
@@ -84,6 +84,30 @@ def test_convolution(
         truth = np.moveaxis(truth, -1, 0)
 
     assert np.allclose(sim.data[p][0], np.ravel(truth))
+
+
+@pytest.mark.parametrize("encoders, decoders", [
+    (True, False),
+    (False, True)])
+def test_convolution_nef(encoders, decoders, Simulator):
+    with nengo.Network() as net:
+        transform = nengo.transforms.Convolution(
+            n_filters=2, input_shape=(3, 3, 1))
+        a = nengo.Ensemble(9, 9)
+        b = nengo.Ensemble(2, 2)
+        nengo.Connection(a if decoders else a.neurons,
+                         b if encoders else b.neurons,
+                         transform=transform)
+
+    if decoders:
+        # error if decoders
+        with pytest.raises(BuildError, match="decoded connection"):
+            with nengo.Simulator(net):
+                pass
+    else:
+        # no error
+        with nengo.Simulator(net):
+            pass
 
 
 def test_argreprs():
