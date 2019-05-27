@@ -128,6 +128,7 @@ docs_conf_py:
   intersphinx_mapping:
     scipy: 'https://docs.scipy.org/doc/scipy/reference'
     sklearn: 'https://scikit-learn.org/dev'
+  analytics_id: UA-41658423-2
 
 travis_yml:
   python: 3.6
