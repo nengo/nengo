@@ -8,6 +8,7 @@ from nengo._vendor.npconv2d import conv2d
 
 
 def multiply(x, y):
+    """Matrix-matrix multiply, interpreting vectors as diagonal matrices."""
     if x.ndim <= 2 and y.ndim < 2:
         return x * y
     elif x.ndim < 2 and y.ndim == 2:
