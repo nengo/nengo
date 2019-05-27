@@ -5,9 +5,11 @@ from numpy import array  # pylint: disable=unused-import
 import pytest
 
 import nengo
+from nengo.exceptions import ValidationError
 from nengo.processes import WhiteSignal
 from nengo.synapses import (
     Alpha, LinearFilter, Lowpass, SynapseParam, Triangle)
+from nengo.utils.filter_design import cont2discrete
 from nengo.utils.testing import allclose
 
 
@@ -30,6 +32,18 @@ def run_synapse(Simulator, seed, synapse, dt=1e-3, runtime=1., n_neurons=None):
         sim.run(runtime)
 
     return sim.trange(), sim.data[ref], sim.data[filtered]
+
+
+def test_direct(Simulator, plt, seed):
+    dt = 1e-3
+    a = 0.7
+
+    synapse = LinearFilter([a], [1], analog=False)
+    t, x, yhat = run_synapse(Simulator, seed, synapse, dt=dt)
+    y = synapse.filt(x, dt=dt, y0=0)
+
+    assert allclose(t, y, yhat, delay=dt)
+    assert allclose(t, a * x, y, plt=plt)
 
 
 def test_lowpass(Simulator, plt, seed):
@@ -62,7 +76,7 @@ def test_triangle(Simulator, plt, seed):
 
     # compare with convolved filter
     n_taps = int(round(tau / dt)) + 1
-    num = np.arange(n_taps, 0, -1, dtype=float)
+    num = np.arange(n_taps, 0, -1, dtype=nengo.rc.float_dtype)
     num /= num.sum()
     y = np.convolve(x.ravel(), num)[:len(t)]
     y.shape = (-1, 1)
@@ -86,10 +100,9 @@ def test_linearfilter(Simulator, plt, seed):
     dt = 1e-3
 
     # The following num, den are for a 4th order analog Butterworth filter,
-    # generated with `scipy.signal.butter(4, 0.2, analog=False)`
-    num = np.array(
-        [0.00482434, 0.01929737, 0.02894606, 0.01929737, 0.00482434])
-    den = np.array([1., -2.36951301, 2.31398841, -1.05466541, 0.18737949])
+    # generated with `scipy.signal.butter(4, 0.1, analog=False)`
+    num = np.array([0.0004166, 0.0016664, 0.0024996, 0.0016664, 0.0004166])
+    den = np.array([1., -3.18063855, 3.86119435, -2.11215536, 0.43826514])
 
     synapse = LinearFilter(num, den, analog=False)
     t, x, yhat = run_synapse(Simulator, seed, synapse, dt=dt)
@@ -98,35 +111,55 @@ def test_linearfilter(Simulator, plt, seed):
     assert allclose(t, y, yhat, delay=dt, plt=plt)
 
 
+def test_linearfilter_extras():
+    # This filter is just a gain, but caused index errors previously
+    synapse = nengo.LinearFilter([3], [2])
+    assert np.allclose(synapse.filt([2.]), 3)
+
+    # Filtering an integer array should cast to a float
+    x = np.arange(10, dtype=nengo.rc.int_dtype)
+    synapse = nengo.LinearFilter([1], [0.005, 1])
+    assert synapse.filt(x).dtype == nengo.rc.float_dtype
+
+    # Throw an error if non-float dtype
+    shape = (1,)
+    with pytest.raises(ValidationError, match="Only float data types"):
+        synapse.make_step(shape, shape, dt=0.001, rng=None, dtype=np.int32)
+    with pytest.raises(ValidationError, match="Only float data types"):
+        synapse.make_step(shape, shape, dt=0.001, rng=None, dtype=np.complex64)
+
+
 def test_step_errors():
-    output = np.zeros(3)
-    with pytest.raises(ValueError):
-        LinearFilter.NoDen([1], [1], output)
-    with pytest.raises(ValueError):
-        LinearFilter.Simple([1, 2], [1], output)
-    with pytest.raises(ValueError):
-        LinearFilter.Simple([1], [1, 2], output)
+    # error for A.shape[0] != B.shape[0]
+    A = np.ones((2, 2))
+    B = np.ones((1, 1))
+    C = np.ones((1, 2))
+    D = np.ones((1, 1))
+    X = np.ones((2, 10))
+    with pytest.raises(ValidationError, match="Matrices do not meet"):
+        LinearFilter.General(A, B, C, D, X)
 
 
 def test_filt(plt, rng):
     dt = 1e-3
-    tend = 3.
+    tend = 0.5
     t = dt * np.arange(tend / dt)
     nt = len(t)
 
-    tau = 0.1 / dt
+    tau = 0.1
+    tau_dt = tau / dt
 
     u = rng.normal(size=nt)
 
-    tk = np.arange(0, 30 * tau)
-    k = 1. / tau * np.exp(-tk / tau)
+    tk = np.arange(0, 30 * tau_dt)
+    k = 1. / tau_dt * np.exp(-tk / tau_dt)
     x = np.convolve(u, k, mode='full')[:nt]
 
     # support lists as input
-    y = Lowpass(0.1).filt(list(u), dt=dt, y0=0)
+    y = Lowpass(tau).filt(list(u), dt=dt, y0=0)
 
     plt.plot(t, x)
-    plt.plot(t, y, '--')
+    plt.plot(t, y)
 
     assert np.allclose(x, y, atol=1e-3, rtol=1e-2)
 
@@ -136,13 +169,12 @@ def test_filtfilt(plt, rng):
     tend = 3.
     t = dt * np.arange(tend / dt)
     nt = len(t)
-
-    tau = 0.03
+    synapse = Lowpass(0.03)
 
     u = rng.normal(size=nt)
-    x = Lowpass(tau).filt(u, dt=dt)
-    x = Lowpass(tau).filt(x[::-1], y0=x[-1], dt=dt)[::-1]
-    y = Lowpass(tau).filtfilt(u, dt=dt)
+    x = synapse.filt(u, dt=dt)
+    x = synapse.filt(x[::-1], y0=x[-1], dt=dt)[::-1]
+    y = synapse.filtfilt(u, dt=dt)
 
     plt.plot(t, x)
     plt.plot(t, y, '--')
@@ -177,6 +209,43 @@ def test_linearfilter_combine(rng):
     x = LinearFilter([1], [tau0*tau1, tau0+tau1, 1]).filt(u, y0=0)
     y = Lowpass(tau0).combine(Lowpass(tau1)).filt(u, y0=0)
     assert np.allclose(x, y)
+
+    with pytest.raises(ValidationError, match="other LinearFilters"):
+        Lowpass(0.1).combine(Triangle(0.01))
+
+    with pytest.raises(ValidationError, match="analog and digital"):
+        Lowpass(0.1).combine(LinearFilter([1], [1], analog=False))
+
+
+def test_combined_delay(Simulator):
+    # ensure that two sequential filters has the same output
+    # as combining their individual discrete transfer functions
+    nt = 50
+    tau = 0.005
+    dt = 0.001
+
+    sys1 = nengo.Lowpass(tau)
+    (num,), den, _ = cont2discrete((sys1.num, sys1.den), dt=dt)
+    sys2 = nengo.LinearFilter(
+        np.poly1d(num)**2, np.poly1d(den)**2, analog=False)
+
+    with nengo.Network() as model:
+        u = nengo.Node(1)
+        x = nengo.Node(size_in=1)
+        nengo.Connection(u, x, synapse=sys1)
+        p1 = nengo.Probe(x, synapse=sys1)
+        p2 = nengo.Probe(u, synapse=sys2)
+
+    with Simulator(model, dt=dt) as sim:
+        sim.run_steps(nt)
+
+    assert np.allclose(sim.data[p1], sim.data[p2])
+
+    # Both have two time-step delays:
+    # for sys1, this comes from two levels of filtering
+    # for sys2, this comes from one level of filtering + delay in sys2
+    assert np.allclose(sim.data[p1][:2], 0)
+    assert not np.allclose(sim.data[p1][2], 0)
 
 
 def test_synapseparam():

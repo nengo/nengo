@@ -118,6 +118,9 @@ Release History
   which speed up build times slightly. To re-enable this testing,
   enable the ``fail_fast`` RC setting.
   (`#1532 <https://github.com/nengo/nengo/pull/1532>`__)
+- ``LinearFilter`` now uses state space representations internally,
+  which is faster and potentially more accurate.
+  (`#1535 <https://github.com/nengo/nengo/pull/1535>`__)
 
 **Deprecated**
 
@@ -167,6 +170,9 @@ Release History
 - Fixed the progress bar in recent Jupyter Lab versions.
   (`#1499 <https://github.com/nengo/nengo/issues/1499>`_,
   `#1500 <https://github.com/nengo/nengo/pull/1500>`_)
+- Some higher-order ``LinearFilter`` synapses had unnecessary delays
+  that have now been removed.
+  (`#1535 <https://github.com/nengo/nengo/pull/1535>`__)
 
 2.8.0 (June 9, 2018)
 ====================
