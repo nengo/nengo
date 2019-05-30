@@ -125,6 +125,11 @@ Release History
   the initial value of the input signal. This allows unstable filters
   (e.g., integrators) to be used with ``filt``.
   (`#1535 <https://github.com/nengo/nengo/pull/1535>`__)
+- ``LinearFilter`` now accepts the discretization method as an argument,
+  rather than having it specified in ``make_step``.
+  (`#1535 <https://github.com/nengo/nengo/pull/1535>`__)
+- The ``synapse_kwargs`` argument to ``FilteredNoise`` has been removed.
+  (`#1535 <https://github.com/nengo/nengo/pull/1535>`__)
 
 **Deprecated**
 

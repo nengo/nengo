@@ -6,7 +6,7 @@ import numpy as np
 from nengo.base import Process
 from nengo.exceptions import ValidationError
 from nengo.params import (
-    BoolParam, NdarrayParam, NumberParam, Parameter, Unconfigurable)
+    BoolParam, EnumParam, NdarrayParam, NumberParam, Parameter, Unconfigurable)
 from nengo.rc import rc
 from nengo.utils.filter_design import cont2discrete, tf2ss
 from nengo.utils.numpy import as_shape, is_number
@@ -166,6 +166,9 @@ class LinearFilter(Synapse):
         Denominator coefficients of transfer function.
     num : ndarray
         Numerator coefficients of transfer function.
+    method : string
+        The method to use for discretization (if ``analog`` is True). See
+        `scipy.signal.cont2discrete` for information about the options.
 
     References
     ----------
@@ -175,12 +178,15 @@ class LinearFilter(Synapse):
     num = NdarrayParam('num', shape='*')
     den = NdarrayParam('den', shape='*')
     analog = BoolParam('analog')
+    method = EnumParam('method', values=(
+        'gbt', 'bilinear', 'euler', 'backward_diff', 'zoh'))
 
-    def __init__(self, num, den, analog=True, **kwargs):
+    def __init__(self, num, den, analog=True, method='zoh', **kwargs):
         super().__init__(**kwargs)
         self.num = num
         self.den = den
         self.analog = analog
+        self.method = method
 
     def combine(self, obj):
         """Combine in series with another LinearFilter."""
@@ -220,17 +226,16 @@ class LinearFilter(Synapse):
         y = np.polyval(self.num, w) / np.polyval(self.den, w)
         return y
 
-    def _get_ss(self, dt, method='zoh'):
+    def _get_ss(self, dt):
         A, B, C, D = tf2ss(self.num, self.den)
 
         # discretize (if len(A) == 0, filter is stateless and already discrete)
         if self.analog and len(A) > 0:
-            A, B, C, D, _ = cont2discrete((A, B, C, D), dt, method=method)
+            A, B, C, D, _ = cont2discrete((A, B, C, D), dt, method=self.method)
 
         return A, B, C, D
 
-    def make_step(self, shape_in, shape_out, dt, rng,
-                  y0=0, dtype=None, method='zoh'):
+    def make_step(self, shape_in, shape_out, dt, rng, y0=0, dtype=None):
         """Returns a `.Step` instance that implements the linear filter."""
         assert shape_in == shape_out
 
@@ -241,7 +246,7 @@ class LinearFilter(Synapse):
                 "your data to a float type." % dtype,
                 attr='dtype', obj=self)
 
-        A, B, C, D = self._get_ss(dt, method=method)
+        A, B, C, D = self._get_ss(dt)
 
         # create state memory variable X
         X = np.zeros((A.shape[0],) + shape_out, dtype=dtype)

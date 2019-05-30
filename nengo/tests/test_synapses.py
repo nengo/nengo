@@ -315,7 +315,7 @@ def test_argreprs():
     def check_repr(obj):
         assert eval(repr(obj)) == obj
 
-    check_init_args(LinearFilter, ['num', 'den', 'analog'])
+    check_init_args(LinearFilter, ['num', 'den', 'analog', 'method'])
     check_repr(LinearFilter([1, 2], [3, 4]))
     check_repr(LinearFilter([1, 2], [3, 4], analog=False))
 

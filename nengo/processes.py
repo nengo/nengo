@@ -76,8 +76,6 @@ class FilteredNoise(Process):
     scale : bool, optional
         Whether to scale the white noise for integration, making the output
         signal invariant to ``dt``.
-    synapse_kwargs : dict, optional
-        Arguments to pass to ``synapse.make_step``.
     seed : int, optional
         Random number seed. Ensures noise will be the same each run.
     """
@@ -85,14 +83,14 @@ class FilteredNoise(Process):
     synapse = SynapseParam('synapse')
     dist = DistributionParam('dist')
     scale = BoolParam('scale')
-    synapse_kwargs = DictParam('synapse_kwargs')
 
     def __init__(self,
-                 synapse=Lowpass(tau=0.005), dist=Gaussian(mean=0, std=1),
-                 scale=True, synapse_kwargs=None, **kwargs):
+                 synapse=Lowpass(tau=0.005),
+                 dist=Gaussian(mean=0, std=1),
+                 scale=True,
+                 **kwargs):
         super().__init__(default_size_in=0, **kwargs)
         self.synapse = synapse
-        self.synapse_kwargs = {} if synapse_kwargs is None else synapse_kwargs
         self.dist = dist
         self.scale = scale
 
@@ -107,8 +105,7 @@ class FilteredNoise(Process):
         dist = self.dist
         scale = self.scale
         alpha = 1. / np.sqrt(dt)
-        filter_step = self.synapse.make_step(
-            shape_out, shape_out, dt, None, **self.synapse_kwargs)
+        filter_step = self.synapse.make_step(shape_out, shape_out, dt, None)
 
         def step_filterednoise(t):
             x = dist.sample(n=1, d=shape_out[0], rng=rng)[0]
@@ -134,8 +131,7 @@ class BrownNoise(FilteredNoise):
 
     def __init__(self, dist=Gaussian(mean=0, std=1), **kwargs):
         super().__init__(
-            synapse=LinearFilter([1], [1, 0]),
-            synapse_kwargs=dict(method='euler'),
+            synapse=LinearFilter([1], [1, 0], method='euler'),
             dist=dist, **kwargs)
 
     def __repr__(self):
