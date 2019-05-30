@@ -121,6 +121,10 @@ Release History
 - ``LinearFilter`` now uses state space representations internally,
   which is faster and potentially more accurate.
   (`#1535 <https://github.com/nengo/nengo/pull/1535>`__)
+- The default value of ``y0`` in ``Synapse.filt`` is now 0 instead of
+  the initial value of the input signal. This allows unstable filters
+  (e.g., integrators) to be used with ``filt``.
+  (`#1535 <https://github.com/nengo/nengo/pull/1535>`__)
 
 **Deprecated**
 

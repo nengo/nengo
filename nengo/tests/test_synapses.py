@@ -13,6 +13,12 @@ from nengo.utils.filter_design import cont2discrete
 from nengo.utils.testing import allclose
 
 
+# The following num, den are for a 4th order analog Butterworth filter,
+# generated with `scipy.signal.butter(4, 0.1, analog=False)`
+butter_num = np.array([0.0004166, 0.0016664, 0.0024996, 0.0016664, 0.0004166])
+butter_den = np.array([1., -3.18063855, 3.86119435, -2.11215536, 0.43826514])
+
+
 def run_synapse(Simulator, seed, synapse, dt=1e-3, runtime=1., n_neurons=None):
     model = nengo.Network(seed=seed)
     with model:
@@ -98,23 +104,35 @@ def test_decoders(Simulator, plt, seed):
 
 def test_linearfilter(Simulator, plt, seed):
     dt = 1e-3
-
-    # The following num, den are for a 4th order analog Butterworth filter,
-    # generated with `scipy.signal.butter(4, 0.1, analog=False)`
-    num = np.array([0.0004166, 0.0016664, 0.0024996, 0.0016664, 0.0004166])
-    den = np.array([1., -3.18063855, 3.86119435, -2.11215536, 0.43826514])
-
-    synapse = LinearFilter(num, den, analog=False)
+    synapse = LinearFilter(butter_num, butter_den, analog=False)
     t, x, yhat = run_synapse(Simulator, seed, synapse, dt=dt)
     y = synapse.filt(x, dt=dt, y0=0)
 
     assert allclose(t, y, yhat, delay=dt, plt=plt)
 
 
+def test_linearfilter_y0():
+    # --- y0 sets initial state correctly for high-order filter
+    synapse = LinearFilter(butter_num, butter_den, analog=False)
+    v = 9.81
+    x = v * np.ones(10)
+    assert np.allclose(synapse.filt(x, y0=v), v)
+    assert not np.allclose(synapse.filt(x, y0=0), v)
+
+    # --- y0 does not work for high-order synapse when DC gain is zero
+    synapse = LinearFilter([1, 0], [1, 1])
+    with pytest.raises(ValidationError, match="Cannot solve for state"):
+        synapse.filt(np.ones(10), y0=1)
+
+
 def test_linearfilter_extras():
     # This filter is just a gain, but caused index errors previously
     synapse = nengo.LinearFilter([3], [2])
     assert np.allclose(synapse.filt([2.]), 3)
+
+    # differentiator should work properly
+    diff = nengo.LinearFilter([1, -1], [1, 0], analog=False)
+    assert np.allclose(diff.filt([1., -1., 2.], y0=0), [1., -2., 3.])
 
     # Filtering an integer array should cast to a float
     x = np.arange(10, dtype=nengo.rc.int_dtype)
