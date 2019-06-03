@@ -287,8 +287,8 @@ def test_passthrough(Simulator):
 
 def test_ztransform(Simulator):
     # sys1 is 1/z, where z is the Z-transform operator
-    sys1 = nengo.LinearFilter([1], [1, 0], analog=False)
-    sys2 = nengo.LinearFilter([1], [1], analog=False)
+    sys1 = LinearFilter([1], [1, 0], analog=False)
+    sys2 = LinearFilter([1], [1], analog=False)
     dt = 0.001
 
     for sys in (sys1, sys2):
