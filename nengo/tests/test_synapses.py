@@ -283,3 +283,28 @@ def test_passthrough(Simulator):
 
     assert np.allclose(sim.data[p].squeeze(), scipy_filt)
     assert np.allclose(scipy_filt, nengo_filt)
+
+
+def test_ztransform(Simulator):
+    # sys1 is 1/z, where z is the Z-transform operator
+    sys1 = nengo.LinearFilter([1], [1, 0], analog=False)
+    sys2 = nengo.LinearFilter([1], [1], analog=False)
+    dt = 0.001
+
+    for sys in (sys1, sys2):
+        with nengo.Network() as model:
+            x = nengo.Node(output=nengo.processes.PresentInput([1, 0], dt))
+            p = nengo.Probe(x, synapse=sys)
+            p_x = nengo.Probe(x, synapse=None)
+
+        with Simulator(model, dt=dt) as sim:
+            sim.run_steps(5)
+
+        assert np.allclose(sim.data[p].squeeze(),
+                           sys.filt(sim.data[p_x].squeeze(), y0=0))
+
+        if sys is sys1:
+            assert np.allclose(sim.data[p].squeeze(), [0, 1, 0, 1, 0])
+        else:
+            assert sys is sys2
+            assert np.allclose(sim.data[p].squeeze(), [1, 0, 1, 0, 1])
