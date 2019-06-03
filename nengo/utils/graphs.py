@@ -147,7 +147,7 @@ def toposort(edges):
         raise BuildError(
             "Input graph has cycles. This usually occurs because "
             "too many connections have no synapses. Try setting "
-            "more synapses to '0' instead of 'None'.")
+            "more synapses to 'Delay' instead of 'None'.")
     return ordered
 
 

@@ -51,7 +51,7 @@ from .params import Default
 from .probe import Probe
 from .rc import rc, RC_DEFAULTS
 from .simulator import Simulator
-from .synapses import Alpha, LinearFilter, Lowpass, Triangle
+from .synapses import Alpha, Delay, LinearFilter, Lowpass, Triangle
 from .transforms import Dense, Convolution
 from .utils.logging import log
 from . import dists, exceptions, networks, presets, processes, spa, utils
