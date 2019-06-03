@@ -9,6 +9,7 @@ from nengo.exceptions import ValidationError
 from nengo.processes import WhiteSignal
 from nengo.synapses import (
     Alpha, LinearFilter, Lowpass, SynapseParam, Triangle)
+from nengo.utils.filter_design import cont2discrete
 from nengo.utils.testing import allclose
 
 
@@ -42,7 +43,7 @@ def test_direct(Simulator, plt, seed):
     t, x, yhat = run_synapse(Simulator, seed, synapse, dt=dt)
     y = synapse.filt(x, dt=dt, y0=0)
 
-    assert allclose(t, y, yhat, delay=dt)
+    assert allclose(t, y, yhat)
     assert allclose(t, a * x, y, plt=plt)
 
 
@@ -53,7 +54,7 @@ def test_lowpass(Simulator, plt, seed):
     t, x, yhat = run_synapse(Simulator, seed, Lowpass(tau), dt=dt)
     y = Lowpass(tau).filt(x, dt=dt, y0=0)
 
-    assert allclose(t, y, yhat, delay=dt, plt=plt)
+    assert allclose(t, y, yhat, plt=plt)
 
 
 def test_alpha(Simulator, plt, seed):
@@ -64,7 +65,7 @@ def test_alpha(Simulator, plt, seed):
     t, x, yhat = run_synapse(Simulator, seed, Alpha(tau), dt=dt)
     y = LinearFilter(num, den).filt(x, dt=dt, y0=0)
 
-    assert allclose(t, y, yhat, delay=dt, atol=5e-6, plt=plt)
+    assert allclose(t, y, yhat, atol=5e-6, plt=plt)
 
 
 def test_triangle(Simulator, plt, seed):
@@ -82,7 +83,7 @@ def test_triangle(Simulator, plt, seed):
     y.shape = (-1, 1)
 
     assert np.allclose(y, yfilt, rtol=0)
-    assert allclose(t, y, ysim, delay=dt, rtol=0, plt=plt)
+    assert allclose(t, y, ysim, rtol=0, plt=plt)
 
 
 def test_decoders(Simulator, plt, seed):
@@ -93,7 +94,7 @@ def test_decoders(Simulator, plt, seed):
         Simulator, seed, Lowpass(tau), dt=dt, n_neurons=100)
 
     y = Lowpass(tau).filt(x, dt=dt, y0=0)
-    assert allclose(t, y, yhat, delay=dt, plt=plt)
+    assert allclose(t, y, yhat, plt=plt)
 
 
 def test_linearfilter(Simulator, plt, seed):
@@ -108,7 +109,7 @@ def test_linearfilter(Simulator, plt, seed):
     t, x, yhat = run_synapse(Simulator, seed, synapse, dt=dt)
     y = synapse.filt(x, dt=dt, y0=0)
 
-    assert allclose(t, y, yhat, delay=dt, plt=plt)
+    assert allclose(t, y, yhat, plt=plt)
 
 
 def test_step_errors():
@@ -143,7 +144,7 @@ def test_filt(plt, rng):
     plt.plot(t, x)
     plt.plot(t, y)
 
-    assert np.allclose(x, y, atol=1e-3, rtol=1e-2)
+    assert allclose(t, x, y, delay=dt, atol=1e-3, rtol=1e-2)
 
 
 def test_filtfilt(plt, rng):
@@ -260,3 +261,50 @@ def test_argreprs():
 
     check_init_args(Triangle, ['t'])
     check_repr(Triangle(0.3))
+
+
+def test_passthrough(Simulator):
+    lfilter = pytest.importorskip('scipy.signal').lfilter
+
+    sys = LinearFilter([-1, 0, 1e6], [1, 2, 1])
+    dt = 0.001
+
+    with nengo.Network() as model:
+        x = nengo.Node(output=nengo.processes.PresentInput([1000, 0], dt))
+        p = nengo.Probe(x, synapse=sys)
+        p_x = nengo.Probe(x, synapse=None)
+
+    with Simulator(model, dt=dt) as sim:
+        sim.run_steps(10)
+
+    (num,), den, _ = cont2discrete((sys.num, sys.den), sim.dt)
+    scipy_filt = lfilter(num, den, sim.data[p_x].squeeze())
+    nengo_filt = sys.filt(sim.data[p_x].squeeze(), dt=dt)
+
+    assert np.allclose(sim.data[p].squeeze(), scipy_filt)
+    assert np.allclose(scipy_filt, nengo_filt)
+
+
+def test_ztransform(Simulator):
+    # sys1 is 1/z, where z is the Z-transform operator
+    sys1 = LinearFilter([1], [1, 0], analog=False)
+    sys2 = LinearFilter([1], [1], analog=False)
+    dt = 0.001
+
+    for sys in (sys1, sys2):
+        with nengo.Network() as model:
+            x = nengo.Node(output=nengo.processes.PresentInput([1, 0], dt))
+            p = nengo.Probe(x, synapse=sys)
+            p_x = nengo.Probe(x, synapse=None)
+
+        with Simulator(model, dt=dt) as sim:
+            sim.run_steps(5)
+
+        assert np.allclose(sim.data[p].squeeze(),
+                           sys.filt(sim.data[p_x].squeeze(), y0=0))
+
+        if sys is sys1:
+            assert np.allclose(sim.data[p].squeeze(), [0, 1, 0, 1, 0])
+        else:
+            assert sys is sys2
+            assert np.allclose(sim.data[p].squeeze(), [1, 0, 1, 0, 1])

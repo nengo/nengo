@@ -204,6 +204,11 @@ class LinearFilter(Synapse):
         if self.analog and len(A) > 0:
             A, B, C, D, _ = cont2discrete((A, B, C, D), dt, method=method)
 
+        if B.ndim == 1:
+            B = B[:, None]
+        if D.ndim == 1:
+            D = D[:, None]
+
         return A, B, C, D
 
     def allocate(self, shape_in, shape_out, dt,
@@ -214,22 +219,6 @@ class LinearFilter(Synapse):
 
         # create state memory variable X
         X = np.zeros((A.shape[0],) + shape_out, dtype=dtype)
-
-        # initialize X using y0 as steady-state output (if y0 is provided)
-        if y0 is not None and LinearFilter.OneX.check(A, B, C, D, X):
-            # OneX combines B and C into one scaling value `b`
-            y0 = np.array(y0, copy=False, ndmin=1)
-            b = B.item() * C.item()
-            X[:] = (b / (1 - A.item())) * y0
-        elif y0 is not None and len(X) > 0:
-            # Solve for input `u0` given output `y0`, then state given input
-            assert B.ndim == 1 or B.ndim == 2 and B.shape[1] == 1
-            y0 = np.array(y0, copy=False, ndmin=2)
-            IAB = np.linalg.solve(np.eye(len(A)) - A, B)
-            Q = C.dot(IAB) + D
-            assert Q.size == 1
-            u0 = y0 / Q.item()
-            X[:] = IAB.dot(u0)
 
         return dict(X=X)
 
@@ -242,92 +231,12 @@ class LinearFilter(Synapse):
         A, B, C, D = self._get_ss(dt, method=method)
         X = state['X']
 
-        if LinearFilter.NoX.check(A, B, C, D, X):
-            return LinearFilter.NoX(A, B, C, D, X)
-        elif LinearFilter.OneX.check(A, B, C, D, X):
-            return LinearFilter.OneX(A, B, C, D, X)
-        elif LinearFilter.NoD.check(A, B, C, D, X):
-            return LinearFilter.NoD(A, B, C, D, X)
-        else:
-            assert LinearFilter.General.check(A, B, C, D, X)
-            return LinearFilter.General(A, B, C, D, X)
+        def step_linearfilter(t, signal):
+            output = np.dot(C, X) + D * signal
+            X[:] = np.dot(A, X) + B * signal
+            return output
 
-    class Step:
-        """Abstract base class for LTI filtering step functions."""
-        def __init__(self, A, B, C, D, X):
-            if not self.check(A, B, C, D, X):
-                raise ValidationError(
-                    "Matrices do not meet the requirements for this Step",
-                    attr='matrices', obj=self)
-            self.A = A
-            self.B = B
-            self.C = C
-            self.D = D
-            self.X = X
-
-        def __call__(self, t, signal):
-            raise NotImplementedError("Step object must implement __call__")
-
-        @classmethod
-        def check(cls, A, B, C, D, X):
-            if A.shape[0] == 0:
-                return X.shape[0] == B.shape[0] == 0 and D.shape[0] == 1
-            else:
-                return (A.shape[0] == A.shape[1] == B.shape[0] == C.shape[1]
-                        and D.shape[0] == B.shape[1] == 1
-                        and A.shape[0] == X.shape[0])
-
-    class NoX(Step):
-        """Step for transfer function with no state and single numerator."""
-        def __init__(self, A, B, C, D, X):
-            super().__init__(A, B, C, D, X)
-            self.d = D.item()
-
-        def __call__(self, t, signal):
-            return self.d * signal
-
-        @classmethod
-        def check(cls, A, B, C, D, X):
-            return super(LinearFilter.NoX, cls).check(A, B, C, D, X) and (
-                len(A) == 0)
-
-    class OneX(Step):
-        """Step function for transfer functions with one state element."""
-        def __init__(self, A, B, C, D, X):
-            super().__init__(A, B, C, D, X)
-            self.a = A.item()
-            self.b = C.item() * B.item()
-
-        def __call__(self, t, signal):
-            self.X *= self.a
-            self.X += self.b * signal
-            return self.X[0]
-
-        @classmethod
-        def check(cls, A, B, C, D, X):
-            return super(LinearFilter.OneX, cls).check(A, B, C, D, X) and (
-                len(A) == 1 and (D == 0).all())
-
-    class NoD(Step):
-        """An LTI step function for any given state-space system."""
-        def __call__(self, t, signal):
-            self.X[:] = np.dot(self.A, self.X) + self.B * signal
-            return np.dot(self.C, self.X)[0]
-
-        @classmethod
-        def check(cls, A, B, C, D, X):
-            return super().check(A, B, C, D, X) and (
-                len(A) >= 1 and (D == 0).all())
-
-    class General(Step):
-        """An LTI step function for any given state-space system."""
-        def __call__(self, t, signal):
-            self.X[:] = np.dot(self.A, self.X) + self.B * signal
-            return np.dot(self.C, self.X)[0] + self.D * signal
-
-        @classmethod
-        def check(cls, A, B, C, D, X):
-            return super().check(A, B, C, D, X) and len(A) >= 1
+        return step_linearfilter
 
 
 class Lowpass(LinearFilter):
@@ -384,6 +293,13 @@ class Alpha(LinearFilter):
     def __init__(self, tau, **kwargs):
         super().__init__([1], [tau**2, 2*tau, 1], **kwargs)
         self.tau = tau
+
+
+class Delay(LinearFilter):
+    """A single time-step (pure) delay. """
+
+    def __init__(self, **kwargs):
+        super().__init__([1], [1, 0], analog=False, **kwargs)
 
 
 class Triangle(Synapse):
