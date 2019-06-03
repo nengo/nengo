@@ -274,7 +274,7 @@ def test_passthrough(Simulator):
         p = nengo.Probe(x, synapse=sys)
         p_x = nengo.Probe(x, synapse=None)
 
-    with nengo.Simulator(model, dt=dt) as sim:
+    with Simulator(model, dt=dt) as sim:
         sim.run_steps(10)
 
     (num,), den, _ = cont2discrete((sys.num, sys.den), sim.dt)
