@@ -254,7 +254,9 @@ class ConnectionTransformParam(Parameter):
             transform = Dense((conn.size_out, conn.size_mid), transform)
 
         if transform.size_in != conn.size_mid:
-            if isinstance(transform, Dense) and transform.ndim < 2:
+            if isinstance(transform, Dense) and (
+                transform.shape[0] == transform.shape[1]
+            ):
                 # we provide a different error message in this case;
                 # the transform is not changing the dimensionality of the
                 # signal, so the blame most likely lies with the function

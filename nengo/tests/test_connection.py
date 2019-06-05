@@ -6,10 +6,11 @@ import pytest
 import nengo
 import nengo.utils.numpy as npext
 from nengo.connection import ConnectionSolverParam
-from nengo.dists import UniformHypersphere
+from nengo.dists import Choice, UniformHypersphere
 from nengo.exceptions import BuildError, ObsoleteError, ValidationError
 from nengo.solvers import LstsqL2
 from nengo.processes import Piecewise
+from nengo.transforms import Dense
 from nengo.utils.testing import signals_allclose
 
 
@@ -400,36 +401,47 @@ def test_dimensionality_errors(nl_nodirect, seed, rng):
         nengo.Connection(e2, e2, transform=np.ones(2))
 
         # these should not work
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError, match="Shape of initial value"):
             nengo.Connection(n02, e1)
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError, match="Shape of initial value"):
             nengo.Connection(e1, e2)
-        with pytest.raises(ValidationError):
-            nengo.Connection(e2.neurons, e1, transform=rng.randn(1, N + 1))
-        with pytest.raises(ValidationError):
-            nengo.Connection(e2.neurons, e1, transform=rng.randn(2, N))
-        with pytest.raises(ValidationError):
-            nengo.Connection(e2, e1, function=lambda x: x, transform=[[1]])
-        with pytest.raises(ValidationError):
-            nengo.Connection(e2, e1, function=lambda: 0, transform=[[1]])
-        with pytest.raises(ValidationError):
-            nengo.Connection(n21, e2, transform=np.ones((2, 2)))
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError, match="Transform input size"):
+            nengo.Connection(
+                e2.neurons, e1, transform=Dense((1, N + 1), init=Choice([1.0]))
+            )
+        with pytest.raises(ValidationError, match="Transform output size"):
+            nengo.Connection(
+                e2.neurons, e1, transform=Dense((2, N), init=Choice([1.0]))
+            )
+        with pytest.raises(ValidationError, match="Function output size"):
+            nengo.Connection(e2, e1, function=lambda x: x, transform=Dense((1, 1)))
+        with pytest.raises(ValidationError, match="function.*must accept a single"):
+            nengo.Connection(e2, e1, function=lambda: 0, transform=Dense((1, 1)))
+        with pytest.raises(ValidationError, match="Function output size"):
+            nengo.Connection(n21, e2, transform=Dense((2, 2)))
+        with pytest.raises(ValidationError, match="Shape of initial value"):
             nengo.Connection(e2, e2, transform=np.ones((2, 2, 2)))
-        with pytest.raises(ValidationError):
-            nengo.Connection(e2, e2, transform=np.ones(3))
+        with pytest.raises(ValidationError, match="Function output size"):
+            nengo.Connection(e1, e2, transform=Dense((3, 3), init=np.ones(3)))
 
         # these should not work because of indexing mismatches
-        with pytest.raises(ValidationError):
-            nengo.Connection(n02[0], e2)
-        with pytest.raises(ValidationError):
-            nengo.Connection(n02, e2[0])
-        with pytest.raises(ValidationError):
-            nengo.Connection(n02[1], e2[0], transform=[[1, 2], [3, 4]])
-        with pytest.raises(ValidationError):
-            nengo.Connection(n02, e2[0], transform=[[1], [2]])
-        with pytest.raises(ValidationError):
-            nengo.Connection(e2[0], e2, transform=[[1, 2]])
+        with pytest.raises(ValidationError, match="Function output size"):
+            nengo.Connection(n02[0], e2, transform=Dense((2, 2)))
+        with pytest.raises(ValidationError, match="Transform output size"):
+            nengo.Connection(n02, e2[0], transform=Dense((2, 2)))
+        with pytest.raises(ValidationError, match="Function output size"):
+            nengo.Connection(n02[1], e2[0], transform=Dense((2, 2)))
+        with pytest.raises(ValidationError, match="Transform input size"):
+            nengo.Connection(n02, e2[0], transform=Dense((2, 1), init=Choice([1.0])))
+        with pytest.raises(ValidationError, match="Transform input size"):
+            nengo.Connection(e2[0], e2, transform=Dense((1, 2), init=Choice([1.0])))
+
+        # these should not work because of repeated indices
+        dense22 = Dense((2, 2), init=np.ones((2, 2)))
+        with pytest.raises(ValidationError, match="Input.*repeated indices"):
+            nengo.Connection(n02[[0, 0]], e2, transform=dense22)
+        with pytest.raises(ValidationError, match="Output.*repeated indices"):
+            nengo.Connection(e2, e2[[1, 1]], transform=dense22)
 
 
 def test_slicing(Simulator, nl, plt, seed, allclose):
