@@ -37,6 +37,10 @@ Release History
   (`#1488 <https://github.com/nengo/nengo/pull/1488>`__)
 - Added support for sparse connections.
   (`#1532 <https://github.com/nengo/nengo/pull/1532>`__)
+- Added a ``fail_fast`` setting to test operators when they are first
+  added to the model. See `configuration options
+  <https://www.nengo.ai/nengo/nengorc.html#configuration-options>`__
+  for details. (`#1532 <https://github.com/nengo/nengo/pull/1532>`__)
 
 **Changed**
 
@@ -103,6 +107,10 @@ Release History
 - The ``NdarrayParam`` now accepts a ``dtype`` argument to check that
   data assigned to that parameter matches the given Numpy ``dtype``.
   ``DistOrArrayParam`` accepts an analogous ``sample_dtype`` argument.
+  (`#1532 <https://github.com/nengo/nengo/pull/1532>`__)
+- We no longer test operators when they are initially added to the model,
+  which speed up build times slightly. To re-enable this testing,
+  enable the ``fail_fast`` RC setting.
   (`#1532 <https://github.com/nengo/nengo/pull/1532>`__)
 
 **Deprecated**

@@ -3,6 +3,7 @@ import warnings
 
 import numpy as np
 
+from nengo import rc
 from nengo.builder.signal import Signal, SignalDict
 from nengo.builder.operator import TimeUpdate
 from nengo.cache import NoDecoderCache
@@ -105,10 +106,11 @@ class Model:
         the ``operators`` attribute.
         """
         self.operators.append(op)
-        # Fail fast by trying make_step with a temporary sigdict
-        signals = SignalDict()
-        op.init_signals(signals)
-        op.make_step(signals, self.dt, np.random)
+        if rc.getboolean('nengo.Simulator', 'fail_fast'):
+            # Fail fast by trying make_step with a temporary sigdict
+            signals = SignalDict()
+            op.init_signals(signals)
+            op.make_step(signals, self.dt, np.random)
 
     def build(self, obj, *args, **kwargs):
         """Build an object into this model.

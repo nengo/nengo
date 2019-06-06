@@ -390,6 +390,7 @@ def pytest_runtest_setup(item):
     rc.reload_rc([])
     rc.set('decoder_cache', 'enabled', 'False')
     rc.set('exceptions', 'simplified', 'False')
+    rc.set('nengo.Simulator', 'fail_fast', 'True')
 
     item_name = get_item_name(item)
 

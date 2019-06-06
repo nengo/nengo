@@ -82,6 +82,9 @@ RC_DEFAULTS = {
     'exceptions': {
         'simplified': True,
     },
+    'nengo.Simulator': {
+        'fail_fast': False,
+    }
 }
 
 # The RC files in the order in which they will be read.

@@ -67,3 +67,13 @@
 # (e.g., 'nengo.utils.progress.ProgressBar'), which Nengo will attempt
 # to load. (str)
 #progress_bar = auto
+
+
+# --- Settings for the Nengo core simulator
+[nengo.Simulator]
+
+# Fail misconfigured operators immediately. If True, operators are tested
+# when they are created in build functions, rather than when they are
+# initialized by the simulator. Failing fast is useful when creating and
+# debugging new operators, but adds some time to the build.
+#fail_fast = False
