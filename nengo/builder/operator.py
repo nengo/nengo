@@ -599,12 +599,19 @@ class DotInc(Operator):
         A = signals[self.A]
         Y = signals[self.Y]
 
-        def step_dotinc():
-            inc = A.dot(X)
-            if self.reshape:
-                inc = inc.reshape(Y.shape)
-            Y[...] += inc
-        return step_dotinc
+        if self.reshape:
+
+            def step_dotinc_reshape():
+                Y[...] += A.dot(X).reshape(Y.shape)
+
+            return step_dotinc_reshape
+
+        else:
+
+            def step_dotinc():
+                Y[...] += A.dot(X)
+
+            return step_dotinc
 
 
 class SparseDotInc(DotInc):
