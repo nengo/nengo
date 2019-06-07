@@ -374,17 +374,18 @@ class NdarrayParam(Parameter):
 
     If the passed value is an ndarray, a view onto that array is stored.
     If the passed value is not an ndarray, it will be cast to an ndarray
-    of float64s and stored.
+    of ``dtype`` and stored.
     """
 
     equatable = True
 
     def __init__(self, name, default=Unconfigurable, shape=None,
-                 optional=False, readonly=None):
+                 dtype=np.float64, optional=False, readonly=None):
         if shape is not None:
             assert shape.count('...') <= 1, (
                 "Cannot have more than one ellipsis")
         self.shape = shape
+        self.dtype = dtype
         super().__init__(name, default, optional, readonly)
 
     @property
@@ -407,11 +408,12 @@ class NdarrayParam(Parameter):
             ndarray = ndarray.view()
         else:
             try:
-                ndarray = np.array(ndarray, dtype=np.float64)
+                ndarray = np.array(ndarray, dtype=self.dtype)
             except (ValueError, TypeError):
                 raise ValidationError(
-                    "Must be a float NumPy array (got type %r)"
-                    % type(ndarray).__name__, attr=self.name, obj=instance)
+                    "Must be a %s NumPy array (got type %r)"
+                    % (self.dtype, type(ndarray).__name__),
+                    attr=self.name, obj=instance)
 
         if self.readonly:
             ndarray.setflags(write=False)

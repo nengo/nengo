@@ -100,6 +100,10 @@ Release History
 - PES learning updates are now applied on the next timestep rather than
   the current one.
   (`#1398 <https://github.com/nengo/nengo/pull/1398>`_)
+- The ``NdarrayParam`` now accepts a ``dtype`` argument to check that
+  data assigned to that parameter matches the given Numpy ``dtype``.
+  ``DistOrArrayParam`` accepts an analogous ``sample_dtype`` argument.
+  (`#1532 <https://github.com/nengo/nengo/pull/1532>`__)
 
 **Deprecated**
 

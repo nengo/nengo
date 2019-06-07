@@ -537,8 +537,15 @@ class DistOrArrayParam(NdarrayParam):
     """Can be a Distribution or samples from a distribution."""
 
     def __init__(self, name, default=Unconfigurable, sample_shape=None,
-                 optional=False, readonly=None):
-        super().__init__(name, default, sample_shape, optional, readonly)
+                 sample_dtype=np.float64, optional=False, readonly=None):
+        super().__init__(
+            name=name,
+            default=default,
+            shape=sample_shape,
+            dtype=sample_dtype,
+            optional=optional,
+            readonly=readonly,
+        )
 
     def coerce(self, instance, distorarray):
         if isinstance(distorarray, Distribution):
