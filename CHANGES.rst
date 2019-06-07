@@ -47,6 +47,10 @@ Release History
 - Added a bit precision setting to change the number of bits allocated
   to each value tracked by Nengo.
   (`#640 <https://github.com/nengo/nengo/pull/640>`__)
+- Solvers can set ``sparse=True`` to hint to the backend that it returns
+  a sparse weight matrix, which can save time and memory when ``weights=True``.
+  Both ``LstsqL1`` and ``LstsqDrop`` set this by default.
+  (`#1552 <https://github.com/nengo/nengo/pull/1552>`__)
 
 **Changed**
 

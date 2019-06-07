@@ -24,15 +24,20 @@ class Solver(FrozenObject, metaclass=DocstringInheritor):
     combined with transform/encoders to generate the full weight matrix.
     See the solver's ``compositional`` class attribute to determine if it is
     compositional.
+
+    A solver can also set the ``sparse`` parameter to hint to the backend
+    that it returns a sparse matrix (defaults to ``False``).
     """
 
     compositional = True
 
     weights = BoolParam('weights')
+    sparse = BoolParam('sparse')
 
-    def __init__(self, weights=False):
+    def __init__(self, weights=False, sparse=False):
         super().__init__()
         self.weights = weights
+        self.sparse = sparse
 
     def __call__(self, A, Y, rng=np.random):
         """Call the solver.
@@ -228,7 +233,8 @@ class LstsqL1(Solver):
     l1 = NumberParam('l1', low=0)
     l2 = NumberParam('l2', low=0)
 
-    def __init__(self, weights=False, l1=1e-4, l2=1e-6, max_iter=1000):
+    def __init__(self, weights=False, l1=1e-4, l2=1e-6, max_iter=1000,
+                 sparse=True):
         """
         .. note:: Requires `scikit-learn <https://scikit-learn.org/stable/>`_.
 
@@ -242,6 +248,8 @@ class LstsqL1(Solver):
             Amount of L2 regularization.
         max_iter : int, optional
             Maximum number of iterations for the underlying elastic net.
+        sparse : bool, optional
+            Hints to the backend that the matrix is sparse.
 
         Attributes
         ----------
@@ -253,10 +261,12 @@ class LstsqL1(Solver):
             If False, solve for decoders. If True, solve for weights.
         max_iter : int
             Maximum number of iterations for the underlying elastic net.
+        sparse : bool, optional
+            Hints to the backend that the matrix is sparse.
         """
         import sklearn.linear_model  # noqa F401, import to check existence
         assert sklearn.linear_model
-        super().__init__(weights=weights)
+        super().__init__(weights=weights, sparse=sparse)
         self.l1 = l1
         self.l2 = l2
         self.max_iter = max_iter
@@ -284,7 +294,11 @@ class LstsqL1(Solver):
         X = model.coef_.T
         X.shape = (A.shape[1], Y.shape[1]) if Y.ndim > 1 else (A.shape[1],)
         t = time.time() - tstart
-        infos = {'rmses': rmses(A, X, Y), 'time': t}
+        infos = {
+            'rmses': rmses(A, X, Y),
+            'time': t,
+            'sparsity': np.count_nonzero(X) / X.size,
+        }
         return X, infos
 
 
@@ -302,7 +316,8 @@ class LstsqDrop(Solver):
     solver2 = SolverParam('solver2')
 
     def __init__(self, weights=False, drop=0.25,
-                 solver1=LstsqL2(reg=0.001), solver2=LstsqL2(reg=0.1)):
+                 solver1=LstsqL2(reg=0.001), solver2=LstsqL2(reg=0.1),
+                 sparse=True):
         """
         Parameters
         ----------
@@ -314,6 +329,8 @@ class LstsqDrop(Solver):
             Solver for finding the initial decoders.
         solver2 : Solver, optional
             Used for re-solving for the decoders after dropout.
+        sparse : bool, optional
+            Hints to the backend that the matrix is sparse.
 
         Attributes
         ----------
@@ -323,10 +340,12 @@ class LstsqDrop(Solver):
             Solver for finding the initial decoders.
         solver2 : Solver
             Used for re-solving for the decoders after dropout.
+        sparse : bool, optional
+            Hints to the backend that the matrix is sparse.
         weights : bool
             If False, solve for decoders. If True, solve for weights.
         """
-        super().__init__(weights=weights)
+        super().__init__(weights=weights, sparse=sparse)
         self.drop = drop
         self.solver1 = solver1
         self.solver2 = solver2
@@ -351,9 +370,15 @@ class LstsqDrop(Solver):
                     A[:, nonzero], Y[:, i], rng=rng)
 
         t = time.time() - tstart
-        info = {'rmses': rmses(A, X, Y), 'info0': info0, 'info1': info1,
-                'time': t}
-        return X if matrix_in or X.shape[1] > 1 else X.ravel(), info
+        weights = X if matrix_in or X.shape[1] > 1 else X.ravel()
+        info = {
+            'rmses': rmses(A, X, Y),
+            'time': t,
+            'info0': info0,
+            'info1': info1,
+            'sparsity': 1 - self.drop,
+        }
+        return weights, info
 
 
 class Nnls(Solver):
