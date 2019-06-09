@@ -157,19 +157,6 @@ def solve_for_decoders(conn, gain, bias, x, targets, rng):
     return decoders, solver_info
 
 
-def multiply(x, y):
-    if x.ndim <= 2 and y.ndim < 2:
-        return x * y
-    elif x.ndim < 2 and y.ndim == 2:
-        return x.reshape(-1, 1) * y
-    elif x.ndim == 2 and y.ndim == 2:
-        return np.dot(x, y)
-    else:
-        raise BuildError(
-            "Tensors not supported (x.ndim = %d, y.ndim = %d)" % (x.ndim, y.ndim)
-        )
-
-
 def slice_signal(model, signal, sl):
     assert signal.ndim == 1
     if isinstance(sl, slice) and (sl.step is None or sl.step == 1):
