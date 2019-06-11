@@ -247,6 +247,7 @@ Decoder and connection weight solvers
    nengo.utils.least_squares_solvers.RandomizedSVD
 
 .. automodule:: nengo.solvers
+   :no-members:
 
 .. autoclass:: nengo.solvers.Solver
    :special-members: __call__

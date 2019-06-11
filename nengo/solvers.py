@@ -22,12 +22,28 @@ from nengo.utils.least_squares_solvers import (
 class Solver(FrozenObject):
     """Decoder or weight solver.
 
-    A solver can be compositional or non-compositional. Non-compositional
-    solvers must operate on the whole neuron-to-neuron weight matrix, while
-    compositional solvers operate in the decoded state space, which is then
-    combined with transform/encoders to generate the full weight matrix.
-    See the solver's ``compositional`` class attribute to determine if it is
-    compositional.
+    A solver can have the ``weights`` parameter equal to ``True`` or ``False``.
+
+    Weight solvers are used to form neuron-to-neuron weight matrices.
+    They can be compositional or non-compositional. Non-compositional
+    solvers must operate on the whole neuron-to-neuron weight matrix
+    (i.e., each target is a separate postsynaptic current, without the bias
+    term), while compositional solvers operate in the decoded state-space
+    (i.e., each target is a dimension in state-space). Compositional solvers
+    then combine the returned ``X`` with the transform and/or encoders to
+    generate the full weight matrix.
+
+    For a solver to be compositional, the following property must be true::
+
+        X = solver(A, Y)  if and only if  L(X) = solver(A, L(Y))
+
+    where ``L`` is some arbitrary linear operator (i.e., the transform and/or
+    encoders for the postsynaptic population). This property can then be
+    leveraged by the backend for efficiency. See the solver's
+    ``compositional`` class attribute to determine if it is compositional.
+
+    Non-weight solvers always operate in the decoded state-space regardless of
+    whether they are compositional or non-compositional.
     """
 
     compositional = True
@@ -41,26 +57,29 @@ class Solver(FrozenObject):
     def __call__(self, A, Y, rng=np.random):
         """Call the solver.
 
+        .. note:: ``n_targets`` is ``dimensions`` if ``solver.weights`` is ``False``
+                  and ``post.n_neurons`` if ``solver.weights`` is ``True``.
+
         Parameters
         ----------
         A : (n_eval_points, n_neurons) array_like
-            Matrix of the neurons' activities at the evaluation points
-        Y : (n_eval_points, dimensions) array_like
-            Matrix of the target decoded values for each of the D dimensions,
-            at each of the evaluation points.
+            Matrix of the neurons' activities at the evaluation points.
+        Y : (n_eval_points, n_targets) array_like
+            Matrix of target values at the evaluation points.
         rng : `numpy.random.mtrand.RandomState`, optional
             A random number generator to use as required.
 
         Returns
         -------
-        X : (n_neurons, dimensions) or (n_neurons, post.n_neurons) ndarray
-            (n_neurons, dimensions) array of decoders (if ``solver.weights``
-            is False) or (n_neurons, post.n_neurons) array of weights
-            (if ``'solver.weights`` is True).
+        X : (n_neurons, n_targets) array_like
+            Matrix of weights used to map activities onto targets.
+            A typical solver will approximate ``dot(A, X) ~= Y`` subject to
+            some constraints on ``X``.
         info : dict
             A dictionary of information about the solver. All dictionaries have
-            an ``'rmses'`` key that contains RMS errors of the solve.
-            Other keys are unique to particular solvers.
+            an ``'rmses'`` key that contains RMS errors of the solve (one per
+            target). Other keys are unique to particular solvers.
+
         """
         raise NotImplementedError("Solvers must implement '__call__'")
 

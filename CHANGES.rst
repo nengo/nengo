@@ -102,8 +102,8 @@ Release History
   when solving for weights.
   (`#1507 <https://github.com/nengo/nengo/pull/1507>`__)
 - Solvers no longer take encoders as an argument. Instead, encoders will
-  be applied to the targets before the solve function for compositional solvers
-  and applied by the Transform builder for non-compositional solvers.
+  be applied to the targets before the solve function for non-compositional
+  solvers and applied by the Transform builder for compositional solvers.
   (`#1507 <https://github.com/nengo/nengo/pull/1507>`__)
 - Example Jupyter notebooks have been upgraded to notebook format 4.
   (`#1440 <https://github.com/nengo/nengo/pull/1440>`_)
