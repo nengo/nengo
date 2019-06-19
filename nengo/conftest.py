@@ -250,12 +250,16 @@ def function_seed(function, mod=0):
 
 def get_item_name(item):
     """Get a unique backend-independent name for an item (test function)."""
-    item_abspath, item_name = str(item.fspath), item.location[2]
+    item_path, item_name = str(item.fspath), item.location[2]
     nengo_path = os.path.abspath(os.path.dirname(nengo.__file__))
-    item_relpath = os.path.relpath(item_abspath, start=nengo_path)
-    item_relpath = os.path.join('nengo', item_relpath)
-    item_relpath = item_relpath.replace(os.sep, '/')
-    return '%s:%s' % (item_relpath, item_name)
+    if item_path.startswith(nengo_path):
+        # if test is within the nengo directory, remove the nengo directory
+        # prefix (so that we can move the nengo directory without changing
+        # the name)
+        item_path = item_path[len(nengo_path) + 1:]
+    item_path = os.path.join('nengo', item_path)
+    item_path = item_path.replace(os.sep, '/')
+    return '%s:%s' % (item_path, item_name)
 
 
 @pytest.fixture

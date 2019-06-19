@@ -54,7 +54,7 @@ def test_unsupported(xfail, testdir):
     args = "-p nengo.tests.options -rsx -sv".split()
     if xfail:
         args.append("--unsupported")
-    output = testdir.runpytest(*args)
+    output = testdir.runpytest_subprocess(*args)
 
     # ensure that these lines appear somewhere in the output
     output.stdout.fnmatch_lines_random([
@@ -102,14 +102,10 @@ def test_pyargs(testdir):
                 "Using mock simulator"
         """)
 
-    try:
-        outcomes = testdir.runpytest(
-            "-p", "nengo.tests.options",
-            "--pyargs", "nengo",
-        ).parseoutcomes()
-    finally:
-        # runpytest runs in-process, so we have to undo changes to TestConfig
-        nengo.conftest.TestConfig.Simulator = nengo.Simulator
+    outcomes = testdir.runpytest_subprocess(
+        "-p", "nengo.tests.options",
+        "--pyargs", "nengo",
+    ).parseoutcomes()
 
     assert "failed" not in outcomes
     assert "passed" not in outcomes
