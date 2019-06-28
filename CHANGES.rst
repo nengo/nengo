@@ -190,6 +190,8 @@ Release History
 - Some higher-order ``LinearFilter`` synapses had unnecessary delays
   that have now been removed.
   (`#1535 <https://github.com/nengo/nengo/pull/1535>`__)
+- Models using the ``SpikingRectifiedLinear`` neuron type now have their
+  decoders cached. (`#1550 <https://github.com/nengo/nengo/pull/1550>`__)
 
 2.8.0 (June 9, 2018)
 ====================

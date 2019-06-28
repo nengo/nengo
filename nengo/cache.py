@@ -29,6 +29,7 @@ from nengo.neurons import (
     LIFRate,
     RectifiedLinear,
     Sigmoid,
+    SpikingRectifiedLinear,
 )
 from nengo.rc import rc
 from nengo.solvers import (
@@ -172,10 +173,11 @@ class Fingerprint:
         LIFRate,
         RectifiedLinear,
         Sigmoid,
+        SpikingRectifiedLinear,
     )
 
     WHITELIST = set(
-        (bool, float, complex, bytes, list, tuple, np.ndarray, int, str)
+        (type(None), bool, float, complex, bytes, list, tuple, np.ndarray, int, str)
         + SOLVERS
         + LSTSQ_METHODS
         + NEURON_TYPES

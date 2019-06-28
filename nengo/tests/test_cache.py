@@ -1,6 +1,7 @@
 import errno
 import multiprocessing
 import os
+import sys
 import timeit
 from subprocess import CalledProcessError
 
@@ -17,7 +18,36 @@ from nengo.cache import (
     WriteableCacheIndex,
 )
 from nengo.exceptions import CacheIOWarning, FingerprintError
+import nengo.neurons
 from nengo.solvers import LstsqL2
+import nengo.utils.least_squares_solvers
+from nengo.utils.testing import Mock
+
+
+def isstrictsubclass(x, cls):
+    return isinstance(x, type) and issubclass(x, cls) and x is not cls
+
+
+def list_objects(module):
+    return [getattr(module, key) for key in dir(module) if not key.startswith("_")]
+
+
+neuron_types = [
+    obj
+    for obj in list_objects(nengo.neurons)
+    if isstrictsubclass(obj, nengo.neurons.NeuronType)
+]
+solver_types = [
+    obj
+    for obj in list_objects(nengo.solvers)
+    if isstrictsubclass(obj, nengo.solvers.Solver)
+    and obj is not nengo.solvers.NoSolver  # NoSolver is not cacheable
+]
+lstsq_solver_types = [
+    obj
+    for obj in list_objects(nengo.utils.least_squares_solvers)
+    if isstrictsubclass(obj, nengo.utils.least_squares_solvers.LeastSquaresSolver)
+]
 
 
 class SolverMock:
@@ -321,6 +351,24 @@ def test_fingerprinting(reference, equal, different):
 def test_unsupported_fingerprinting(obj):
     with pytest.raises(FingerprintError):
         Fingerprint(obj)
+
+
+@pytest.mark.parametrize("cls", neuron_types + solver_types + lstsq_solver_types)
+def test_supported_fingerprinting(cls, monkeypatch):
+    # patch so we can instantiate various solvers without the proper libraries
+    monkeypatch.setitem(sys.modules, "scipy", Mock())
+    monkeypatch.setitem(sys.modules, "scipy.optimize", Mock())
+    monkeypatch.setitem(sys.modules, "sklearn", Mock())
+    monkeypatch.setitem(sys.modules, "sklearn.linear_model", Mock())
+    monkeypatch.setitem(sys.modules, "sklearn.utils", Mock())
+    monkeypatch.setitem(sys.modules, "sklearn.utils.extmath", Mock())
+
+    obj = cls()
+    assert Fingerprint.supports(obj)
+
+    # check fingerprint is created without error and is a valid sha1 hash
+    fp = str(Fingerprint(obj))
+    assert len(fp) == 40 and set(fp).issubset("0123456789abcdef")
 
 
 def test_fails_for_lambda_expression():
