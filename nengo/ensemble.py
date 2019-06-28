@@ -103,8 +103,8 @@ class Ensemble(NengoObject):
 
     probeable = ('decoded_output', 'input', 'scaled_encoders')
 
-    n_neurons = IntParam('n_neurons', low=1)
-    dimensions = IntParam('dimensions', low=1)
+    n_neurons = IntParam('n_neurons', low=1, readonly=False)
+    dimensions = IntParam('dimensions', low=1, readonly=False)
     radius = NumberParam('radius', default=1.0, low=1e-10)
     encoders = DistOrArrayParam('encoders',
                                 default=UniformHypersphere(surface=True),

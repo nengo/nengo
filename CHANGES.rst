@@ -182,6 +182,9 @@ Release History
 - Some higher-order ``LinearFilter`` synapses had unnecessary delays
   that have now been removed.
   (`#1535 <https://github.com/nengo/nengo/pull/1535>`__)
+- ``Ensemble.n_neurons/dimensions`` can now be changed after Ensemble
+  creation again.
+  (`#1548 <https://github.com/nengo/nengo/pull/1548>`__)
 
 2.8.0 (June 9, 2018)
 ====================

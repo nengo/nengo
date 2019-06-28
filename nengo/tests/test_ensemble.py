@@ -422,3 +422,13 @@ def test_raises_exception_for_invalid_intercepts(Simulator, intercept):
     with pytest.raises(BuildError):
         with Simulator(model):
             pass
+
+
+def test_change_after_creation():
+    with nengo.Network():
+        ens = nengo.Ensemble(10, 1)
+        ens.n_neurons = 20
+        ens.dimensions = 2
+
+        assert ens.n_neurons == 20
+        assert ens.dimensions == 2
