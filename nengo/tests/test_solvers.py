@@ -598,11 +598,6 @@ def test_nosolver_validation():
     LstsqDrop(weights=True),
 ])
 def test_non_compositional_solver(Simulator, solver, rng, seed, plt):
-    if isinstance(solver, LstsqL1):
-        pytest.importorskip('sklearn')
-    if isinstance(solver, Nnls):
-        pytest.importorskip('scipy')
-
     assert not solver.compositional
 
     with nengo.Network(seed=seed) as net:
