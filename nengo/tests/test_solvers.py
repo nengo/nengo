@@ -9,7 +9,7 @@ import pytest
 import nengo
 from nengo.dists import UniformHypersphere
 from nengo.exceptions import BuildError, ValidationError
-from nengo.utils.numpy import rms, norm
+from nengo.utils.numpy import rms, norm, scipy_sparse
 from nengo.utils.stdlib import Timer
 from nengo.utils.testing import allclose
 from nengo.solvers import (
@@ -598,11 +598,6 @@ def test_nosolver_validation():
     LstsqDrop(weights=True),
 ])
 def test_non_compositional_solver(Simulator, solver, rng, seed, plt):
-    if isinstance(solver, LstsqL1):
-        pytest.importorskip('sklearn')
-    if isinstance(solver, Nnls):
-        pytest.importorskip('scipy')
-
     assert not solver.compositional
 
     with nengo.Network(seed=seed) as net:
@@ -610,7 +605,7 @@ def test_non_compositional_solver(Simulator, solver, rng, seed, plt):
         a = nengo.Ensemble(100, 1)
         b = nengo.Ensemble(101, 1)
         nengo.Connection(u, a, synapse=None)
-        nengo.Connection(a, b, solver=solver, transform=-1)
+        conn = nengo.Connection(a, b, solver=solver, transform=-1)
 
         up = nengo.Probe(u, synapse=0.03)
         bp = nengo.Probe(b, synapse=0.03)
@@ -624,6 +619,56 @@ def test_non_compositional_solver(Simulator, solver, rng, seed, plt):
     plt.plot(sim.trange(), y)
 
     assert np.allclose(y, -x, atol=0.1)
+    if scipy_sparse is not None:
+        assert isinstance(sim.data[conn].weights, scipy_sparse.csr_matrix)
+
+
+@pytest.mark.parametrize('solver_cls', [
+    LstsqDrop,
+    LstsqL1,
+])
+def test_sparse_decoders_warnings(Simulator, solver_cls):
+    if solver_cls is LstsqL1:
+        pytest.importorskip('sklearn')
+
+    # sparse decoders are not yet supported
+    solver = solver_cls()
+    assert solver.sparse
+    assert not solver.weights
+
+    with nengo.Network() as net:
+        conn = nengo.Connection(
+            nengo.Ensemble(10, 1), nengo.Node(size_in=1), solver=solver)
+
+    with pytest.warns(UserWarning, match="Sparse decoders"):
+        with Simulator(net) as sim:
+            pass
+
+    assert 0 < sim.data[conn].solver_info['sparsity'] < 1
+
+
+@pytest.mark.parametrize('solver_cls', [
+    LstsqDrop,
+    LstsqL1,
+])
+def test_sparse_without_scipy(Simulator, solver_cls):
+    if scipy_sparse is not None:
+        pytest.skip("Test requires no Scipy")
+
+    if solver_cls is LstsqL1:
+        pytest.importorskip('sklearn')
+
+    solver = solver_cls(weights=True)
+
+    with nengo.Network() as net:
+        conn = nengo.Connection(
+            nengo.Ensemble(10, 1), nengo.Ensemble(5, 1), solver=solver)
+
+    with pytest.warns(UserWarning, match="require Scipy"):
+        with Simulator(net) as sim:
+            pass
+
+    assert 0 < sim.data[conn].solver_info['sparsity'] < 1
 
 
 def test_non_compositional_solver_transform_error(Simulator):
