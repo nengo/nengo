@@ -130,9 +130,6 @@ def export_py(nb, dest_path=None):
         ind1 = body.find("\n", ind0)
         body = body[:ind0] + body[(ind1 + 1):]
 
-    if "plt" in body:
-        body += "\nplt.show()\n"
-
     if dest_path is not None:
         with io.open(dest_path, 'w', encoding='utf-8') as f:
             f.write(body)

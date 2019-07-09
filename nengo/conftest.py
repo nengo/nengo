@@ -123,12 +123,12 @@ def recorder_dirname(request, name):
         return None
 
     simulator, nl = TestConfig.RefSimulator, None
-    if 'Simulator' in request.funcargnames:
+    if 'Simulator' in request.fixturenames:
         simulator = request.getfixturevalue('Simulator')
     # 'nl' stands for the non-linearity used in the neuron equation
-    if 'nl' in request.funcargnames:
+    if 'nl' in request.fixturenames:
         nl = request.getfixturevalue('nl')
-    elif 'nl_nodirect' in request.funcargnames:
+    elif 'nl_nodirect' in request.fixturenames:
         nl = request.getfixturevalue('nl_nodirect')
 
     dirname = "%s.%s" % (simulator.__module__, name)
@@ -290,10 +290,10 @@ def pytest_generate_tests(metafunc):
                 'ignore:overflow encountered in exp')] + marks)
         return nl
 
-    if "nl" in metafunc.funcargnames:
+    if "nl" in metafunc.fixturenames:
         metafunc.parametrize(
             "nl", [mark_nl(nl) for nl in TestConfig.neuron_types])
-    if "nl_nodirect" in metafunc.funcargnames:
+    if "nl_nodirect" in metafunc.fixturenames:
         nodirect = [mark_nl(n) for n in TestConfig.neuron_types
                     if n is not Direct]
         metafunc.parametrize("nl_nodirect", nodirect)

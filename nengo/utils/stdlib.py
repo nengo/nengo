@@ -12,7 +12,7 @@ import time
 import weakref
 
 
-class WeakKeyDefaultDict(collections.MutableMapping):
+class WeakKeyDefaultDict(collections.abc.MutableMapping):
     """WeakKeyDictionary that allows to define a default."""
 
     def __init__(self, default_factory, items=None, **kwargs):
@@ -41,7 +41,7 @@ class WeakKeyDefaultDict(collections.MutableMapping):
         return len(self._data)
 
 
-class WeakKeyIDDictionary(collections.MutableMapping):
+class WeakKeyIDDictionary(collections.abc.MutableMapping):
     """WeakKeyDictionary that uses object ID to hash.
 
     This ignores the ``__eq__`` and ``__hash__`` functions on objects,
@@ -126,7 +126,7 @@ class WeakKeyIDDictionary(collections.MutableMapping):
             self.update(kwargs)
 
 
-class WeakSet(collections.MutableSet):
+class WeakSet(collections.abc.MutableSet):
     """Uses weak references to store the items in the set."""
 
     def __init__(self, items=None):
@@ -230,7 +230,7 @@ def groupby(objects, key, hashable=None, force_list=True):
         # get first item without advancing iterator, and see if key is hashable
         objects, objects2 = itertools.tee(iter(objects))
         item0 = next(objects2)
-        hashable = isinstance(key(item0), collections.Hashable)
+        hashable = isinstance(key(item0), collections.abc.Hashable)
 
     if hashable:
         # use a dictionary to sort by hash (faster)

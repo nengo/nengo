@@ -74,6 +74,9 @@ setup_cfg:
       - "ignore:Skipping some optimization steps"
       - "ignore:SciPy is not installed"
       - "ignore:numpy.(dtype|ufunc) size changed"
+      - "ignore:Object <BasalGanglia \"bg\"> has already been built"
+      - "ignore:Object <Thalamus \"thalamus\"> has already been built"
+      - "ignore:IPython.core.inputsplitter is deprecated"
     markers:
       example:
         Mark a test as an example.
@@ -82,6 +85,10 @@ setup_cfg:
         analytics data are produced.
       slow:
         Mark a test as slow to skip it per default.
+      benchmark:
+        Mark a test as running a small benchmark.
+      compare:
+        Mark a test as comparing previous test runs.
   pylint:
     ignore:
       - _vendor
