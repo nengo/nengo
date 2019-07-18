@@ -101,7 +101,7 @@ Development
 ===========
 
 Information for current or prospective developers can be found
-at `<https://www.nengo.ai/developers.html>`_.
+at `<https://www.nengo.ai/contributing/>`_.
 
 Getting Help
 ============

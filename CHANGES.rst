@@ -158,13 +158,13 @@ Release History
   like ``label``, pass them as keyword arguments instead.
   (`#1179 <https://github.com/nengo/nengo/pull/1179>`__)
 - Removed ``generate_graphviz`` utility function. It can now be found in
-  `nengo_extras <https://github.com/nengo/nengo_extras/>`__.
+  `nengo_extras <https://github.com/nengo/nengo-extras>`__.
   (`#1187 <https://github.com/nengo/nengo/pull/1187>`_)
 - Removed functions for estimating firing rates from spikes. They can now
-  be found in `nengo_extras <https://github.com/nengo/nengo_extras/>`__.
+  be found in `nengo_extras <https://github.com/nengo/nengo-extras>`__.
   (`#1187 <https://github.com/nengo/nengo/pull/1187>`_)
 - Removed the ``probe_all`` function. It can now be found in
-  `nengo_extras <https://github.com/nengo/nengo_extras/>`__.
+  `nengo_extras <https://github.com/nengo/nengo-extras>`__.
   (`#1187 <https://github.com/nengo/nengo/pull/1187>`_)
 - ``PES.correction`` is no longer probeable.
   (`#1398 <https://github.com/nengo/nengo/pull/1398>`_)
