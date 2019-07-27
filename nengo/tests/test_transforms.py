@@ -12,13 +12,8 @@ from nengo._vendor.npconv2d import conv2d
 @pytest.mark.parametrize("channels_last", (True, False))
 @pytest.mark.parametrize("fixed_kernel", (True, False))
 def test_convolution(
-        dimensions,
-        padding,
-        channels_last,
-        fixed_kernel,
-        Simulator,
-        rng,
-        seed):
+    dimensions, padding, channels_last, fixed_kernel, Simulator, rng, seed
+):
     input_d = 4
     input_channels = 2
     output_channels = 5
@@ -41,13 +36,13 @@ def test_convolution(
 
     with nengo.Network(seed=seed) as net:
         x = rng.randn(*input_shape)
-        w = (rng.randn(*kernel_shape) if fixed_kernel
-             else nengo.dists.Uniform(-0.1, 0.1))
+        w = rng.randn(*kernel_shape) if fixed_kernel else nengo.dists.Uniform(-0.1, 0.1)
 
         a = nengo.Node(np.ravel(x))
         b = nengo.Node(size_in=np.prod(output_shape))
         conn = nengo.Connection(
-            a, b,
+            a,
+            b,
             synapse=None,
             transform=nengo.Convolution(
                 output_channels,
@@ -56,7 +51,9 @@ def test_convolution(
                 padding=padding,
                 kernel_size=kernel_size,
                 strides=(1,) if dimensions == 1 else (1, 1),
-                channels_last=channels_last))
+                channels_last=channels_last,
+            ),
+        )
         p = nengo.Probe(b)
 
         # check error handling
@@ -90,13 +87,14 @@ def test_convolution(
 @pytest.mark.parametrize("decoders", (True, False))
 def test_convolution_nef(encoders, decoders, Simulator):
     with nengo.Network() as net:
-        transform = nengo.transforms.Convolution(
-            n_filters=2, input_shape=(3, 3, 1))
+        transform = nengo.transforms.Convolution(n_filters=2, input_shape=(3, 3, 1))
         a = nengo.Ensemble(9, 9)
         b = nengo.Ensemble(2, 2)
-        nengo.Connection(a if decoders else a.neurons,
-                         b if encoders else b.neurons,
-                         transform=transform)
+        nengo.Connection(
+            a if decoders else a.neurons,
+            b if encoders else b.neurons,
+            transform=transform,
+        )
 
     if decoders:
         # error if decoders
@@ -111,33 +109,19 @@ def test_convolution_nef(encoders, decoders, Simulator):
 
 @pytest.mark.parametrize("use_dist", (False, True))
 @pytest.mark.parametrize("use_scipy", (False, True))
-def test_sparse(
-    use_dist,
-    use_scipy,
-    Simulator,
-    rng,
-    seed,
-    plt,
-    monkeypatch,
-):
+def test_sparse(use_dist, use_scipy, Simulator, rng, seed, plt, monkeypatch):
     if use_scipy:
         scipy_sparse = pytest.importorskip("scipy.sparse")
     else:
         monkeypatch.setattr(nengo.transforms, "scipy_sparse", None)
         monkeypatch.setattr(nengo.utils.numpy, "scipy_sparse", None)
-        monkeypatch.setattr(
-            nengo.utils.numpy, "is_spmatrix", lambda obj: False
-        )
+        monkeypatch.setattr(nengo.utils.numpy, "is_spmatrix", lambda obj: False)
 
     input_d = 4
     output_d = 2
     shape = (output_d, input_d)
 
-    inds = np.asarray(
-        [[0, 0],
-         [1, 1],
-         [0, 2],
-         [1, 3]])
+    inds = np.asarray([[0, 0], [1, 1], [0, 2], [1, 3]])
     weights = rng.uniform(0.25, 0.75, size=4)
     if use_dist:
         init = nengo.dists.Uniform(0.25, 0.75)
@@ -149,12 +133,11 @@ def test_sparse(
         init = weights
         indices = inds
 
-    transform = nengo.transforms.Sparse(
-        shape, indices=indices, init=init)
+    transform = nengo.transforms.Sparse(shape, indices=indices, init=init)
 
-    sim_time = 1.
+    sim_time = 1.0
     with nengo.Network(seed=seed) as net:
-        x = nengo.processes.WhiteSignal(period=sim_time, high=10, seed=seed+1)
+        x = nengo.processes.WhiteSignal(period=sim_time, high=10, seed=seed + 1)
         u = nengo.Node(x, size_out=4)
         a = nengo.Ensemble(100, 2)
         conn = nengo.Connection(u, a, synapse=None, transform=transform)
@@ -184,7 +167,7 @@ def test_sparse(
     with Simulator(net) as ref_sim:
         ref_sim.run(sim_time)
 
-    plt.plot(ref_sim.trange(), ref_sim.data[ap], ':')
+    plt.plot(ref_sim.trange(), ref_sim.data[ap], ":")
     plt.plot(sim.trange(), sim.data[ap])
 
     assert np.allclose(sim.data[ap], ref_sim.data[ap])
@@ -200,9 +183,11 @@ def test_sparse_nef(encoders, decoders, Simulator):
         transform = nengo.transforms.Sparse((2, 2), indices=[[0, 1], [1, 0]])
         a = nengo.Ensemble(2, 2)
         b = nengo.Ensemble(2, 2)
-        nengo.Connection(a if decoders else a.neurons,
-                         b if encoders else b.neurons,
-                         transform=transform)
+        nengo.Connection(
+            a if decoders else a.neurons,
+            b if encoders else b.neurons,
+            transform=transform,
+        )
 
     if decoders:
         # error if decoders
@@ -219,21 +204,31 @@ def test_argreprs():
     """Test repr() for each transform type."""
     assert repr(nengo.Dense((1, 2), init=[[1, 1]])) == "Dense(shape=(1, 2))"
 
-    assert (repr(nengo.Convolution(3, (1, 2, 3)))
-            == "Convolution(n_filters=3, input_shape=(1, 2, 3))")
-    assert (repr(nengo.Convolution(3, (1, 2, 3), kernel_size=(3, 2)))
-            == "Convolution(n_filters=3, input_shape=(1, 2, 3), "
-               "kernel_size=(3, 2))")
-    assert (repr(nengo.Convolution(3, (1, 2, 3), channels_last=False))
-            == "Convolution(n_filters=3, input_shape=(1, 2, 3), "
-               "channels_last=False)")
+    assert (
+        repr(nengo.Convolution(3, (1, 2, 3)))
+        == "Convolution(n_filters=3, input_shape=(1, 2, 3))"
+    )
+    assert (
+        repr(nengo.Convolution(3, (1, 2, 3), kernel_size=(3, 2)))
+        == "Convolution(n_filters=3, input_shape=(1, 2, 3), "
+        "kernel_size=(3, 2))"
+    )
+    assert (
+        repr(nengo.Convolution(3, (1, 2, 3), channels_last=False))
+        == "Convolution(n_filters=3, input_shape=(1, 2, 3), "
+        "channels_last=False)"
+    )
 
 
 def test_channelshape_str():
-    assert (repr(ChannelShape((1, 2, 3)))
-            == "ChannelShape(shape=(1, 2, 3), channels_last=True)")
-    assert (repr(ChannelShape((1, 2, 3), channels_last=False))
-            == "ChannelShape(shape=(1, 2, 3), channels_last=False)")
+    assert (
+        repr(ChannelShape((1, 2, 3)))
+        == "ChannelShape(shape=(1, 2, 3), channels_last=True)"
+    )
+    assert (
+        repr(ChannelShape((1, 2, 3), channels_last=False))
+        == "ChannelShape(shape=(1, 2, 3), channels_last=False)"
+    )
 
     # `str` always has channels last
     assert str(ChannelShape((1, 2, 3))) == "(1, 2, ch=3)"

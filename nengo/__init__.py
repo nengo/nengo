@@ -17,7 +17,8 @@ import sys
 from .version import version as __version__
 
 if sys.version_info < (3, 5):
-    raise ImportError("""
+    raise ImportError(
+        """
 You are running Python version %s with Nengo version %s.
 Nengo requires at least Python 3.5.
 
@@ -33,7 +34,9 @@ There are two options for getting Nengo working:
 - Install an older version of Nengo:
 
  $ pip install 'nengo<3.0'
-""" % (sys.version, __version__))
+"""
+        % (sys.version, __version__)
+    )
 del sys
 
 # Nengo namespace (API)
@@ -43,8 +46,16 @@ from .connection import Connection
 from .ensemble import Ensemble
 from .node import Node
 from .neurons import (
-    AdaptiveLIF, AdaptiveLIFRate, Direct, Izhikevich, LIF, LIFRate,
-    RectifiedLinear, Sigmoid, SpikingRectifiedLinear)
+    AdaptiveLIF,
+    AdaptiveLIFRate,
+    Direct,
+    Izhikevich,
+    LIF,
+    LIFRate,
+    RectifiedLinear,
+    Sigmoid,
+    SpikingRectifiedLinear,
+)
 from .network import Network
 from .learning_rules import PES, BCM, Oja, Voja
 from .params import Default

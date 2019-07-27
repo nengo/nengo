@@ -14,8 +14,10 @@ from html import escape
 import warnings
 
 import IPython
+
 try:
     import notebook
+
     notebook_version = notebook.version_info
 except ImportError:
     notebook_version = IPython.version_info
@@ -27,6 +29,7 @@ from nengo.utils.progress import ProgressBar, timestamp2timedelta
 if has_ipynb_widgets():
     # pylint: disable=ungrouped-imports
     from IPython.display import display
+
     if IPython.version_info[0] <= 3:
         from IPython.html.widgets import DOMWidget
         import IPython.utils.traitlets as traitlets
@@ -36,7 +39,8 @@ if has_ipynb_widgets():
         import traitlets
 else:
     raise ImportError(
-        "Required dependency could not be loaded. Please install ipywidgets.")
+        "Required dependency could not be loaded. Please install ipywidgets."
+    )
 
 
 def load_ipython_extension(ipython):
@@ -44,28 +48,33 @@ def load_ipython_extension(ipython):
         warnings.warn(
             "Loading the nengo.ipynb notebook extension is no longer "
             "required. Progress bars are automatically activated for IPython "
-            "version 5 and later.")
-    elif has_ipynb_widgets() and rc.get('progress', 'progress_bar') == 'auto':
+            "version 5 and later."
+        )
+    elif has_ipynb_widgets() and rc.get("progress", "progress_bar") == "auto":
         warnings.warn(
             "The nengo.ipynb notebook extension is deprecated. Please upgrade "
-            "to IPython version 5 or later.")
+            "to IPython version 5 or later."
+        )
 
         IPythonProgressWidget.load_frontend(ipython)
-        rc.set('progress', 'progress_bar', '.'.join((
-            __name__, IPython2ProgressBar.__name__)))
+        rc.set(
+            "progress",
+            "progress_bar",
+            ".".join((__name__, IPython2ProgressBar.__name__)),
+        )
 
 
 class IPythonProgressWidget(DOMWidget):
     """IPython widget for displaying a progress bar."""
 
     # pylint: disable=too-many-public-methods
-    _view_name = traitlets.Unicode('NengoProgressBar', sync=True)
+    _view_name = traitlets.Unicode("NengoProgressBar", sync=True)
     if notebook_version[0] >= 4:
-        _view_module = traitlets.Unicode('nengo', sync=True)
-    progress = traitlets.Float(0., sync=True)
-    text = traitlets.Unicode('', sync=True)
+        _view_module = traitlets.Unicode("nengo", sync=True)
+    progress = traitlets.Float(0.0, sync=True)
+    text = traitlets.Unicode("", sync=True)
 
-    WIDGET = '''
+    WIDGET = """
       var NengoProgressBar = widgets.DOMWidgetView.extend({
         render: function() {
           // Work-around for messed up CSS in IPython 4
@@ -101,18 +110,20 @@ class IPythonProgressWidget(DOMWidget):
           this.$el.find('div.pb-text').html(text);
         },
       });
-    '''
+    """
 
-    FRONTEND = '''
+    FRONTEND = """
     define('nengo', ["jupyter-js-widgets"], function(widgets) {{
         {widget}
 
       return {{
         NengoProgressBar: NengoProgressBar
       }};
-    }});'''.format(widget=WIDGET)
+    }});""".format(
+        widget=WIDGET
+    )
 
-    LEGACY_FRONTEND = '''
+    LEGACY_FRONTEND = """
     require(["widgets/js/widget", "widgets/js/manager"],
         function(widgets, manager) {{
       if (typeof widgets.DOMWidgetView == 'undefined') {{
@@ -126,35 +137,42 @@ class IPythonProgressWidget(DOMWidget):
 
       manager.WidgetManager.register_widget_view(
         'NengoProgressBar', NengoProgressBar);
-    }});'''.format(widget=WIDGET)
+    }});""".format(
+        widget=WIDGET
+    )
 
-    LEGACY_4_FRONTEND = '''
+    LEGACY_4_FRONTEND = """
     define('nengo', ["widgets/js/widget"], function(widgets) {{
         {widget}
 
       return {{
         NengoProgressBar: NengoProgressBar
       }};
-    }});'''.format(widget=WIDGET)
+    }});""".format(
+        widget=WIDGET
+    )
 
     @classmethod
     def load_frontend(cls, ipython):
         """Loads the JavaScript front-end code required by then widget."""
         warnings.warn(
             "IPythonProgressWidget is deprecated. Please upgrade to "
-            "IPython version 5 or later.", DeprecationWarning)
+            "IPython version 5 or later.",
+            DeprecationWarning,
+        )
         if notebook_version[0] < 4:
-            ipython.run_cell_magic('javascript', '', cls.LEGACY_FRONTEND)
+            ipython.run_cell_magic("javascript", "", cls.LEGACY_FRONTEND)
         elif ipywidgets.version_info[0] < 5:
-            nb_ver_4x = (notebook_version[0] == 4 and notebook_version[1] > 1)
+            nb_ver_4x = notebook_version[0] == 4 and notebook_version[1] > 1
             if notebook_version[0] > 4 or nb_ver_4x:
                 warnings.warn(
                     "Incompatible versions of notebook and ipywidgets "
                     "detected. Please update your ipywidgets package to "
-                    "version 5 or above.")
-            ipython.run_cell_magic('javascript', '', cls.LEGACY_4_FRONTEND)
+                    "version 5 or above."
+                )
+            ipython.run_cell_magic("javascript", "", cls.LEGACY_4_FRONTEND)
         else:
-            ipython.run_cell_magic('javascript', '', cls.FRONTEND)
+            ipython.run_cell_magic("javascript", "", cls.FRONTEND)
 
 
 class IPython2ProgressBar(ProgressBar):
@@ -163,7 +181,9 @@ class IPython2ProgressBar(ProgressBar):
     def __init__(self, task):
         warnings.warn(
             "IPython2ProgressBar is deprecated. Please upgrade to IPython "
-            "version 5 or later.", DeprecationWarning)
+            "version 5 or later.",
+            DeprecationWarning,
+        )
         super().__init__(task)
         self._escaped_task = escape(task)
         self._widget = IPythonProgressWidget()
@@ -177,10 +197,11 @@ class IPython2ProgressBar(ProgressBar):
         self._widget.progress = progress.progress
         if progress.finished:
             self._widget.text = "{} finished in {}.".format(
-                self._escaped_task,
-                timestamp2timedelta(progress.elapsed_seconds()))
+                self._escaped_task, timestamp2timedelta(progress.elapsed_seconds())
+            )
         else:
-            self._widget.text = (
-                "{task}&hellip; {progress:.0f}%, ETA: {eta}".format(
-                    task=self._escaped_task, progress=100 * progress.progress,
-                    eta=timestamp2timedelta(progress.eta())))
+            self._widget.text = "{task}&hellip; {progress:.0f}%, ETA: {eta}".format(
+                task=self._escaped_task,
+                progress=100 * progress.progress,
+                eta=timestamp2timedelta(progress.eta()),
+            )

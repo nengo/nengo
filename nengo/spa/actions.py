@@ -25,35 +25,39 @@ class Expression:
     """
 
     def __init__(self, sources, expression):
-        self.objects = {}   # the list of known terms
+        self.objects = {}  # the list of known terms
 
         # make all the module outputs as known terms
         for name in sources:
             self.objects[name] = Source(name)
         # handle the term 'dot(a, b)' to mean DotProduct(a, b)
-        self.objects['dot'] = DotProduct
+        self.objects["dot"] = DotProduct
 
         # use Python's eval to do the parsing of expressions for us
         self.validate_string(expression)
-        sanitized_exp = ' '.join(expression.split('\n'))
+        sanitized_exp = " ".join(expression.split("\n"))
         try:
             self.expression = eval(sanitized_exp, {}, self)
         except NameError as e:
-            raise SpaParseError("Unknown module in expression '%s': %s" %
-                                (expression, e))
+            raise SpaParseError(
+                "Unknown module in expression '%s': %s" % (expression, e)
+            )
         except TypeError as e:
-            raise SpaParseError("Invalid operator in expression '%s': %s" %
-                                (expression, e))
+            raise SpaParseError(
+                "Invalid operator in expression '%s': %s" % (expression, e)
+            )
 
         # normalize the result to a summation
         if not isinstance(self.expression, Summation):
             self.expression = Summation([self.expression])
 
     def validate_string(self, text):
-        m = re.search('~[^a-zA-Z]', text)
+        m = re.search("~[^a-zA-Z]", text)
         if m is not None:
-            raise SpaParseError("~ is only permitted before names (e.g., DOG) "
-                                "or modules (e.g., vision): %s" % text)
+            raise SpaParseError(
+                "~ is only permitted before names (e.g., DOG) "
+                "or modules (e.g., vision): %s" % text
+            )
 
     def __getitem__(self, key):
         # this gets used by the eval in the constructor to create new
@@ -62,7 +66,8 @@ class Expression:
         if item is None:
             if not key[0].isupper():
                 raise SpaParseError(
-                    "Semantic pointers must begin with a capital letter.")
+                    "Semantic pointers must begin with a capital letter."
+                )
             item = Symbol(key)
             self.objects[key] = item
         return item
@@ -101,13 +106,14 @@ class Effect:
             if sink not in sinks:
                 raise SpaParseError(
                     "Left-hand module '%s' from effect '%s=%s' "
-                    "is not defined." %
-                    (lvalue, lvalue, rvalue))
+                    "is not defined." % (lvalue, lvalue, rvalue)
+                )
             if sink in self.effect:
                 raise SpaParseError(
                     "Left-hand module '%s' from effect '%s=%s' "
-                    "is assigned to multiple times in '%s'." %
-                    (lvalue, lvalue, rvalue, effect))
+                    "is assigned to multiple times in '%s'."
+                    % (lvalue, lvalue, rvalue, effect)
+                )
             self.effect[sink] = Expression(sources, rvalue)
 
     def __str__(self):
@@ -135,8 +141,8 @@ class Action:
 
     def __init__(self, sources, sinks, action, name):
         self.name = name
-        if '-->' in action:
-            condition, effect = action.split('-->', 1)
+        if "-->" in action:
+            condition, effect = action.split("-->", 1)
             self.condition = Expression(sources, condition)
             self.effect = Effect(sources, sinks, effect)
         else:
@@ -145,7 +151,10 @@ class Action:
 
     def __str__(self):
         return "<Action %s:\n  %s\n --> %s\n>" % (
-            self.name, self.condition, self.effect)
+            self.name,
+            self.condition,
+            self.effect,
+        )
 
 
 class Actions:
@@ -165,9 +174,11 @@ class Actions:
 
     def add(self, *args, **kwargs):
         if self.actions is not None:
-            warnings.warn("The actions currently being added must be processed"
-                          " either by spa.BasalGanglia or spa.Cortical"
-                          " to be added to the model.")
+            warnings.warn(
+                "The actions currently being added must be processed"
+                " either by spa.BasalGanglia or spa.Cortical"
+                " to be added to the model."
+            )
 
         self.args += args
         self.kwargs.update(kwargs)

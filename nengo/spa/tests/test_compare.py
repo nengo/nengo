@@ -6,9 +6,9 @@ def test_basic():
     with spa.SPA() as model:
         model.compare = spa.Compare(dimensions=16)
 
-    inputA = model.get_module_input('compare_A')
-    inputB = model.get_module_input('compare_B')
-    output = model.get_module_output('compare')
+    inputA = model.get_module_input("compare_A")
+    inputB = model.get_module_input("compare_B")
+    output = model.get_module_output("compare")
     # all nodes should be acquired correctly
     assert inputA[0] is model.compare.inputA
     assert inputB[0] is model.compare.inputB
@@ -26,16 +26,16 @@ def test_run(Simulator, seed):
 
         def inputA(t):
             if 0 <= t < 0.1:
-                return 'A'
+                return "A"
             else:
-                return 'B'
+                return "B"
 
-        model.input = spa.Input(compare_A=inputA, compare_B='A')
+        model.input = spa.Input(compare_A=inputA, compare_B="A")
 
-    compare, vocab = model.get_module_output('compare')
+    compare, vocab = model.get_module_output("compare")
 
     with model:
-        p = nengo.Probe(compare, 'output', synapse=0.03)
+        p = nengo.Probe(compare, "output", synapse=0.03)
 
     with Simulator(model) as sim:
         sim.run(0.2)

@@ -21,14 +21,18 @@ try:
         import nbformat
 
 except ImportError:
+
     def get_ipython():
         return None
+
+
 assert get_ipython
 
 
 def check_ipy_version(min_version):
     try:
         import IPython
+
         return IPython.version_info >= min_version
     except ImportError:
         return False
@@ -105,13 +109,15 @@ def hide_input():
             }
         }());
         </script>
-    """ % dict(uuid=uuid)
+    """ % dict(
+        uuid=uuid
+    )
 
     return HTML(script)
 
 
 def load_notebook(nb_path):
-    with io.open(nb_path, 'r', encoding='utf-8') as f:
+    with io.open(nb_path, "r", encoding="utf-8") as f:
         nb = nbformat.read(f, as_version=4)
     return nb
 
@@ -128,10 +134,10 @@ def export_py(nb, dest_path=None):
     while "get_ipython()" in body:
         ind0 = body.find("get_ipython()")
         ind1 = body.find("\n", ind0)
-        body = body[:ind0] + body[(ind1 + 1):]
+        body = body[:ind0] + body[(ind1 + 1) :]
 
     if dest_path is not None:
-        with io.open(dest_path, 'w', encoding='utf-8') as f:
+        with io.open(dest_path, "w", encoding="utf-8") as f:
             f.write(body)
     return body
 

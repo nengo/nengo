@@ -47,9 +47,18 @@ class State(Module):
         If None, will be true if currently within a Network.
     """
 
-    def __init__(self, dimensions, subdimensions=16, neurons_per_dimension=50,
-                 feedback=0.0, feedback_synapse=0.1, vocab=None, label=None,
-                 seed=None, add_to_container=None):
+    def __init__(
+        self,
+        dimensions,
+        subdimensions=16,
+        neurons_per_dimension=50,
+        feedback=0.0,
+        feedback_synapse=0.1,
+        vocab=None,
+        label=None,
+        seed=None,
+        add_to_container=None,
+    ):
         super().__init__(label, seed, add_to_container)
 
         if vocab is None:
@@ -58,8 +67,10 @@ class State(Module):
         elif vocab.dimensions != dimensions:
             raise ValidationError(
                 "Dimensionality of given vocabulary (%d) does not "
-                "match dimensionality of buffer (%d)" %
-                (vocab.dimensions, dimensions), attr='dimensions', obj=self)
+                "match dimensionality of buffer (%d)" % (vocab.dimensions, dimensions),
+                attr="dimensions",
+                obj=self,
+            )
 
         # Subdimensions should be at most the number of dimensions
         subdimensions = min(dimensions, subdimensions)
@@ -67,7 +78,10 @@ class State(Module):
         if dimensions % subdimensions != 0:
             raise ValidationError(
                 "Dimensions (%d) must be divisible by subdimensions (%d)"
-                % (dimensions, subdimensions), attr='dimensions', obj=self)
+                % (dimensions, subdimensions),
+                attr="dimensions",
+                obj=self,
+            )
 
         with self:
             self.state_ensembles = EnsembleArray(
@@ -75,7 +89,8 @@ class State(Module):
                 dimensions // subdimensions,
                 ens_dimensions=subdimensions,
                 radius=np.sqrt(float(subdimensions) / dimensions),
-                label='state')
+                label="state",
+            )
             self.input = self.state_ensembles.input
             self.output = self.state_ensembles.output
 
@@ -84,6 +99,9 @@ class State(Module):
 
         with self:
             if feedback is not None and feedback != 0.0:
-                nengo.Connection(self.output, self.input,
-                                 transform=feedback,
-                                 synapse=feedback_synapse)
+                nengo.Connection(
+                    self.output,
+                    self.input,
+                    transform=feedback,
+                    synapse=feedback_synapse,
+                )

@@ -101,44 +101,60 @@ class Ensemble(NengoObject):
         The seed used for random number generation.
     """
 
-    probeable = ('decoded_output', 'input', 'scaled_encoders')
+    probeable = ("decoded_output", "input", "scaled_encoders")
 
-    n_neurons = IntParam('n_neurons', low=1)
-    dimensions = IntParam('dimensions', low=1)
-    radius = NumberParam('radius', default=1.0, low=1e-10)
-    encoders = DistOrArrayParam('encoders',
-                                default=UniformHypersphere(surface=True),
-                                sample_shape=('n_neurons', 'dimensions'))
-    intercepts = DistOrArrayParam('intercepts',
-                                  default=Uniform(-1.0, 1.0),
-                                  optional=True,
-                                  sample_shape=('n_neurons',))
-    max_rates = DistOrArrayParam('max_rates',
-                                 default=Uniform(200, 400),
-                                 optional=True,
-                                 sample_shape=('n_neurons',))
-    eval_points = DistOrArrayParam('eval_points',
-                                   default=UniformHypersphere(),
-                                   sample_shape=('*', 'dimensions'))
-    n_eval_points = IntParam('n_eval_points', default=None, optional=True)
-    neuron_type = NeuronTypeParam('neuron_type', default=LIF())
-    gain = DistOrArrayParam('gain',
-                            default=None,
-                            optional=True,
-                            sample_shape=('n_neurons',))
-    bias = DistOrArrayParam('bias',
-                            default=None,
-                            optional=True,
-                            sample_shape=('n_neurons',))
-    noise = ProcessParam('noise', default=None, optional=True)
-    normalize_encoders = BoolParam(
-        'normalize_encoders', default=True, optional=True)
+    n_neurons = IntParam("n_neurons", low=1)
+    dimensions = IntParam("dimensions", low=1)
+    radius = NumberParam("radius", default=1.0, low=1e-10)
+    encoders = DistOrArrayParam(
+        "encoders",
+        default=UniformHypersphere(surface=True),
+        sample_shape=("n_neurons", "dimensions"),
+    )
+    intercepts = DistOrArrayParam(
+        "intercepts",
+        default=Uniform(-1.0, 1.0),
+        optional=True,
+        sample_shape=("n_neurons",),
+    )
+    max_rates = DistOrArrayParam(
+        "max_rates",
+        default=Uniform(200, 400),
+        optional=True,
+        sample_shape=("n_neurons",),
+    )
+    eval_points = DistOrArrayParam(
+        "eval_points", default=UniformHypersphere(), sample_shape=("*", "dimensions")
+    )
+    n_eval_points = IntParam("n_eval_points", default=None, optional=True)
+    neuron_type = NeuronTypeParam("neuron_type", default=LIF())
+    gain = DistOrArrayParam(
+        "gain", default=None, optional=True, sample_shape=("n_neurons",)
+    )
+    bias = DistOrArrayParam(
+        "bias", default=None, optional=True, sample_shape=("n_neurons",)
+    )
+    noise = ProcessParam("noise", default=None, optional=True)
+    normalize_encoders = BoolParam("normalize_encoders", default=True, optional=True)
 
-    def __init__(self, n_neurons, dimensions, radius=Default, encoders=Default,
-                 intercepts=Default, max_rates=Default, eval_points=Default,
-                 n_eval_points=Default, neuron_type=Default, gain=Default,
-                 bias=Default, noise=Default, normalize_encoders=Default,
-                 label=Default, seed=Default):
+    def __init__(
+        self,
+        n_neurons,
+        dimensions,
+        radius=Default,
+        encoders=Default,
+        intercepts=Default,
+        max_rates=Default,
+        eval_points=Default,
+        n_eval_points=Default,
+        neuron_type=Default,
+        gain=Default,
+        bias=Default,
+        noise=Default,
+        normalize_encoders=Default,
+        label=Default,
+        seed=Default,
+    ):
         super().__init__(label=label, seed=seed)
         self.n_neurons = n_neurons
         self.dimensions = dimensions
@@ -220,7 +236,7 @@ class Neurons:
     @property
     def probeable(self):
         """(tuple) Signals that can be probed in the neuron population."""
-        return ('output', 'input') + self.ensemble.neuron_type.probeable
+        return ("output", "input") + self.ensemble.neuron_type.probeable
 
     @property
     def size_in(self):

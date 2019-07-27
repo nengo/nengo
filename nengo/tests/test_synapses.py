@@ -7,8 +7,7 @@ import pytest
 import nengo
 from nengo.exceptions import ValidationError
 from nengo.processes import WhiteSignal
-from nengo.synapses import (
-    Alpha, LinearFilter, Lowpass, Synapse, SynapseParam, Triangle)
+from nengo.synapses import Alpha, LinearFilter, Lowpass, Synapse, SynapseParam, Triangle
 from nengo.utils.filter_design import cont2discrete
 from nengo.utils.testing import allclose
 
@@ -16,11 +15,12 @@ from nengo.utils.testing import allclose
 # The following num, den are for a 4th order analog Butterworth filter,
 # generated with `scipy.signal.butter(4, 0.1, analog=False)`
 butter_num = np.array([0.0004166, 0.0016664, 0.0024996, 0.0016664, 0.0004166])
-butter_den = np.array([1., -3.18063855, 3.86119435, -2.11215536, 0.43826514])
+butter_den = np.array([1.0, -3.18063855, 3.86119435, -2.11215536, 0.43826514])
 
 
-def run_synapse(Simulator, seed, synapse, dt=1e-3, runtime=0.2, high=100,
-                n_neurons=None):
+def run_synapse(
+    Simulator, seed, synapse, dt=1e-3, runtime=0.2, high=100, n_neurons=None
+):
     model = nengo.Network(seed=seed)
     with model:
         u = nengo.Node(output=WhiteSignal(runtime, high=high))
@@ -35,7 +35,7 @@ def run_synapse(Simulator, seed, synapse, dt=1e-3, runtime=0.2, high=100,
         ref = nengo.Probe(target)
         filtered = nengo.Probe(target, synapse=synapse)
 
-    with Simulator(model, dt=dt, seed=seed+1) as sim:
+    with Simulator(model, dt=dt, seed=seed + 1) as sim:
         sim.run(runtime)
 
     return sim.trange(), sim.data[ref], sim.data[filtered]
@@ -66,7 +66,7 @@ def test_lowpass(Simulator, plt, seed):
 def test_alpha(Simulator, plt, seed):
     dt = 1e-3
     tau = 0.03
-    num, den = [1], [tau**2, 2*tau, 1]
+    num, den = [1], [tau ** 2, 2 * tau, 1]
 
     t, x, yhat = run_synapse(Simulator, seed, Alpha(tau), dt=dt)
     y = LinearFilter(num, den).filt(x, dt=dt, y0=0)
@@ -85,7 +85,7 @@ def test_triangle(Simulator, plt, seed):
     n_taps = int(round(tau / dt)) + 1
     num = np.arange(n_taps, 0, -1, dtype=nengo.rc.float_dtype)
     num /= num.sum()
-    y = np.convolve(x.ravel(), num)[:len(t)]
+    y = np.convolve(x.ravel(), num)[: len(t)]
     y.shape = (-1, 1)
 
     assert np.allclose(y, yfilt, rtol=0)
@@ -99,8 +99,7 @@ def test_decoders(Simulator, plt, seed):
     dt = 1e-3
     tau = 0.01
 
-    t, x, yhat = run_synapse(
-        Simulator, seed, Lowpass(tau), dt=dt, n_neurons=100)
+    t, x, yhat = run_synapse(Simulator, seed, Lowpass(tau), dt=dt, n_neurons=100)
 
     y = Lowpass(tau).filt(x, dt=dt, y0=0)
     assert allclose(t, y, yhat, delay=dt, plt=plt)
@@ -132,11 +131,11 @@ def test_linearfilter_y0():
 def test_linearfilter_extras():
     # This filter is just a gain, but caused index errors previously
     synapse = nengo.LinearFilter([3], [2])
-    assert np.allclose(synapse.filt([2.]), 3)
+    assert np.allclose(synapse.filt([2.0]), 3)
 
     # differentiator should work properly
     diff = nengo.LinearFilter([1, -1], [1, 0], analog=False)
-    assert np.allclose(diff.filt([1., -1., 2.], y0=0), [1., -2., 3.])
+    assert np.allclose(diff.filt([1.0, -1.0, 2.0], y0=0), [1.0, -2.0, 3.0])
 
     # Filtering an integer array should cast to a float
     x = np.arange(10, dtype=nengo.rc.int_dtype)
@@ -174,8 +173,8 @@ def test_filt(plt, rng):
     u = rng.normal(size=nt)
 
     tk = np.arange(0, 30 * tau_dt)
-    k = 1. / tau_dt * np.exp(-tk / tau_dt)
-    x = np.convolve(u, k, mode='full')[:nt]
+    k = 1.0 / tau_dt * np.exp(-tk / tau_dt)
+    x = np.convolve(u, k, mode="full")[:nt]
 
     # support lists as input
     y = Lowpass(tau).filt(list(u), dt=dt, y0=0)
@@ -188,7 +187,7 @@ def test_filt(plt, rng):
 
 def test_filtfilt(plt, rng):
     dt = 1e-3
-    tend = 3.
+    tend = 3.0
     t = dt * np.arange(tend / dt)
     nt = len(t)
     synapse = Lowpass(0.03)
@@ -199,14 +198,14 @@ def test_filtfilt(plt, rng):
     y = synapse.filtfilt(u, dt=dt)
 
     plt.plot(t, x)
-    plt.plot(t, y, '--')
+    plt.plot(t, y, "--")
 
     assert np.allclose(x, y)
 
 
 def test_lti_lowpass(rng, plt):
     dt = 1e-3
-    tend = 3.
+    tend = 3.0
     t = dt * np.arange(tend / dt)
     nt = len(t)
 
@@ -228,7 +227,7 @@ def test_linearfilter_combine(rng):
     nt = 3000
     tau0, tau1 = 0.01, 0.02
     u = rng.normal(size=(nt, 10))
-    x = LinearFilter([1], [tau0*tau1, tau0+tau1, 1]).filt(u, y0=0)
+    x = LinearFilter([1], [tau0 * tau1, tau0 + tau1, 1]).filt(u, y0=0)
     y = Lowpass(tau0).combine(Lowpass(tau1)).filt(u, y0=0)
     assert np.allclose(x, y)
 
@@ -248,8 +247,7 @@ def test_combined_delay(Simulator):
 
     sys1 = nengo.Lowpass(tau)
     (num,), den, _ = cont2discrete((sys1.num, sys1.den), dt=dt)
-    sys2 = nengo.LinearFilter(
-        np.poly1d(num)**2, np.poly1d(den)**2, analog=False)
+    sys2 = nengo.LinearFilter(np.poly1d(num) ** 2, np.poly1d(den) ** 2, analog=False)
 
     with nengo.Network() as model:
         u = nengo.Node(1)
@@ -272,8 +270,9 @@ def test_combined_delay(Simulator):
 
 def test_synapseparam():
     """SynapseParam must be a Synapse, and converts numbers to LowPass."""
+
     class Test:
-        sp = SynapseParam('sp', default=Lowpass(0.1))
+        sp = SynapseParam("sp", default=Lowpass(0.1))
 
     inst = Test()
     assert isinstance(inst.sp, Lowpass)
@@ -287,7 +286,7 @@ def test_synapseparam():
     assert inst.sp is None
     # Non-synapse not OK
     with pytest.raises(ValueError):
-        inst.sp = 'a'
+        inst.sp = "a"
 
 
 def test_frozen():
@@ -312,24 +311,23 @@ def test_frozen():
 
 
 def test_argreprs():
-
     def check_init_args(cls, args):
         assert getfullargspec(cls.__init__).args[1:] == args
 
     def check_repr(obj):
         assert eval(repr(obj)) == obj
 
-    check_init_args(LinearFilter, ['num', 'den', 'analog', 'method'])
+    check_init_args(LinearFilter, ["num", "den", "analog", "method"])
     check_repr(LinearFilter([1, 2], [3, 4]))
     check_repr(LinearFilter([1, 2], [3, 4], analog=False))
 
-    check_init_args(Lowpass, ['tau'])
+    check_init_args(Lowpass, ["tau"])
     check_repr(Lowpass(0.3))
 
-    check_init_args(Alpha, ['tau'])
+    check_init_args(Alpha, ["tau"])
     check_repr(Alpha(0.3))
 
-    check_init_args(Triangle, ['t'])
+    check_init_args(Triangle, ["t"])
     check_repr(Triangle(0.3))
 
 

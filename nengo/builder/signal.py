@@ -51,8 +51,15 @@ class Signal:
     # up in a model.
     assert_named_signals = False
 
-    def __init__(self, initial_value=None, shape=None,
-                 name=None, base=None, readonly=False, offset=0):
+    def __init__(
+        self,
+        initial_value=None,
+        shape=None,
+        name=None,
+        base=None,
+        readonly=False,
+        offset=0,
+    ):
         if self.assert_named_signals:
             assert name
         self._name = name
@@ -102,8 +109,12 @@ class Signal:
             # inspect to see that v.base is the same in different signals
             # and avoid serializing it multiple times.
             v = self._initial_value
-            state['_initial_value'] = (
-                v.shape, v.base, npext.array_offset(v), v.strides)
+            state["_initial_value"] = (
+                v.shape,
+                v.base,
+                npext.array_offset(v),
+                v.strides,
+            )
 
         return state
 
@@ -114,8 +125,8 @@ class Signal:
         if not self.sparse:
             shape, base, offset, strides = self._initial_value
             self._initial_value = np.ndarray(
-                shape, buffer=base, dtype=base.dtype,
-                offset=offset, strides=strides)
+                shape, buffer=base, dtype=base.dtype, offset=offset, strides=strides
+            )
             self._initial_value.setflags(write=False)
 
     def __getitem__(self, item):
@@ -124,8 +135,7 @@ class Signal:
         if self.sparse:
             raise SignalError("Attempting to create a view of a sparse Signal")
 
-        if item is Ellipsis or (
-                isinstance(item, slice) and item == slice(None)):
+        if item is Ellipsis or (isinstance(item, slice) and item == slice(None)):
             return self
 
         if not isinstance(item, tuple):
@@ -136,13 +146,13 @@ class Signal:
 
         if all(npext.is_integer(i) for i in item):
             # turn one index into slice to get a view from numpy
-            item = item[:-1] + (slice(item[-1], item[-1]+1),)
+            item = item[:-1] + (slice(item[-1], item[-1] + 1),)
 
         view = self._initial_value[item]
-        offset = (npext.array_offset(view)
-                  - npext.array_offset(self._initial_value))
-        return Signal(view, name="%s[%s]" % (self.name, item),
-                      base=self.base, offset=offset)
+        offset = npext.array_offset(view) - npext.array_offset(self._initial_value)
+        return Signal(
+            view, name="%s[%s]" % (self.name, item), base=self.base, offset=offset
+        )
 
     def __repr__(self):
         return "Signal(name=%s, shape=%s)" % (self._name, self.shape)
@@ -169,8 +179,7 @@ class Signal:
     @property
     def elemstrides(self):
         """(int) Strides of data in elements."""
-        return (None if self.sparse
-                else tuple(s // self.itemsize for s in self.strides))
+        return None if self.sparse else tuple(s // self.itemsize for s in self.strides)
 
     @property
     def initial_value(self):
@@ -268,7 +277,8 @@ class Signal:
             The other signal we are investigating.
         """
         return (self.is_view or other.is_view) and np.may_share_memory(
-            self.initial_value, other.initial_value)
+            self.initial_value, other.initial_value
+        )
 
     def reshape(self, *shape):
         """Return a view on this signal with a different shape.
@@ -292,12 +302,14 @@ class Signal:
         except AttributeError:
             raise SignalError(
                 "Reshaping %s to %s would require the array to be copied "
-                "(because it is not contiguous), which is not supported" % (
-                    self, shape))
-        return Signal(initial_value,
-                      name="%s.reshape(%s)" % (self.name, shape),
-                      base=self.base,
-                      offset=self.offset)
+                "(because it is not contiguous), which is not supported" % (self, shape)
+            )
+        return Signal(
+            initial_value,
+            name="%s.reshape(%s)" % (self.name, shape),
+            base=self.base,
+            offset=self.offset,
+        )
 
 
 class SignalDict(dict):
@@ -309,6 +321,7 @@ class SignalDict(dict):
 
     Use ``init`` to set the ndarray initially.
     """
+
     def __getitem__(self, key):
         try:
             return dict.__getitem__(self, key)
@@ -317,8 +330,12 @@ class SignalDict(dict):
                 # return a view on the base signal
                 base = dict.__getitem__(self, key.base)
                 return np.ndarray(
-                    buffer=base, dtype=key.dtype, shape=key.shape,
-                    offset=key.offset, strides=key.strides)
+                    buffer=base,
+                    dtype=key.dtype,
+                    shape=key.shape,
+                    offset=key.offset,
+                    strides=key.strides,
+                )
             else:
                 raise
 
@@ -355,8 +372,12 @@ class SignalDict(dict):
 
             # get a view onto the base data
             view = np.ndarray(
-                shape=data.shape, strides=data.strides, offset=signal.offset,
-                dtype=data.dtype, buffer=self[signal.base].data)
+                shape=data.shape,
+                strides=data.strides,
+                offset=signal.offset,
+                dtype=data.dtype,
+                buffer=self[signal.base].data,
+            )
             assert np.array_equal(view, data)
             view.setflags(write=not signal.readonly)
             dict.__setitem__(self, signal, view)

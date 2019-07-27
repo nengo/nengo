@@ -9,8 +9,8 @@ def test_basic():
     with spa.SPA() as model:
         model.memory = spa.Memory(dimensions=16)
 
-    input = model.get_module_input('memory')
-    output = model.get_module_output('memory')
+    input = model.get_module_input("memory")
+    output = model.get_module_output("memory")
     assert input[0] is model.memory.state.input
     assert output[0] is model.memory.state.output
     assert input[1] is output[1]
@@ -25,8 +25,9 @@ def test_neurons():
     assert model.memory.state.ensembles[0].n_neurons == 16 * 2
 
     with spa.SPA() as model:
-        model.memory = spa.Memory(dimensions=16, subdimensions=1,
-                                  neurons_per_dimension=2)
+        model.memory = spa.Memory(
+            dimensions=16, subdimensions=1, neurons_per_dimension=2
+        )
 
     assert len(model.memory.state.ensembles) == 16
     assert model.memory.state.ensembles[0].n_neurons == 2
@@ -48,16 +49,16 @@ def test_run(Simulator, seed, plt):
 
         def input(t):
             if 0 <= t < 0.05:
-                return 'A'
+                return "A"
             else:
-                return '0'
+                return "0"
 
         model.input = spa.Input(memory=input)
 
-    memory, vocab = model.get_module_output('memory')
+    memory, vocab = model.get_module_output("memory")
 
     with model:
-        p = nengo.Probe(memory, 'output', synapse=0.03)
+        p = nengo.Probe(memory, "output", synapse=0.03)
 
     with Simulator(model) as sim:
         sim.run(0.5)
@@ -80,16 +81,16 @@ def test_run_decay(Simulator, plt, seed):
 
         def input(t):
             if 0 <= t < 0.05:
-                return 'A'
+                return "A"
             else:
-                return '0'
+                return "0"
 
         model.input = spa.Input(memory=input)
 
-    memory, vocab = model.get_module_output('memory')
+    memory, vocab = model.get_module_output("memory")
 
     with model:
-        p = nengo.Probe(memory, 'output', synapse=0.03)
+        p = nengo.Probe(memory, "output", synapse=0.03)
 
     with Simulator(model) as sim:
         sim.run(0.3)

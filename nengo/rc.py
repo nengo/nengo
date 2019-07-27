@@ -71,31 +71,24 @@ logger = logging.getLogger(__name__)
 # The default core Nengo RC settings. Access with
 #   nengo.RC_DEFAULTS[section_name][option_name]
 RC_DEFAULTS = {
-    'precision': {
-        'bits': 64,
+    "precision": {"bits": 64},
+    "decoder_cache": {
+        "enabled": True,
+        "readonly": False,
+        "size": "512 MB",
+        "path": nengo.utils.paths.decoder_cache_dir,
     },
-    'decoder_cache': {
-        'enabled': True,
-        'readonly': False,
-        'size': '512 MB',
-        'path': nengo.utils.paths.decoder_cache_dir,
-    },
-    'progress': {
-        'updater': 'auto',  # Deprecated
-        'progress_bar': 'auto',
-    },
-    'exceptions': {
-        'simplified': True,
-    },
-    'nengo.Simulator': {
-        'fail_fast': False,
-    }
+    "progress": {"updater": "auto", "progress_bar": "auto"},  # Deprecated
+    "exceptions": {"simplified": True},
+    "nengo.Simulator": {"fail_fast": False},
 }
 
 # The RC files in the order in which they will be read.
-RC_FILES = [nengo.utils.paths.nengorc['system'],
-            nengo.utils.paths.nengorc['user'],
-            nengo.utils.paths.nengorc['project']]
+RC_FILES = [
+    nengo.utils.paths.nengorc["system"],
+    nengo.utils.paths.nengorc["user"],
+    nengo.utils.paths.nengorc["project"],
+]
 
 
 class _RC(configparser.SafeConfigParser):
@@ -128,12 +121,12 @@ class _RC(configparser.SafeConfigParser):
 
     @property
     def float_dtype(self):
-        bits = self.get('precision', 'bits')
+        bits = self.get("precision", "bits")
         return np.dtype("float%s" % bits)
 
     @property
     def int_dtype(self):
-        bits = self.get('precision', 'bits')
+        bits = self.get("precision", "bits")
         return np.dtype("int%s" % bits)
 
     def _clear(self):
@@ -149,11 +142,11 @@ class _RC(configparser.SafeConfigParser):
 
     def read_file(self, fp, filename=None):
         if filename is None:
-            if hasattr(fp, 'name'):
+            if hasattr(fp, "name"):
                 filename = fp.name
             else:
-                filename = '<???>'
-        logger.info('Reading configuration from {}'.format(filename))
+                filename = "<???>"
+        logger.info("Reading configuration from {}".format(filename))
         try:
             return configparser.SafeConfigParser.read_file(self, fp, filename)
         except AttributeError:
@@ -161,7 +154,7 @@ class _RC(configparser.SafeConfigParser):
             return configparser.SafeConfigParser.readfp(self, fp, filename)
 
     def read(self, filenames):
-        logger.info('Reading configuration files {}'.format(filenames))
+        logger.info("Reading configuration files {}".format(filenames))
         return configparser.SafeConfigParser.read(self, filenames)
 
     def reload_rc(self, filenames=None):

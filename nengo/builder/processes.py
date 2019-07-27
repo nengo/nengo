@@ -44,8 +44,8 @@ class SimProcess(Operator):
     3. reads ``[t, input] if input is not None else [t]``
     4. updates ``[output] if output is not None and mode=='update' else []``
     """
-    def __init__(self, process, input, output, t, mode="set", state=None,
-                 tag=None):
+
+    def __init__(self, process, input, output, t, mode="set", state=None, tag=None):
         super().__init__(tag=tag)
         self.process = process
         self.mode = mode
@@ -56,11 +56,11 @@ class SimProcess(Operator):
         self.sets = []
         self.incs = []
         self.updates = []
-        if mode == 'update':
+        if mode == "update":
             self.updates.extend([output])
-        elif mode == 'inc':
+        elif mode == "inc":
             self.incs.extend([output])
-        elif mode == 'set':
+        elif mode == "set":
             self.sets.extend([output])
         else:
             raise ValueError("Unrecognized mode %r" % mode)
@@ -76,11 +76,11 @@ class SimProcess(Operator):
     def output(self):
         if len(self.updates) <= len(self.incs) <= len(self.sets) <= 0:
             return None
-        elif self.mode == 'update':
+        elif self.mode == "update":
             return self.updates[0]
-        elif self.mode == 'inc':
+        elif self.mode == "inc":
             return self.incs[0]
-        elif self.mode == 'set':
+        elif self.mode == "set":
             return self.sets[0]
 
     @property
@@ -88,7 +88,7 @@ class SimProcess(Operator):
         return self.reads[0]
 
     def _descstr(self):
-        return '%s, %s -> %s' % (self.process, self.input, self.output)
+        return "%s, %s -> %s" % (self.process, self.input, self.output)
 
     def make_step(self, signals, dt, rng):
         t = signals[self.t]
@@ -102,9 +102,12 @@ class SimProcess(Operator):
         args = (t,) if input is None else (t, input)
 
         if self.mode == "inc":
+
             def step_simprocess():
                 output[...] += step_f(args[0].item(), *args[1:])
+
         else:
+
             def step_simprocess():
                 output[...] = step_f(args[0].item(), *args[1:])
 
@@ -134,21 +137,25 @@ def build_process(model, process, sig_in=None, sig_out=None, mode="set"):
     more than once with the same `.Process` instance.
     """
     if sig_out is None:
-        sig_out = Signal(
-            shape=sig_in.shape, name="%s.%s" % (sig_in.name, process))
+        sig_out = Signal(shape=sig_in.shape, name="%s.%s" % (sig_in.name, process))
 
     shape_in = sig_in.shape if sig_in is not None else (0,)
     shape_out = sig_out.shape if sig_out is not None else (0,)
-    dtype = (sig_out.dtype if sig_out is not None
-             else sig_in.dtype if sig_in is not None
-             else rc.float_dtype)
+    dtype = (
+        sig_out.dtype
+        if sig_out is not None
+        else sig_in.dtype
+        if sig_in is not None
+        else rc.float_dtype
+    )
     state_init = process.make_state(shape_in, shape_out, model.dt, dtype=dtype)
     state = {}
     for name, value in state_init.items():
         state[name] = Signal(value)
         model.sig[process]["_state_" + name] = state[name]
 
-    model.add_op(SimProcess(
-        process, sig_in, sig_out, model.time, mode=mode, state=state))
+    model.add_op(
+        SimProcess(process, sig_in, sig_out, model.time, mode=mode, state=state)
+    )
 
     return sig_out

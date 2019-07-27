@@ -39,9 +39,11 @@ def target_function(eval_points, targets):
     nengo.Connection(ens1, ens2,
                      **target_function(eval_points, targets)
     """
-    warnings.warn("'targets' can be passed directly to the connection through "
-                  "the 'function' argument. That approach is faster, so this "
-                  "function is deprecated and will be removed in the future.")
+    warnings.warn(
+        "'targets' can be passed directly to the connection through "
+        "the 'function' argument. That approach is faster, so this "
+        "function is deprecated and will be removed in the future."
+    )
 
     dtype = nengo.rc.float_dtype
     eval_points = npext.array(eval_points, dtype=dtype, min_dims=2)
@@ -50,7 +52,9 @@ def target_function(eval_points, targets):
     if len(eval_points) != len(targets):
         raise ValidationError(
             "Number of evaluation points (%d) is not equal to the number of "
-            "targets (%s)" % (len(eval_points), len(targets)), 'eval_points')
+            "targets (%s)" % (len(eval_points), len(targets)),
+            "eval_points",
+        )
 
     func_dict = {}
     for eval_point, target in zip(eval_points, targets):
@@ -60,9 +64,11 @@ def target_function(eval_points, targets):
         x = tuple(x)
         return func_dict[x]
 
-    return {'function': function,
-            'eval_points': eval_points,
-            'scale_eval_points': False}
+    return {
+        "function": function,
+        "eval_points": eval_points,
+        "scale_eval_points": False,
+    }
 
 
 def eval_point_decoding(conn, sim, eval_points=None):
@@ -95,6 +101,7 @@ def eval_point_decoding(conn, sim, eval_points=None):
     """
     from nengo.builder.ensemble import get_activities
     from nengo.builder.connection import get_targets
+
     dtype = nengo.rc.float_dtype
 
     if eval_points is None:

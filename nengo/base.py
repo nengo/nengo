@@ -29,7 +29,7 @@ class NetworkMember(type):
     def __call__(cls, *args, **kwargs):
         """Override default __call__ behavior so that Network.add is called."""
         inst = cls.__new__(cls)
-        add_to_container = kwargs.pop('add_to_container', True)
+        add_to_container = kwargs.pop("add_to_container", True)
         # Do the __init__ before adding in case __init__ errors out
         inst.__init__(*args, **kwargs)
         if add_to_container:
@@ -62,8 +62,8 @@ class NengoObject(SupportDefaultsMixin, metaclass=NetworkMember):
     # parameter initialization order matters.
     _param_init_order = []
 
-    label = StringParam('label', default=None, optional=True)
-    seed = IntParam('seed', default=None, optional=True)
+    label = StringParam("label", default=None, optional=True)
+    seed = IntParam("seed", default=None, optional=True)
 
     def __init__(self, label, seed):
         super().__init__()
@@ -73,7 +73,7 @@ class NengoObject(SupportDefaultsMixin, metaclass=NetworkMember):
 
     def __getstate__(self):
         state = self.__dict__.copy()
-        state['_initialized'] = False
+        state["_initialized"] = False
 
         for attr in self.params:
             param = getattr(type(self), attr)
@@ -98,17 +98,17 @@ class NengoObject(SupportDefaultsMixin, metaclass=NetworkMember):
             warnings.warn(NotAddedToNetworkWarning(self))
 
     def __setattr__(self, name, val):
-        initialized = hasattr(self, '_initialized') and self._initialized
+        initialized = hasattr(self, "_initialized") and self._initialized
         if initialized and not hasattr(self, name):
             warnings.warn(
                 "Creating new attribute '%s' on '%s'. "
                 "Did you mean to change an existing attribute?" % (name, self),
-                SyntaxWarning)
+                SyntaxWarning,
+            )
         super().__setattr__(name, val)
 
     def __str__(self):
-        return self._str(
-            include_id=not hasattr(self, 'label') or self.label is None)
+        return self._str(include_id=not hasattr(self, "label") or self.label is None)
 
     def __repr__(self):
         return self._str(include_id=True)
@@ -116,10 +116,13 @@ class NengoObject(SupportDefaultsMixin, metaclass=NetworkMember):
     def _str(self, include_id):
         return "<%s%s%s>" % (
             type(self).__name__,
-            "" if not hasattr(self, 'label') else
-            " (unlabeled)" if self.label is None else
-            ' "%s"' % self.label,
-            " at 0x%x" % id(self) if include_id else "")
+            ""
+            if not hasattr(self, "label")
+            else " (unlabeled)"
+            if self.label is None
+            else ' "%s"' % self.label,
+            " at 0x%x" % id(self) if include_id else "",
+        )
 
     @property
     def params(self):
@@ -130,7 +133,7 @@ class NengoObject(SupportDefaultsMixin, metaclass=NetworkMember):
         with warnings.catch_warnings():
             # We warn when copying since we can't change add_to_container.
             # However, we deal with it here, so we ignore the warning.
-            warnings.simplefilter('ignore', category=NotAddedToNetworkWarning)
+            warnings.simplefilter("ignore", category=NotAddedToNetworkWarning)
             c = copy(self)
         if add_to_container:
             nengo.Network.add(c)
@@ -170,7 +173,7 @@ class ObjView:
                 # special case because slice(-1, 0) gives the empty list
                 self.slice = slice(key, None)
             else:
-                self.slice = slice(key, key+1)
+                self.slice = slice(key, key + 1)
         else:
             self.slice = key
 
@@ -200,8 +203,14 @@ class ObjView:
 
 
 class NengoObjectParam(Parameter):
-    def __init__(self, name, optional=False, readonly=True,
-                 nonzero_size_in=False, nonzero_size_out=False):
+    def __init__(
+        self,
+        name,
+        optional=False,
+        readonly=True,
+        nonzero_size_in=False,
+        nonzero_size_out=False,
+    ):
         default = Unconfigurable  # These can't have defaults
         self.nonzero_size_in = nonzero_size_in
         self.nonzero_size_out = nonzero_size_out
@@ -212,17 +221,20 @@ class NengoObjectParam(Parameter):
             NengoObject,
             ObjView,
             nengo.ensemble.Neurons,
-            nengo.connection.LearningRule
+            nengo.connection.LearningRule,
         )
         if not isinstance(nengo_obj, nengo_objects):
-            raise ValidationError("'%s' is not a Nengo object" % nengo_obj,
-                                  attr=self.name, obj=instance)
+            raise ValidationError(
+                "'%s' is not a Nengo object" % nengo_obj, attr=self.name, obj=instance
+            )
         if self.nonzero_size_in and nengo_obj.size_in < 1:
-            raise ValidationError("'%s' must have size_in > 0." % nengo_obj,
-                                  attr=self.name, obj=instance)
+            raise ValidationError(
+                "'%s' must have size_in > 0." % nengo_obj, attr=self.name, obj=instance
+            )
         if self.nonzero_size_out and nengo_obj.size_out < 1:
-            raise ValidationError("'%s' must have size_out > 0." % nengo_obj,
-                                  attr=self.name, obj=instance)
+            raise ValidationError(
+                "'%s' must have size_out > 0." % nengo_obj, attr=self.name, obj=instance
+            )
         return super().coerce(instance, nengo_obj)
 
 
@@ -261,13 +273,14 @@ class Process(FrozenObject):
         Random number seed. Ensures random factors will be the same each run.
     """
 
-    default_size_in = IntParam('default_size_in', low=0)
-    default_size_out = IntParam('default_size_out', low=0)
-    default_dt = NumberParam('default_dt', low=0, low_open=True)
-    seed = IntParam('seed', low=0, high=maxint, optional=True)
+    default_size_in = IntParam("default_size_in", low=0)
+    default_size_out = IntParam("default_size_out", low=0)
+    default_dt = NumberParam("default_dt", low=0, low_open=True)
+    seed = IntParam("seed", low=0, high=maxint, optional=True)
 
-    def __init__(self, default_size_in=0, default_size_out=1,
-                 default_dt=0.001, seed=None):
+    def __init__(
+        self, default_size_in=0, default_size_out=1, default_dt=0.001, seed=None
+    ):
         super().__init__()
         self.default_size_in = default_size_in
         self.default_size_out = default_size_out
@@ -302,7 +315,7 @@ class Process(FrozenObject):
         step = self.make_step(shape_in, shape_out, dt, rng, state, **kwargs)
         output = np.zeros((len(x),) + shape_out) if copy else x
         for i, xi in enumerate(x):
-            output[i] = step((i+1) * dt, xi)
+            output[i] = step((i + 1) * dt, xi)
         return output
 
     def get_rng(self, rng):
@@ -412,7 +425,7 @@ class Process(FrozenObject):
         step = self.make_step(shape_in, shape_out, dt, rng, state, **kwargs)
         output = np.zeros((n_steps,) + shape_out)
         for i in range(n_steps):
-            output[i] = step((i+1) * dt)
+            output[i] = step((i + 1) * dt)
         return output
 
     def ntrange(self, n_steps, dt=None):

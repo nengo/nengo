@@ -34,8 +34,7 @@ class ProbeDict(Mapping):
         self._cache = {}
 
     def __getitem__(self, key):
-        if (key not in self._cache
-                or len(self._cache[key]) != len(self.raw[key])):
+        if key not in self._cache or len(self._cache[key]) != len(self.raw[key]):
             rval = self.raw[key]
             if isinstance(rval, list):
                 rval = np.asarray(rval)
@@ -129,16 +128,18 @@ class Simulator:
     """
 
     def __init__(
-            self, network,
-            dt=0.001, seed=None, model=None, progress_bar=True, optimize=True):
+        self, network, dt=0.001, seed=None, model=None, progress_bar=True, optimize=True
+    ):
         self.closed = True  # Start closed in case constructor raises exception
         self.progress_bar = progress_bar
         self.optimize = optimize
 
         if model is None:
-            self.model = Model(dt=float(dt),
-                               label="%s, dt=%f" % (network, dt),
-                               decoder_cache=get_default_decoder_cache())
+            self.model = Model(
+                dt=float(dt),
+                label="%s, dt=%f" % (network, dt),
+                decoder_cache=get_default_decoder_cache(),
+            )
         else:
             self.model = model
 
@@ -146,19 +147,16 @@ class Simulator:
         with pt:
             if network is not None:
                 # Build the network into the model
-                self.model.build(network,
-                                 progress=pt.next_stage("Building", "Build"))
+                self.model.build(network, progress=pt.next_stage("Building", "Build"))
 
             # Order the steps (they are made in `Simulator.reset`)
             self.dg = operator_dependency_graph(self.model.operators)
 
             if optimize:
-                with pt.next_stage(
-                        'Building (running optimizer)', 'Optimization'):
+                with pt.next_stage("Building (running optimizer)", "Optimization"):
                     opmerge_optimize(self.model, self.dg)
 
-        self._step_order = [op for op in toposort(self.dg)
-                            if hasattr(op, 'make_step')]
+        self._step_order = [op for op in toposort(self.dg) if hasattr(op, "make_step")]
 
         # -- map from Signal.base -> ndarray
         self.signals = SignalDict()
@@ -186,7 +184,9 @@ class Simulator:
             warnings.warn(
                 "Simulator with model=%s was deallocated while open. Please "
                 "close simulators manually to ensure resources are properly "
-                "freed." % self.model, ResourceWarning)
+                "freed." % self.model,
+                ResourceWarning,
+            )
 
     def __enter__(self):
         return self
@@ -195,25 +195,39 @@ class Simulator:
         self.close()
 
     def __getstate__(self):
-        signals = ({k: v for k, v in self.signals.items() if not k.readonly}
-                   if self.signals is not None else {})
-        probe_outputs = {probe: self._probe_outputs[probe]
-                         for probe in self.model.probes}
-        return dict(model=self.model, signals=signals,
-                    probe_outputs=probe_outputs, dt=self.dt, seed=self.seed,
-                    progress_bar=self.progress_bar, optimize=self.optimize,
-                    closed=self.closed)
+        signals = (
+            {k: v for k, v in self.signals.items() if not k.readonly}
+            if self.signals is not None
+            else {}
+        )
+        probe_outputs = {
+            probe: self._probe_outputs[probe] for probe in self.model.probes
+        }
+        return dict(
+            model=self.model,
+            signals=signals,
+            probe_outputs=probe_outputs,
+            dt=self.dt,
+            seed=self.seed,
+            progress_bar=self.progress_bar,
+            optimize=self.optimize,
+            closed=self.closed,
+        )
 
     def __setstate__(self, state):
-        self.__init__(network=None, model=state['model'],
-                      dt=state['dt'], seed=state['seed'],
-                      progress_bar=state['progress_bar'],
-                      optimize=state['optimize'])
-        for key, value in state['signals'].items():
+        self.__init__(
+            network=None,
+            model=state["model"],
+            dt=state["dt"],
+            seed=state["seed"],
+            progress_bar=state["progress_bar"],
+            optimize=state["optimize"],
+        )
+        for key, value in state["signals"].items():
             self.signals[key] = value
-        for key, value in state['probe_outputs'].items():
+        for key, value in state["probe_outputs"].items():
             self._probe_outputs[key].extend(value)
-        if state['closed']:
+        if state["closed"]:
             self.close()
 
     @property
@@ -223,7 +237,7 @@ class Simulator:
 
     @dt.setter
     def dt(self, dummy):
-        raise ReadonlyError(attr='dt', obj=self)
+        raise ReadonlyError(attr="dt", obj=self)
 
     @property
     def n_steps(self):
@@ -256,10 +270,9 @@ class Simulator:
         self._probe_step_time()
 
         for probe in self.model.probes:
-            period = (1 if probe.sample_every is None else
-                      probe.sample_every / self.dt)
+            period = 1 if probe.sample_every is None else probe.sample_every / self.dt
             if self.n_steps % period < 1:
-                tmp = self.signals[self.model.sig[probe]['in']].copy()
+                tmp = self.signals[self.model.sig[probe]["in"]].copy()
                 self._probe_outputs[probe].append(tmp)
 
     def _probe_step_time(self):
@@ -289,8 +302,9 @@ class Simulator:
 
         # rebuild steps (resets ops with their own state, like Processes)
         self.rng = np.random.RandomState(self.seed)
-        self._steps = [op.make_step(self.signals, self.dt, self.rng)
-                       for op in self._step_order]
+        self._steps = [
+            op.make_step(self.signals, self.dt, self.rng) for op in self._step_order
+        ]
 
         self.clear_probes()
 
@@ -321,17 +335,24 @@ class Simulator:
             instance.
         """
         if time_in_seconds < 0:
-            raise ValidationError("Must be positive (got %g)"
-                                  % (time_in_seconds,), attr="time_in_seconds")
+            raise ValidationError(
+                "Must be positive (got %g)" % (time_in_seconds,), attr="time_in_seconds"
+            )
 
         steps = int(np.round(float(time_in_seconds) / self.dt))
 
         if steps == 0:
-            warnings.warn("%g results in running for 0 timesteps. Simulator "
-                          "still at time %g." % (time_in_seconds, self.time))
+            warnings.warn(
+                "%g results in running for 0 timesteps. Simulator "
+                "still at time %g." % (time_in_seconds, self.time)
+            )
         else:
-            logger.info("Running %s for %f seconds, or %d steps",
-                        self.model.label, time_in_seconds, steps)
+            logger.info(
+                "Running %s for %f seconds, or %d steps",
+                self.model.label,
+                time_in_seconds,
+                steps,
+            )
             self.run_steps(steps, progress_bar=progress_bar)
 
     def run_steps(self, steps, progress_bar=None):
@@ -352,8 +373,9 @@ class Simulator:
         if progress_bar is None:
             progress_bar = self.progress_bar
 
-        with ProgressTracker(progress_bar, Progress(
-                "Simulating", "Simulation", steps)) as pt:
+        with ProgressTracker(
+            progress_bar, Progress("Simulating", "Simulation", steps)
+        ) as pt:
             for i in range(steps):
                 self.step()
                 pt.total_progress.step()
@@ -363,7 +385,7 @@ class Simulator:
         if self.closed:
             raise SimulatorClosed("Simulator cannot run because it is closed.")
 
-        old_err = np.seterr(invalid='raise', divide='ignore')
+        old_err = np.seterr(invalid="raise", divide="ignore")
         try:
             for step_fn in self._steps:
                 step_fn()
@@ -388,7 +410,10 @@ class Simulator:
             if sample_every is not None:
                 raise ValidationError(
                     "Cannot specify both `dt` and `sample_every`. "
-                    "Use `sample_every` only.", attr="dt", obj=self)
+                    "Use `sample_every` only.",
+                    attr="dt",
+                    obj=self,
+                )
             warnings.warn("`dt` is deprecated. Use `sample_every` instead.")
             sample_every = dt
         period = 1 if sample_every is None else sample_every / self.dt

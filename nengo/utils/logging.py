@@ -2,15 +2,15 @@ from io import StringIO
 import logging
 import sys
 
-console_formatter = logging.Formatter('[%(levelname)s] %(message)s')
+console_formatter = logging.Formatter("[%(levelname)s] %(message)s")
 file_formatter = logging.Formatter(
-    ('%(asctime)s [%(levelname)s] %(name)s.%(funcName)s'
-     '@ L%(lineno)d\n  %(message)s'))
+    ("%(asctime)s [%(levelname)s] %(name)s.%(funcName)s" "@ L%(lineno)d\n  %(message)s")
+)
 console_handler = logging.StreamHandler(sys.stdout)
 console_handler.setFormatter(console_formatter)
 
 
-def log(level='warning', path=None):
+def log(level="warning", path=None):
     """Log messages.
 
     If path is None, logging messages will be printed to the console (stdout).
@@ -35,7 +35,7 @@ def log(level='warning', path=None):
     logging handler
         The logging handler setup by this function.
     """
-    if level.upper() not in ('CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG'):
+    if level.upper() not in ("CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"):
         raise ValueError("Invalid logging level")
 
     level = getattr(logging, level.upper())
@@ -45,12 +45,14 @@ def log(level='warning', path=None):
         handler = console_handler
     else:
         for handler in logging.root.handlers:
-            if (isinstance(handler, logging.FileHandler)
-                    and handler.baseFilename == path
-                    and handler.formatter == file_formatter):
+            if (
+                isinstance(handler, logging.FileHandler)
+                and handler.baseFilename == path
+                and handler.formatter == file_formatter
+            ):
                 break
         else:
-            handler = logging.FileHandler(path, encoding='utf-8')
+            handler = logging.FileHandler(path, encoding="utf-8")
             handler.setFormatter(file_formatter)
 
     if handler not in logging.root.handlers:

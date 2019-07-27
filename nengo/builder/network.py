@@ -60,6 +60,7 @@ def build_network(model, network, progress=None):
             def build_callback(obj):
                 if isinstance(obj, tuple(network.objects)):
                     progress.step()
+
             model.build_callback = build_callback
 
     if progress is None:
@@ -70,8 +71,7 @@ def build_network(model, network, progress=None):
     model.config = network.config
 
     # If this is the toplevel network, enter the decoder cache
-    context = (model.decoder_cache if model.toplevel is network
-               else nullcontext())
+    context = model.decoder_cache if model.toplevel is network else nullcontext()
     with context, progress:
         logger.debug("Network step 1: Building ensembles and nodes")
         for obj in network.ensembles + network.nodes:
@@ -177,5 +177,8 @@ def _set_seeded(seeded, obj, parent=None):
     # original seed was assigned (deterministically or randomly), and if we
     # re-determine this, we might be wrong (e.g. if obj.seed has changed)
     if obj not in seeded:
-        seeded[obj] = (getattr(obj, 'seed', None) is not None
-                       or parent is not None and seeded[parent])
+        seeded[obj] = (
+            getattr(obj, "seed", None) is not None
+            or parent is not None
+            and seeded[parent]
+        )

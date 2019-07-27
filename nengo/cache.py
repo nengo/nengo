@@ -15,7 +15,11 @@ import warnings
 import numpy as np
 
 from nengo.exceptions import (
-    CacheIOError, CacheIOWarning, FingerprintError, TimeoutError)
+    CacheIOError,
+    CacheIOWarning,
+    FingerprintError,
+    TimeoutError,
+)
 from nengo.neurons import (
     AdaptiveLIF,
     AdaptiveLIFRate,
@@ -42,8 +46,14 @@ from nengo.solvers import (
 from nengo.utils import nco
 from nengo.utils.cache import byte_align, bytes2human, human2bytes
 from nengo.utils.least_squares_solvers import (
-    Cholesky, ConjgradScipy, LSMRScipy, Conjgrad,
-    BlockConjgrad, SVD, RandomizedSVD)
+    Cholesky,
+    ConjgradScipy,
+    LSMRScipy,
+    Conjgrad,
+    BlockConjgrad,
+    SVD,
+    RandomizedSVD,
+)
 from nengo.utils.lock import FileLock
 
 logger = logging.getLogger(__name__)
@@ -94,7 +104,7 @@ def check_seq(tpl):
 
 
 def check_attrs(obj):
-    attrs = [getattr(obj, x) for x in dir(obj) if not x.startswith('_')]
+    attrs = [getattr(obj, x) for x in dir(obj) if not x.startswith("_")]
     return all(Fingerprint.supports(x) for x in attrs if not callable(x))
 
 
@@ -130,7 +140,7 @@ class Fingerprint:
     `.whitelist` class method and pass in your class.
     """
 
-    __slots__ = ('fingerprint',)
+    __slots__ = ("fingerprint",)
 
     SOLVERS = (
         Lstsq,
@@ -161,25 +171,25 @@ class Fingerprint:
         LIF,
         LIFRate,
         RectifiedLinear,
-        Sigmoid
+        Sigmoid,
     )
 
     WHITELIST = set(
         (bool, float, complex, bytes, list, tuple, np.ndarray, int, str)
-        + SOLVERS + LSTSQ_METHODS + NEURON_TYPES
+        + SOLVERS
+        + LSTSQ_METHODS
+        + NEURON_TYPES
     )
-    CHECKS = dict([
-        (np.ndarray, check_dtype),
-        (tuple, check_seq),
-        (list, check_seq)
-    ] + [
-        (_x, check_attrs) for _x in SOLVERS + LSTSQ_METHODS + NEURON_TYPES
-    ])
+    CHECKS = dict(
+        [(np.ndarray, check_dtype), (tuple, check_seq), (list, check_seq)]
+        + [(_x, check_attrs) for _x in SOLVERS + LSTSQ_METHODS + NEURON_TYPES]
+    )
 
     def __init__(self, obj):
         if not self.supports(obj):
-            raise FingerprintError("Object of type %r cannot be fingerprinted."
-                                   % type(obj).__name__)
+            raise FingerprintError(
+                "Object of type %r cannot be fingerprinted." % type(obj).__name__
+            )
 
         self.fingerprint = hashlib.sha1()
         try:
@@ -263,8 +273,9 @@ class CacheIndex:
     tuple stored in a ``legacy.txt`` file. These two objects were consolidated
     in the pickle file in Nengo 2.3.0.
     """
-    _INDEX = 'index'
-    _LEGACY = 'legacy.txt'
+
+    _INDEX = "index"
+    _LEGACY = "legacy.txt"
     VERSION = 2
 
     def __init__(self, cache_dir):
@@ -300,13 +311,14 @@ class CacheIndex:
         pass
 
     def _load_index_file(self):
-        with open(self.index_path, 'rb') as f:
+        with open(self.index_path, "rb") as f:
             self.version = pickle.load(f)
             if isinstance(self.version, tuple):
-                if (self.version[0] > self.VERSION
-                        or self.version[1] > pickle.HIGHEST_PROTOCOL):
-                    raise CacheIOError(
-                        "Unsupported cache index file format.")
+                if (
+                    self.version[0] > self.VERSION
+                    or self.version[1] > pickle.HIGHEST_PROTOCOL
+                ):
+                    raise CacheIOError("Unsupported cache index file format.")
                 self._index = pickle.load(f)
             else:
                 self._index = self.version
@@ -316,12 +328,11 @@ class CacheIndex:
 
     def _get_legacy_version(self):
         try:
-            with open(self.legacy_path, 'r') as lf:
+            with open(self.legacy_path, "r") as lf:
                 text = lf.read()
-            return tuple(int(x.strip()) for x in text.split('.'))
+            return tuple(int(x.strip()) for x in text.split("."))
         except Exception:
-            logger.exception(
-                "Decoder cache version information could not be read.")
+            logger.exception("Decoder cache version information could not be read.")
             return (-1, -1)
 
 
@@ -350,9 +361,10 @@ class WriteableCacheIndex(CacheIndex):
     cache_dir : str
         Path where the cache is stored.
     """
+
     def __init__(self, cache_dir):
         super().__init__(cache_dir)
-        self._lock = FileLock(self.index_path + '.lock')
+        self._lock = FileLock(self.index_path + ".lock")
         self._updates = {}
         self._deletes = set()
         self._removed_files = set()
@@ -365,8 +377,7 @@ class WriteableCacheIndex(CacheIndex):
 
     def __setitem__(self, key, value):
         if not isinstance(value, tuple) or len(value) != 3:
-            raise ValueError(
-                "Cache entries must include filename, start, and end.")
+            raise ValueError("Cache entries must include filename, start, and end.")
         self._updates[key] = value
 
     def __delitem__(self, key):
@@ -377,8 +388,7 @@ class WriteableCacheIndex(CacheIndex):
             try:
                 self._load_index_file()
             except Exception:
-                logger.exception(
-                    "Decoder cache index corrupted. Reinitializing cache.")
+                logger.exception("Decoder cache index corrupted. Reinitializing cache.")
                 # If we can't load the index file, the cache is corrupted,
                 # so we invalidate it (delete all files in the cache)
                 self._reinit()
@@ -407,18 +417,16 @@ class WriteableCacheIndex(CacheIndex):
 
     def _write_index(self):
         assert self._lock.acquired
-        with open(self.index_path + '.part', 'wb') as f:
+        with open(self.index_path + ".part", "wb") as f:
             # Use protocol 2 for version information to ensure that
             # all Python versions supported by Nengo will be able to
             # read it in the future.
-            pickle.dump(
-                (self.VERSION, pickle.HIGHEST_PROTOCOL),
-                f, 2)
+            pickle.dump((self.VERSION, pickle.HIGHEST_PROTOCOL), f, 2)
             # Use highest available protocol for index data for maximum
             # performance.
             pickle.dump(self._index, f, pickle.HIGHEST_PROTOCOL)
         try:
-            os.replace(self.index_path + '.part', self.index_path)
+            os.replace(self.index_path + ".part", self.index_path)
         except (CalledProcessError, PermissionError):
             # It may fail when
             # another program like a virus scanner is accessing the file to be
@@ -432,8 +440,9 @@ class WriteableCacheIndex(CacheIndex):
                 "following for the best Nengo performance:\n"
                 "1. Configure your anti-virus to ignore the Nengo cache "
                 "folder ('{cache_dir}').\n"
-                "2. Disable the cache.\n"
-                .format(cache_dir=self.cache_dir), category=CacheIOWarning)
+                "2. Disable the cache.\n".format(cache_dir=self.cache_dir),
+                category=CacheIOWarning,
+            )
 
         if os.path.exists(self.legacy_path):
             os.remove(self.legacy_path)
@@ -456,14 +465,18 @@ class WriteableCacheIndex(CacheIndex):
                 self._index.update(self._updates)
                 for key in self._deletes:
                     del self._index[key]
-                self._index = {k: v for k, v in self._index.items()
-                               if v[0] not in self._removed_files}
+                self._index = {
+                    k: v
+                    for k, v in self._index.items()
+                    if v[0] not in self._removed_files
+                }
 
                 self._write_index()
         except TimeoutError:
             warnings.warn(
                 "Decoder cache index could not acquire lock. "
-                "Cache index was not synced.")
+                "Cache index was not synced."
+            )
 
         self._updates.clear()
         self._deletes.clear()
@@ -491,7 +504,7 @@ class DecoderCache:
         `.get_default_dir`, if ``None``.
     """
 
-    _CACHE_EXT = '.nco'
+    _CACHE_EXT = ".nco"
 
     def __init__(self, readonly=False, cache_dir=None):
         self.readonly = readonly
@@ -515,14 +528,15 @@ class DecoderCache:
                 self.readonly = True
                 self._index = CacheIndex(self.cache_dir)
                 self._index.__enter__()
-                warnings.warn("Decoder cache could not acquire lock and was "
-                              "set to readonly mode.")
+                warnings.warn(
+                    "Decoder cache could not acquire lock and was "
+                    "set to readonly mode."
+                )
         except Exception as e:
             self.readonly = True
             self._index = None
             logger.debug("Could not acquire lock because: %s", e)
-            warnings.warn(
-                "Decoder cache could not acquire lock and was deactivated.")
+            warnings.warn("Decoder cache could not acquire lock and was deactivated.")
         self._in_context = True
         return self
 
@@ -541,7 +555,7 @@ class DecoderCache:
         -------
         str
         """
-        return rc.get('decoder_cache', 'path')
+        return rc.get("decoder_cache", "path")
 
     def _close_fd(self):
         if self._fd is not None:
@@ -550,7 +564,7 @@ class DecoderCache:
 
     def _get_fd(self):
         if self._fd is None:
-            self._fd = open(self._key2path(str(uuid1())), 'wb')
+            self._fd = open(self._key2path(str(uuid1())), "wb")
         return self._fd
 
     def get_files(self):
@@ -584,8 +598,11 @@ class DecoderCache:
         int
         """
         stats = (safe_stat(f) for f in self.get_files())
-        return sum(byte_align(st.st_size, self._fragment_size)
-                   for st in stats if st is not None)
+        return sum(
+            byte_align(st.st_size, self._fragment_size)
+            for st in stats
+            if st is not None
+        )
 
     def invalidate(self):
         """Invalidates the cache (i.e. removes all cache files)."""
@@ -609,7 +626,7 @@ class DecoderCache:
             return
 
         if limit is None:
-            limit = rc.get('decoder_cache', 'size')
+            limit = rc.get("decoder_cache", "size")
         if isinstance(limit, str):
             limit = human2bytes(limit)
 
@@ -657,32 +674,32 @@ class DecoderCache:
             Wrapped decoder solver.
         """
 
-        def cached_solver(conn, gain, bias, x, targets,
-                          rng=np.random, **uncached_kwargs):
+        def cached_solver(
+            conn, gain, bias, x, targets, rng=np.random, **uncached_kwargs
+        ):
             if not self._in_context:
-                warnings.warn("Cannot use cached solver outside of "
-                              "`with cache` block.")
-                return solver_fn(conn, gain, bias, x, targets,
-                                 rng=rng, **uncached_kwargs)
+                warnings.warn(
+                    "Cannot use cached solver outside of " "`with cache` block."
+                )
+                return solver_fn(
+                    conn, gain, bias, x, targets, rng=rng, **uncached_kwargs
+                )
 
             try:
-                key = self._get_cache_key(conn.solver,
-                                          conn.pre_obj.neuron_type,
-                                          gain,
-                                          bias,
-                                          x,
-                                          targets,
-                                          rng)
+                key = self._get_cache_key(
+                    conn.solver, conn.pre_obj.neuron_type, gain, bias, x, targets, rng
+                )
             except FingerprintError as e:
                 logger.debug("Failed to generate cache key: %s", e)
-                return solver_fn(conn, gain, bias, x, targets,
-                                 rng=rng, **uncached_kwargs)
+                return solver_fn(
+                    conn, gain, bias, x, targets, rng=rng, **uncached_kwargs
+                )
 
             try:
                 path, start, end = self._index[key]
                 if self._fd is not None:
                     self._fd.flush()
-                with open(path, 'rb') as f:
+                with open(path, "rb") as f:
                     f.seek(start)
                     info, decoders = nco.read(f)
             except Exception as err:
@@ -690,8 +707,9 @@ class DecoderCache:
                     logger.debug("Cache miss [%s].", key)
                 else:
                     logger.exception("Corrupted cache entry [%s].", key)
-                decoders, info = solver_fn(conn, gain, bias, x, targets,
-                                           rng=rng, **uncached_kwargs)
+                decoders, info = solver_fn(
+                    conn, gain, bias, x, targets, rng=rng, **uncached_kwargs
+                )
                 if not self.readonly:
                     fd = self._get_fd()
                     start = fd.tell()
@@ -704,12 +722,11 @@ class DecoderCache:
 
         return cached_solver
 
-    def _get_cache_key(
-            self, solver, neuron_type, gain, bias, x, targets, rng):
+    def _get_cache_key(self, solver, neuron_type, gain, bias, x, targets, rng):
         h = hashlib.sha1()
 
-        h.update(str(Fingerprint(solver)).encode('utf-8'))
-        h.update(str(Fingerprint(neuron_type)).encode('utf-8'))
+        h.update(str(Fingerprint(solver)).encode("utf-8"))
+        h.update(str(Fingerprint(neuron_type)).encode("utf-8"))
 
         h.update(np.ascontiguousarray(gain).data)
         h.update(np.ascontiguousarray(bias).data)
@@ -721,9 +738,9 @@ class DecoderCache:
         state = rng.get_state()
         h.update(state[0].encode())  # string 'MT19937'
         h.update(state[1].data)  # 1-D array of 624 unsigned integer keys
-        h.update(struct.pack('q', state[2]))  # integer pos
-        h.update(struct.pack('q', state[3]))  # integer has_gauss
-        h.update(struct.pack('d', state[4]))  # float cached_gaussian
+        h.update(struct.pack("q", state[2]))  # integer pos
+        h.update(struct.pack("q", state[3]))  # integer has_gauss
+        h.update(struct.pack("d", state[4]))  # float cached_gaussian
 
         return h.hexdigest()
 
@@ -751,7 +768,7 @@ class NoDecoderCache:
         return 0
 
     def get_size(self):
-        return '0 B'
+        return "0 B"
 
     def shrink(self, limit=0):
         pass
@@ -761,9 +778,8 @@ class NoDecoderCache:
 
 
 def get_default_decoder_cache():
-    if rc.getboolean('decoder_cache', 'enabled'):
-        decoder_cache = DecoderCache(
-            rc.getboolean('decoder_cache', 'readonly'))
+    if rc.getboolean("decoder_cache", "enabled"):
+        decoder_cache = DecoderCache(rc.getboolean("decoder_cache", "readonly"))
     else:
         decoder_cache = NoDecoderCache()
     return decoder_cache

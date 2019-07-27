@@ -14,49 +14,49 @@ def test_signaldict():
     """Tests SignalDict's dict overrides."""
     signaldict = SignalDict()
 
-    scalar = Signal(1.)
+    scalar = Signal(1.0)
 
     # Both __getitem__ and __setitem__ raise KeyError
     with pytest.raises(KeyError):
         signaldict[scalar]
     with pytest.raises(KeyError):
-        signaldict[scalar] = np.array(1.)
+        signaldict[scalar] = np.array(1.0)
 
     signaldict.init(scalar)
-    assert np.allclose(signaldict[scalar], np.array(1.))
+    assert np.allclose(signaldict[scalar], np.array(1.0))
     # __getitem__ handles scalars
     assert signaldict[scalar].shape == ()
 
-    one_d = Signal([1.])
+    one_d = Signal([1.0])
     signaldict.init(one_d)
-    assert np.allclose(signaldict[one_d], np.array([1.]))
+    assert np.allclose(signaldict[one_d], np.array([1.0]))
     assert signaldict[one_d].shape == (1,)
 
-    two_d = Signal([[1.], [1.]])
+    two_d = Signal([[1.0], [1.0]])
     signaldict.init(two_d)
-    assert np.allclose(signaldict[two_d], np.array([[1.], [1.]]))
+    assert np.allclose(signaldict[two_d], np.array([[1.0], [1.0]]))
     assert signaldict[two_d].shape == (2, 1)
 
     # __getitem__ handles views implicitly (note no .init)
     two_d_view = two_d[0, :]
-    assert np.allclose(signaldict[two_d_view], np.array([1.]))
+    assert np.allclose(signaldict[two_d_view], np.array([1.0]))
     assert signaldict[two_d_view].shape == (1,)
 
     # __setitem__ ensures memory location stays the same
-    memloc = signaldict[scalar].__array_interface__['data'][0]
-    signaldict[scalar] = np.array(0.)
-    assert np.allclose(signaldict[scalar], np.array(0.))
-    assert signaldict[scalar].__array_interface__['data'][0] == memloc
+    memloc = signaldict[scalar].__array_interface__["data"][0]
+    signaldict[scalar] = np.array(0.0)
+    assert np.allclose(signaldict[scalar], np.array(0.0))
+    assert signaldict[scalar].__array_interface__["data"][0] == memloc
 
-    memloc = signaldict[one_d].__array_interface__['data'][0]
-    signaldict[one_d] = np.array([0.])
-    assert np.allclose(signaldict[one_d], np.array([0.]))
-    assert signaldict[one_d].__array_interface__['data'][0] == memloc
+    memloc = signaldict[one_d].__array_interface__["data"][0]
+    signaldict[one_d] = np.array([0.0])
+    assert np.allclose(signaldict[one_d], np.array([0.0]))
+    assert signaldict[one_d].__array_interface__["data"][0] == memloc
 
-    memloc = signaldict[two_d].__array_interface__['data'][0]
-    signaldict[two_d] = np.array([[0.], [0.]])
-    assert np.allclose(signaldict[two_d], np.array([[0.], [0.]]))
-    assert signaldict[two_d].__array_interface__['data'][0] == memloc
+    memloc = signaldict[two_d].__array_interface__["data"][0]
+    signaldict[two_d] = np.array([[0.0], [0.0]])
+    assert np.allclose(signaldict[two_d], np.array([[0.0], [0.0]]))
+    assert signaldict[two_d].__array_interface__["data"][0] == memloc
 
     # __str__ pretty-prints signals and current values
     # Order not guaranteed for dicts, so we have to loop
@@ -67,7 +67,7 @@ def test_signaldict():
 def test_signaldict_reset():
     """Tests SignalDict's reset function."""
     signaldict = SignalDict()
-    two_d = Signal([[1.], [1.]])
+    two_d = Signal([[1.0], [1.0]])
     signaldict.init(two_d)
 
     two_d_view = two_d[0, :]
@@ -90,10 +90,10 @@ def test_signaldict_reset():
 
 def test_assert_named_signals():
     """Make sure assert_named_signals works."""
-    Signal(np.array(0.))
+    Signal(np.array(0.0))
     Signal.assert_named_signals = True
     with pytest.raises(AssertionError):
-        Signal(np.array(0.))
+        Signal(np.array(0.0))
 
     # So that other tests that build signals don't fail...
     Signal.assert_named_signals = False
@@ -101,7 +101,7 @@ def test_assert_named_signals():
 
 def test_signal_values():
     """Make sure Signal.initial_value works."""
-    two_d = Signal([[1.], [1.]])
+    two_d = Signal([[1.0], [1.0]])
     assert np.allclose(two_d.initial_value, np.array([[1], [1]]))
     two_d_view = two_d[0, :]
     assert np.allclose(two_d_view.initial_value, np.array([1]))
@@ -128,7 +128,7 @@ def test_signal_reshape():
 
     # check with non-contiguous arrays (and with offset)
     value = np.arange(20).reshape(5, 4)
-    s = Signal(np.array(value), name='s')
+    s = Signal(np.array(value), name="s")
 
     s0slice = slice(0, 3), slice(None, None, 2)
     s0shape = 2, 3
@@ -161,8 +161,15 @@ def test_signal_reshape():
 
 
 def test_signal_slicing(rng):
-    slices = [0, 1, slice(None, -1), slice(1, None), slice(1, -1),
-              slice(None, None, 3), slice(1, -1, 2)]
+    slices = [
+        0,
+        1,
+        slice(None, -1),
+        slice(1, None),
+        slice(1, -1),
+        slice(None, None, 3),
+        slice(1, -1, 2),
+    ]
 
     x = np.arange(12, dtype=float)
     y = np.arange(24, dtype=float).reshape(4, 6)
@@ -188,7 +195,7 @@ def test_commonsig_readonly():
     model.build(net)
     signals = SignalDict()
 
-    for sig in model.sig['common'].values():
+    for sig in model.sig["common"].values():
         signals.init(sig)
         with pytest.raises((ValueError, RuntimeError)):
             signals[sig] = np.array([-1])
@@ -215,8 +222,7 @@ def make_signal(sig_type, shape, indices, data):
     if sig_type == "sparse_scipy":
         m = scipy_sparse.csr_matrix((data, indices.T), shape=shape)
     elif sig_type == "sparse_nengo":
-        m = nengo.transforms.SparseMatrix(
-            data=data, indices=indices, shape=shape)
+        m = nengo.transforms.SparseMatrix(data=data, indices=indices, shape=shape)
     else:
         m = dense
     return Signal(m, name="MySignal"), dense
@@ -231,14 +237,16 @@ def test_signal_initial_value(sig_type, tmpdir):
         sig_type,
         shape=(3, 3),
         indices=np.asarray([[0, 0], [0, 2], [1, 1], [2, 2]]),
-        data=[1., 2., 1., 1.5],
+        data=[1.0, 2.0, 1.0, 1.5],
     )
 
     # check initial_value equality
     assert np.allclose(
-        sig.initial_value.toarray() if sig_type.startswith("sparse")
+        sig.initial_value.toarray()
+        if sig_type.startswith("sparse")
         else sig.initial_value,
-        dense)
+        dense,
+    )
 
     # cannot change once set
     with pytest.raises(SignalError, match="Cannot change initial value"):
@@ -254,10 +262,13 @@ def test_signal_initial_value(sig_type, tmpdir):
 
     # initial_value still matches after pickle/unpickle
     assert np.allclose(
-        sig.initial_value.toarray() if sig_type.startswith("sparse")
+        sig.initial_value.toarray()
+        if sig_type.startswith("sparse")
         else sig.initial_value,
-        pkl_sig.initial_value.toarray() if sig_type.startswith("sparse")
-        else pkl_sig.initial_value)
+        pkl_sig.initial_value.toarray()
+        if sig_type.startswith("sparse")
+        else pkl_sig.initial_value,
+    )
 
 
 @pytest.mark.parametrize("sig_type", ("dense", "sparse_scipy", "sparse_nengo"))
@@ -269,7 +280,7 @@ def test_signal_slice_reshape(sig_type):
         sig_type,
         shape=(3, 3),
         indices=np.asarray([[0, 0], [0, 2], [1, 1], [2, 2]]),
-        data=[1., 2., 1., 1.5],
+        data=[1.0, 2.0, 1.0, 1.5],
     )
 
     # check slicing
@@ -302,7 +313,7 @@ def test_signal_properties(sig_type):
         sig_type,
         shape=(3, 3),
         indices=np.asarray([[0, 0], [0, 2], [1, 1], [2, 2]]),
-        data=[1., 2., 1., 1.5],
+        data=[1.0, 2.0, 1.0, 1.5],
     )
 
     # check properties
@@ -318,11 +329,14 @@ def test_signal_properties(sig_type):
     assert sig.offset == 0
     assert not sig.readonly
     assert sig.shape == (3, 3)
-    assert sig.size == (np.sum(sig.initial_value.toarray() != 0)
-                        if sig_type.startswith("sparse")
-                        else np.prod((3, 3)))
-    assert sig.strides == ((3 * sig.itemsize, sig.itemsize)
-                           if sig_type == "dense" else None)
+    assert sig.size == (
+        np.sum(sig.initial_value.toarray() != 0)
+        if sig_type.startswith("sparse")
+        else np.prod((3, 3))
+    )
+    assert sig.strides == (
+        (3 * sig.itemsize, sig.itemsize) if sig_type == "dense" else None
+    )
     assert sig.sparse if sig_type.startswith("sparse") else not sig.sparse
 
     # modifying properties
@@ -341,7 +355,7 @@ def test_signal_init(sig_type):
         sig_type,
         shape=(3, 3),
         indices=np.asarray([[0, 0], [0, 2], [1, 1], [2, 2]]),
-        data=[1., 2., 1., 1.5],
+        data=[1.0, 2.0, 1.0, 1.5],
     )
     signals = SignalDict()
     signals.init(sig)

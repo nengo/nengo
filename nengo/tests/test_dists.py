@@ -23,8 +23,9 @@ from nengo.exceptions import ValidationError
 
 def test_pdf(rng):
     s = 0.25
-    f = lambda x: (np.exp(-0.5 * (x + 0.5)**2 / s**2)
-                   + np.exp(-0.5 * (x - 0.5)**2 / s**2))
+    f = lambda x: (
+        np.exp(-0.5 * (x + 0.5) ** 2 / s ** 2) + np.exp(-0.5 * (x - 0.5) ** 2 / s ** 2)
+    )
 
     xref = np.linspace(-2, 2, 101)
     pref = f(xref)
@@ -70,8 +71,9 @@ def test_gaussian(mean, std, rng):
         assert abs(np.std(samples) - std) < 0.25  # using chi2 for n=100
 
 
-@pytest.mark.parametrize("scale,shift,high", [
-    (1., 0., np.inf), (10., 0., 1.), (0.1, 0.3, 1.0)])
+@pytest.mark.parametrize(
+    "scale,shift,high", [(1.0, 0.0, np.inf), (10.0, 0.0, 1.0), (0.1, 0.3, 1.0)]
+)
 def test_exponential(scale, shift, high, rng):
     n = 100
     dist = Exponential(scale, shift=shift, high=high)
@@ -85,7 +87,8 @@ def test_exponential(scale, shift, high, rng):
 
 
 @pytest.mark.parametrize(
-    "min_magnitude,d", [(0, 1), (0, 2), (0, 5), (0.6, 1), (0.3, 2), (0.4, 5)])
+    "min_magnitude,d", [(0, 1), (0, 2), (0, 5), (0.6, 1), (0.3, 2), (0.4, 5)]
+)
 def test_hypersphere_volume(min_magnitude, d, rng):
     n = 150 * d
     dist = UniformHypersphere(min_magnitude=min_magnitude)
@@ -134,7 +137,7 @@ def test_choice(weights, rng):
     hist, bins = np.histogram(inds, bins=np.linspace(-0.5, N - 0.5, N + 1))
     p_empirical = hist / float(hist.sum())
     p = np.ones(N) / N if dist.p is None else dist.p
-    sterr = 1. / np.sqrt(n)  # expected maximum standard error
+    sterr = 1.0 / np.sqrt(n)  # expected maximum standard error
     assert np.allclose(p, p_empirical, atol=2 * sterr)
 
 
@@ -146,7 +149,7 @@ def test_samples(shape, rng):
     assert np.allclose(d.sample(shape[0], dims), samples)
 
 
-@pytest.mark.parametrize("samples", [[1., 2., 3.], [[1, 2], [3, 4]]])
+@pytest.mark.parametrize("samples", [[1.0, 2.0, 3.0], [[1, 2], [3, 4]]])
 def test_samples_list(samples):
     d = Samples(samples)
     shape = np.array(samples).shape
@@ -175,8 +178,7 @@ def test_sqrt_beta(n, m, rng):
 
     vectors = rng.randn(num_samples, n + m)
     vectors /= npext.norm(vectors, axis=1, keepdims=True)
-    expectation, _ = np.histogram(
-        npext.norm(vectors[:, :m], axis=1), bins=num_bins)
+    expectation, _ = np.histogram(npext.norm(vectors[:, :m], axis=1), bins=num_bins)
 
     dist = SqrtBeta(n, m)
     samples = dist.sample(num_samples, 1, rng=rng)
@@ -188,10 +190,10 @@ def test_sqrt_beta(n, m, rng):
 @pytest.mark.parametrize("n,m", [(4, 1), (10, 5)])
 def test_sqrt_beta_analytical(n, m, rng):
     """Tests pdf, cdf, and ppf of SqrtBeta distribution."""
-    pytest.importorskip('scipy')  # beta and betainc
+    pytest.importorskip("scipy")  # beta and betainc
 
     dt = 0.001
-    x = np.arange(dt, 1+dt, dt)
+    x = np.arange(dt, 1 + dt, dt)
 
     dist = SqrtBeta(n, m)
 
@@ -205,7 +207,7 @@ def test_sqrt_beta_analytical(n, m, rng):
 
     samples = dist.sample(num_samples, rng=rng)
     act_hist, _ = np.histogram(samples, bins=num_bins)
-    bin_points = np.linspace(0, 1, num_bins+1)
+    bin_points = np.linspace(0, 1, num_bins + 1)
     bin_cdf = dist.cdf(bin_points)
     exp_freq = bin_cdf[1:] - bin_cdf[:-1]
     assert np.all(np.abs(np.asfarray(act_hist) / num_samples - exp_freq) < 0.1)
@@ -238,14 +240,14 @@ def test_cosine_similarity(d, rng):
 
 @pytest.mark.parametrize("d", [2, 3, 10])
 def test_cosine_analytical(d):
-    pytest.importorskip('scipy')  # beta, betainc, betaincinv
+    pytest.importorskip("scipy")  # beta, betainc, betaincinv
 
     dt = 0.0001
-    x = np.arange(-1+dt, 1, dt)
+    x = np.arange(-1 + dt, 1, dt)
 
     def p(x, d):
         # unnormalized CosineSimilarity distribution, derived by Eric H.
-        return (1 - x*x)**((d - 3) / 2.0)
+        return (1 - x * x) ** ((d - 3) / 2.0)
 
     dist = CosineSimilarity(d)
 
@@ -256,8 +258,7 @@ def test_cosine_analytical(d):
     cdf_act = np.cumsum(pdf_act) / np.sum(pdf_act)
 
     # Check that we get the expected pdf after normalization
-    assert np.allclose(
-        pdf_exp / np.sum(pdf_exp), pdf_act / np.sum(pdf_act), atol=0.01)
+    assert np.allclose(pdf_exp / np.sum(pdf_exp), pdf_act / np.sum(pdf_act), atol=0.01)
 
     # Check that this accumulates to the expected cdf
     assert np.allclose(cdf_exp, cdf_act, atol=0.01)
@@ -273,14 +274,14 @@ def test_cosine_sample_shape(seed):
     d = 4
     dist = CosineSimilarity(2)
     a = dist.sample(n, d, rng=np.random.RandomState(seed))
-    b = dist.sample(n*d, rng=np.random.RandomState(seed))
+    b = dist.sample(n * d, rng=np.random.RandomState(seed))
     assert np.allclose(a.flatten(), b)
 
 
 @pytest.mark.parametrize("d,p", [(3, 0), (5, 0.4), (10, 0.7), (50, 1.0)])
 def test_cosine_intercept(d, p, rng):
     """Tests CosineSimilarity inverse cdf for finding intercepts."""
-    pytest.importorskip('scipy')  # betaincinv
+    pytest.importorskip("scipy")  # betaincinv
 
     num_samples = 250
 
@@ -296,8 +297,9 @@ def test_cosine_intercept(d, p, rng):
 
 def test_distorarrayparam():
     """DistOrArrayParams can be distributions or samples."""
+
     class Test:
-        dp = DistOrArrayParam('dp', default=None, sample_shape=['*', '*'])
+        dp = DistOrArrayParam("dp", default=None, sample_shape=["*", "*"])
 
     inst = Test()
     inst.dp = UniformHypersphere()
@@ -305,7 +307,7 @@ def test_distorarrayparam():
     inst.dp = np.array([[1], [2], [3]])
     assert np.all(inst.dp == np.array([[1], [2], [3]]))
     with pytest.raises(ValueError):
-        inst.dp = 'a'
+        inst.dp = "a"
     # Sample must have correct dims
     with pytest.raises(ValueError):
         inst.dp = np.array([1])
@@ -313,8 +315,9 @@ def test_distorarrayparam():
 
 def test_distorarrayparam_sample_shape():
     """sample_shape dictates the shape of the sample that can be set."""
+
     class Test:
-        dp = DistOrArrayParam('dp', default=None, sample_shape=['d1', 10])
+        dp = DistOrArrayParam("dp", default=None, sample_shape=["d1", 10])
         d1 = 4
 
     inst = Test()
@@ -348,47 +351,46 @@ def test_frozen():
 
 
 def test_argreprs():
-
     def check_init_args(cls, args):
         assert getfullargspec(cls.__init__).args[1:] == args
 
     def check_repr(obj):
         assert eval(repr(obj)) == obj
 
-    check_init_args(PDF, ['x', 'p'])
+    check_init_args(PDF, ["x", "p"])
     check_repr(PDF([1, 2, 3], [0.1, 0.8, 0.1]))
 
-    check_init_args(Uniform, ['low', 'high', 'integer'])
+    check_init_args(Uniform, ["low", "high", "integer"])
     check_repr(Uniform(1, 3))
     check_repr(Uniform(1, 4, integer=True))
 
-    check_init_args(Gaussian, ['mean', 'std'])
+    check_init_args(Gaussian, ["mean", "std"])
     check_repr(Gaussian(0, 2))
 
-    check_init_args(Exponential, ['scale', 'shift', 'high'])
-    check_repr(Exponential(2.))
-    check_repr(Exponential(2., shift=0.1))
-    check_repr(Exponential(2., shift=0.1, high=10.))
+    check_init_args(Exponential, ["scale", "shift", "high"])
+    check_repr(Exponential(2.0))
+    check_repr(Exponential(2.0, shift=0.1))
+    check_repr(Exponential(2.0, shift=0.1, high=10.0))
 
-    check_init_args(UniformHypersphere, ['surface', 'min_magnitude'])
+    check_init_args(UniformHypersphere, ["surface", "min_magnitude"])
     check_repr(UniformHypersphere())
     check_repr(UniformHypersphere(surface=True))
     check_repr(UniformHypersphere(min_magnitude=0.3))
 
-    check_init_args(Choice, ['options', 'weights'])
+    check_init_args(Choice, ["options", "weights"])
     check_repr(Choice([3, 2, 1]))
     check_repr(Choice([3, 2, 1], weights=[0.1, 0.2, 0.7]))
 
-    check_init_args(Samples, ['samples'])
+    check_init_args(Samples, ["samples"])
     check_repr(Samples([3, 2, 1]))
 
-    check_init_args(SqrtBeta, ['n', 'm'])
+    check_init_args(SqrtBeta, ["n", "m"])
     check_repr(SqrtBeta(3))
     check_repr(SqrtBeta(3, m=2))
 
-    check_init_args(SubvectorLength, ['dimensions', 'subdimensions'])
+    check_init_args(SubvectorLength, ["dimensions", "subdimensions"])
     check_repr(SubvectorLength(6))
     check_repr(SubvectorLength(6, 2))
 
-    check_init_args(CosineSimilarity, ['dimensions'])
+    check_init_args(CosineSimilarity, ["dimensions"])
     check_repr(CosineSimilarity(6))

@@ -29,17 +29,17 @@ class Integrator(nengo.Network):
     """
 
     def __init__(self, recurrent_tau, n_neurons, dimensions, **kwargs):
-        if 'net' in kwargs:
+        if "net" in kwargs:
             raise ObsoleteError("The 'net' argument is no longer supported.")
-        kwargs.setdefault('label', "Integrator")
+        kwargs.setdefault("label", "Integrator")
         super().__init__(**kwargs)
 
         with self:
             self.input = nengo.Node(size_in=dimensions)
             self.ensemble = nengo.Ensemble(n_neurons, dimensions=dimensions)
-            nengo.Connection(self.ensemble, self.ensemble,
-                             synapse=recurrent_tau)
-            nengo.Connection(self.input, self.ensemble,
-                             transform=recurrent_tau, synapse=None)
+            nengo.Connection(self.ensemble, self.ensemble, synapse=recurrent_tau)
+            nengo.Connection(
+                self.input, self.ensemble, transform=recurrent_tau, synapse=None
+            )
 
         self.output = self.ensemble

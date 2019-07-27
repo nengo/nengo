@@ -77,13 +77,15 @@ class SPA(nengo.Network):
                 self.thal = spa.Thalamus(self.bg)
     """
 
-    def __init__(self, label=None, seed=None, add_to_container=None,
-                 vocabs=None):
+    def __init__(self, label=None, seed=None, add_to_container=None, vocabs=None):
         super().__init__(label, seed, add_to_container)
 
-        warnings.warn(DeprecationWarning(
-            "The nengo.spa module is deprecated. Please switch to using the "
-            "Nengo SPA project <https://www.nengo.ai/nengo-spa/>."))
+        warnings.warn(
+            DeprecationWarning(
+                "The nengo.spa module is deprecated. Please switch to using the "
+                "Nengo SPA project <https://www.nengo.ai/nengo-spa/>."
+            )
+        )
 
         vocabs = [] if vocabs is None else vocabs
         enable_spa_params(self)
@@ -92,18 +94,20 @@ class SPA(nengo.Network):
 
         for vo in vocabs:
             if vo.dimensions in self._default_vocabs:
-                warnings.warn("Duplicate vocabularies with dimension %d. "
-                              "Using the last entry in the vocab list with "
-                              "that dimensionality." % (vo.dimensions))
+                warnings.warn(
+                    "Duplicate vocabularies with dimension %d. "
+                    "Using the last entry in the vocab list with "
+                    "that dimensionality." % (vo.dimensions)
+                )
             self._default_vocabs[vo.dimensions] = vo
 
         self._initialized = True
 
     def __setstate__(self, state):
-        if '_initialized' in state:
-            del state['_initialized']
+        if "_initialized" in state:
+            del state["_initialized"]
         super().__setstate__(state)
-        setattr(self, '_initialized', True)
+        setattr(self, "_initialized", True)
 
     def __setattr__(self, key, value):
         """A setattr that handles Modules being added specially.
@@ -111,13 +115,15 @@ class SPA(nengo.Network):
         This is so that we can use the variable name for the Module as
         the name that all of the SPA system will use to access that module.
         """
-        if not hasattr(self, '_initialized'):
+        if not hasattr(self, "_initialized"):
             return super().__setattr__(key, value)
 
         if hasattr(self, key) and isinstance(getattr(self, key), Module):
-            raise SpaModuleError("Cannot re-assign module-attribute %s to %s. "
-                                 "SPA module-attributes can only be assigned "
-                                 "once." % (key, value))
+            raise SpaModuleError(
+                "Cannot re-assign module-attribute %s to %s. "
+                "SPA module-attributes can only be assigned "
+                "once." % (key, value)
+            )
         super().__setattr__(key, value)
         if isinstance(value, Module):
             if value.label is None:
@@ -145,15 +151,16 @@ class SPA(nengo.Network):
             # Since there are no attributes to distinguish what's been added
             # and what hasn't, we have to ask the network
             if isinstance(net, Module) and (net not in module_list):
-                raise SpaModuleError("%s must be set as an attribute of "
-                                     "a SPA network" % (net))
+                raise SpaModuleError(
+                    "%s must be set as an attribute of " "a SPA network" % (net)
+                )
 
     def get_module(self, name):
         """Return the module for the given name."""
         if name in self._modules:
             return self._modules[name]
-        elif '_' in name:
-            module, name = name.rsplit('_', 1)
+        elif "_" in name:
+            module, name = name.rsplit("_", 1)
             if module in self._modules:
                 return self._modules[module]
         raise SpaModuleError("Could not find module %r" % name)
@@ -178,10 +185,10 @@ class SPA(nengo.Network):
         The name will be either the same as a module, or of the form
         ``<module_name>_<input_name>``.
         """
-        if name in self._modules and 'default' in self._modules[name].inputs:
-            return self._modules[name].inputs['default']
-        elif '_' in name:
-            module, name = name.rsplit('_', 1)
+        if name in self._modules and "default" in self._modules[name].inputs:
+            return self._modules[name].inputs["default"]
+        elif "_" in name:
+            module, name = name.rsplit("_", 1)
             if module in self._modules:
                 m = self._modules[module]
                 if name in m.inputs:
@@ -191,10 +198,10 @@ class SPA(nengo.Network):
     def get_module_inputs(self):
         for name, module in self._modules.items():
             for input in module.inputs:
-                if input == 'default':
+                if input == "default":
                     yield name
                 else:
-                    yield '%s_%s' % (name, input)
+                    yield "%s_%s" % (name, input)
 
     def get_input_vocab(self, name):
         return self.get_module_input(name)[1]
@@ -206,9 +213,9 @@ class SPA(nengo.Network):
         ``<module_name>_<output_name>``.
         """
         if name in self._modules:
-            return self._modules[name].outputs['default']
-        elif '_' in name:
-            module, name = name.rsplit('_', 1)
+            return self._modules[name].outputs["default"]
+        elif "_" in name:
+            module, name = name.rsplit("_", 1)
             if module in self._modules:
                 m = self._modules[module]
                 if name in m.outputs:
@@ -218,10 +225,10 @@ class SPA(nengo.Network):
     def get_module_outputs(self):
         for name, module in self._modules.items():
             for output in module.outputs:
-                if output == 'default':
+                if output == "default":
                     yield name
                 else:
-                    yield '%s_%s' % (name, output)
+                    yield "%s_%s" % (name, output)
 
     def get_output_vocab(self, name):
         return self.get_module_output(name)[1]

@@ -16,23 +16,24 @@ def thalamus_net(d=2, n=20, seed=None):
         model.motor2 = spa.Buffer(dimensions=d * 2, neurons_per_dimension=n)
 
         actions = spa.Actions(
-            'dot(vision, A) --> motor=A, motor2=vision*vision2',
-            'dot(vision, B) --> motor=vision, motor2=vision*A*~B',
-            'dot(vision, ~A) --> motor=~vision, motor2=~vision*vision2'
+            "dot(vision, A) --> motor=A, motor2=vision*vision2",
+            "dot(vision, B) --> motor=vision, motor2=vision*A*~B",
+            "dot(vision, ~A) --> motor=~vision, motor2=~vision*vision2",
         )
         model.bg = spa.BasalGanglia(actions)
         model.thalamus = spa.Thalamus(model.bg)
 
         def input_f(t):
             if t < 0.1:
-                return 'A'
+                return "A"
             elif t < 0.3:
-                return 'B'
+                return "B"
             elif t < 0.5:
-                return '~A'
+                return "~A"
             else:
-                return '0'
-        model.input = spa.Input(vision=input_f, vision2='B*~A')
+                return "0"
+
+        model.input = spa.Input(vision=input_f, vision2="B*~A")
 
     return model
 
@@ -42,11 +43,11 @@ def test_thalamus(Simulator, plt, seed):
     model = thalamus_net(d=16, n=80, seed=seed)
 
     with model:
-        input, vocab = model.get_module_input('motor')
-        input2, vocab2 = model.get_module_input('motor2')
+        input, vocab = model.get_module_input("motor")
+        input2, vocab2 = model.get_module_input("motor2")
 
-        p = nengo.Probe(input, 'output', synapse=0.03)
-        p2 = nengo.Probe(input2, 'output', synapse=0.03)
+        p = nengo.Probe(input, "output", synapse=0.03)
+        p2 = nengo.Probe(input2, "output", synapse=0.03)
 
     with Simulator(model) as sim:
         sim.run(0.5)
@@ -81,20 +82,21 @@ def test_routing(Simulator, seed, plt):
     D = 3
     model = spa.SPA(seed=seed)
     with model:
-        model.ctrl = spa.Buffer(16, label='ctrl')
+        model.ctrl = spa.Buffer(16, label="ctrl")
 
         def input_func(t):
             if t < 0.2:
-                return 'A'
+                return "A"
             elif t < 0.4:
-                return 'B'
+                return "B"
             else:
-                return 'C'
+                return "C"
+
         model.input = spa.Input(ctrl=input_func)
 
-        model.buff1 = spa.Buffer(D, label='buff1')
-        model.buff2 = spa.Buffer(D, label='buff2')
-        model.buff3 = spa.Buffer(D, label='buff3')
+        model.buff1 = spa.Buffer(D, label="buff1")
+        model.buff2 = spa.Buffer(D, label="buff2")
+        model.buff3 = spa.Buffer(D, label="buff3")
 
         node1 = nengo.Node([0, 1, 0])
         node2 = nengo.Node([0, 0, 1])
@@ -102,10 +104,11 @@ def test_routing(Simulator, seed, plt):
         nengo.Connection(node1, model.buff1.state.input)
         nengo.Connection(node2, model.buff2.state.input)
 
-        actions = spa.Actions('dot(ctrl, A) --> buff3=buff1',
-                              'dot(ctrl, B) --> buff3=buff2',
-                              'dot(ctrl, C) --> buff3=buff1*buff2',
-                              )
+        actions = spa.Actions(
+            "dot(ctrl, A) --> buff3=buff1",
+            "dot(ctrl, B) --> buff3=buff2",
+            "dot(ctrl, C) --> buff3=buff1*buff2",
+        )
         model.bg = spa.BasalGanglia(actions)
         model.thal = spa.Thalamus(model.bg)
 
@@ -139,9 +142,9 @@ def test_routing_recurrency_compilation(Simulator, seed):
     D = 2
     model = spa.SPA(seed=seed)
     with model:
-        model.buff1 = spa.Buffer(D, label='buff1')
-        model.buff2 = spa.Buffer(D, label='buff2')
-        actions = spa.Actions('0.5 --> buff2=buff1, buff1=buff2')
+        model.buff1 = spa.Buffer(D, label="buff1")
+        model.buff2 = spa.Buffer(D, label="buff2")
+        actions = spa.Actions("0.5 --> buff2=buff1, buff1=buff2")
         model.bg = spa.BasalGanglia(actions)
         model.thal = spa.Thalamus(model.bg)
 
@@ -153,19 +156,20 @@ def test_nondefault_routing(Simulator, seed):
     D = 3
     model = spa.SPA(seed=seed)
     with model:
-        model.ctrl = spa.Buffer(16, label='ctrl')
+        model.ctrl = spa.Buffer(16, label="ctrl")
 
         def input_func(t):
             if t < 0.2:
-                return 'A'
+                return "A"
             elif t < 0.4:
-                return 'B'
+                return "B"
             else:
-                return 'C'
+                return "C"
+
         model.input = spa.Input(ctrl=input_func)
 
-        model.buff1 = spa.Buffer(D, label='buff1')
-        model.buff2 = spa.Buffer(D, label='buff2')
+        model.buff1 = spa.Buffer(D, label="buff1")
+        model.buff2 = spa.Buffer(D, label="buff2")
         model.cmp = spa.Compare(D)
 
         node1 = nengo.Node([0, 1, 0])
@@ -174,10 +178,11 @@ def test_nondefault_routing(Simulator, seed):
         nengo.Connection(node1, model.buff1.state.input)
         nengo.Connection(node2, model.buff2.state.input)
 
-        actions = spa.Actions('dot(ctrl, A) --> cmp_A=buff1, cmp_B=buff1',
-                              'dot(ctrl, B) --> cmp_A=buff1, cmp_B=buff2',
-                              'dot(ctrl, C) --> cmp_A=buff2, cmp_B=buff2',
-                              )
+        actions = spa.Actions(
+            "dot(ctrl, A) --> cmp_A=buff1, cmp_B=buff1",
+            "dot(ctrl, B) --> cmp_A=buff1, cmp_B=buff2",
+            "dot(ctrl, C) --> cmp_A=buff2, cmp_B=buff2",
+        )
         model.bg = spa.BasalGanglia(actions)
         model.thal = spa.Thalamus(model.bg)
 
@@ -202,13 +207,13 @@ def test_errors():
     with pytest.raises(SpaParseError):
         with spa.SPA() as model:
             model.vision = spa.Buffer(dimensions=16)
-            actions = spa.Actions('0.5 --> motor=A')
+            actions = spa.Actions("0.5 --> motor=A")
             model.bg = spa.BasalGanglia(actions)
 
     # dot products not implemented
     with pytest.raises(NotImplementedError):
         with spa.SPA() as model:
             model.scalar = spa.Buffer(dimensions=16, subdimensions=1)
-            actions = spa.Actions('0.5 --> scalar=dot(scalar, FOO)')
+            actions = spa.Actions("0.5 --> scalar=dot(scalar, FOO)")
             model.bg = spa.BasalGanglia(actions)
             model.thalamus = spa.Thalamus(model.bg)

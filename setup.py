@@ -12,7 +12,8 @@ except ImportError:
     raise ImportError(
         "'setuptools' is required but not installed. To install it, "
         "follow the instructions at "
-        "https://pip.pypa.io/en/stable/installing/#installing-with-get-pip-py")
+        "https://pip.pypa.io/en/stable/installing/#installing-with-get-pip-py"
+    )
 
 
 def read(*filenames, **kwargs):
@@ -26,12 +27,9 @@ def read(*filenames, **kwargs):
 
 
 root = os.path.dirname(os.path.realpath(__file__))
-version = runpy.run_path(os.path.join(
-    root, "nengo", "version.py"))["version"]
+version = runpy.run_path(os.path.join(root, "nengo", "version.py"))["version"]
 
-install_req = [
-    "numpy>=1.11",
-]
+install_req = ["numpy>=1.11"]
 docs_req = [
     "sphinx>=1.8",
     "jupyter",
@@ -40,15 +38,8 @@ docs_req = [
     "numpydoc>=0.6",
     "nengo_sphinx_theme>=0.12.0",
 ]
-optional_req = [
-    "scipy>=0.13",
-    "scikit-learn",
-]
-tests_req = [
-    "jupyter",
-    "matplotlib>=1.4",
-    "pytest>=3.6",
-]
+optional_req = ["scipy>=0.13", "scikit-learn"]
+tests_req = ["jupyter", "matplotlib>=1.4", "pytest>=3.6"]
 
 setup(
     name="nengo",
@@ -70,16 +61,8 @@ setup(
         "tests": tests_req,
     },
     python_requires=">=3.5",
-    package_data={
-        "nengo": [
-            "nengo-data/nengorc",
-        ],
-    },
-    entry_points={
-        "nengo.backends": [
-            "reference = nengo:Simulator",
-        ],
-    },
+    package_data={"nengo": ["nengo-data/nengorc"]},
+    entry_points={"nengo.backends": ["reference = nengo:Simulator"]},
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Framework :: Nengo",

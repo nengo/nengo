@@ -24,6 +24,7 @@ and install all of the optional dependencies.
    git clone https://github.com/nengo/nengo.git
    cd nengo
    pip install -e '.[all]' --user
+   pre-commit install
 
 If you are in a virtual environment, you can omit the ``--user`` flag.
 

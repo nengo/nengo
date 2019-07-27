@@ -16,22 +16,21 @@ def test_sigmerger_check():
     assert not SigMerger.check([Signal(0), Signal(1)])
 
     # compatible along first axis
-    assert SigMerger.check(
-        [Signal(np.empty((1, 2))), Signal(np.empty((2, 2)))])
+    assert SigMerger.check([Signal(np.empty((1, 2))), Signal(np.empty((2, 2)))])
 
     # compatible along second axis
-    assert SigMerger.check(
-        [Signal(np.empty((2, 1))), Signal(np.empty((2, 2)))], axis=1)
+    assert SigMerger.check([Signal(np.empty((2, 1))), Signal(np.empty((2, 2)))], axis=1)
     assert not SigMerger.check(
-        [Signal(np.empty((2, 1))), Signal(np.empty((2, 2)))], axis=0)
+        [Signal(np.empty((2, 1))), Signal(np.empty((2, 2)))], axis=0
+    )
 
     # shape mismatch
-    assert not SigMerger.check(
-        [Signal(np.empty((2,))), Signal(np.empty((2, 2)))])
+    assert not SigMerger.check([Signal(np.empty((2,))), Signal(np.empty((2, 2)))])
 
     # mixed dtype
     assert not SigMerger.check(
-        [Signal(np.empty(2, dtype=int)), Signal(np.empty(2, dtype=float))])
+        [Signal(np.empty(2, dtype=int)), Signal(np.empty(2, dtype=float))]
+    )
 
     s1 = Signal(np.empty(5))
     s2 = Signal(np.empty(5))
@@ -46,8 +45,12 @@ def test_sigmerger_check():
     assert SigMerger.check([s1[:2], s1[2:]])
 
     # sparse signals not mergeable
-    assert not SigMerger.check([Signal(SparseMatrix([[0, 0]], 1.0, (1, 1))),
-                                Signal(SparseMatrix([[0, 0]], 1.0, (1, 1)))])
+    assert not SigMerger.check(
+        [
+            Signal(SparseMatrix([[0, 0]], 1.0, (1, 1))),
+            Signal(SparseMatrix([[0, 0]], 1.0, (1, 1))),
+        ]
+    )
 
 
 def test_sigmerger_check_signals():
@@ -57,25 +60,26 @@ def test_sigmerger_check_signals():
         SigMerger.check_signals([Signal(0), Signal(1)])
 
     # compatible along first axis
-    SigMerger.check_signals(
-        [Signal(np.empty((1, 2))), Signal(np.empty((2, 2)))])
+    SigMerger.check_signals([Signal(np.empty((1, 2))), Signal(np.empty((2, 2)))])
 
     # compatible along second axis
     SigMerger.check_signals(
-        [Signal(np.empty((2, 1))), Signal(np.empty((2, 2)))], axis=1)
+        [Signal(np.empty((2, 1))), Signal(np.empty((2, 2)))], axis=1
+    )
     with pytest.raises(ValueError):
         SigMerger.check_signals(
-            [Signal(np.empty((2, 1))), Signal(np.empty((2, 2)))], axis=0)
+            [Signal(np.empty((2, 1))), Signal(np.empty((2, 2)))], axis=0
+        )
 
     # shape mismatch
     with pytest.raises(ValueError):
-        SigMerger.check_signals(
-            [Signal(np.empty((2,))), Signal(np.empty((2, 2)))])
+        SigMerger.check_signals([Signal(np.empty((2,))), Signal(np.empty((2, 2)))])
 
     # mixed dtype
     with pytest.raises(ValueError):
         SigMerger.check_signals(
-            [Signal(np.empty(2, dtype=int)), Signal(np.empty(2, dtype=float))])
+            [Signal(np.empty(2, dtype=int)), Signal(np.empty(2, dtype=float))]
+        )
 
     # compatible views
     s = Signal(np.empty(5))
@@ -134,12 +138,18 @@ def test_optimizer_does_not_change_result(seed, net):
 
     with model:
         # Add the default probe for every non-Probe object
-        probes = [nengo.Probe(obj) for obj in model.all_objects
-                  if not isinstance(obj, (nengo.Probe, nengo.Network))]
+        probes = [
+            nengo.Probe(obj)
+            for obj in model.all_objects
+            if not isinstance(obj, (nengo.Probe, nengo.Network))
+        ]
         # Also probe learning rules and neurons
         probes.extend(nengo.Probe(ens.neurons) for ens in model.all_ensembles)
-        probes.extend(nengo.Probe(conn.learning_rule) for conn in
-                      model.all_connections if conn.learning_rule is not None)
+        probes.extend(
+            nengo.Probe(conn.learning_rule)
+            for conn in model.all_connections
+            if conn.learning_rule is not None
+        )
 
     with nengo.Simulator(model, optimize=False) as sim:
         sim.run(0.1)
@@ -147,5 +157,4 @@ def test_optimizer_does_not_change_result(seed, net):
         sim_opt.run(0.1)
 
     for probe in probes:
-        assert_almost_equal(sim.data[probe], sim_opt.data[probe],
-                            decimal=dtype_decimal)
+        assert_almost_equal(sim.data[probe], sim_opt.data[probe], decimal=dtype_decimal)

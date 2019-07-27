@@ -191,3 +191,11 @@ ci_scripts:
       - matplotlib
 
 codecov_yml: {}
+
+pre_commit_config_yaml:
+  exclude:
+    - "_vendor/*"
+
+pyproject_toml:
+  exclude:
+    - "_vendor/*"

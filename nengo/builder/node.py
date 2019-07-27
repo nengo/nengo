@@ -41,19 +41,17 @@ def build_node(model, node):
         sig_out = Signal(shape=node.size_out, name="%s.out" % node)
         model.build(node.output, sig_in, sig_out, mode="set")
     elif callable(node.output):
-        sig_out = (Signal(shape=node.size_out, name="%s.out" % node)
-                   if node.size_out > 0 else None)
-        model.add_op(SimPyFunc(
-            output=sig_out, fn=node.output, t=model.time, x=sig_in))
-    elif is_array_like(node.output):
-        sig_out = Signal(
-            node.output.astype(rc.float_dtype),
-            name="%s.out" % node,
+        sig_out = (
+            Signal(shape=node.size_out, name="%s.out" % node)
+            if node.size_out > 0
+            else None
         )
+        model.add_op(SimPyFunc(output=sig_out, fn=node.output, t=model.time, x=sig_in))
+    elif is_array_like(node.output):
+        sig_out = Signal(node.output.astype(rc.float_dtype), name="%s.out" % node)
     else:
-        raise BuildError(
-            "Invalid node output type %r" % type(node.output).__name__)
+        raise BuildError("Invalid node output type %r" % type(node.output).__name__)
 
-    model.sig[node]['in'] = sig_in
-    model.sig[node]['out'] = sig_out
+    model.sig[node]["in"] = sig_in
+    model.sig[node]["out"] = sig_out
     model.params[node] = None

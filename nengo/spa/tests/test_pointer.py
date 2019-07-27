@@ -36,7 +36,7 @@ def test_init():
 def test_length():
     a = SemanticPointer([1, 1])
     assert np.allclose(a.length(), np.sqrt(2))
-    a = SemanticPointer(10)*1.2
+    a = SemanticPointer(10) * 1.2
     assert np.allclose(a.length(), 1.2)
 
 
@@ -48,7 +48,7 @@ def test_normalize():
 
 def test_str():
     a = SemanticPointer([1, 1])
-    assert str(a) == str(np.array([1., 1.]))
+    assert str(a) == str(np.array([1.0, 1.0]))
 
 
 def test_randomize(rng):
@@ -122,7 +122,7 @@ def test_multiply():
     with pytest.raises(Exception):
         a * None
     with pytest.raises(Exception):
-        a * 'string'
+        a * "string"
 
 
 def test_compare(rng):
@@ -183,4 +183,4 @@ def test_conv_matrix():
 
     m = b.get_convolution_matrix()
 
-    assert np.allclose((a*b).v, np.dot(m, a.v))
+    assert np.allclose((a * b).v, np.dot(m, a.v))

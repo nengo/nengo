@@ -34,7 +34,7 @@ def test_dts(Simulator, seed, rng):
 
     for i in range(100):
         dt = rng.uniform(0.001, 0.1)  # simulator dt
-        dt2 = rng.uniform(dt, 0.15)   # probe dt
+        dt2 = rng.uniform(dt, 0.15)  # probe dt
         tend = rng.uniform(0.2, 0.3)  # simulator runtime
 
         with nengo.Network(seed=seed) as model:
@@ -47,7 +47,12 @@ def test_dts(Simulator, seed, rng):
         x = sim.data[ap]
 
         assert len(t) == len(x), "dt=%f, dt2=%f, tend=%f, nt=%d, nx=%d" % (
-            dt, dt2, tend, len(t), len(x))
+            dt,
+            dt2,
+            tend,
+            len(t),
+            len(x),
+        )
 
 
 def test_large(Simulator, seed, logger):
@@ -58,20 +63,21 @@ def test_large(Simulator, seed, logger):
     def input_fn(t):
         return list(range(1, 10))
 
-    model = nengo.Network(label='test_large_probes', seed=seed)
+    model = nengo.Network(label="test_large_probes", seed=seed)
     with model:
         probes = []
         for i in range(n):
-            xi = nengo.Node(label='x%d' % i, output=input_fn)
-            probes.append(nengo.Probe(xi, 'output'))
+            xi = nengo.Node(label="x%d" % i, output=input_fn)
+            probes.append(nengo.Probe(xi, "output"))
 
     with Simulator(model) as sim:
         simtime = 2.483
 
         with Timer() as timer:
             sim.run(simtime)
-    logger.info("Ran %d probes for %f sec simtime in %0.3f sec",
-                n, simtime, timer.duration)
+    logger.info(
+        "Ran %d probes for %f sec simtime in %0.3f sec", n, simtime, timer.duration
+    )
 
     t = sim.trange()
     x = np.asarray([input_fn(ti) for ti in t])
@@ -82,17 +88,17 @@ def test_large(Simulator, seed, logger):
 
 def test_defaults(Simulator):
     """Tests that probing with no attr sets the right attr."""
-    model = nengo.Network(label='test_defaults')
+    model = nengo.Network(label="test_defaults")
     with model:
         node = nengo.Node(output=0.5)
         ens = nengo.Ensemble(20, 1)
         conn = nengo.Connection(node, ens)
         node_p = nengo.Probe(node)
-        assert node_p.attr == 'output'
+        assert node_p.attr == "output"
         ens_p = nengo.Probe(ens)
-        assert ens_p.attr == 'decoded_output'
+        assert ens_p.attr == "decoded_output"
         conn_p = nengo.Probe(conn)
-        assert conn_p.attr == 'output'
+        assert conn_p.attr == "output"
     # Let's just make sure it runs too...
     with Simulator(model) as sim:
         sim.run(0.01)
@@ -107,7 +113,7 @@ def test_simulator_dt(Simulator):
         bp = nengo.Probe(b)
 
     with Simulator(model, dt=0.01) as sim:
-        sim.run(1.)
+        sim.run(1.0)
     assert sim.data[bp].shape == (100, 1)
 
 
@@ -119,12 +125,12 @@ def test_multiple_probes(Simulator):
         ens = nengo.Ensemble(10, 1)
         p_001 = nengo.Probe(ens, sample_every=dt)
         p_01 = nengo.Probe(ens, sample_every=f * dt)
-        p_1 = nengo.Probe(ens, sample_every=f**2 * dt)
+        p_1 = nengo.Probe(ens, sample_every=f ** 2 * dt)
 
     with Simulator(model, dt=dt) as sim:
-        sim.run(1.)
-    assert np.allclose(sim.data[p_001][f - 1::f], sim.data[p_01])
-    assert np.allclose(sim.data[p_01][f - 1::f], sim.data[p_1])
+        sim.run(1.0)
+    assert np.allclose(sim.data[p_001][f - 1 :: f], sim.data[p_01])
+    assert np.allclose(sim.data[p_01][f - 1 :: f], sim.data[p_1])
 
 
 def test_input_probe(Simulator):
@@ -135,10 +141,10 @@ def test_input_probe(Simulator):
         n2 = nengo.Node(output=0.5)
         nengo.Connection(n1, ens, synapse=None)
         nengo.Connection(n2, ens, synapse=None)
-        input_probe = nengo.Probe(ens, 'input')
+        input_probe = nengo.Probe(ens, "input")
 
     with Simulator(model) as sim:
-        sim.run(1.)
+        sim.run(1.0)
     t = sim.trange()
     assert np.allclose(sim.data[input_probe][:, 0], np.sin(t) + 0.5)
 
@@ -151,14 +157,14 @@ def test_conn_output(Simulator):
         n2 = nengo.Node(output=0.5)
         n_out = nengo.Node(size_in=1)
         c1 = nengo.Connection(n1, n_out, transform=-1, synapse=None)
-        c2 = nengo.Connection(n2, n_out, function=lambda x: x**2, synapse=None)
-        p1 = nengo.Probe(c1, 'output', synapse=None)
-        p2 = nengo.Probe(c2, 'output', synapse=None)
+        c2 = nengo.Connection(n2, n_out, function=lambda x: x ** 2, synapse=None)
+        p1 = nengo.Probe(c1, "output", synapse=None)
+        p2 = nengo.Probe(c2, "output", synapse=None)
 
     with Simulator(model) as sim:
         sim.run(0.2)
     t = sim.trange()
-    assert np.allclose(sim.data[p1][:, 0], -1. * np.sin(t))
+    assert np.allclose(sim.data[p1][:, 0], -1.0 * np.sin(t))
     assert np.allclose(sim.data[p2][:, 0], 0.5 ** 2)
 
 
@@ -219,7 +225,7 @@ def test_ensemble_encoders(Simulator):
     """Check that encoders probed from ensemble are correct."""
     with nengo.Network() as model:
         ens = nengo.Ensemble(n_neurons=10, dimensions=2, radius=1.5)
-        p_enc = nengo.Probe(ens, 'scaled_encoders')
+        p_enc = nengo.Probe(ens, "scaled_encoders")
 
     with Simulator(model) as sim:
         sim.run(0.001)
@@ -245,11 +251,12 @@ def test_obsolete_probes():
 def test_update_timing(Simulator):
     with nengo.Network() as net:
         inp = nengo.Node([1])
-        ens = nengo.Ensemble(10, 1, encoders=np.ones((10, 1)),
-                             gain=np.ones(10), bias=np.ones(10))
+        ens = nengo.Ensemble(
+            10, 1, encoders=np.ones((10, 1)), gain=np.ones(10), bias=np.ones(10)
+        )
         nengo.Connection(inp, ens, synapse=None)
 
-        sig_p = nengo.Probe(ens.neurons, 'input', synapse=0)
+        sig_p = nengo.Probe(ens.neurons, "input", synapse=0)
 
     with Simulator(net) as sim:
         sim.run(0.003)

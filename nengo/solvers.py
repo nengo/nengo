@@ -6,10 +6,12 @@ import time
 import numpy as np
 
 import nengo.utils.least_squares_solvers as lstsq
-from nengo.params import (
-    BoolParam, FrozenObject, NdarrayParam, NumberParam, Parameter)
+from nengo.params import BoolParam, FrozenObject, NdarrayParam, NumberParam, Parameter
 from nengo.utils.least_squares_solvers import (
-    format_system, rmses, LeastSquaresSolverParam)
+    format_system,
+    rmses,
+    LeastSquaresSolverParam,
+)
 from nengo.utils.magic import DocstringInheritor
 
 logger = logging.getLogger(__name__)
@@ -28,7 +30,7 @@ class Solver(FrozenObject, metaclass=DocstringInheritor):
 
     compositional = True
 
-    weights = BoolParam('weights')
+    weights = BoolParam("weights")
 
     def __init__(self, weights=False):
         super().__init__()
@@ -85,7 +87,7 @@ class Lstsq(Solver):
         If False, solve for decoders. If True, solve for weights.
     """
 
-    rcond = NumberParam('noise', low=0)
+    rcond = NumberParam("noise", low=0)
 
     def __init__(self, weights=False, rcond=0.01):
         super().__init__(weights=weights)
@@ -95,18 +97,23 @@ class Lstsq(Solver):
         tstart = time.time()
         X, residuals2, rank, s = np.linalg.lstsq(A, Y, rcond=self.rcond)
         t = time.time() - tstart
-        return X, {'rmses': rmses(A, X, Y),
-                   'residuals': np.sqrt(residuals2),
-                   'rank': rank,
-                   'singular_values': s,
-                   'time': t}
+        return (
+            X,
+            {
+                "rmses": rmses(A, X, Y),
+                "residuals": np.sqrt(residuals2),
+                "rank": rank,
+                "singular_values": s,
+                "time": t,
+            },
+        )
 
 
 class _LstsqNoiseSolver(Solver):
     """Base class for least-squares solvers with noise."""
 
-    noise = NumberParam('noise', low=0)
-    solver = LeastSquaresSolverParam('solver')
+    noise = NumberParam("noise", low=0)
+    solver = LeastSquaresSolverParam("solver")
 
     def __init__(self, weights=False, noise=0.1, solver=lstsq.Cholesky()):
         """
@@ -141,7 +148,7 @@ class LstsqNoise(_LstsqNoiseSolver):
         sigma = self.noise * A.max()
         A = A + rng.normal(scale=sigma, size=A.shape)
         X, info = self.solver(A, Y, 0, rng=rng)
-        info['time'] = time.time() - tstart
+        info["time"] = time.time() - tstart
         return X, info
 
 
@@ -152,15 +159,15 @@ class LstsqMultNoise(_LstsqNoiseSolver):
         tstart = time.time()
         A = A + rng.normal(scale=self.noise, size=A.shape) * A
         X, info = self.solver(A, Y, 0, rng=rng)
-        info['time'] = time.time() - tstart
+        info["time"] = time.time() - tstart
         return X, info
 
 
 class _LstsqL2Solver(Solver):
     """Base class for L2-regularized least-squares solvers."""
 
-    reg = NumberParam('reg', low=0)
-    solver = LeastSquaresSolverParam('solver')
+    reg = NumberParam("reg", low=0)
+    solver = LeastSquaresSolverParam("solver")
 
     def __init__(self, weights=False, reg=0.1, solver=lstsq.Cholesky()):
         """
@@ -194,7 +201,7 @@ class LstsqL2(_LstsqL2Solver):
         tstart = time.time()
         sigma = self.reg * A.max()
         X, info = self.solver(A, Y, sigma, rng=rng)
-        info['time'] = time.time() - tstart
+        info["time"] = time.time() - tstart
         return X, info
 
 
@@ -213,7 +220,7 @@ class LstsqL2nz(_LstsqL2Solver):
         sigma[sigma == 0] = sigma.max()
 
         X, info = self.solver(A, Y, sigma, rng=rng)
-        info['time'] = time.time() - tstart
+        info["time"] = time.time() - tstart
         return X, info
 
 
@@ -225,8 +232,8 @@ class LstsqL1(Solver):
 
     compositional = False
 
-    l1 = NumberParam('l1', low=0)
-    l2 = NumberParam('l2', low=0)
+    l1 = NumberParam("l1", low=0)
+    l2 = NumberParam("l2", low=0)
 
     def __init__(self, weights=False, l1=1e-4, l2=1e-6, max_iter=1000):
         """
@@ -255,6 +262,7 @@ class LstsqL1(Solver):
             Maximum number of iterations for the underlying elastic net.
         """
         import sklearn.linear_model  # noqa F401, import to check existence
+
         assert sklearn.linear_model
         super().__init__(weights=weights)
         self.l1 = l1
@@ -263,6 +271,7 @@ class LstsqL1(Solver):
 
     def __call__(self, A, Y, rng=np.random):
         import sklearn.linear_model
+
         tstart = time.time()
         Y = np.array(Y)  # copy since 'fit' may modify Y
 
@@ -271,20 +280,20 @@ class LstsqL1(Solver):
         #   same level of sparsity? esp. with weights? Currently, setting
         #   l1=1e-3 works well with weights when connecting 1D populations
         #   with 100 neurons each.
-        a = self.l1 * A.max()      # L1 regularization
-        b = self.l2 * A.max()**2   # L2 regularization
+        a = self.l1 * A.max()  # L1 regularization
+        b = self.l2 * A.max() ** 2  # L2 regularization
         alpha = a + b
         l1_ratio = a / (a + b)
 
         # --- solve least-squares A * X = Y
         model = sklearn.linear_model.ElasticNet(
-            alpha=alpha, l1_ratio=l1_ratio, fit_intercept=False,
-            max_iter=self.max_iter)
+            alpha=alpha, l1_ratio=l1_ratio, fit_intercept=False, max_iter=self.max_iter
+        )
         model.fit(A, Y)
         X = model.coef_.T
         X.shape = (A.shape[1], Y.shape[1]) if Y.ndim > 1 else (A.shape[1],)
         t = time.time() - tstart
-        infos = {'rmses': rmses(A, X, Y), 'time': t}
+        infos = {"rmses": rmses(A, X, Y), "time": t}
         return X, infos
 
 
@@ -297,12 +306,17 @@ class LstsqDrop(Solver):
 
     compositional = False
 
-    drop = NumberParam('drop', low=0, high=1)
-    solver1 = SolverParam('solver1')
-    solver2 = SolverParam('solver2')
+    drop = NumberParam("drop", low=0, high=1)
+    solver1 = SolverParam("solver1")
+    solver2 = SolverParam("solver2")
 
-    def __init__(self, weights=False, drop=0.25,
-                 solver1=LstsqL2(reg=0.001), solver2=LstsqL2(reg=0.1)):
+    def __init__(
+        self,
+        weights=False,
+        drop=0.25,
+        solver1=LstsqL2(reg=0.001),
+        solver2=LstsqL2(reg=0.1),
+    ):
         """
         Parameters
         ----------
@@ -347,12 +361,10 @@ class LstsqDrop(Solver):
         for i in range(X.shape[1]):
             nonzero = X[:, i] != 0
             if nonzero.sum() > 0:
-                X[nonzero, i], info1 = self.solver2(
-                    A[:, nonzero], Y[:, i], rng=rng)
+                X[nonzero, i], info1 = self.solver2(A[:, nonzero], Y[:, i], rng=rng)
 
         t = time.time() - tstart
-        info = {'rmses': rmses(A, X, Y), 'info0': info0, 'info1': info1,
-                'time': t}
+        info = {"rmses": rmses(A, X, Y), "info0": info0, "info1": info1, "time": t}
         return X if matrix_in or X.shape[1] > 1 else X.ravel(), info
 
 
@@ -384,6 +396,7 @@ class Nnls(Solver):
             If False, solve for decoders. If True, solve for weights.
         """
         import scipy.optimize  # import here too to throw error early
+
         assert scipy.optimize
         super().__init__(weights=weights)
 
@@ -400,7 +413,7 @@ class Nnls(Solver):
             X[:, i], residuals[i] = scipy.optimize.nnls(A, Y[:, i])
 
         t = time.time() - tstart
-        info = {'rmses': rmses(A, X, Y), 'residuals': residuals, 'time': t}
+        info = {"rmses": rmses(A, X, Y), "residuals": residuals, "time": t}
         return X if matrix_in or X.shape[1] > 1 else X.ravel(), info
 
 
@@ -414,7 +427,7 @@ class NnlsL2(Nnls):
     negative intercepts will never be silent, affecting output accuracy.
     """
 
-    reg = NumberParam('reg', low=0)
+    reg = NumberParam("reg", low=0)
 
     def __init__(self, weights=False, reg=0.1):
         """
@@ -438,7 +451,7 @@ class NnlsL2(Nnls):
         super().__init__(weights=weights)
         self.reg = reg
 
-    def _solve(self, A, Y, sigma=0.):
+    def _solve(self, A, Y, sigma=0.0):
         import scipy.optimize
 
         tstart = time.time()
@@ -447,7 +460,7 @@ class NnlsL2(Nnls):
 
         # form Gram matrix so we can add regularization
         GA = np.dot(A.T, A)
-        np.fill_diagonal(GA, GA.diagonal() + A.shape[0] * sigma**2)
+        np.fill_diagonal(GA, GA.diagonal() + A.shape[0] * sigma ** 2)
         GY = np.dot(A.T, Y.clip(0, None))
         # ^ TODO: why is it better if we clip Y to be positive here?
 
@@ -457,7 +470,7 @@ class NnlsL2(Nnls):
             X[:, i], residuals[i] = scipy.optimize.nnls(GA, GY[:, i])
 
         t = time.time() - tstart
-        info = {'rmses': rmses(A, X, Y), 'residuals': residuals, 'time': t}
+        info = {"rmses": rmses(A, X, Y), "residuals": residuals, "time": t}
         return X if matrix_in or X.shape[1] > 1 else X.ravel(), info
 
     def __call__(self, A, Y, rng=np.random):

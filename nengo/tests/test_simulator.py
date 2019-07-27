@@ -31,7 +31,7 @@ def test_steps(RefSimulator):
         assert np.isscalar(sim.time)
 
 
-@pytest.mark.parametrize('bits', ["16", "32", "64"])
+@pytest.mark.parametrize("bits", ["16", "32", "64"])
 def test_dtype(RefSimulator, request, seed, bits):
     # Ensure dtype is set back to default after the test, even if it fails
     request.addfinalizer(lambda: rc.set("precision", "bits", "64"))
@@ -50,8 +50,7 @@ def test_dtype(RefSimulator, request, seed, bits):
         sim.step()
 
         for k, v in sim.signals.items():
-            assert v.dtype in (
-                float_dtype, int_dtype), "Signal '%s' wrong dtype" % k
+            assert v.dtype in (float_dtype, int_dtype), "Signal '%s' wrong dtype" % k
 
         objs = (obj for obj in model.all_objects if sim.data[obj] is not None)
         for obj in objs:
@@ -74,7 +73,7 @@ def test_trange_with_probes(Simulator):
     periods = dt * np.arange(1, 21)
     with m:
         u = nengo.Node(output=np.sin)
-        probes = [nengo.Probe(u, sample_every=p, synapse=5*p) for p in periods]
+        probes = [nengo.Probe(u, sample_every=p, synapse=5 * p) for p in periods]
 
     with Simulator(m, dt=dt) as sim:
         sim.run(0.333)
@@ -84,8 +83,7 @@ def test_trange_with_probes(Simulator):
 
 def test_probedict():
     """Tests simulator.ProbeDict's implementation."""
-    raw = {"scalar": 5,
-           "list": [2, 4, 6]}
+    raw = {"scalar": 5, "list": [2, 4, 6]}
     probedict = nengo.simulator.ProbeDict(raw)
     assert np.all(probedict["scalar"] == np.asarray(raw["scalar"]))
     assert np.all(probedict.get("list") == np.asarray(raw.get("list")))
@@ -112,7 +110,7 @@ def test_close_function(Simulator):
     sim = Simulator(m)
     sim.close()
     with pytest.raises(SimulatorClosed):
-        sim.run(1.)
+        sim.run(1.0)
     with pytest.raises(SimulatorClosed):
         sim.reset()
 
@@ -126,7 +124,7 @@ def test_close_context(Simulator):
         sim.run(0.01)
 
     with pytest.raises(SimulatorClosed):
-        sim.run(1.)
+        sim.run(1.0)
     with pytest.raises(SimulatorClosed):
         sim.reset()
 
@@ -166,8 +164,7 @@ def test_warn_on_opensim_del(Simulator):
 
 
 def test_entry_point(Simulator):
-    sims = [ep.load() for ep in
-            pkg_resources.iter_entry_points(group='nengo.backends')]
+    sims = [ep.load() for ep in pkg_resources.iter_entry_points(group="nengo.backends")]
     assert Simulator in sims
 
 
@@ -220,8 +217,7 @@ def test_seeding(RefSimulator, logger):
 
     def compare_objs(obj1, obj2, attrs, equal=True):
         for attr in attrs:
-            check = (np.allclose(getattr(obj1, attr), getattr(obj2, attr))
-                     == equal)
+            check = np.allclose(getattr(obj1, attr), getattr(obj2, attr)) == equal
             if not check:
                 logger.info("%s: %s", attr, getattr(obj1, attr))
                 logger.info("%s: %s", attr, getattr(obj2, attr))
@@ -235,7 +231,7 @@ def test_seeding(RefSimulator, logger):
     compare_objs(As[0], As[2], ens_attrs, equal=False)
     compare_objs(Bs[0], Bs[2], ens_attrs, equal=False)
 
-    conn_attrs = ('eval_points', 'weights')
+    conn_attrs = ("eval_points", "weights")
     Cs = [mi[C] for mi in [m1, m2, m3]]
     compare_objs(Cs[0], Cs[1], conn_attrs)
     compare_objs(Cs[0], Cs[2], conn_attrs, equal=False)
@@ -246,14 +242,14 @@ def test_hierarchical_seeding():
 
     def create(make_extra, seed):
         objs = []
-        with nengo.Network(seed=seed, label='n1') as model:
-            objs.append(nengo.Ensemble(10, 1, label='e1'))
-            with nengo.Network(label='n2'):
-                objs.append(nengo.Ensemble(10, 1, label='e2'))
+        with nengo.Network(seed=seed, label="n1") as model:
+            objs.append(nengo.Ensemble(10, 1, label="e1"))
+            with nengo.Network(label="n2"):
+                objs.append(nengo.Ensemble(10, 1, label="e2"))
                 if make_extra:
                     # This shouldn't affect any seeds
-                    objs.append(nengo.Ensemble(10, 1, label='e3'))
-            objs.append(nengo.Ensemble(10, 1, label='e4'))
+                    objs.append(nengo.Ensemble(10, 1, label="e3"))
+            objs.append(nengo.Ensemble(10, 1, label="e4"))
         return model, objs
 
     same1, same1objs = create(False, 9)
@@ -362,11 +358,11 @@ def test_simulator_progress_bars(RefSimulator):
     build_invariants = ProgressBarInvariants()
     with RefSimulator(model, progress_bar=build_invariants) as sim:
         run_invariants = ProgressBarInvariants()
-        sim.run(.01, progress_bar=run_invariants)
+        sim.run(0.01, progress_bar=run_invariants)
         assert run_invariants.n_steps == run_invariants.max_steps
 
 
-@pytest.mark.parametrize('sample_every', (0.001, 0.0005, 0.002, 0.0015))
+@pytest.mark.parametrize("sample_every", (0.001, 0.0005, 0.002, 0.0015))
 def test_sample_every_trange(Simulator, sample_every):
     with nengo.Network() as model:
         t = nengo.Node(lambda t: t)
@@ -378,7 +374,5 @@ def test_sample_every_trange(Simulator, sample_every):
     with pytest.raises(ValidationError):
         sim.trange(dt=sample_every, sample_every=sample_every)
     with pytest.warns(UserWarning):
-        assert np.allclose(
-            sim.trange(dt=sample_every), np.squeeze(sim.data[p]))
-    assert np.allclose(
-        sim.trange(sample_every=sample_every), np.squeeze(sim.data[p]))
+        assert np.allclose(sim.trange(dt=sample_every), np.squeeze(sim.data[p]))
+    assert np.allclose(sim.trange(sample_every=sample_every), np.squeeze(sim.data[p]))

@@ -10,14 +10,14 @@ def test_default():
     """A default value is immediately available, but can be overridden."""
 
     class Test:
-        p = params.Parameter('p', default=1)
+        p = params.Parameter("p", default=1)
 
     inst1 = Test()
     inst2 = Test()
     assert inst1.p == 1
     assert inst2.p == 1
-    inst1.p = 'a'
-    assert inst1.p == 'a'
+    inst1.p = "a"
+    assert inst1.p == "a"
     assert inst2.p == 1
 
 
@@ -25,8 +25,8 @@ def test_optional():
     """Optional Parameters can bet set to None."""
 
     class Test:
-        m = params.Parameter('m', default=1, optional=False)
-        o = params.Parameter('o', default=1, optional=True)
+        m = params.Parameter("m", default=1, optional=False)
+        o = params.Parameter("o", default=1, optional=True)
 
     inst = Test()
     with pytest.raises(ValidationError):
@@ -40,28 +40,28 @@ def test_readonly():
     """Readonly Parameters can only be set once."""
 
     class Test:
-        p = params.Parameter('p', default=1, readonly=False)
-        r = params.Parameter('r', default=None, readonly=True)
+        p = params.Parameter("p", default=1, readonly=False)
+        r = params.Parameter("r", default=None, readonly=True)
 
     inst = Test()
     assert inst.p == 1
     assert inst.r is None
     inst.p = 2
-    inst.r = 'set'
+    inst.r = "set"
     assert inst.p == 2
-    assert inst.r == 'set'
+    assert inst.r == "set"
     inst.p = 3
     with pytest.raises(ValidationError):
-        inst.r = 'set again'
+        inst.r = "set again"
     assert inst.p == 3
-    assert inst.r == 'set'
+    assert inst.r == "set"
 
 
 def test_obsoleteparam():
     """ObsoleteParams must not be set."""
 
     class Test:
-        ab = params.ObsoleteParam('ab', "msg")
+        ab = params.ObsoleteParam("ab", "msg")
 
     inst = Test()
 
@@ -79,7 +79,7 @@ def test_boolparam():
     """BoolParams can only be booleans."""
 
     class Test:
-        bp = params.BoolParam('bp', default=False)
+        bp = params.BoolParam("bp", default=False)
 
     inst = Test()
     assert not inst.bp
@@ -93,10 +93,10 @@ def test_numberparam():
     """NumberParams can be numbers constrained to a range."""
 
     class Test:
-        np = params.NumberParam('np', default=1.0)
-        np_l = params.NumberParam('np_l', default=1.0, low=0.0)
-        np_h = params.NumberParam('np_h', default=-1.0, high=0.0)
-        np_lh = params.NumberParam('np_lh', default=1.0, low=-1.0, high=1.0)
+        np = params.NumberParam("np", default=1.0)
+        np_l = params.NumberParam("np_l", default=1.0, low=0.0)
+        np_h = params.NumberParam("np_h", default=-1.0, high=0.0)
+        np_lh = params.NumberParam("np_lh", default=1.0, low=-1.0, high=1.0)
 
     inst = Test()
 
@@ -138,13 +138,14 @@ def test_numberparam():
 
     # must be a number!
     with pytest.raises(ValidationError):
-        inst.np = 'a'
+        inst.np = "a"
 
 
 def test_intparam():
     """IntParams are like NumberParams but must be an int."""
+
     class Test:
-        ip = params.IntParam('ip', default=1, low=0, high=2)
+        ip = params.IntParam("ip", default=1, low=0, high=2)
 
     inst = Test()
     assert inst.ip == 1
@@ -153,13 +154,14 @@ def test_intparam():
     with pytest.raises(ValidationError):
         inst.ip = 3
     with pytest.raises(ValidationError):
-        inst.ip = 'a'
+        inst.ip = "a"
 
 
 def test_stringparam():
     """StringParams must be strings."""
+
     class Test:
-        sp = params.StringParam('sp', default="Hi")
+        sp = params.StringParam("sp", default="Hi")
 
     inst = Test()
     assert inst.sp == "Hi"
@@ -178,26 +180,26 @@ def test_stringparam():
 
 def test_enumparam():
     class Test:
-        ep = params.EnumParam('ep', default='a', values=('a', 'b', 'c'))
+        ep = params.EnumParam("ep", default="a", values=("a", "b", "c"))
 
     inst = Test()
-    assert inst.ep == 'a'
-    inst.ep = 'b'
-    assert inst.ep == 'b'
-    inst.ep = 'c'
-    assert inst.ep == 'c'
-    inst.ep = 'A'
-    assert inst.ep == 'a'
+    assert inst.ep == "a"
+    inst.ep = "b"
+    assert inst.ep == "b"
+    inst.ep = "c"
+    assert inst.ep == "c"
+    inst.ep = "A"
+    assert inst.ep == "a"
     with pytest.raises(ValueError):
-        inst.ep = 'd'
+        inst.ep = "d"
     with pytest.raises(ValueError):
         inst.ep = 3
 
 
 def test_tupleparam():
     class Test:
-        tp = params.TupleParam('tp', default=(0, 0, 0))
-        tp3 = params.TupleParam('tp3', default=(0, 0, 0), length=3)
+        tp = params.TupleParam("tp", default=(0, 0, 0))
+        tp3 = params.TupleParam("tp3", default=(0, 0, 0), length=3)
 
     inst = Test()
     inst.tp = (1, 2, 3)
@@ -214,8 +216,8 @@ def test_tupleparam():
 
 def test_shapeparam():
     class Test:
-        sp2 = params.ShapeParam('sp2', default=(0, 0), length=2, low=None)
-        sp3 = params.ShapeParam('sp3', default=(0, 0, 0), length=3)
+        sp2 = params.ShapeParam("sp2", default=(0, 0), length=2, low=None)
+        sp3 = params.ShapeParam("sp3", default=(0, 0, 0), length=3)
 
     inst = Test()
     assert inst.sp2 == (0, 0)
@@ -234,28 +236,30 @@ def test_shapeparam():
 
 def test_dictparam():
     """DictParams must be dictionaries."""
+
     class Test:
-        dp = params.DictParam('dp', default={'a': 1})
+        dp = params.DictParam("dp", default={"a": 1})
 
     inst1 = Test()
-    assert inst1.dp == {'a': 1}
-    inst1.dp['b'] = 2
+    assert inst1.dp == {"a": 1}
+    inst1.dp["b"] = 2
 
     # The default dict is mutable -- other instances will get the same dict
     inst2 = Test()
-    assert inst2.dp == {'a': 1, 'b': 2}
+    assert inst2.dp == {"a": 1, "b": 2}
 
     # Non-dicts no good
     with pytest.raises(ValidationError):
-        inst2.dp = [('a', 1), ('b', 2)]
+        inst2.dp = [("a", 1), ("b", 2)]
 
 
 def test_ndarrayparam():
     """NdarrayParams must be able to be made into float ndarrays."""
+
     class Test:
-        ndp = params.NdarrayParam('ndp', default=None, shape=('*',))
-        ella = params.NdarrayParam('ella', default=None, shape=(3, '...'))
-        ellb = params.NdarrayParam('ellb', default=None, shape=(3, '...', 2))
+        ndp = params.NdarrayParam("ndp", default=None, shape=("*",))
+        ella = params.NdarrayParam("ella", default=None, shape=(3, "..."))
+        ellb = params.NdarrayParam("ellb", default=None, shape=(3, "...", 2))
 
     inst = Test()
     inst.ndp = np.ones(10)
@@ -268,7 +272,7 @@ def test_ndarrayparam():
         inst.ndp = np.ones((1, 1))
     # Must be convertible to float array
     with pytest.raises(ValidationError):
-        inst.ndp = 'a'
+        inst.ndp = "a"
 
     inst.ella = np.ones((3,))
     inst.ella = np.ones((3, 1))
@@ -283,8 +287,9 @@ def test_ndarrayparam():
 
 def test_ndarrayparam_sample_shape():
     """sample_shape dictates the shape of the sample that can be set."""
+
     class Test:
-        ndp = params.NdarrayParam('ndp', default=None, shape=[10, 'd2'])
+        ndp = params.NdarrayParam("ndp", default=None, shape=[10, "d2"])
         d2 = 3
 
     inst = Test()
@@ -298,8 +303,9 @@ def test_ndarrayparam_sample_shape():
 
 def test_functionparam():
     """FunctionParam must be a function, and accept one scalar argument."""
+
     class Test:
-        fp = params.FunctionParam('fp', default=None)
+        fp = params.FunctionParam("fp", default=None)
 
     inst = Test()
     assert inst.fp is None
@@ -316,11 +322,11 @@ def test_functionparam():
 
 def test_iter_params_does_not_list_obsolete_params():
     class Test:
-        p1 = params.IntParam('p1')
-        p2 = params.IntParam('p2')
-        obsolete = params.ObsoleteParam('obsolete', 'not included in params')
+        p1 = params.IntParam("p1")
+        p2 = params.IntParam("p2")
+        obsolete = params.ObsoleteParam("obsolete", "not included in params")
 
-    assert set(params.iter_params(Test())) == {'p1', 'p2'}
+    assert set(params.iter_params(Test())) == {"p1", "p2"}
 
 
 @pytest.mark.filterwarnings("ignore:'Node.size_out' is being overwritten")
@@ -330,18 +336,21 @@ def test_configure_all_nengo_parameters():
     conv_func = {
         params.BoolParam: lambda attr: not attr.default,
         params.NumberParam: lambda attr: (
-            1 if attr.default is None else attr.default + 1),
+            1 if attr.default is None else attr.default + 1
+        ),
         params.StringParam: lambda attr: "abc",
         params.NdarrayParam: lambda attr: np.zeros([1] * len(attr.shape)),
         nengo.base.ProcessParam: lambda attr: nengo.processes.WhiteNoise(),
         nengo.node.OutputParam: lambda attr: lambda t, x=0: x + 1,
         nengo.synapses.SynapseParam: lambda attr: nengo.synapses.Alpha(0.1),
         nengo.solvers.SolverParam: lambda attr: nengo.solvers.LstsqL2nz(
-            weights=isinstance(attr, nengo.connection.ConnectionSolverParam)),
+            weights=isinstance(attr, nengo.connection.ConnectionSolverParam)
+        ),
         nengo.connection.ConnectionFunctionParam: lambda attr: lambda x: x + 1,
         nengo.connection.ConnectionTransformParam: lambda attr: 2.0,
         nengo.learning_rules.LearningRuleTypeParam: (
-            lambda attr: nengo.learning_rules.PES()),
+            lambda attr: nengo.learning_rules.PES()
+        ),
         nengo.neurons.NeuronTypeParam: lambda attr: nengo.AdaptiveLIF(),
     }
 
@@ -349,8 +358,10 @@ def test_configure_all_nengo_parameters():
 
     for obj in net.objects:
         for name, attr in obj.__dict__.items():
-            if (not isinstance(attr, params.Parameter)
-                    or attr.default is params.Unconfigurable):
+            if (
+                not isinstance(attr, params.Parameter)
+                or attr.default is params.Unconfigurable
+            ):
                 continue
 
             for param, func in conv_func.items():
@@ -375,8 +386,8 @@ def test_configure_all_nengo_parameters():
 
 def test_frozenobject_reprs():
     class TestFO(params.FrozenObject):
-        a = params.NumberParam('a', default=3, readonly=True)
-        b = params.NumberParam('b')
+        a = params.NumberParam("a", default=3, readonly=True)
+        b = params.NumberParam("b")
 
         def __init__(self, a, b=4):
             super().__init__()
@@ -392,7 +403,7 @@ def test_frozenobject_reprs():
 
 def test_frozenobject_missing_arg_repr():
     class TestFO(params.FrozenObject):
-        a = params.NumberParam('a', default=3, readonly=True)
+        a = params.NumberParam("a", default=3, readonly=True)
 
         def __init__(self, a, b=4):
             super().__init__()

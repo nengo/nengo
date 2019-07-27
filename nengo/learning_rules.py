@@ -15,14 +15,17 @@ from nengo.utils.numpy import is_iterable
 
 
 class LearningRuleTypeSizeInParam(IntParam):
-    valid_strings = ('pre', 'post', 'mid', 'pre_state', 'post_state')
+    valid_strings = ("pre", "post", "mid", "pre_state", "post_state")
 
     def coerce(self, instance, size_in):
         if isinstance(size_in, str):
             if size_in not in self.valid_strings:
                 raise ValidationError(
                     "%r is not a valid string value (must be one of %s)"
-                    % (size_in, self.strings), attr=self.name, obj=instance)
+                    % (size_in, self.strings),
+                    attr=self.name,
+                    obj=instance,
+                )
             return size_in
         else:
             return super().coerce(instance, size_in)  # IntParam validation
@@ -78,9 +81,8 @@ class LearningRuleType(FrozenObject, SupportDefaultsMixin):
     modifies = None
     probeable = ()
 
-    learning_rate = NumberParam(
-        'learning_rate', low=0, readonly=True, default=1e-6)
-    size_in = LearningRuleTypeSizeInParam('size_in', low=0)
+    learning_rate = NumberParam("learning_rate", low=0, readonly=True, default=1e-6)
+    size_in = LearningRuleTypeSizeInParam("size_in", low=0)
 
     def __init__(self, learning_rate=Default, size_in=0):
         super().__init__()
@@ -93,17 +95,16 @@ class LearningRuleType(FrozenObject, SupportDefaultsMixin):
             value = getattr(self, name)
             if value != default:
                 r.append("%s=%r" % (name, value))
-        return '%s(%s)' % (type(self).__name__, ", ".join(r))
+        return "%s(%s)" % (type(self).__name__, ", ".join(r))
 
     @property
     def _argdefaults(self):
-        return ('learning_rate', LearningRuleType.learning_rate.default),
+        return (("learning_rate", LearningRuleType.learning_rate.default),)
 
 
 def _deprecated_tau(old_attr, new_attr):
     def get_tau(self):
-        return (None if getattr(self, new_attr) is None else
-                getattr(self, new_attr).tau)
+        return None if getattr(self, new_attr) is None else getattr(self, new_attr).tau
 
     def set_tau(self, val):
         if val is Unconfigurable:
@@ -111,9 +112,10 @@ def _deprecated_tau(old_attr, new_attr):
 
         since = "v2.8.0"
         url = "https://github.com/nengo/nengo/pull/1095"
-        msg = ("%s has been deprecated, use %s instead (since %s).\n"
-               "For more information, please visit %s" % (
-                   old_attr, new_attr, since, url))
+        msg = (
+            "%s has been deprecated, use %s instead (since %s).\n"
+            "For more information, please visit %s" % (old_attr, new_attr, since, url)
+        )
         warnings.warn(msg, DeprecationWarning)
 
         setattr(self, new_attr, None if val is None else Lowpass(val))
@@ -142,22 +144,23 @@ class PES(LearningRuleType):
         Synapse model used to filter the pre-synaptic activities.
     """
 
-    modifies = 'decoders'
-    probeable = ('error', 'activities', 'delta')
+    modifies = "decoders"
+    probeable = ("error", "activities", "delta")
 
-    learning_rate = NumberParam(
-        'learning_rate', low=0, readonly=True, default=1e-4)
-    pre_synapse = SynapseParam(
-        'pre_synapse', default=Lowpass(tau=0.005), readonly=True)
+    learning_rate = NumberParam("learning_rate", low=0, readonly=True, default=1e-4)
+    pre_synapse = SynapseParam("pre_synapse", default=Lowpass(tau=0.005), readonly=True)
 
     pre_tau = _deprecated_tau("pre_tau", "pre_synapse")
 
-    def __init__(self, learning_rate=Default, pre_synapse=Default,
-                 pre_tau=Unconfigurable):
-        super().__init__(learning_rate, size_in='post_state')
+    def __init__(
+        self, learning_rate=Default, pre_synapse=Default, pre_tau=Unconfigurable
+    ):
+        super().__init__(learning_rate, size_in="post_state")
         if learning_rate is not Default and learning_rate >= 1.0:
-            warnings.warn("This learning rate is very high, and can result "
-                          "in floating point errors from too much current.")
+            warnings.warn(
+                "This learning rate is very high, and can result "
+                "in floating point errors from too much current."
+            )
 
         if pre_tau is Unconfigurable:
             self.pre_synapse = pre_synapse
@@ -166,8 +169,10 @@ class PES(LearningRuleType):
 
     @property
     def _argdefaults(self):
-        return (('learning_rate', PES.learning_rate.default),
-                ('pre_synapse', PES.pre_synapse.default))
+        return (
+            ("learning_rate", PES.learning_rate.default),
+            ("pre_synapse", PES.pre_synapse.default),
+        )
 
 
 class BCM(LearningRuleType):
@@ -211,26 +216,30 @@ class BCM(LearningRuleType):
         Synapse model used to filter the theta signal.
     """
 
-    modifies = 'weights'
-    probeable = ('theta', 'pre_filtered', 'post_filtered', 'delta')
+    modifies = "weights"
+    probeable = ("theta", "pre_filtered", "post_filtered", "delta")
 
-    learning_rate = NumberParam(
-        'learning_rate', low=0, readonly=True, default=1e-9)
-    pre_synapse = SynapseParam(
-        'pre_synapse', default=Lowpass(tau=0.005), readonly=True)
-    post_synapse = SynapseParam(
-        'post_synapse', default=None, readonly=True)
+    learning_rate = NumberParam("learning_rate", low=0, readonly=True, default=1e-9)
+    pre_synapse = SynapseParam("pre_synapse", default=Lowpass(tau=0.005), readonly=True)
+    post_synapse = SynapseParam("post_synapse", default=None, readonly=True)
     theta_synapse = SynapseParam(
-        'theta_synapse', default=Lowpass(tau=1.0), readonly=True)
+        "theta_synapse", default=Lowpass(tau=1.0), readonly=True
+    )
 
     pre_tau = _deprecated_tau("pre_tau", "pre_synapse")
     post_tau = _deprecated_tau("post_tau", "post_synapse")
     theta_tau = _deprecated_tau("theta_tau", "theta_synapse")
 
-    def __init__(self, learning_rate=Default, pre_synapse=Default,
-                 post_synapse=Default, theta_synapse=Default,
-                 pre_tau=Unconfigurable, post_tau=Unconfigurable,
-                 theta_tau=Unconfigurable):
+    def __init__(
+        self,
+        learning_rate=Default,
+        pre_synapse=Default,
+        post_synapse=Default,
+        theta_synapse=Default,
+        pre_tau=Unconfigurable,
+        post_tau=Unconfigurable,
+        theta_tau=Unconfigurable,
+    ):
         super().__init__(learning_rate, size_in=0)
 
         if pre_tau is Unconfigurable:
@@ -239,8 +248,9 @@ class BCM(LearningRuleType):
             self.pre_tau = pre_tau
 
         if post_tau is Unconfigurable:
-            self.post_synapse = (self.pre_synapse if post_synapse is Default
-                                 else post_synapse)
+            self.post_synapse = (
+                self.pre_synapse if post_synapse is Default else post_synapse
+            )
         else:
             self.post_tau = post_tau
 
@@ -251,10 +261,12 @@ class BCM(LearningRuleType):
 
     @property
     def _argdefaults(self):
-        return (('learning_rate', BCM.learning_rate.default),
-                ('pre_synapse', BCM.pre_synapse.default),
-                ('post_synapse', self.pre_synapse),
-                ('theta_synapse', BCM.theta_synapse.default))
+        return (
+            ("learning_rate", BCM.learning_rate.default),
+            ("pre_synapse", BCM.pre_synapse.default),
+            ("post_synapse", self.pre_synapse),
+            ("theta_synapse", BCM.theta_synapse.default),
+        )
 
 
 class Oja(LearningRuleType):
@@ -299,23 +311,26 @@ class Oja(LearningRuleType):
         Synapse model used to filter the pre-synaptic activities.
     """
 
-    modifies = 'weights'
-    probeable = ('pre_filtered', 'post_filtered', 'delta')
+    modifies = "weights"
+    probeable = ("pre_filtered", "post_filtered", "delta")
 
-    learning_rate = NumberParam(
-        'learning_rate', low=0, readonly=True, default=1e-6)
-    pre_synapse = SynapseParam(
-        'pre_synapse', default=Lowpass(tau=0.005), readonly=True)
-    post_synapse = SynapseParam(
-        'post_synapse', default=None, readonly=True)
-    beta = NumberParam('beta', low=0, readonly=True, default=1.0)
+    learning_rate = NumberParam("learning_rate", low=0, readonly=True, default=1e-6)
+    pre_synapse = SynapseParam("pre_synapse", default=Lowpass(tau=0.005), readonly=True)
+    post_synapse = SynapseParam("post_synapse", default=None, readonly=True)
+    beta = NumberParam("beta", low=0, readonly=True, default=1.0)
 
     pre_tau = _deprecated_tau("pre_tau", "pre_synapse")
     post_tau = _deprecated_tau("post_tau", "post_synapse")
 
-    def __init__(self, learning_rate=Default, pre_synapse=Default,
-                 post_synapse=Default, beta=Default,
-                 pre_tau=Unconfigurable, post_tau=Unconfigurable):
+    def __init__(
+        self,
+        learning_rate=Default,
+        pre_synapse=Default,
+        post_synapse=Default,
+        beta=Default,
+        pre_tau=Unconfigurable,
+        post_tau=Unconfigurable,
+    ):
         super().__init__(learning_rate, size_in=0)
 
         self.beta = beta
@@ -326,17 +341,20 @@ class Oja(LearningRuleType):
             self.pre_tau = pre_tau
 
         if post_tau is Unconfigurable:
-            self.post_synapse = (self.pre_synapse if post_synapse is Default
-                                 else post_synapse)
+            self.post_synapse = (
+                self.pre_synapse if post_synapse is Default else post_synapse
+            )
         else:
             self.post_tau = post_tau
 
     @property
     def _argdefaults(self):
-        return (('learning_rate', Oja.learning_rate.default),
-                ('pre_synapse', Oja.pre_synapse.default),
-                ('post_synapse', self.pre_synapse),
-                ('beta', Oja.beta.default))
+        return (
+            ("learning_rate", Oja.learning_rate.default),
+            ("pre_synapse", Oja.pre_synapse.default),
+            ("post_synapse", self.pre_synapse),
+            ("beta", Oja.beta.default),
+        )
 
 
 class Voja(LearningRuleType):
@@ -365,18 +383,19 @@ class Voja(LearningRuleType):
         Synapse model used to filter the post-synaptic activities.
     """
 
-    modifies = 'encoders'
-    probeable = ('post_filtered', 'scaled_encoders', 'delta')
+    modifies = "encoders"
+    probeable = ("post_filtered", "scaled_encoders", "delta")
 
-    learning_rate = NumberParam(
-        'learning_rate', low=0, readonly=True, default=1e-2)
+    learning_rate = NumberParam("learning_rate", low=0, readonly=True, default=1e-2)
     post_synapse = SynapseParam(
-        'post_synapse', default=Lowpass(tau=0.005), readonly=True)
+        "post_synapse", default=Lowpass(tau=0.005), readonly=True
+    )
 
     post_tau = _deprecated_tau("post_tau", "post_synapse")
 
-    def __init__(self, learning_rate=Default, post_synapse=Default,
-                 post_tau=Unconfigurable):
+    def __init__(
+        self, learning_rate=Default, post_synapse=Default, post_tau=Unconfigurable
+    ):
         super().__init__(learning_rate, size_in=1)
 
         if post_tau is Unconfigurable:
@@ -386,8 +405,10 @@ class Voja(LearningRuleType):
 
     @property
     def _argdefaults(self):
-        return (('learning_rate', Voja.learning_rate.default),
-                ('post_synapse', Voja.post_synapse.default))
+        return (
+            ("learning_rate", Voja.learning_rate.default),
+            ("post_synapse", Voja.post_synapse.default),
+        )
 
 
 class LearningRuleTypeParam(Parameter):
@@ -395,14 +416,18 @@ class LearningRuleTypeParam(Parameter):
         if not isinstance(rule, LearningRuleType):
             raise ValidationError(
                 "'%s' must be a learning rule type or a dict or "
-                "list of such types." % rule, attr=self.name, obj=instance)
-        if rule.modifies not in ('encoders', 'decoders', 'weights'):
-            raise ValidationError("Unrecognized target %r" % rule.modifies,
-                                  attr=self.name, obj=instance)
+                "list of such types." % rule,
+                attr=self.name,
+                obj=instance,
+            )
+        if rule.modifies not in ("encoders", "decoders", "weights"):
+            raise ValidationError(
+                "Unrecognized target %r" % rule.modifies, attr=self.name, obj=instance
+            )
 
     def coerce(self, instance, rule):
         if is_iterable(rule):
-            for r in (rule.values() if isinstance(rule, dict) else rule):
+            for r in rule.values() if isinstance(rule, dict) else rule:
                 self.check_rule(instance, r)
         elif rule is not None:
             self.check_rule(instance, rule)

@@ -17,7 +17,8 @@ def assert_is_copy(cp, original):
     for param in iter_params(cp):
         param_inst = getattr(cp, param)
         if isinstance(param_inst, nengo.solvers.Solver) or isinstance(
-                param_inst, nengo.base.NengoObject):
+            param_inst, nengo.base.NengoObject
+        ):
             assert param_inst is getattr(original, param)
         elif is_array_like(param_inst):
             assert np.all(param_inst == getattr(original, param))
@@ -30,7 +31,8 @@ def assert_is_deepcopy(cp, original):
     for param in iter_params(cp):
         param_inst = getattr(cp, param)
         if isinstance(param_inst, nengo.solvers.Solver) or isinstance(
-                param_inst, nengo.base.NengoObject):
+            param_inst, nengo.base.NengoObject
+        ):
             assert_is_copy(param_inst, getattr(original, param))
         elif is_array_like(param_inst):
             assert np.all(param_inst == getattr(original, param))
@@ -40,7 +42,7 @@ def assert_is_deepcopy(cp, original):
 
 def make_ensemble():
     with nengo.Network():
-        e = nengo.Ensemble(10, 1, radius=2.)
+        e = nengo.Ensemble(10, 1, radius=2.0)
     return e
 
 
@@ -61,7 +63,7 @@ def make_connection():
     with nengo.Network():
         e1 = nengo.Ensemble(10, 1)
         e2 = nengo.Ensemble(10, 1)
-        c = nengo.Connection(e1, e2, transform=2.)
+        c = nengo.Connection(e1, e2, transform=2.0)
     return c
 
 
@@ -69,7 +71,7 @@ def make_function_connection():
     with nengo.Network():
         e1 = nengo.Ensemble(10, 1)
         e2 = nengo.Ensemble(10, 1)
-        c = nengo.Connection(e1, e2, function=lambda x: x**2)
+        c = nengo.Connection(e1, e2, function=lambda x: x ** 2)
     return c
 
 
@@ -78,8 +80,7 @@ def make_learning_connection():
     with nengo.Network():
         e1 = nengo.Ensemble(10, 1)
         e2 = nengo.Ensemble(11, 1)
-        c = nengo.Connection(e1.neurons, e2.neurons,
-                             transform=np.ones((11, 10)))
+        c = nengo.Connection(e1.neurons, e2.neurons, transform=np.ones((11, 10)))
         c.learning_rule_type = nengo.PES()
         nengo.Connection(e2, c.learning_rule)
     return c
@@ -89,7 +90,7 @@ def make_network():
     with nengo.Network() as model:
         e1 = nengo.Ensemble(10, 1)
         e2 = nengo.Ensemble(10, 1)
-        nengo.Connection(e1, e2, transform=2.)
+        nengo.Connection(e1, e2, transform=2.0)
         nengo.Probe(e2)
     return model
 
@@ -137,15 +138,15 @@ def test_network_copies_defaults():
 def test_network_copy_allows_independent_manipulation():
     with nengo.Network() as original:
         nengo.Ensemble(10, 1)
-    original.config[nengo.Ensemble].radius = 2.
+    original.config[nengo.Ensemble].radius = 2.0
 
     cp = original.copy()
     with cp:
         e2 = nengo.Ensemble(10, 1)
-    cp.config[nengo.Ensemble].radius = 1.
+    cp.config[nengo.Ensemble].radius = 1.0
 
     assert e2 not in original.ensembles
-    assert original.config[nengo.Ensemble].radius == 2.
+    assert original.config[nengo.Ensemble].radius == 2.0
 
 
 def test_copies_structure():
@@ -229,15 +230,18 @@ def test_pickle_obj_view_in_connection():
     assert cp.connections[1].post.obj is cp.ensembles[0]
 
 
-@pytest.mark.parametrize(('make_f', 'assert_f'), [
-    (make_ensemble, assert_is_copy),
-    (make_probe, assert_is_copy),
-    (make_node, assert_is_copy),
-    (make_connection, assert_is_copy),
-    (make_function_connection, assert_is_copy),
-    (make_learning_connection, assert_is_copy),
-    (make_network, assert_is_copy),
-])
+@pytest.mark.parametrize(
+    ("make_f", "assert_f"),
+    [
+        (make_ensemble, assert_is_copy),
+        (make_probe, assert_is_copy),
+        (make_node, assert_is_copy),
+        (make_connection, assert_is_copy),
+        (make_function_connection, assert_is_copy),
+        (make_learning_connection, assert_is_copy),
+        (make_network, assert_is_copy),
+    ],
+)
 class TestCopy:
     """A basic set of tests that should pass for all objects."""
 
@@ -277,9 +281,9 @@ class TestCopy:
                 copy(original)
 
 
-@pytest.mark.parametrize('make_f', (
-    make_ensemble, make_probe, make_node, make_connection, make_network
-))
+@pytest.mark.parametrize(
+    "make_f", (make_ensemble, make_probe, make_node, make_connection, make_network)
+)
 class TestPickle:
     """A basic set of tests that should pass for all objects."""
 
@@ -296,22 +300,24 @@ class TestPickle:
                 pickle.loads(pkl)
 
 
-@pytest.mark.parametrize('original', [
-    nengo.learning_rules.PES(),
-    nengo.learning_rules.BCM(),
-    nengo.learning_rules.Oja(),
-    nengo.learning_rules.Voja(),
-    nengo.processes.WhiteNoise(),
-    nengo.processes.FilteredNoise(),
-    nengo.processes.BrownNoise(),
-    nengo.processes.PresentInput([.1, .2], 1.),
-    nengo.synapses.LinearFilter([.1, .2], [.3, .4], True),
-    nengo.synapses.Lowpass(0.005),
-    nengo.synapses.Alpha(0.005),
-    nengo.synapses.Triangle(0.005),
-])
+@pytest.mark.parametrize(
+    "original",
+    [
+        nengo.learning_rules.PES(),
+        nengo.learning_rules.BCM(),
+        nengo.learning_rules.Oja(),
+        nengo.learning_rules.Voja(),
+        nengo.processes.WhiteNoise(),
+        nengo.processes.FilteredNoise(),
+        nengo.processes.BrownNoise(),
+        nengo.processes.PresentInput([0.1, 0.2], 1.0),
+        nengo.synapses.LinearFilter([0.1, 0.2], [0.3, 0.4], True),
+        nengo.synapses.Lowpass(0.005),
+        nengo.synapses.Alpha(0.005),
+        nengo.synapses.Triangle(0.005),
+    ],
+)
 class TestFrozenObjectCopies:
-
     def test_copy(self, original):
         assert_is_copy(copy(original), original)
 
@@ -332,14 +338,15 @@ def test_copy_spa(RefSimulator):
 
     # check vocab instance param is set
     for node in cp.all_nodes:
-        if node.label in ['input', 'output']:
+        if node.label in ["input", "output"]:
             assert cp.config[node].vocab is not None
 
 
 def test_copy_instance_params():
     with nengo.Network() as original:
         original.config[nengo.Ensemble].set_param(
-            'test', IntParam('test', optional=True))
+            "test", IntParam("test", optional=True)
+        )
         ens = nengo.Ensemble(10, 1)
         original.config[ens].test = 42
 
@@ -369,9 +376,9 @@ def test_pickle_model(RefSimulator, seed):
     # reload model
     del network, sim, up, ap, bp
     pkl = pickle.loads(pkls)
-    up, ap, bp = pkl['up'], pkl['ap'], pkl['bp']
+    up, ap, bp = pkl["up"], pkl["ap"], pkl["bp"]
 
-    with RefSimulator(None, model=pkl['model'], seed=simseed) as sim:
+    with RefSimulator(None, model=pkl["model"], seed=simseed) as sim:
         sim.run(t_run)
         t1, u1, a1, b1 = sim.trange(), sim.data[up], sim.data[ap], sim.data[bp]
 
@@ -391,10 +398,9 @@ def test_copy_convolution():
     assert x.channels_last == y.channels_last
 
 
-@pytest.mark.parametrize("optimize, dt, progress_bar", [
-    (True, 0.001, False),
-    (False, 0.002, True),
-])
+@pytest.mark.parametrize(
+    "optimize, dt, progress_bar", [(True, 0.001, False), (False, 0.002, True)]
+)
 def test_pickle_sim(RefSimulator, seed, optimize, dt, progress_bar):
     trun0 = 0.5
     trun1 = 0.5
@@ -411,8 +417,9 @@ def test_pickle_sim(RefSimulator, seed, optimize, dt, progress_bar):
         ap = nengo.Probe(a, synapse=0.01)
         bp = nengo.Probe(b, synapse=nengo.Alpha(0.01))
 
-    with RefSimulator(network, seed=simseed, dt=dt, optimize=optimize,
-                      progress_bar=progress) as sim:
+    with RefSimulator(
+        network, seed=simseed, dt=dt, optimize=optimize, progress_bar=progress
+    ) as sim:
         sim.run(trun0)
         pkls = pickle.dumps(dict(sim=sim, up=up, ap=ap, bp=bp))
 
@@ -422,9 +429,9 @@ def test_pickle_sim(RefSimulator, seed, optimize, dt, progress_bar):
     # reload model
     del network, sim, up, ap, bp
     pkl = pickle.loads(pkls)
-    up, ap, bp = pkl['up'], pkl['ap'], pkl['bp']
+    up, ap, bp = pkl["up"], pkl["ap"], pkl["bp"]
 
-    with pkl['sim'] as sim:
+    with pkl["sim"] as sim:
         assert sim.seed == simseed
         assert sim.dt == dt
         assert sim.optimize == optimize

@@ -94,16 +94,20 @@ def piecewise(data):
 
     """
 
-    warnings.warn("The `piecewise` function is deprecated. Use the Piecewise "
-                  "process instead.", DeprecationWarning)
+    warnings.warn(
+        "The `piecewise` function is deprecated. Use the Piecewise " "process instead.",
+        DeprecationWarning,
+    )
 
     # first, sort the data (to simplify finding the right element
     # when calling the function)
     output_length = None  # the dimensionality of the returned values
     for time in data:
         if not is_number(time):
-            raise ValidationError("Keys must be times (floats or ints), not %r"
-                                  % type(time).__name__, attr='data')
+            raise ValidationError(
+                "Keys must be times (floats or ints), not %r" % type(time).__name__,
+                attr="data",
+            )
 
         # figure out the length of this item
         if callable(data[time]):
@@ -114,8 +118,10 @@ def piecewise(data):
 
         # make sure this is the same length as previous items
         if length != output_length and output_length is not None:
-            raise ValidationError("time %g has %d items instead of %d" %
-                                  (time, length, output_length), attr='data')
+            raise ValidationError(
+                "time %g has %d items instead of %d" % (time, length, output_length),
+                attr="data",
+            )
         output_length = length
 
     # make a default output of 0 when t before what was passed
@@ -132,6 +138,7 @@ def piecewise(data):
         if callable(data[out_t]):
             return np.asarray(data[out_t](t))
         return data[out_t]
+
     return piecewise_function
 
 
@@ -147,6 +154,7 @@ class HilbertCurve:
     n : int
         Iterations.
     """
+
     # Implementation based on
     # https://en.wikipedia.org/w/index.php?title=Hilbert_curve&oldid=633637210
 
@@ -158,7 +166,7 @@ class HilbertCurve:
 
         steps = np.arange(self.n_corners)
         for s in 2 ** np.arange(n):
-            r = np.empty_like(self.corners, dtype='int')
+            r = np.empty_like(self.corners, dtype="int")
             r[:, 0] = 1 & (steps // 2)
             r[:, 1] = 1 & (steps ^ r[:, 0])
             self._rot(s, r)
@@ -171,7 +179,7 @@ class HilbertCurve:
         swap = r[:, 1] == 0
         flip = np.all(r == np.array([1, 0]), axis=1)
 
-        self.corners[flip] = (s - 1 - self.corners[flip])
+        self.corners[flip] = s - 1 - self.corners[flip]
         self.corners[swap] = self.corners[swap, ::-1]
 
     def __call__(self, u):
@@ -188,6 +196,9 @@ class HilbertCurve:
             Two-dimensional curve coordinates.
         """
         step = np.asarray(u * len(self.steps))
-        return np.vstack((
-            np.interp(step, self.steps, self.corners[:, 0]),
-            np.interp(step, self.steps, self.corners[:, 1]))).T
+        return np.vstack(
+            (
+                np.interp(step, self.steps, self.corners[:, 0]),
+                np.interp(step, self.steps, self.corners[:, 1]),
+            )
+        ).T

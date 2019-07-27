@@ -3,7 +3,7 @@
 import nengo
 
 
-def ThresholdingEnsembles(threshold, intercept_width=0.15, radius=1.):
+def ThresholdingEnsembles(threshold, intercept_width=0.15, radius=1.0):
     """Configuration preset for a thresholding ensemble.
 
     This preset adjust ensemble parameters for thresholding. The ensemble's
@@ -40,8 +40,8 @@ def ThresholdingEnsembles(threshold, intercept_width=0.15, radius=1.):
     config = nengo.Config(nengo.Ensemble)
     config[nengo.Ensemble].radius = radius
     config[nengo.Ensemble].intercepts = nengo.dists.Exponential(
-        intercept_width, threshold, radius)
+        intercept_width, threshold, radius
+    )
     config[nengo.Ensemble].encoders = nengo.dists.Choice([[1]])
-    config[nengo.Ensemble].eval_points = nengo.dists.Uniform(
-        threshold / radius, 1)
+    config[nengo.Ensemble].eval_points = nengo.dists.Uniform(threshold / radius, 1)
     return config

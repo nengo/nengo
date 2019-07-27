@@ -65,16 +65,16 @@ class SimPES(Operator):
     4. updates ``[delta]``
     """
 
-    def __init__(self, pre_filtered, error, delta, learning_rate,
-                 encoders=None, tag=None):
+    def __init__(
+        self, pre_filtered, error, delta, learning_rate, encoders=None, tag=None
+    ):
         super(SimPES, self).__init__(tag=tag)
 
         self.learning_rate = learning_rate
 
         self.sets = []
         self.incs = []
-        self.reads = [pre_filtered, error] + (
-            [] if encoders is None else [encoders])
+        self.reads = [pre_filtered, error] + ([] if encoders is None else [encoders])
         self.updates = [delta]
 
     @property
@@ -94,8 +94,7 @@ class SimPES(Operator):
         return self.reads[0]
 
     def _descstr(self):
-        return 'pre=%s, error=%s -> %s' % (
-            self.pre_filtered, self.error, self.delta)
+        return "pre=%s, error=%s -> %s" % (self.pre_filtered, self.error, self.delta)
 
     def make_step(self, signals, dt, rng):
         pre_filtered = signals[self.pre_filtered]
@@ -105,14 +104,15 @@ class SimPES(Operator):
         alpha = -self.learning_rate * dt / n_neurons
 
         if self.encoders is None:
+
             def step_simpes():
                 np.outer(alpha * error, pre_filtered, out=delta)
+
         else:
             encoders = signals[self.encoders]
 
             def step_simpes():
-                np.outer(alpha * np.dot(encoders, error), pre_filtered,
-                         out=delta)
+                np.outer(alpha * np.dot(encoders, error), pre_filtered, out=delta)
 
         return step_simpes
 
@@ -169,8 +169,9 @@ class SimBCM(Operator):
     4. updates ``[delta]``
     """
 
-    def __init__(self, pre_filtered, post_filtered, theta, delta,
-                 learning_rate, tag=None):
+    def __init__(
+        self, pre_filtered, post_filtered, theta, delta, learning_rate, tag=None
+    ):
         super().__init__(tag=tag)
         self.learning_rate = learning_rate
 
@@ -196,8 +197,11 @@ class SimBCM(Operator):
         return self.reads[2]
 
     def _descstr(self):
-        return 'pre=%s, post=%s -> %s' % (
-            self.pre_filtered, self.post_filtered, self.delta)
+        return "pre=%s, post=%s -> %s" % (
+            self.pre_filtered,
+            self.post_filtered,
+            self.delta,
+        )
 
     def make_step(self, signals, dt, rng):
         pre_filtered = signals[self.pre_filtered]
@@ -208,7 +212,9 @@ class SimBCM(Operator):
 
         def step_simbcm():
             delta[...] = np.outer(
-                alpha * post_filtered * (post_filtered - theta), pre_filtered)
+                alpha * post_filtered * (post_filtered - theta), pre_filtered
+            )
+
         return step_simbcm
 
 
@@ -269,8 +275,9 @@ class SimOja(Operator):
     4. updates ``[delta]``
     """
 
-    def __init__(self, pre_filtered, post_filtered, weights, delta,
-                 learning_rate, beta, tag=None):
+    def __init__(
+        self, pre_filtered, post_filtered, weights, delta, learning_rate, beta, tag=None
+    ):
         super().__init__(tag=tag)
         self.learning_rate = learning_rate
         self.beta = beta
@@ -297,8 +304,11 @@ class SimOja(Operator):
         return self.reads[2]
 
     def _descstr(self):
-        return 'pre=%s, post=%s -> %s' % (
-            self.pre_filtered, self.post_filtered, self.delta)
+        return "pre=%s, post=%s -> %s" % (
+            self.pre_filtered,
+            self.post_filtered,
+            self.delta,
+        )
 
     def make_step(self, signals, dt, rng):
         weights = signals[self.weights]
@@ -315,6 +325,7 @@ class SimOja(Operator):
 
             # perform update
             delta[...] += np.outer(alpha * post_filtered, pre_filtered)
+
         return step_simoja
 
 
@@ -371,16 +382,24 @@ class SimVoja(Operator):
     4. updates ``[delta]``
     """
 
-    def __init__(self, pre_decoded, post_filtered, scaled_encoders, delta,
-                 scale, learning_signal, learning_rate, tag=None):
+    def __init__(
+        self,
+        pre_decoded,
+        post_filtered,
+        scaled_encoders,
+        delta,
+        scale,
+        learning_signal,
+        learning_rate,
+        tag=None,
+    ):
         super().__init__(tag=tag)
         self.scale = scale
         self.learning_rate = learning_rate
 
         self.sets = []
         self.incs = []
-        self.reads = [
-            pre_decoded, post_filtered, scaled_encoders, learning_signal]
+        self.reads = [pre_decoded, post_filtered, scaled_encoders, learning_signal]
         self.updates = [delta]
 
     @property
@@ -408,8 +427,11 @@ class SimVoja(Operator):
         return self.reads[2]
 
     def _descstr(self):
-        return 'pre=%s, post=%s -> %s' % (
-            self.pre_decoded, self.post_filtered, self.delta)
+        return "pre=%s, post=%s -> %s" % (
+            self.pre_decoded,
+            self.post_filtered,
+            self.delta,
+        )
 
     def make_step(self, signals, dt, rng):
         pre_decoded = signals[self.pre_decoded]
@@ -421,21 +443,28 @@ class SimVoja(Operator):
         scale = self.scale[:, np.newaxis]
 
         def step_simvoja():
-            delta[...] = alpha * learning_signal * (
-                scale * np.outer(post_filtered, pre_decoded)
-                - post_filtered[:, np.newaxis] * scaled_encoders)
+            delta[...] = (
+                alpha
+                * learning_signal
+                * (
+                    scale * np.outer(post_filtered, pre_decoded)
+                    - post_filtered[:, np.newaxis] * scaled_encoders
+                )
+            )
 
         return step_simvoja
 
 
 def get_pre_ens(conn):
-    return (conn.pre_obj if isinstance(conn.pre_obj, Ensemble)
-            else conn.pre_obj.ensemble)
+    return conn.pre_obj if isinstance(conn.pre_obj, Ensemble) else conn.pre_obj.ensemble
 
 
 def get_post_ens(conn):
-    return (conn.post_obj if isinstance(conn.post_obj, (Ensemble, Node))
-            else conn.post_obj.ensemble)
+    return (
+        conn.post_obj
+        if isinstance(conn.post_obj, (Ensemble, Node))
+        else conn.post_obj.ensemble
+    )
 
 
 def build_or_passthrough(model, obj, signal):
@@ -478,23 +507,24 @@ def build_learning_rule(model, rule):
     conn = rule.connection
 
     # --- Set up delta signal
-    if rule.modifies == 'encoders':
+    if rule.modifies == "encoders":
         if not conn.is_decoded:
-            ValueError("The connection must be decoded in order to use "
-                       "encoder learning.")
+            ValueError(
+                "The connection must be decoded in order to use " "encoder learning."
+            )
         post = get_post_ens(conn)
-        target = model.sig[post]['encoders']
+        target = model.sig[post]["encoders"]
         tag = "encoders += delta"
-    elif rule.modifies in ('decoders', 'weights'):
-        target = model.sig[conn]['weights']
+    elif rule.modifies in ("decoders", "weights"):
+        target = model.sig[conn]["weights"]
         tag = "weights += delta"
     else:
         raise BuildError("Unknown target %r" % rule.modifies)
 
-    delta = Signal(shape=target.shape, name='Delta')
+    delta = Signal(shape=target.shape, name="Delta")
 
     model.add_op(Copy(delta, target, inc=True, tag=tag))
-    model.sig[rule]['delta'] = delta
+    model.sig[rule]["delta"] = delta
 
     model.params[rule] = None  # by default, no build-time info to return
     model.build(rule.learning_rule_type, rule)  # updates delta
@@ -523,23 +553,26 @@ def build_bcm(model, bcm, rule):
     """
 
     conn = rule.connection
-    pre_activities = model.sig[get_pre_ens(conn).neurons]['out']
-    post_activities = model.sig[get_post_ens(conn).neurons]['out']
+    pre_activities = model.sig[get_pre_ens(conn).neurons]["out"]
+    post_activities = model.sig[get_post_ens(conn).neurons]["out"]
     pre_filtered = build_or_passthrough(model, bcm.pre_synapse, pre_activities)
-    post_filtered = build_or_passthrough(
-        model, bcm.post_synapse, post_activities)
+    post_filtered = build_or_passthrough(model, bcm.post_synapse, post_activities)
     theta = build_or_passthrough(model, bcm.theta_synapse, post_activities)
 
-    model.add_op(SimBCM(pre_filtered,
-                        post_filtered,
-                        theta,
-                        model.sig[rule]['delta'],
-                        learning_rate=bcm.learning_rate))
+    model.add_op(
+        SimBCM(
+            pre_filtered,
+            post_filtered,
+            theta,
+            model.sig[rule]["delta"],
+            learning_rate=bcm.learning_rate,
+        )
+    )
 
     # expose these for probes
-    model.sig[rule]['theta'] = theta
-    model.sig[rule]['pre_filtered'] = pre_filtered
-    model.sig[rule]['post_filtered'] = post_filtered
+    model.sig[rule]["theta"] = theta
+    model.sig[rule]["pre_filtered"] = pre_filtered
+    model.sig[rule]["post_filtered"] = post_filtered
 
 
 @Builder.register(Oja)
@@ -565,22 +598,25 @@ def build_oja(model, oja, rule):
     """
 
     conn = rule.connection
-    pre_activities = model.sig[get_pre_ens(conn).neurons]['out']
-    post_activities = model.sig[get_post_ens(conn).neurons]['out']
+    pre_activities = model.sig[get_pre_ens(conn).neurons]["out"]
+    post_activities = model.sig[get_post_ens(conn).neurons]["out"]
     pre_filtered = build_or_passthrough(model, oja.pre_synapse, pre_activities)
-    post_filtered = build_or_passthrough(
-        model, oja.post_synapse, post_activities)
+    post_filtered = build_or_passthrough(model, oja.post_synapse, post_activities)
 
-    model.add_op(SimOja(pre_filtered,
-                        post_filtered,
-                        model.sig[conn]['weights'],
-                        model.sig[rule]['delta'],
-                        learning_rate=oja.learning_rate,
-                        beta=oja.beta))
+    model.add_op(
+        SimOja(
+            pre_filtered,
+            post_filtered,
+            model.sig[conn]["weights"],
+            model.sig[rule]["delta"],
+            learning_rate=oja.learning_rate,
+            beta=oja.beta,
+        )
+    )
 
     # expose these for probes
-    model.sig[rule]['pre_filtered'] = pre_filtered
-    model.sig[rule]['post_filtered'] = post_filtered
+    model.sig[rule]["pre_filtered"] = pre_filtered
+    model.sig[rule]["post_filtered"] = post_filtered
 
 
 @Builder.register(Voja)
@@ -610,16 +646,17 @@ def build_voja(model, voja, rule):
     # Filtered post activity
     post = conn.post_obj
     post_filtered = build_or_passthrough(
-        model, voja.post_synapse, model.sig[post]['out'])
+        model, voja.post_synapse, model.sig[post]["out"]
+    )
 
     # Learning signal, defaults to 1 in case no connection is made
     # and multiplied by the learning_rate * dt
     learning = Signal(shape=rule.size_in, name="Voja:learning")
     assert rule.size_in == 1
     model.add_op(Reset(learning, value=1.0))
-    model.sig[rule]['in'] = learning  # optional connection will attach here
+    model.sig[rule]["in"] = learning  # optional connection will attach here
 
-    scaled_encoders = model.sig[post]['encoders']
+    scaled_encoders = model.sig[post]["encoders"]
     # The gain and radius are folded into the encoders during the ensemble
     # build process, so we need to make sure that the deltas are proportional
     # to this scaling factor
@@ -627,16 +664,19 @@ def build_voja(model, voja, rule):
     assert post_filtered.shape == encoder_scale.shape
 
     model.add_op(
-        SimVoja(pre_decoded=model.sig[conn]['out'],
-                post_filtered=post_filtered,
-                scaled_encoders=scaled_encoders,
-                delta=model.sig[rule]['delta'],
-                scale=encoder_scale,
-                learning_signal=learning,
-                learning_rate=voja.learning_rate))
+        SimVoja(
+            pre_decoded=model.sig[conn]["out"],
+            post_filtered=post_filtered,
+            scaled_encoders=scaled_encoders,
+            delta=model.sig[rule]["delta"],
+            scale=encoder_scale,
+            learning_signal=learning,
+            learning_rate=voja.learning_rate,
+        )
+    )
 
-    model.sig[rule]['scaled_encoders'] = scaled_encoders
-    model.sig[rule]['post_filtered'] = post_filtered
+    model.sig[rule]["scaled_encoders"] = scaled_encoders
+    model.sig[rule]["post_filtered"] = post_filtered
 
 
 @Builder.register(PES)
@@ -666,22 +706,23 @@ def build_pes(model, pes, rule):
     # Create input error signal
     error = Signal(shape=rule.size_in, name="PES:error")
     model.add_op(Reset(error))
-    model.sig[rule]['in'] = error  # error connection will attach here
+    model.sig[rule]["in"] = error  # error connection will attach here
 
     # Filter pre-synaptic activities with pre_synapse
-    acts = build_or_passthrough(model, pes.pre_synapse,
-                                model.sig[conn.pre_obj]['out'])
+    acts = build_or_passthrough(model, pes.pre_synapse, model.sig[conn.pre_obj]["out"])
 
     if conn.is_decoded:
         encoders = None
     else:
         post = get_post_ens(conn)
-        encoders = model.sig[post]['encoders'][:, conn.post_slice]
+        encoders = model.sig[post]["encoders"][:, conn.post_slice]
 
-    model.add_op(SimPES(
-        acts, error, model.sig[rule]['delta'], pes.learning_rate,
-        encoders=encoders))
+    model.add_op(
+        SimPES(
+            acts, error, model.sig[rule]["delta"], pes.learning_rate, encoders=encoders
+        )
+    )
 
     # expose these for probes
-    model.sig[rule]['error'] = error
-    model.sig[rule]['activities'] = acts
+    model.sig[rule]["error"] = error
+    model.sig[rule]["activities"] = acts

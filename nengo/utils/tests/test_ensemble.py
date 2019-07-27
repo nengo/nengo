@@ -13,7 +13,7 @@ def plot_tuning_curves(plt, eval_points, activities):
     elif eval_points.ndim == 3:
         assert mpl_toolkits.mplot3d
         fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
+        ax = fig.add_subplot(111, projection="3d")
         ax.plot_surface(eval_points.T[0], eval_points.T[1], activities.T[0])
     else:
         raise NotImplementedError()
@@ -28,23 +28,26 @@ def test_tuning_curves_1d(Simulator, plt, seed):
         plt.plot(*tuning_curves(ens_1d, sim))
 
 
-@pytest.mark.parametrize('dimensions', [1, 2])
+@pytest.mark.parametrize("dimensions", [1, 2])
 def test_tuning_curves(Simulator, nl_nodirect, plt, seed, dimensions):
     radius = 10
     max_rate = 400
     model = nengo.Network(seed=seed)
     with model:
         ens = nengo.Ensemble(
-            10, dimensions=dimensions, neuron_type=nl_nodirect(),
-            max_rates=Uniform(200, max_rate), radius=radius)
+            10,
+            dimensions=dimensions,
+            neuron_type=nl_nodirect(),
+            max_rates=Uniform(200, max_rate),
+            radius=radius,
+        )
     with Simulator(model) as sim:
         eval_points, activities = tuning_curves(ens, sim)
 
     plot_tuning_curves(plt, eval_points, activities)
 
     # Check that eval_points cover up to the radius.
-    assert np.abs(radius - np.max(np.abs(eval_points))) <= (
-        2 * radius / dimensions)
+    assert np.abs(radius - np.max(np.abs(eval_points))) <= (2 * radius / dimensions)
 
     assert np.all(activities >= 0)
 
@@ -52,7 +55,7 @@ def test_tuning_curves(Simulator, nl_nodirect, plt, seed, dimensions):
     assert np.all(activities[d <= radius] <= max_rate)
 
 
-@pytest.mark.parametrize('dimensions', [1, 2])
+@pytest.mark.parametrize("dimensions", [1, 2])
 def test_tuning_curves_direct_mode(Simulator, plt, seed, dimensions):
     model = nengo.Network(seed=seed)
     with model:
@@ -72,8 +75,12 @@ def test_response_curves(Simulator, nl_nodirect, plt, seed):
     model = nengo.Network(seed=seed)
     with model:
         ens = nengo.Ensemble(
-            10, dimensions=10, neuron_type=nl_nodirect(), radius=1.5,
-            max_rates=Uniform(200, max_rate))
+            10,
+            dimensions=10,
+            neuron_type=nl_nodirect(),
+            radius=1.5,
+            max_rates=Uniform(200, max_rate),
+        )
 
     with Simulator(model) as sim:
         eval_points, activities = response_curves(ens, sim)
@@ -89,12 +96,13 @@ def test_response_curves(Simulator, nl_nodirect, plt, seed):
     assert np.all(np.diff(activities, axis=0) >= 0.0)
 
 
-@pytest.mark.parametrize('dimensions', [1, 2])
+@pytest.mark.parametrize("dimensions", [1, 2])
 def test_response_curves_direct_mode(Simulator, plt, seed, dimensions):
     model = nengo.Network(seed=seed)
     with model:
         ens = nengo.Ensemble(
-            10, dimensions=dimensions, neuron_type=nengo.Direct(), radius=1.5)
+            10, dimensions=dimensions, neuron_type=nengo.Direct(), radius=1.5
+        )
 
     with Simulator(model) as sim:
         eval_points, activities = response_curves(ens, sim)

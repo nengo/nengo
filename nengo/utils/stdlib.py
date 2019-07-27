@@ -152,7 +152,7 @@ class WeakSet(collections.abc.MutableSet):
             del self._data[key]
 
 
-CheckedCall = collections.namedtuple('CheckedCall', ('value', 'invoked'))
+CheckedCall = collections.namedtuple("CheckedCall", ("value", "invoked"))
 
 
 def checked_call(func, *args, **kwargs):
@@ -189,7 +189,7 @@ def execfile(path, globals, locals=None):
     if locals is None:
         locals = globals
 
-    with open(path, 'rb') as fp:
+    with open(path, "rb") as fp:
         source = fp.read()
 
     code = compile(source, path, "exec")

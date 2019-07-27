@@ -66,7 +66,7 @@ def optimize(model, dg, max_passes=None):
     single_pass = OpMergePass(dg)
 
     n_initial_ops = len(dg)
-    cum_duration = 0.
+    cum_duration = 0.0
     before, after = None, None
     i = 0
     only_merge_ops_with_view = True
@@ -89,8 +89,12 @@ def optimize(model, dg, max_passes=None):
         after = len(single_pass.dg.forward)
         logger.info(
             "Pass %i [%s]: Reduced %i to %i operators in %fs.",
-            i, "views" if only_merge_ops_with_view else "non-views",
-            before, after, t.duration)
+            i,
+            "views" if only_merge_ops_with_view else "non-views",
+            before,
+            after,
+            t.duration,
+        )
 
         # Prevent optimizer from running too long if we get up diminishing
         # returns.
@@ -102,10 +106,11 @@ def optimize(model, dg, max_passes=None):
         last_reduction_rate = float(before - after) / t.duration
         threshold = 0.01
         scaled_rate = threshold * mean_reduction_rate
-        if 0. < last_reduction_rate < scaled_rate:  # pragma: no cover
+        if 0.0 < last_reduction_rate < scaled_rate:  # pragma: no cover
             logger.info(
                 "Operator reduction rate fell below {} mean reduction rate. "
-                "Stopping optimizer.".format(threshold))
+                "Stopping optimizer.".format(threshold)
+            )
             break
 
     # Update model signals
@@ -228,7 +233,8 @@ class OpMergePass:
 
         # Sort to have sequential memory.
         offsets = np.array(
-            [self.opinfo[op].v_offset for op in subset], dtype=rc.float_dtype)
+            [self.opinfo[op].v_offset for op in subset], dtype=rc.float_dtype
+        )
         sort_indices = np.argsort(offsets)
         offsets = offsets[sort_indices]
         sorted_subset = [subset[i] for i in sort_indices]
@@ -240,18 +246,21 @@ class OpMergePass:
                 continue
 
             if op1 in self.merged_dependents or any(
-                    op in self.merged for op in self.dependents[op1]):
+                op in self.merged for op in self.dependents[op1]
+            ):
                 continue
 
-            tomerge = OpsToMerge(op1, self.merged, self.merged_dependents,
-                                 self.dependents)
+            tomerge = OpsToMerge(
+                op1, self.merged, self.merged_dependents, self.dependents
+            )
 
             # For a merge to be possible the view of the next operator has to
             # start where the view of op1 ends. Because we have sorted the
             # operators by the start of their views we can do a binary search
             # and potentially skip a number of operators at the beginning.
             start = np.searchsorted(
-                offsets, offsets[i] + self.opinfo[op1].v_size, side='left')
+                offsets, offsets[i] + self.opinfo[op1].v_size, side="left"
+            )
 
             for op2 in sorted_subset[start:]:
 
@@ -315,25 +324,32 @@ class OpMergePass:
                 base_replacement = replaced_signals[sig]
                 offset = view.offset
                 strides = tuple(
-                    a // b * c for a, b, c in zip_longest(
+                    a // b * c
+                    for a, b, c in zip_longest(
                         view.strides,
                         view.base.strides,
                         base_replacement.strides,
-                        fillvalue=1))
+                        fillvalue=1,
+                    )
+                )
                 if base_replacement.is_view:
                     offset += base_replacement.offset
                     base_replacement = base_replacement.base
                 buf = base_replacement.initial_value
-                initial_value = np.ndarray(buffer=buf,
-                                           dtype=view.dtype,
-                                           shape=view.shape,
-                                           offset=offset,
-                                           strides=strides)
-                replaced_signals[view] = Signal(initial_value,
-                                                name=view.name,
-                                                base=base_replacement,
-                                                readonly=view.readonly,
-                                                offset=offset)
+                initial_value = np.ndarray(
+                    buffer=buf,
+                    dtype=view.dtype,
+                    shape=view.shape,
+                    offset=offset,
+                    strides=strides,
+                )
+                replaced_signals[view] = Signal(
+                    initial_value,
+                    name=view.name,
+                    base=base_replacement,
+                    readonly=view.readonly,
+                    offset=offset,
+                )
 
     def replace_op_signals(self, replaced_signals):
         ops = (op for s in replaced_signals for op in self.sig2ops[s])
@@ -360,7 +376,8 @@ class OpInfo(Mapping):
     """Analyze and store extra information about operators."""
 
     _OpDetails = namedtuple(
-        "_OpDetails", ["first_view", "v_offset", "v_size", "v_base"])
+        "_OpDetails", ["first_view", "v_offset", "v_size", "v_base"]
+    )
 
     def __init__(self):
         super().__init__()
@@ -370,13 +387,16 @@ class OpInfo(Mapping):
         if op not in self.info:
             try:
                 first_view = next(s for s in op.all_signals if s.is_view)
-                self.info[op] = self._OpDetails(first_view=first_view,
-                                                v_offset=first_view.offset,
-                                                v_size=first_view.nbytes,
-                                                v_base=first_view.base)
+                self.info[op] = self._OpDetails(
+                    first_view=first_view,
+                    v_offset=first_view.offset,
+                    v_size=first_view.nbytes,
+                    v_base=first_view.base,
+                )
             except StopIteration:
                 self.info[op] = self._OpDetails(
-                    first_view=None, v_offset=0, v_size=0, v_base=None)
+                    first_view=None, v_offset=0, v_size=0, v_base=None
+                )
         return self.info[op]
 
     def __iter__(self):
@@ -440,7 +460,7 @@ class OpsToMerge:
 
     def not_sequential(self, op):
         lastop = self.opinfo[self.ops[-1]]
-        return (lastop.v_offset + lastop.v_size < self.opinfo[op].v_offset)
+        return lastop.v_offset + lastop.v_size < self.opinfo[op].v_offset
 
 
 class OpMerger:
@@ -452,11 +472,13 @@ class OpMerger:
 
         independent_of_ops_tomerge = (
             op not in tomerge.all_dependents
-            and len(tomerge.dependents[op].intersection(tomerge.ops)) == 0)
+            and len(tomerge.dependents[op].intersection(tomerge.ops)) == 0
+        )
         independent_of_prior_merges = (
             op not in tomerge.merged
             and op not in tomerge.merged_dependents
-            and all(o not in tomerge.merged for o in tomerge.dependents[op]))
+            and all(o not in tomerge.merged for o in tomerge.dependents[op])
+        )
         return (
             type(op) is tomerge.optype
             and independent_of_ops_tomerge
@@ -464,7 +486,8 @@ class OpMerger:
             and cls.is_type_mergeable(tomerge.optype)
             and tomerge.check_signals(tomerge.ops[-1], op)
             and merger.check_signals(op, tomerge)
-            and merger.is_mergeable(tomerge.last_op, op))
+            and merger.is_mergeable(tomerge.last_op, op)
+        )
 
     @classmethod
     def is_type_mergeable(cls, optype):
@@ -478,10 +501,10 @@ class OpMerger:
     def register(cls, optype):
         def register(merger):
             if optype in cls.mergers:
-                warnings.warn(
-                    "Merger for operator type {} overwritten.".format(optype))
+                warnings.warn("Merger for operator type {} overwritten.".format(optype))
             cls.mergers[optype] = merger
             return merger
+
         return register
 
 
@@ -513,7 +536,6 @@ class Merger:
 
 @OpMerger.register(operator.TimeUpdate)
 class TimeUpdateMerger(Merger):
-
     @staticmethod
     def is_mergeable(op1, op2):
         return True
@@ -522,13 +544,14 @@ class TimeUpdateMerger(Merger):
     def merge(ops):
         step, step_sigr = SigMerger.merge([o.step for o in ops])
         time, time_sigr = SigMerger.merge([o.time for o in ops])
-        return (operator.TimeUpdate(step, time),
-                Merger.merge_dicts(step_sigr, time_sigr))
+        return (
+            operator.TimeUpdate(step, time),
+            Merger.merge_dicts(step_sigr, time_sigr),
+        )
 
 
 @OpMerger.register(operator.Reset)
 class ResetMerger(Merger):
-
     @staticmethod
     def is_mergeable(op1, op2):
         return SigMerger.check([op1.dst, op2.dst]) and op1.value == op2.value
@@ -541,14 +564,17 @@ class ResetMerger(Merger):
 
 @OpMerger.register(operator.Copy)
 class CopyMerger(Merger):
-
     @staticmethod
     def is_mergeable(op1, op2):
-        return (SigMerger.check([op1.src, op2.src])
-                and SigMerger.check([op1.dst, op2.dst])
-                and op1.src_slice is None and op1.dst_slice is None
-                and op2.src_slice is None and op2.dst_slice is None
-                and op1.inc == op2.inc)
+        return (
+            SigMerger.check([op1.src, op2.src])
+            and SigMerger.check([op1.dst, op2.dst])
+            and op1.src_slice is None
+            and op1.dst_slice is None
+            and op2.src_slice is None
+            and op2.dst_slice is None
+            and op1.inc == op2.inc
+        )
 
     @staticmethod
     def merge_slice(signals, slices):
@@ -571,81 +597,90 @@ class CopyMerger(Merger):
 
         src, src_sigr = SigMerger.merge(src_sigs)
         dst, dst_sigr = SigMerger.merge(dst_sigs)
-        src_slice = CopyMerger.merge_slice(
-            src_sigs, [o.src_slice for o in ops])
-        dst_slice = CopyMerger.merge_slice(
-            dst_sigs, [o.dst_slice for o in ops])
-        return operator.Copy(
-            src, dst, src_slice=src_slice, dst_slice=dst_slice,
-            inc=ops[0].inc), Merger.merge_dicts(src_sigr, dst_sigr)
+        src_slice = CopyMerger.merge_slice(src_sigs, [o.src_slice for o in ops])
+        dst_slice = CopyMerger.merge_slice(dst_sigs, [o.dst_slice for o in ops])
+        return (
+            operator.Copy(
+                src, dst, src_slice=src_slice, dst_slice=dst_slice, inc=ops[0].inc
+            ),
+            Merger.merge_dicts(src_sigr, dst_sigr),
+        )
 
 
 @OpMerger.register(operator.ElementwiseInc)
 class ElementwiseIncMerger(Merger):
-
     @staticmethod
     def is_mergeable(op1, op2):
-        scalar_mult = (op1.A.shape == (1,) and op2.A.shape == (1,))
-        non_scalar_mult = (op1.A.shape != (1,) and op2.A.shape != (1,))
+        scalar_mult = op1.A.shape == (1,) and op2.A.shape == (1,)
+        non_scalar_mult = op1.A.shape != (1,) and op2.A.shape != (1,)
         return (
             SigMerger.check([op1.X, op2.X], axis=op1.X.ndim - 1)
             and SigMerger.check([op1.Y, op2.Y], axis=op1.Y.ndim - 1)
-            and ((scalar_mult and op1.A.initial_value == op2.A.initial_value)
-                 or (non_scalar_mult and SigMerger.check(
-                     [op1.A, op2.A], axis=op1.A.ndim - 1))))
+            and (
+                (scalar_mult and op1.A.initial_value == op2.A.initial_value)
+                or (
+                    non_scalar_mult
+                    and SigMerger.check([op1.A, op2.A], axis=op1.A.ndim - 1)
+                )
+            )
+        )
 
     @staticmethod
     def merge(ops):
         if all(o.A.shape == (1,) for o in ops):
-            assert all(
-                o.A.initial_value == ops[0].A.initial_value for o in ops)
+            assert all(o.A.initial_value == ops[0].A.initial_value for o in ops)
             A, A_sigr = ops[0].A, {}
         else:
-            A, A_sigr = SigMerger.merge(
-                [o.A for o in ops], axis=ops[0].A.ndim - 1)
+            A, A_sigr = SigMerger.merge([o.A for o in ops], axis=ops[0].A.ndim - 1)
         X, X_sigr = SigMerger.merge([o.X for o in ops], axis=ops[0].X.ndim - 1)
         Y, Y_sigr = SigMerger.merge([o.Y for o in ops], axis=ops[0].Y.ndim - 1)
-        return (operator.ElementwiseInc(A, X, Y),
-                Merger.merge_dicts(A_sigr, X_sigr, Y_sigr))
+        return (
+            operator.ElementwiseInc(A, X, Y),
+            Merger.merge_dicts(A_sigr, X_sigr, Y_sigr),
+        )
 
 
 @OpMerger.register(operator.DotInc)
 class DotIncMerger(Merger):
-
     @staticmethod
     def check_signals(op, tomerge):
         none_shared = Merger.check_signals(op, tomerge) and (
-            len(tomerge.ops) < 2 or tomerge.ops[0].X is not tomerge.ops[1].X)
+            len(tomerge.ops) < 2 or tomerge.ops[0].X is not tomerge.ops[1].X
+        )
         all_x_shared = (
             op.A not in tomerge.all_signals
             and op.Y not in tomerge.all_signals
-            and all(op.X not in [o.A, o.Y] and op.X is o.X
-                    for o in tomerge.ops))
+            and all(op.X not in [o.A, o.Y] and op.X is o.X for o in tomerge.ops)
+        )
         return none_shared or all_x_shared
 
     @staticmethod
     def is_mergeable(op1, op2):
         if op1.X is op2.X:
             # simple merge might be possible
-            return (SigMerger.check([op1.Y, op2.Y])
-                    and SigMerger.check([op1.A, op2.A]))
+            return SigMerger.check([op1.Y, op2.Y]) and SigMerger.check([op1.A, op2.A])
 
         # check if BSR merge is possible
         try:
             # Not using check() for A, because A must not be a view.
             SigMerger.check_signals([op1.A, op2.A])
             from scipy.sparse import bsr_matrix
+
             assert bsr_matrix
         except ImportError:
-            warnings.warn("Skipping some optimization steps because SciPy is "
-                          "not installed. Installing SciPy may result in "
-                          "faster simulations.")
+            warnings.warn(
+                "Skipping some optimization steps because SciPy is "
+                "not installed. Installing SciPy may result in "
+                "faster simulations."
+            )
             return False
         except ValueError:
             return False
-        return (SigMerger.check([op1.X, op2.X])
-                and SigMerger.check([op1.Y, op2.Y])
-                and op1.A.shape == op2.A.shape)
+        return (
+            SigMerger.check([op1.X, op2.X])
+            and SigMerger.check([op1.Y, op2.Y])
+            and op1.A.shape == op2.A.shape
+        )
 
     @staticmethod
     def merge(ops):
@@ -653,11 +688,9 @@ class DotIncMerger(Merger):
         if all(o.X is ops[0].X for o in ops):
             A, A_sigr = SigMerger.merge([o.A for o in ops])
             Y, Y_sigr = SigMerger.merge([o.Y for o in ops])
-            return (operator.DotInc(A, ops[0].X, Y),
-                    Merger.merge_dicts(A_sigr, Y_sigr))
+            return (operator.DotInc(A, ops[0].X, Y), Merger.merge_dicts(A_sigr, Y_sigr))
 
-        assert all(o1.X is not o2.X
-                   for i, o1 in enumerate(ops) for o2 in ops[i+1:])
+        assert all(o1.X is not o2.X for i, o1 in enumerate(ops) for o2 in ops[i + 1 :])
 
         # BSR merge if X differ
         X, X_sigr = SigMerger.merge([o.X for o in ops])
@@ -671,55 +704,66 @@ class DotIncMerger(Merger):
             data = data.reshape(data.shape + (1,))
         indptr = np.arange(len(ops) + 1, dtype=rc.int_dtype)
         indices = np.arange(len(ops), dtype=rc.int_dtype)
-        name = 'bsr_merged<{first}, ..., {last}>'.format(
-            first=ops[0].A.name, last=ops[-1].A.name)
+        name = "bsr_merged<{first}, ..., {last}>".format(
+            first=ops[0].A.name, last=ops[-1].A.name
+        )
         readonly = all([o.A.readonly for o in ops])
         A = Signal(data, name=name, readonly=readonly)
         A_sigr = {}
         for i, s in enumerate([o.A for o in ops]):
-            A_sigr[s] = Signal(data[i], name="%s[%i]" % (s.name, i), base=A,
-                               offset=i * A.itemsize * np.prod(A.shape[1:]))
+            A_sigr[s] = Signal(
+                data[i],
+                name="%s[%i]" % (s.name, i),
+                base=A,
+                offset=i * A.itemsize * np.prod(A.shape[1:]),
+            )
             assert np.all(s.initial_value == A_sigr[s].initial_value)
             assert s.shape == A_sigr[s].shape or (
-                s.shape == () and A_sigr[s].shape == (1, 1))
+                s.shape == () and A_sigr[s].shape == (1, 1)
+            )
 
         reshape = operator.reshape_dot(
-            ops[0].A.initial_value, ops[0].X.initial_value,
-            ops[0].Y.initial_value, tag=ops[0].tag)
+            ops[0].A.initial_value,
+            ops[0].X.initial_value,
+            ops[0].Y.initial_value,
+            tag=ops[0].tag,
+        )
         return (
             operator.BsrDotInc(
-                A, X, Y, indices=indices, indptr=indptr, reshape=reshape),
-            Merger.merge_dicts(X_sigr, Y_sigr, A_sigr))
+                A, X, Y, indices=indices, indptr=indptr, reshape=reshape
+            ),
+            Merger.merge_dicts(X_sigr, Y_sigr, A_sigr),
+        )
 
 
 @OpMerger.register(SimNeurons)
 class SimNeuronsMerger(Merger):
-
     @staticmethod
     def is_mergeable(op1, op2):
-        return (op1.neurons == op2.neurons
-                and all(SigMerger.check(s) for s in
-                        zip(op1.all_signals, op2.all_signals)))
+        return op1.neurons == op2.neurons and all(
+            SigMerger.check(s) for s in zip(op1.all_signals, op2.all_signals)
+        )
 
     @staticmethod
     def merge(ops):
         def gather(ops, key):
             return [getattr(o, key) for o in ops]
 
-        J, J_sigr = SigMerger.merge(gather(ops, 'J'))
-        output, out_sigr = SigMerger.merge(gather(ops, 'output'))
+        J, J_sigr = SigMerger.merge(gather(ops, "J"))
+        output, out_sigr = SigMerger.merge(gather(ops, "output"))
         states = []
         states_sigr = {}
-        for signals in zip(*gather(ops, 'states')):
+        for signals in zip(*gather(ops, "states")):
             st, st_sigr = SigMerger.merge(signals)
             states.append(st)
             states_sigr.update(st_sigr)
-        return (SimNeurons(ops[0].neurons, J, output, states),
-                Merger.merge_dicts(J_sigr, out_sigr, states_sigr))
+        return (
+            SimNeurons(ops[0].neurons, J, output, states),
+            Merger.merge_dicts(J_sigr, out_sigr, states_sigr),
+        )
 
 
 class SigMerger:
-
     @staticmethod
     def check(signals, axis=0):
         """Checks that all signals can be concatenated along a given axis.
@@ -766,19 +810,18 @@ class SigMerger:
 
         for s in signals:
             if s.ndim != signals[0].ndim:
-                raise ValueError(
-                    "Signals must have the same number of dimensions.")
+                raise ValueError("Signals must have the same number of dimensions.")
             if s.ndim <= 0 and s.initial_value != signals[0].initial_value:
+                raise ValueError("0-d signals must have the same initial value.")
+            if (
+                s.shape[:axis] != signals[0].shape[:axis]
+                or s.shape[axis + 1 :] != signals[0].shape[axis + 1 :]
+            ):
                 raise ValueError(
-                    "0-d signals must have the same initial value.")
-            if (s.shape[:axis] != signals[0].shape[:axis]
-                    or s.shape[axis+1:] != signals[0].shape[axis+1:]):
-                raise ValueError(
-                    "Signals must have same shape except on concatenation "
-                    "axis.")
+                    "Signals must have same shape except on concatenation " "axis."
+                )
             if s.dtype is not signals[0].dtype:
-                raise ValueError(
-                    "Signals must have the same dtype.")
+                raise ValueError("Signals must have the same dtype.")
 
     @staticmethod
     def check_views(signals, axis=0):
@@ -799,15 +842,16 @@ class SigMerger:
             if s.dtype is not signals[0].dtype:
                 raise ValueError("Signals must have same dtype.")
             if s.ndim != signals[0].ndim:
-                raise ValueError(
-                    "Signals must have the same number of dimensions.")
+                raise ValueError("Signals must have the same number of dimensions.")
             if s.strides != signals[0].strides:
                 raise ValueError("Signals must have equal strides.")
-            if (s.shape[:axis] != signals[0].shape[:axis]
-                    or s.shape[axis+1:] != signals[0].shape[axis+1:]):
+            if (
+                s.shape[:axis] != signals[0].shape[:axis]
+                or s.shape[axis + 1 :] != signals[0].shape[axis + 1 :]
+            ):
                 raise ValueError(
-                    "Signals must have same shape except on concatenation "
-                    "axis.")
+                    "Signals must have same shape except on concatenation " "axis."
+                )
             if s.offset != start:
                 raise ValueError("Views are not sequential.")
             start = s.offset + s.nbytes
@@ -870,11 +914,12 @@ class SigMerger:
 
         if signals[0].ndim > 0:
             initial_value = np.concatenate(
-                [s.initial_value for s in signals], axis=axis)
+                [s.initial_value for s in signals], axis=axis
+            )
         else:
             initial_value = signals[0].initial_value
         readonly = all(s.readonly for s in signals)
-        name = 'merged<' + signals[0].name + ', ..., ' + signals[-1].name + '>'
+        name = "merged<" + signals[0].name + ", ..., " + signals[-1].name + ">"
         merged_signal = Signal(initial_value, name=name, readonly=readonly)
 
         if signals[0].ndim > 0:
@@ -915,16 +960,24 @@ class SigMerger:
         # abs_offset = min(s.abs_offset for s in signals)
         offset = min(s.offset for s in signals)
         shape = (
-            signals[0].shape[:axis] + (sum(s.shape[axis] for s in signals),)
-            + signals[0].shape[axis+1:])
+            signals[0].shape[:axis]
+            + (sum(s.shape[axis] for s in signals),)
+            + signals[0].shape[axis + 1 :]
+        )
         initial_value = np.ndarray(
-            buffer=signals[0].base.initial_value, dtype=signals[0].dtype,
-            shape=shape, offset=offset,
-            strides=signals[0].strides)
+            buffer=signals[0].base.initial_value,
+            dtype=signals[0].dtype,
+            shape=shape,
+            offset=offset,
+            strides=signals[0].strides,
+        )
         merged_signal = Signal(
-            initial_value, name=signals[0].base.name, base=signals[0].base,
+            initial_value,
+            name=signals[0].base.name,
+            base=signals[0].base,
             readonly=all(s.readonly for s in signals),
-            offset=offset)
+            offset=offset,
+        )
 
         return merged_signal, {}
 

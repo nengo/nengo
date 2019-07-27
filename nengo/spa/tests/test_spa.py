@@ -13,7 +13,7 @@ def test_spa_verification(seed):
     # building a normal model that shouldn't raise a warning
     with model:
         model.buf = spa.Buffer(d)
-        model.input_node = spa.Input(buf='B')
+        model.input_node = spa.Input(buf="B")
         # make sure errors aren't fired for non-spa modules
         prod = nengo.networks.Product(10, 2)  # noqa: F841
         model.int_val = 1
@@ -31,14 +31,14 @@ def test_spa_verification(seed):
         # build a model that should raise an error because no variable
         with model:
             model.buf = spa.Buffer(d)
-            spa.Input(buf='B')
+            spa.Input(buf="B")
 
     with pytest.raises(ValueError):
         model = spa.SPA(seed=seed)
         # build a model that should raise an error because no input attribute
         with model:
             model.buf = spa.Buffer(d)
-            input_node = spa.Input(buf='B')
+            input_node = spa.Input(buf="B")
             input_node.label = "woop"
 
     with pytest.raises(SpaModuleError):
@@ -46,7 +46,7 @@ def test_spa_verification(seed):
         # build a model that should raise an error because no buf attribute
         with model:
             buf = spa.Buffer(d)
-            model.input_node = spa.Input(buf='B')
+            model.input_node = spa.Input(buf="B")
             buf.label = "woop"
 
 
@@ -72,24 +72,24 @@ def test_spa_get():
         model.buf2 = spa.State(D)
         model.compare = spa.Compare(D)
 
-    assert model.get_module('buf1') is model.buf1
-    assert model.get_module('buf1_default') is model.buf1
-    assert model.get_module('buf2') is model.buf2
-    assert model.get_module_input('buf1')[0] is model.buf1.input
-    assert model.get_module_output('buf1')[0] is model.buf1.output
-    assert model.get_module_input('compare_A')[0] is model.compare.inputA
-    assert model.get_module_input('compare_B')[0] is model.compare.inputB
+    assert model.get_module("buf1") is model.buf1
+    assert model.get_module("buf1_default") is model.buf1
+    assert model.get_module("buf2") is model.buf2
+    assert model.get_module_input("buf1")[0] is model.buf1.input
+    assert model.get_module_output("buf1")[0] is model.buf1.output
+    assert model.get_module_input("compare_A")[0] is model.compare.inputA
+    assert model.get_module_input("compare_B")[0] is model.compare.inputB
 
     with pytest.raises(SpaModuleError):
-        model.get_module('dummy')
+        model.get_module("dummy")
     with pytest.raises(SpaModuleError):
-        model.get_module_input('dummy')
+        model.get_module_input("dummy")
     with pytest.raises(SpaModuleError):
-        model.get_module_output('dummy')
+        model.get_module_output("dummy")
     with pytest.raises(SpaModuleError):
-        model.get_module_input('buf1_A')
+        model.get_module_input("buf1_A")
     with pytest.raises(SpaModuleError):
-        model.get_module_input('compare')
+        model.get_module_input("compare")
 
 
 def test_spa_vocab():

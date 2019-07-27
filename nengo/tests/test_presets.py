@@ -13,14 +13,14 @@ def test_thresholding_preset(Simulator, seed, plt):
         p = nengo.Probe(ens, synapse=0.01)
 
     with Simulator(model) as sim:
-        sim.run(1.)
+        sim.run(1.0)
 
     plt.plot(sim.trange(), sim.trange(), label="optimal")
     plt.plot(sim.trange(), sim.data[p], label="actual")
     plt.xlabel("Time [s]")
     plt.ylabel("Value")
     plt.title("Threshold = {}".format(threshold))
-    plt.legend(loc='best')
+    plt.legend(loc="best")
 
     se = np.square(np.squeeze(sim.data[p]) - sim.trange())
 

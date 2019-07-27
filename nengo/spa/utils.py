@@ -19,7 +19,8 @@ def enable_spa_params(model):
 
     for obj_type in [nengo.Node, nengo.Ensemble]:
         model.config[obj_type].set_param(
-            'vocab', VocabularyParam('vocab', default=None, optional=True))
+            "vocab", VocabularyParam("vocab", default=None, optional=True)
+        )
 
 
 def similarity(data, vocab, normalize=False):
@@ -46,8 +47,9 @@ def similarity(data, vocab, normalize=False):
     elif npext.is_iterable(vocab):
         vectors = np.array(vocab, copy=False, ndmin=2)
     else:
-        raise ValidationError("%r object is not a valid vocabulary"
-                              % (type(vocab).__name__), attr='vocab')
+        raise ValidationError(
+            "%r object is not a valid vocabulary" % (type(vocab).__name__), attr="vocab"
+        )
 
     data = np.array(data, copy=False, ndmin=2)
     dots = np.dot(data, vectors.T)

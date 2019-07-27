@@ -5,7 +5,7 @@ import nengo
 
 
 @pytest.mark.noassertions
-@pytest.mark.parametrize('use_eventplot', [True, False])
+@pytest.mark.parametrize("use_eventplot", [True, False])
 def test_rasterplot(use_eventplot, Simulator, seed, plt):
     from nengo.utils.matplotlib import rasterplot
 

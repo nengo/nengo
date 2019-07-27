@@ -70,8 +70,9 @@ class Model:
     def __init__(self, dt=0.001, label=None, decoder_cache=None, builder=None):
         self.dt = dt
         self.label = label
-        self.decoder_cache = (NoDecoderCache() if decoder_cache is None
-                              else decoder_cache)
+        self.decoder_cache = (
+            NoDecoderCache() if decoder_cache is None else decoder_cache
+        )
 
         # Will be filled in by the network builder
         self.toplevel = None
@@ -85,13 +86,15 @@ class Model:
         self.seeded = {}
 
         self.sig = collections.defaultdict(dict)
-        self.sig['common'][0] = Signal(
-            np.array(0., dtype=rc.float_dtype), readonly=True, name='ZERO')
-        self.sig['common'][1] = Signal(
-            np.array(1., dtype=rc.float_dtype), readonly=True, name='ONE')
+        self.sig["common"][0] = Signal(
+            np.array(0.0, dtype=rc.float_dtype), readonly=True, name="ZERO"
+        )
+        self.sig["common"][1] = Signal(
+            np.array(1.0, dtype=rc.float_dtype), readonly=True, name="ONE"
+        )
 
-        self.step = Signal(np.array(0, dtype=rc.int_dtype), name='step')
-        self.time = Signal(np.array(0, dtype=rc.float_dtype), name='time')
+        self.step = Signal(np.array(0, dtype=rc.int_dtype), name="step")
+        self.time = Signal(np.array(0, dtype=rc.float_dtype), name="time")
         self.add_op(TimeUpdate(self.step, self.time))
 
         self.builder = Builder() if builder is None else builder
@@ -111,7 +114,7 @@ class Model:
         the ``operators`` attribute.
         """
         self.operators.append(op)
-        if rc.getboolean('nengo.Simulator', 'fail_fast'):
+        if rc.getboolean("nengo.Simulator", "fail_fast"):
             # Fail fast by trying make_step with a temporary sigdict
             signals = SignalDict()
             op.init_signals(signals)
@@ -219,8 +222,7 @@ class Builder:
             if obj_cls in cls.builders:
                 break
         else:
-            raise BuildError(
-                "Cannot build object of type %r" % type(obj).__name__)
+            raise BuildError("Cannot build object of type %r" % type(obj).__name__)
 
         return cls.builders[obj_cls](model, obj, *args, **kwargs)
 
@@ -235,10 +237,13 @@ class Builder:
         nengo_class : Class
             The type associated with the build function being decorated.
         """
+
         def register_builder(build_fn):
             if nengo_class in cls.builders:
-                warnings.warn("Type '%s' already has a builder. Overwriting."
-                              % nengo_class)
+                warnings.warn(
+                    "Type '%s' already has a builder. Overwriting." % nengo_class
+                )
             cls.builders[nengo_class] = build_fn
             return build_fn
+
         return register_builder

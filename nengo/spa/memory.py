@@ -42,11 +42,20 @@ class Memory(Buffer):
         If None, will be true if currently within a Network.
     """
 
-    def __init__(self, dimensions, subdimensions=16, neurons_per_dimension=50,
-                 synapse=0.01, vocab=None, tau=None, direct=False,
-                 label=None, seed=None, add_to_container=None):
-        warnings.warn("Memory is deprecated in favour of spa.State",
-                      DeprecationWarning)
+    def __init__(
+        self,
+        dimensions,
+        subdimensions=16,
+        neurons_per_dimension=50,
+        synapse=0.01,
+        vocab=None,
+        tau=None,
+        direct=False,
+        label=None,
+        seed=None,
+        add_to_container=None,
+    ):
+        warnings.warn("Memory is deprecated in favour of spa.State", DeprecationWarning)
         super().__init__(
             dimensions=dimensions,
             subdimensions=subdimensions,
@@ -55,7 +64,8 @@ class Memory(Buffer):
             direct=direct,
             label=label,
             seed=seed,
-            add_to_container=add_to_container)
+            add_to_container=add_to_container,
+        )
 
         if tau is None:
             transform = 1.0
@@ -63,5 +73,9 @@ class Memory(Buffer):
             transform = 1.0 - synapse / tau
 
         with self:
-            nengo.Connection(self.state.output, self.state.input,
-                             transform=transform, synapse=synapse)
+            nengo.Connection(
+                self.state.output,
+                self.state.input,
+                transform=transform,
+                synapse=synapse,
+            )

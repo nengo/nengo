@@ -26,8 +26,10 @@ class BasalGanglia(nengo.networks.BasalGanglia, Module):
         Determines if this Network will be added to the current container.
         If None, will be true if currently within a Network.
     """
-    def __init__(self, actions, input_synapse=0.002,
-                 label=None, seed=None, add_to_container=None):
+
+    def __init__(
+        self, actions, input_synapse=0.002, label=None, seed=None, add_to_container=None
+    ):
         self.actions = actions
         self.input_synapse = input_synapse
         self.spa = None
@@ -59,7 +61,7 @@ class BasalGanglia(nengo.networks.BasalGanglia, Module):
         Module.on_add(self, spa)
         self.spa = spa
 
-        self.actions.process(spa)   # parse the actions
+        self.actions.process(spa)  # parse the actions
 
         for i, action in enumerate(self.actions.actions):
             cond = action.condition.expression
@@ -71,17 +73,17 @@ class BasalGanglia(nengo.networks.BasalGanglia, Module):
 
             for c in cond.items:
                 if isinstance(c, DotProduct):
-                    if ((isinstance(c.item1, Source) and c.item1.inverted) or (
-                            isinstance(c.item2, Source) and c.item2.inverted)):
+                    if (isinstance(c.item1, Source) and c.item1.inverted) or (
+                        isinstance(c.item2, Source) and c.item2.inverted
+                    ):
                         raise NotImplementedError(
                             "Inversion in subexpression '%s' from action '%s' "
-                            "is not supported by the Basal Ganglia." %
-                            (c, action))
+                            "is not supported by the Basal Ganglia." % (c, action)
+                        )
                     if isinstance(c.item1, Source):
                         if isinstance(c.item2, Source):
                             # dot product between two different sources
-                            self.add_compare_input(i, c.item1, c.item2,
-                                                   c.scale)
+                            self.add_compare_input(i, c.item1, c.item2, c.scale)
                         else:
                             self.add_dot_input(i, c.item1, c.item2, c.scale)
                     else:
@@ -95,7 +97,8 @@ class BasalGanglia(nengo.networks.BasalGanglia, Module):
                 else:
                     raise NotImplementedError(
                         "Subexpression '%s' from action '%s' is not supported "
-                        "by the Basal Ganglia." % (c, action))
+                        "by the Basal Ganglia." % (c, action)
+                    )
 
     def add_bias_input(self, index, value):
         """Make an input that is just a fixed scalar value.
@@ -108,8 +111,12 @@ class BasalGanglia(nengo.networks.BasalGanglia, Module):
             the fixed utility value to add
         """
         with self.spa:
-            nengo.Connection(self.bias, self.input[index:index+1],
-                             transform=value, synapse=self.input_synapse)
+            nengo.Connection(
+                self.bias,
+                self.input[index : index + 1],
+                transform=value,
+                synapse=self.input_synapse,
+            )
 
     def add_compare_input(self, index, source1, source2, scale):
         """Make an input that is the dot product of two different sources.
@@ -130,9 +137,11 @@ class BasalGanglia(nengo.networks.BasalGanglia, Module):
         scale : float
             A scaling factor to be applied to the result.
         """
-        raise NotImplementedError("Compare between two sources will never be "
-                                  "implemented as discussed in "
-                                  "https://github.com/nengo/nengo/issues/759")
+        raise NotImplementedError(
+            "Compare between two sources will never be "
+            "implemented as discussed in "
+            "https://github.com/nengo/nengo/issues/759"
+        )
 
     def add_dot_input(self, index, source, symbol, scale):
         """Make an input that is the dot product of a Source and a Symbol.
@@ -155,13 +164,17 @@ class BasalGanglia(nengo.networks.BasalGanglia, Module):
         # the first transformation, to handle dot(vision*A, B)
         t1 = vocab.parse(source.transform.symbol).get_convolution_matrix()
         # the linear transform to compute the fixed dot product
-        t2 = np.array([vocab.parse(symbol.symbol).v*scale])
+        t2 = np.array([vocab.parse(symbol.symbol).v * scale])
 
         transform = np.dot(t2, t1)
 
         with self.spa:
-            nengo.Connection(output, self.input[index:index+1],
-                             transform=transform, synapse=self.input_synapse)
+            nengo.Connection(
+                output,
+                self.input[index : index + 1],
+                transform=transform,
+                synapse=self.input_synapse,
+            )
 
     def add_scalar_input(self, index, source):
         """Add a scalar input that will vary over time.
@@ -177,17 +190,20 @@ class BasalGanglia(nengo.networks.BasalGanglia, Module):
         """
         output, _ = self.spa.get_module_output(source.name)
         if output.size_out != 1:
-            raise NotImplementedError(
-                "Only 1-dimensional sources can be scalar inputs")
+            raise NotImplementedError("Only 1-dimensional sources can be scalar inputs")
 
         try:
             scale = float(eval(source.transform.symbol))
         except ValueError:
-            raise ValidationError("Transform must be scalar; got '%s'"
-                                  % source.transform.symbol,
-                                  attr='source.transform')
+            raise ValidationError(
+                "Transform must be scalar; got '%s'" % source.transform.symbol,
+                attr="source.transform",
+            )
 
         with self.spa:
-            nengo.Connection(output, self.input[index:index+1],
-                             transform=scale,
-                             synapse=self.input_synapse)
+            nengo.Connection(
+                output,
+                self.input[index : index + 1],
+                transform=scale,
+                synapse=self.input_synapse,
+            )

@@ -37,9 +37,19 @@ class Bind(Module):
         Determines if this Network will be added to the current container.
         If None, will be true if currently within a Network.
     """
-    def __init__(self, dimensions, vocab=None, n_neurons=200, invert_a=False,
-                 invert_b=False, input_magnitude=1.0, label=None, seed=None,
-                 add_to_container=None):
+
+    def __init__(
+        self,
+        dimensions,
+        vocab=None,
+        n_neurons=200,
+        invert_a=False,
+        invert_b=False,
+        input_magnitude=1.0,
+        label=None,
+        seed=None,
+        add_to_container=None,
+    ):
         super().__init__(label, seed, add_to_container)
         if vocab is None:
             # use the default vocab for this number of dimensions
@@ -47,13 +57,20 @@ class Bind(Module):
         elif vocab.dimensions != dimensions:
             raise ValidationError(
                 "Dimensionality of given vocabulary (%d) does "
-                "not match dimensionality of buffer (%d)" %
-                (vocab.dimensions, dimensions), attr='dimensions', obj=self)
+                "not match dimensionality of buffer (%d)"
+                % (vocab.dimensions, dimensions),
+                attr="dimensions",
+                obj=self,
+            )
 
         with self:
             self.cc = nengo.networks.CircularConvolution(
-                n_neurons, dimensions, invert_a, invert_b,
-                input_magnitude=input_magnitude)
+                n_neurons,
+                dimensions,
+                invert_a,
+                invert_b,
+                input_magnitude=input_magnitude,
+            )
             self.A = self.cc.input_a
             self.B = self.cc.input_b
             self.output = self.cc.output

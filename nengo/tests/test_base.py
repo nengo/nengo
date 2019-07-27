@@ -7,13 +7,15 @@ from nengo.exceptions import ValidationError
 
 def test_nengoobjectparam():
     """NengoObjectParam must be a Nengo object and is readonly by default."""
+
     class Test:
-        nop = NengoObjectParam('nop')
+        nop = NengoObjectParam("nop")
+
     inst = Test()
 
     # Must be a Nengo object
     with pytest.raises(ValidationError):
-        inst.nop = 'a'
+        inst.nop = "a"
 
     # Can set it once
     a = nengo.Ensemble(10, dimensions=2, add_to_container=False)
@@ -27,9 +29,10 @@ def test_nengoobjectparam():
 
 def test_nengoobjectparam_nonzero():
     """Can check that objects have nonzero size in/out."""
+
     class Test:
-        nin = NengoObjectParam('nin', nonzero_size_in=True)
-        nout = NengoObjectParam('nout', nonzero_size_out=True)
+        nin = NengoObjectParam("nin", nonzero_size_in=True)
+        nout = NengoObjectParam("nout", nonzero_size_out=True)
 
     inst = Test()
     with nengo.Network():

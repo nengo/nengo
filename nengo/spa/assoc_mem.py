@@ -48,13 +48,23 @@ class AssociativeMemory(Module):
         If None, will be true if currently within a Network.
     """
 
-    def __init__(self, input_vocab, output_vocab=None,  # noqa: C901
-                 input_keys=None, output_keys=None,
-                 default_output_key=None, threshold=0.3,
-                 inhibitable=False, wta_output=False,
-                 wta_inhibit_scale=3.0, wta_synapse=0.005,
-                 threshold_output=False, label=None, seed=None,
-                 add_to_container=None):
+    def __init__(
+        self,
+        input_vocab,
+        output_vocab=None,  # noqa: C901
+        input_keys=None,
+        output_keys=None,
+        default_output_key=None,
+        threshold=0.3,
+        inhibitable=False,
+        wta_output=False,
+        wta_inhibit_scale=3.0,
+        wta_synapse=0.005,
+        threshold_output=False,
+        label=None,
+        seed=None,
+        add_to_container=None,
+    ):
         super().__init__(label, seed, add_to_container)
 
         if input_keys is None:
@@ -81,12 +91,15 @@ class AssociativeMemory(Module):
 
         # Create nengo network
         with self:
-            self.am = AssocMem(input_vectors=input_vectors,
-                               output_vectors=output_vectors,
-                               threshold=threshold,
-                               inhibitable=inhibitable,
-                               label=label, seed=seed,
-                               add_to_container=add_to_container)
+            self.am = AssocMem(
+                input_vectors=input_vectors,
+                output_vectors=output_vectors,
+                threshold=threshold,
+                inhibitable=inhibitable,
+                label=label,
+                seed=seed,
+                add_to_container=add_to_container,
+            )
 
             if default_output_vector is not None:
                 self.am.add_default_output_vector(default_output_vector)

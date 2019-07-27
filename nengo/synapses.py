@@ -5,7 +5,13 @@ import numpy as np
 from nengo.base import Process
 from nengo.exceptions import ValidationError
 from nengo.params import (
-    BoolParam, EnumParam, NdarrayParam, NumberParam, Parameter, Unconfigurable)
+    BoolParam,
+    EnumParam,
+    NdarrayParam,
+    NumberParam,
+    Parameter,
+    Unconfigurable,
+)
 from nengo.rc import rc
 from nengo.utils.filter_design import cont2discrete, tf2ss
 from nengo.utils.numpy import as_shape, is_number
@@ -51,14 +57,17 @@ class Synapse(Process):
         Random number seed. Ensures random factors will be the same each run.
     """
 
-    def __init__(self, default_size_in=1, default_size_out=None,
-                 default_dt=0.001, seed=None):
+    def __init__(
+        self, default_size_in=1, default_size_out=None, default_dt=0.001, seed=None
+    ):
         if default_size_out is None:
             default_size_out = default_size_in
-        super().__init__(default_size_in=default_size_in,
-                         default_size_out=default_size_out,
-                         default_dt=default_dt,
-                         seed=seed)
+        super().__init__(
+            default_size_in=default_size_in,
+            default_size_out=default_size_out,
+            default_dt=default_dt,
+            seed=seed,
+        )
 
     def make_state(self, shape_in, shape_out, dt, dtype=None, y0=None):
         raise NotImplementedError("Synapse must implement make_state")
@@ -91,8 +100,7 @@ class Synapse(Process):
         filt_view = np.rollaxis(filtered, axis=axis)  # rolled view on filtered
 
         shape_in = shape_out = as_shape(filt_view[0].shape, min_dim=1)
-        state = self.make_state(
-            shape_in, shape_out, dt, dtype=filtered.dtype, y0=y0)
+        state = self.make_state(shape_in, shape_out, dt, dtype=filtered.dtype, y0=y0)
         step = self.make_step(shape_in, shape_out, dt, rng=None, state=state)
 
         for i, signal_in in enumerate(filt_view):
@@ -150,13 +158,14 @@ class LinearFilter(Synapse):
     .. [1] https://en.wikipedia.org/wiki/Filter_%28signal_processing%29
     """
 
-    num = NdarrayParam('num', shape='*')
-    den = NdarrayParam('den', shape='*')
-    analog = BoolParam('analog')
-    method = EnumParam('method', values=(
-        'gbt', 'bilinear', 'euler', 'backward_diff', 'zoh'))
+    num = NdarrayParam("num", shape="*")
+    den = NdarrayParam("den", shape="*")
+    analog = BoolParam("analog")
+    method = EnumParam(
+        "method", values=("gbt", "bilinear", "euler", "backward_diff", "zoh")
+    )
 
-    def __init__(self, num, den, analog=True, method='zoh', **kwargs):
+    def __init__(self, num, den, analog=True, method="zoh", **kwargs):
         super().__init__(**kwargs)
         self.num = num
         self.den = den
@@ -167,18 +176,23 @@ class LinearFilter(Synapse):
         """Combine in series with another LinearFilter."""
         if not isinstance(obj, LinearFilter):
             raise ValidationError(
-                "Can only combine with other LinearFilters", attr='obj')
+                "Can only combine with other LinearFilters", attr="obj"
+            )
         if self.analog != obj.analog:
             raise ValidationError(
-                "Cannot combine analog and digital filters", attr='obj')
+                "Cannot combine analog and digital filters", attr="obj"
+            )
         num = np.polymul(self.num, obj.num)
         den = np.polymul(self.den, obj.den)
-        return LinearFilter(num, den,
-                            analog=self.analog,
-                            default_size_in=self.default_size_in,
-                            default_size_out=self.default_size_out,
-                            default_dt=self.default_dt,
-                            seed=self.seed)
+        return LinearFilter(
+            num,
+            den,
+            analog=self.analog,
+            default_size_in=self.default_size_in,
+            default_size_out=self.default_size_out,
+            default_dt=self.default_dt,
+            seed=self.seed,
+        )
 
     def evaluate(self, frequencies):
         """Evaluate the transfer function at the given frequencies.
@@ -196,7 +210,7 @@ class LinearFilter(Synapse):
             plt.subplot(212); plt.semilogx(f, np.angle(y))
             plt.xlabel('frequency [Hz]'); plt.ylabel('phase [radians]')
         """
-        frequencies = 2.j*np.pi*frequencies
+        frequencies = 2.0j * np.pi * frequencies
         w = frequencies if self.analog else np.exp(frequencies)
         y = np.polyval(self.num, w) / np.polyval(self.den, w)
         return y
@@ -214,11 +228,13 @@ class LinearFilter(Synapse):
         assert shape_in == shape_out
 
         dtype = rc.float_dtype if dtype is None else np.dtype(dtype)
-        if dtype.kind != 'f':
+        if dtype.kind != "f":
             raise ValidationError(
                 "Only float data types are supported (got %s). Please cast "
                 "your data to a float type." % dtype,
-                attr='dtype', obj=self)
+                attr="dtype",
+                obj=self,
+            )
 
         A, B, C, D = self._get_ss(dt)
 
@@ -246,9 +262,11 @@ class LinearFilter(Synapse):
                 u0 = y0 / Q.item()
                 X[:] = IAB.dot(u0)
             else:
-                raise ValidationError("Cannot solve for state if DC gain is "
-                                      "zero. Please set `y0=0`.",
-                                      'y0', obj=self)
+                raise ValidationError(
+                    "Cannot solve for state if DC gain is " "zero. Please set `y0=0`.",
+                    "y0",
+                    obj=self,
+                )
 
         return {"X": X}
 
@@ -258,7 +276,7 @@ class LinearFilter(Synapse):
         assert state is not None
 
         A, B, C, D = self._get_ss(dt)
-        X = state['X']
+        X = state["X"]
 
         if LinearFilter.NoX.check(A, B, C, D, X):
             return LinearFilter.NoX(A, B, C, D, X)
@@ -272,11 +290,14 @@ class LinearFilter(Synapse):
 
     class Step:
         """Abstract base class for LTI filtering step functions."""
+
         def __init__(self, A, B, C, D, X):
             if not self.check(A, B, C, D, X):
                 raise ValidationError(
                     "Matrices do not meet the requirements for this Step",
-                    attr='A,B,C,D,X', obj=self)
+                    attr="A,B,C,D,X",
+                    obj=self,
+                )
             self.A = A
             self.B = B
             self.C = C
@@ -291,13 +312,16 @@ class LinearFilter(Synapse):
             if A.size == 0:
                 return X.size == B.size == C.size == 0 and D.size == 1
             else:
-                return (A.shape[0] == A.shape[1] == B.shape[0] == C.shape[1]
-                        and A.shape[0] == X.shape[0]
-                        and C.shape[0] == B.shape[1] == 1
-                        and D.size == 1)
+                return (
+                    A.shape[0] == A.shape[1] == B.shape[0] == C.shape[1]
+                    and A.shape[0] == X.shape[0]
+                    and C.shape[0] == B.shape[1] == 1
+                    and D.size == 1
+                )
 
     class NoX(Step):
         """Step for system with no state, only passthrough matrix (D)."""
+
         def __init__(self, A, B, C, D, X):
             super().__init__(A, B, C, D, X)
             self.d = D.item()
@@ -311,6 +335,7 @@ class LinearFilter(Synapse):
 
     class OneX(Step):
         """Step for systems with one state element and no passthrough (D)."""
+
         def __init__(self, A, B, C, D, X):
             super().__init__(A, B, C, D, X)
             self.a = A.item()
@@ -323,8 +348,7 @@ class LinearFilter(Synapse):
 
         @classmethod
         def check(cls, A, B, C, D, X):
-            return super().check(A, B, C, D, X) and (
-                len(A) == 1 and (D == 0).all())
+            return super().check(A, B, C, D, X) and (len(A) == 1 and (D == 0).all())
 
     class NoD(Step):
         """Step for systems with no passthrough matrix (D).
@@ -337,14 +361,14 @@ class LinearFilter(Synapse):
         Note how the input has been advanced one step as compared with the
         General system below, to remove the unnecessary delay.
         """
+
         def __call__(self, t, signal):
             self.X[:] = np.dot(self.A, self.X) + self.B * signal
             return np.dot(self.C, self.X)[0]
 
         @classmethod
         def check(cls, A, B, C, D, X):
-            return super().check(A, B, C, D, X) and (
-                len(A) >= 1 and (D == 0).all())
+            return super().check(A, B, C, D, X) and (len(A) >= 1 and (D == 0).all())
 
     class General(Step):
         """Step for any LTI system with at least one state element (X).
@@ -356,6 +380,7 @@ class LinearFilter(Synapse):
 
         Use ``NoX`` for systems with no state elements.
         """
+
         def __call__(self, t, signal):
             Y = np.dot(self.C, self.X)[0] + self.D * signal
             self.X[:] = np.dot(self.A, self.X) + self.B * signal
@@ -383,7 +408,8 @@ class Lowpass(LinearFilter):
     tau : float
         The time constant of the filter in seconds.
     """
-    tau = NumberParam('tau', low=0)
+
+    tau = NumberParam("tau", low=0)
 
     def __init__(self, tau, **kwargs):
         super().__init__([1], [tau, 1], **kwargs)
@@ -415,10 +441,10 @@ class Alpha(LinearFilter):
        in neocortical neurons. Science (New York, NY), 268(5216):1503-6.
     """
 
-    tau = NumberParam('tau', low=0)
+    tau = NumberParam("tau", low=0)
 
     def __init__(self, tau, **kwargs):
-        super().__init__([1], [tau**2, 2*tau, 1], **kwargs)
+        super().__init__([1], [tau ** 2, 2 * tau, 1], **kwargs)
         self.tau = tau
 
 
@@ -440,7 +466,7 @@ class Triangle(Synapse):
         Length of the triangle, in seconds.
     """
 
-    t = NumberParam('t', low=0)
+    t = NumberParam("t", low=0)
 
     def __init__(self, t, **kwargs):
         super().__init__(**kwargs)
@@ -479,7 +505,7 @@ class Triangle(Synapse):
         assert shape_in == shape_out
         assert state is not None
 
-        Y, X, Xi = state['Y'], state['X'], state['Xi']
+        Y, X, Xi = state["Y"], state["X"], state["Xi"]
         n_taps, n0, ndiff = self._get_coefficients(dt, dtype=Y.dtype)
         assert len(X) == n_taps
 
@@ -516,8 +542,7 @@ def filtfilt(signal, synapse, dt, axis=0, x0=None, copy=True):
 class SynapseParam(Parameter):
     equatable = True
 
-    def __init__(self, name,
-                 default=Unconfigurable, optional=True, readonly=None):
+    def __init__(self, name, default=Unconfigurable, optional=True, readonly=None):
         super().__init__(name, default, optional, readonly)
 
     def coerce(self, instance, synapse):

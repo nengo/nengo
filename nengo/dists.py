@@ -3,8 +3,15 @@ import warnings
 import numpy as np
 
 from nengo.exceptions import ValidationError
-from nengo.params import (BoolParam, IntParam, NdarrayParam, NumberParam,
-                          Parameter, Unconfigurable, FrozenObject)
+from nengo.params import (
+    BoolParam,
+    IntParam,
+    NdarrayParam,
+    NumberParam,
+    Parameter,
+    Unconfigurable,
+    FrozenObject,
+)
 import nengo.utils.numpy as npext
 
 
@@ -54,8 +61,8 @@ class PDF(Distribution):
         Probabilities of the ``x`` points.
     """
 
-    x = NdarrayParam('x', shape='*')
-    p = NdarrayParam('p', shape='*')
+    x = NdarrayParam("x", shape="*")
+    p = NdarrayParam("p", shape="*")
 
     def __init__(self, x, p):
         super().__init__()
@@ -63,13 +70,15 @@ class PDF(Distribution):
         psum = np.sum(p)
         if np.abs(psum - 1) > 1e-8:
             raise ValidationError(
-                "PDF must sum to one (sums to %f)" % psum, attr='p', obj=self)
+                "PDF must sum to one (sums to %f)" % psum, attr="p", obj=self
+            )
 
         self.x = x
         self.p = p
         if len(self.x) != len(self.p):
             raise ValidationError(
-                "`x` and `p` must be the same length", attr='p', obj=self)
+                "`x` and `p` must be the same length", attr="p", obj=self
+            )
 
         # make cumsum = [0] + cumsum, cdf = 0.5 * (cumsum[:-1] + cumsum[1:])
         cumsum = np.cumsum(p)
@@ -102,9 +111,9 @@ class Uniform(Distribution):
         low and high should be integers.
     """
 
-    low = NumberParam('low')
-    high = NumberParam('high')
-    integer = BoolParam('integer')
+    low = NumberParam("low")
+    high = NumberParam("high")
+    integer = BoolParam("integer")
 
     def __init__(self, low, high, integer=False):
         super().__init__()
@@ -138,8 +147,9 @@ class Gaussian(Distribution):
     ValidationError if std is <= 0
 
     """
-    mean = NumberParam('mean')
-    std = NumberParam('std', low=0, low_open=True)
+
+    mean = NumberParam("mean")
+    std = NumberParam("std", low=0, low_open=True)
 
     def __init__(self, mean, std):
         super().__init__()
@@ -184,11 +194,11 @@ class Exponential(Distribution):
         slightly less than this value.
     """
 
-    scale = NumberParam('scale', low=0, low_open=True)
-    shift = NumberParam('shift')
-    high = NumberParam('high')
+    scale = NumberParam("scale", low=0, low_open=True)
+    shift = NumberParam("shift")
+    high = NumberParam("high")
 
-    def __init__(self, scale, shift=0., high=np.inf):
+    def __init__(self, scale, shift=0.0, high=np.inf):
         super().__init__()
         self.scale = scale
         self.shift = shift
@@ -219,8 +229,8 @@ class UniformHypersphere(Distribution):
         Ignored if ``surface`` is ``True``.
     """
 
-    surface = BoolParam('surface')
-    min_magnitude = NumberParam('min_magnitude', low=0, high=1, high_open=True)
+    surface = BoolParam("surface")
+    min_magnitude = NumberParam("min_magnitude", low=0, high=1, high_open=True)
 
     def __init__(self, surface=False, min_magnitude=0):
         super().__init__()
@@ -231,7 +241,7 @@ class UniformHypersphere(Distribution):
 
     def sample(self, n, d=None, rng=np.random):
         if d is None or d < 1:  # check this, since other dists allow d = None
-            raise ValidationError("Dimensions must be a positive integer", 'd')
+            raise ValidationError("Dimensions must be a positive integer", "d")
 
         samples = rng.randn(n, d)
         samples /= npext.norm(samples, axis=1, keepdims=True)
@@ -242,8 +252,9 @@ class UniformHypersphere(Distribution):
         # Generate magnitudes for vectors from uniform distribution.
         # The (1 / d) exponent ensures that samples are uniformly distributed
         # in n-space and not all bunched up at the centre of the sphere.
-        samples *= rng.uniform(
-            low=self.min_magnitude**d, high=1, size=(n, 1)) ** (1. / d)
+        samples *= rng.uniform(low=self.min_magnitude ** d, high=1, size=(n, 1)) ** (
+            1.0 / d
+        )
 
         return samples
 
@@ -265,27 +276,33 @@ class Choice(Distribution):
         automatically be normalized. If None, weights be uniformly distributed.
     """
 
-    options = NdarrayParam('options', shape=('*', '...'))
-    weights = NdarrayParam('weights', shape=('*'), optional=True)
+    options = NdarrayParam("options", shape=("*", "..."))
+    weights = NdarrayParam("weights", shape=("*"), optional=True)
 
     def __init__(self, options, weights=None):
         super().__init__()
         self.options = options
         self.weights = weights
 
-        weights = (np.ones(len(self.options)) if self.weights is None else
-                   self.weights)
+        weights = np.ones(len(self.options)) if self.weights is None else self.weights
         if len(weights) != len(self.options):
             raise ValidationError(
                 "Number of weights (%d) must match number of options (%d)"
-                % (len(weights), len(self.options)), attr='weights', obj=self)
+                % (len(weights), len(self.options)),
+                attr="weights",
+                obj=self,
+            )
         if not all(weights >= 0):
-            raise ValidationError("All weights must be non-negative",
-                                  attr='weights', obj=self)
+            raise ValidationError(
+                "All weights must be non-negative", attr="weights", obj=self
+            )
         total = float(weights.sum())
         if total <= 0:
-            raise ValidationError("Sum of weights must be positive (got %f)"
-                                  % total, attr='weights', obj=self)
+            raise ValidationError(
+                "Sum of weights must be positive (got %f)" % total,
+                attr="weights",
+                obj=self,
+            )
         self.p = weights / total
 
     @property
@@ -294,9 +311,12 @@ class Choice(Distribution):
 
     def sample(self, n, d=None, rng=np.random):
         if d is not None and self.dimensions != d:
-            raise ValidationError("Options must be of dimensionality %d "
-                                  "(got %d)" % (d, self.dimensions),
-                                  attr='options', obj=self)
+            raise ValidationError(
+                "Options must be of dimensionality %d "
+                "(got %d)" % (d, self.dimensions),
+                attr="options",
+                obj=self,
+            )
 
         i = np.searchsorted(np.cumsum(self.p), rng.rand(n))
         return self.options[i]
@@ -317,7 +337,7 @@ class Samples(Distribution):
          `.Distribution.sample`.
     """
 
-    samples = NdarrayParam('samples', shape=('...',))
+    samples = NdarrayParam("samples", shape=("...",))
 
     def __init__(self, samples):
         super().__init__()
@@ -334,17 +354,26 @@ class Samples(Distribution):
             samples = samples[..., np.newaxis]
 
         if samples.shape[0] != shape[0]:
-            raise ValidationError("Wrong number of samples requested; got "
-                                  "%d, should be %d" % (n, samples.shape[0]),
-                                  attr='samples', obj=self)
+            raise ValidationError(
+                "Wrong number of samples requested; got "
+                "%d, should be %d" % (n, samples.shape[0]),
+                attr="samples",
+                obj=self,
+            )
         elif d is None and len(samples.shape) != 1:
-            raise ValidationError("Wrong sample dimensionality requested; got "
-                                  "'None', should be %d" % (samples.shape[1],),
-                                  attr='samples', obj=self)
+            raise ValidationError(
+                "Wrong sample dimensionality requested; got "
+                "'None', should be %d" % (samples.shape[1],),
+                attr="samples",
+                obj=self,
+            )
         elif d is not None and samples.shape[1] != shape[1]:
-            raise ValidationError("Wrong sample dimensionality requested; got "
-                                  "%d, should be %d" % (d, samples.shape[1]),
-                                  attr='samples', obj=self)
+            raise ValidationError(
+                "Wrong sample dimensionality requested; got "
+                "%d, should be %d" % (d, samples.shape[1]),
+                attr="samples",
+                obj=self,
+            )
 
         return samples
 
@@ -367,8 +396,8 @@ class SqrtBeta(Distribution):
     nengo.dists.SubvectorLength
     """
 
-    n = IntParam('n', low=0)
-    m = IntParam('m', low=0)
+    n = IntParam("n", low=0)
+    m = IntParam("m", low=0)
 
     def __init__(self, n, m=1):
         super().__init__()
@@ -395,10 +424,11 @@ class SqrtBeta(Distribution):
             Probability that ``X <= x``.
         """
         from scipy.special import betainc
+
         sq_x = x * x
         return np.where(
-            sq_x < 1., betainc(self.m / 2.0, self.n / 2.0, sq_x),
-            np.ones_like(x))
+            sq_x < 1.0, betainc(self.m / 2.0, self.n / 2.0, sq_x), np.ones_like(x)
+        )
 
     def pdf(self, x):
         """Probability distribution function.
@@ -416,8 +446,13 @@ class SqrtBeta(Distribution):
             Probability density at ``x``.
         """
         from scipy.special import beta
-        return (2 / beta(0.5 * self.m, 0.5 * self.n) * x ** (self.m - 1)
-                * (1 - x * x) ** (0.5 * self.n - 1))
+
+        return (
+            2
+            / beta(0.5 * self.m, 0.5 * self.n)
+            * x ** (self.m - 1)
+            * (1 - x * x) ** (0.5 * self.n - 1)
+        )
 
     def ppf(self, y):
         """Percent point function (inverse cumulative distribution).
@@ -435,6 +470,7 @@ class SqrtBeta(Distribution):
             Evaluation points ``x`` in [0, 1] such that ``P(X <= x) = y``.
         """
         from scipy.special import betaincinv
+
         sq_x = betaincinv(self.m / 2.0, self.n / 2.0, y)
         return np.sqrt(sq_x)
 
@@ -519,7 +555,7 @@ class CosineSimilarity(SubvectorLength):
         return super().pdf(x) / 2.0
 
     def ppf(self, y):
-        x = super().ppf(abs(y*2 - 1))
+        x = super().ppf(abs(y * 2 - 1))
         return np.where(y > 0.5, x, -x)
 
 
@@ -536,8 +572,15 @@ class DistributionParam(Parameter):
 class DistOrArrayParam(NdarrayParam):
     """Can be a Distribution or samples from a distribution."""
 
-    def __init__(self, name, default=Unconfigurable, sample_shape=None,
-                 sample_dtype=np.float64, optional=False, readonly=None):
+    def __init__(
+        self,
+        name,
+        default=Unconfigurable,
+        sample_shape=None,
+        sample_dtype=np.float64,
+        optional=False,
+        readonly=None,
+    ):
         super().__init__(
             name=name,
             default=default,

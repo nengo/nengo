@@ -16,12 +16,14 @@ try:
     def is_spmatrix(obj):
         return isinstance(obj, scipy_sparse.spmatrix)
 
+
 except ImportError as e:
     logger.info("Could not import scipy.sparse:\n%s", str(e))
     scipy_sparse = None
 
     def is_spmatrix(obj):
         return False
+
 
 maxint = np.iinfo(np.int32).max
 
@@ -38,8 +40,7 @@ def is_iterable(obj):
 
 
 def is_number(obj, check_complex=False):
-    types = ((float, complex, np.number) if check_complex else
-             (float, np.floating))
+    types = (float, complex, np.number) if check_complex else (float, np.floating)
     return is_integer(obj) or isinstance(obj, types)
 
 
@@ -88,12 +89,13 @@ def array(x, dims=None, min_dims=0, readonly=False, **kwargs):
     dims = max(min_dims, y.ndim) if dims is None else dims
 
     if y.ndim < dims:
-        shape = np.ones(dims, dtype='int')
-        shape[:y.ndim] = y.shape
+        shape = np.ones(dims, dtype="int")
+        shape[: y.ndim] = y.shape
         y.shape = shape
     elif y.ndim > dims:
-        raise ValidationError("Input cannot be cast to array with "
-                              "%d dimensions" % dims, attr='dims')
+        raise ValidationError(
+            "Input cannot be cast to array with " "%d dimensions" % dims, attr="dims"
+        )
 
     if readonly:
         y.flags.writeable = False
@@ -131,21 +133,27 @@ def array_hash(a, n=100):
     (data, indices) of the sparse matrix.
     """
     if scipy_sparse and isinstance(a, scipy_sparse.spmatrix):
-        if isinstance(a, (scipy_sparse.csr_matrix, scipy_sparse.csc_matrix,
-                          scipy_sparse.bsr_matrix)):
-            return hash((
-                _array_hash(a.data, n=n),
-                _array_hash(a.indices, n=n),
-                _array_hash(a.indptr, n=n),
-            ))
+        if isinstance(
+            a,
+            (scipy_sparse.csr_matrix, scipy_sparse.csc_matrix, scipy_sparse.bsr_matrix),
+        ):
+            return hash(
+                (
+                    _array_hash(a.data, n=n),
+                    _array_hash(a.indices, n=n),
+                    _array_hash(a.indptr, n=n),
+                )
+            )
         else:
             if not isinstance(a, scipy_sparse.coo_matrix):
                 a = a.tocoo()
-            return hash((
-                _array_hash(a.data, n=n),
-                _array_hash(a.row, n=n),
-                _array_hash(a.col, n=n),
-            ))
+            return hash(
+                (
+                    _array_hash(a.data, n=n),
+                    _array_hash(a.row, n=n),
+                    _array_hash(a.col, n=n),
+                )
+            )
 
     return _array_hash(a, n=n)
 
@@ -155,8 +163,8 @@ def array_offset(x):
     if x.base is None:
         return 0
 
-    base_start = x.base.__array_interface__['data'][0]
-    start = x.__array_interface__['data'][0]
+    base_start = x.base.__array_interface__["data"][0]
+    start = x.__array_interface__["data"][0]
     return start - base_start
 
 
@@ -173,14 +181,15 @@ def norm(x, axis=None, keepdims=False):
         If True, the reduced axes are left in the result. See `np.sum` in
         newer versions of Numpy (>= 1.7).
     """
-    return np.sqrt(np.sum(x**2, axis=axis, keepdims=keepdims))
+    return np.sqrt(np.sum(x ** 2, axis=axis, keepdims=keepdims))
 
 
 def meshgrid_nd(*args):
     args = [np.asarray(a) for a in args]
     s = len(args) * (1,)
-    return np.broadcast_arrays(*(
-        a.reshape(s[:i] + (-1,) + s[i + 1:]) for i, a in enumerate(args)))
+    return np.broadcast_arrays(
+        *(a.reshape(s[:i] + (-1,) + s[i + 1 :]) for i, a in enumerate(args))
+    )
 
 
 def rms(x, axis=None, keepdims=False):
@@ -196,7 +205,7 @@ def rms(x, axis=None, keepdims=False):
         If True, the reduced axes are left in the result. See `np.sum` in
         newer versions of Numpy (>= 1.7).
     """
-    return np.sqrt(np.mean(x**2, axis=axis, keepdims=keepdims))
+    return np.sqrt(np.mean(x ** 2, axis=axis, keepdims=keepdims))
 
 
 def rmse(x, y, axis=None, keepdims=False):
@@ -217,8 +226,9 @@ def rmse(x, y, axis=None, keepdims=False):
     return rms(x - y, axis=axis, keepdims=keepdims)
 
 
-if hasattr(np.fft, 'rfftfreq'):
+if hasattr(np.fft, "rfftfreq"):
     rfftfreq = np.fft.rfftfreq
 else:
+
     def rfftfreq(n, d=1.0):
-        return np.abs(np.fft.fftfreq(n=n, d=d)[:n // 2 + 1])
+        return np.abs(np.fft.fftfreq(n=n, d=d)[: n // 2 + 1])

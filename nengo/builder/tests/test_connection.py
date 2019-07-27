@@ -6,11 +6,12 @@ from nengo.builder.connection import build_linear_system
 
 
 def test_build_linear_system(seed, rng, plt):
-    func = lambda x: x**2
+    func = lambda x: x ** 2
 
     with nengo.Network(seed=seed) as net:
-        conn = nengo.Connection(nengo.Ensemble(60, 1), nengo.Ensemble(50, 1),
-                                function=func)
+        conn = nengo.Connection(
+            nengo.Ensemble(60, 1), nengo.Ensemble(50, 1), function=func
+        )
 
     model = Model()
     model.build(net)

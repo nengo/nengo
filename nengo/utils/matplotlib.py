@@ -7,7 +7,7 @@ import numpy as np
 
 from nengo.utils.ensemble import tuning_curves
 
-has_prop_cycle = LooseVersion(matplotlib.__version__) >= '1.5.0'
+has_prop_cycle = LooseVersion(matplotlib.__version__) >= "1.5.0"
 
 if has_prop_cycle:
     from cycler import cycler  # Dependency of MPL form 1.5.0 onward
@@ -15,24 +15,24 @@ if has_prop_cycle:
 
 def get_color_cycle():
     if has_prop_cycle:
-        cycle = matplotlib.rcParams['axes.prop_cycle']
+        cycle = matplotlib.rcParams["axes.prop_cycle"]
         # Apparently the 'color' key may not exist, so have to fail gracefully
         try:
-            return [prop['color'] for prop in cycle]
+            return [prop["color"] for prop in cycle]
         except KeyError:
             pass  # Fall back on deprecated axes.color_cycle
-    return matplotlib.rcParams['axes.color_cycle']
+    return matplotlib.rcParams["axes.color_cycle"]
 
 
 def set_color_cycle(colors, ax=None):
     if has_prop_cycle:
         if ax is None:
-            plt.rc('axes', prop_cycle=cycler('color', colors))
+            plt.rc("axes", prop_cycle=cycler("color", colors))
         else:
-            ax.set_prop_cycle('color', colors)
+            ax.set_prop_cycle("color", colors)
     else:
         if ax is None:
-            plt.rc('axes', color_cycle=colors)
+            plt.rc("axes", color_cycle=colors)
         else:
             ax.set_color_cycle(colors)
 
@@ -89,8 +89,7 @@ def implot(plt, x, y, Z, ax=None, colorbar=True, **kwargs):
         return np.allclose(diff, diff[0])
 
     assert is_linear(x) and is_linear(y)
-    image = ax.imshow(Z, aspect='auto', extent=(x[0], x[-1], y[-1], y[0]),
-                      **kwargs)
+    image = ax.imshow(Z, aspect="auto", extent=(x[0], x[-1], y[-1], y[0]), **kwargs)
     if colorbar:
         plt.colorbar(image, ax=ax)
 
@@ -130,13 +129,14 @@ def rasterplot(time, spikes, ax=None, use_eventplot=False, **kwargs):  # noqa
     if ax is None:
         ax = plt.gca()
 
-    if use_eventplot and not hasattr(ax, 'eventplot'):
-        warnings.warn("Matplotlib version %s does not have 'eventplot'. "
-                      "Falling back to non-eventplot version."
-                      % matplotlib.__version__)
+    if use_eventplot and not hasattr(ax, "eventplot"):
+        warnings.warn(
+            "Matplotlib version %s does not have 'eventplot'. "
+            "Falling back to non-eventplot version." % matplotlib.__version__
+        )
         use_eventplot = False
 
-    colors = kwargs.pop('colors', None)
+    colors = kwargs.pop("colors", None)
     if colors is None:
         color_cycle = get_color_cycle()
         colors = [color_cycle[i % len(color_cycle)] for i in range(n_neurons)]
@@ -150,24 +150,28 @@ def rasterplot(time, spikes, ax=None, use_eventplot=False, **kwargs):  # noqa
 
         # hack to make 'eventplot' count from 1 instead of 0
         spiketimes = [np.array([-np.inf])] + spiketimes
-        colors = [['k']] + colors
+        colors = [["k"]] + colors
 
         ax.eventplot(spiketimes, colors=colors, **kwargs)
     else:
-        kwargs.setdefault('linestyle', 'None')
-        kwargs.setdefault('marker', '|')
+        kwargs.setdefault("linestyle", "None")
+        kwargs.setdefault("marker", "|")
         # Default markersize determined by matching eventplot
         ax_height = axis_size(ax)[1]
         markersize = max(ax_height * 0.8 / n_neurons, 1)
         # For 1 - 3 neurons, we need an extra fudge factor to match eventplot
         markersize -= max(4 - n_neurons, 0) ** 2 * ax_height * 0.005
-        kwargs.setdefault('markersize', markersize)
-        kwargs.setdefault('markeredgewidth', 1)
+        kwargs.setdefault("markersize", markersize)
+        kwargs.setdefault("markeredgewidth", 1)
 
         for i in range(n_neurons):
             spiketimes = time[spikes[:, i] > 0].ravel()
-            ax.plot(spiketimes, np.zeros_like(spiketimes) + (i + 1),
-                    color=colors[i], **kwargs)
+            ax.plot(
+                spiketimes,
+                np.zeros_like(spiketimes) + (i + 1),
+                color=colors[i],
+                **kwargs,
+            )
 
     # --- set axes limits
     if n_times > 1:
@@ -179,8 +183,8 @@ def rasterplot(time, spikes, ax=None, use_eventplot=False, **kwargs):  # noqa
         ax.set_yticks(np.arange(1, n_neurons + 1))
 
     # --- remove ticks as these are distracting in rasters
-    ax.xaxis.set_ticks_position('none')
-    ax.yaxis.set_ticks_position('none')
+    ax.xaxis.set_ticks_position("none")
+    ax.yaxis.set_ticks_position("none")
 
     return ax
 

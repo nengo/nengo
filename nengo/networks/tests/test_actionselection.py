@@ -86,7 +86,8 @@ def test_overridden_configs():
     assert "synapse" not in gaba_config[nengo.Connection]
 
     bg = nengo.networks.BasalGanglia(
-        dimensions=2, ampa_config=ampa_config, gaba_config=gaba_config)
+        dimensions=2, ampa_config=ampa_config, gaba_config=gaba_config
+    )
     for connection in bg.all_connections:
         if connection.synapse is None:
             continue
@@ -103,9 +104,7 @@ def test_overridden_configs():
     config_with_synapse = nengo.Config(nengo.Connection)
     config_with_synapse[nengo.Connection].synapse = nengo.Alpha(0.1)
     bg = nengo.networks.BasalGanglia(
-        dimensions=2,
-        ampa_config=config_with_synapse,
-        gaba_config=config_with_synapse,
+        dimensions=2, ampa_config=config_with_synapse, gaba_config=config_with_synapse
     )
     for connection in bg.all_connections:
         if connection.synapse is None:

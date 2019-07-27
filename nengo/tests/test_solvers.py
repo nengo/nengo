@@ -29,7 +29,6 @@ from nengo.solvers import (
 
 
 class Factory:
-
     def __init__(self, klass, *args, **kwargs):
         self.klass = klass
         self.args = args
@@ -37,16 +36,16 @@ class Factory:
 
     def __call__(self):
         args = [v() if isinstance(v, Factory) else v for v in self.args]
-        kwargs = {k: v() if isinstance(v, Factory) else v
-                  for k, v in self.kwargs.items()}
+        kwargs = {
+            k: v() if isinstance(v, Factory) else v for k, v in self.kwargs.items()
+        }
         return self.klass(*args, **kwargs)
 
     def __str__(self):
         try:
             inst = self()
         except Exception:
-            inst = "%s(args=%s, kwargs=%s)" % (
-                self.klass, self.args, self.kwargs)
+            inst = "%s(args=%s, kwargs=%s)" % (self.klass, self.args, self.kwargs)
         return str(inst)
 
     def __repr__(self):
@@ -69,7 +68,8 @@ def get_eval_points(n_points, dims, rng=None, sort=False):
 def get_rate_function(n_neurons, dims, neuron_type=nengo.LIF, rng=None):
     neurons = neuron_type(n_neurons)
     gain, bias = neurons.gain_bias(
-        rng.uniform(50, 100, n_neurons), rng.uniform(-1, 1, n_neurons))
+        rng.uniform(50, 100, n_neurons), rng.uniform(-1, 1, n_neurons)
+    )
     rates = lambda x: neurons.rates(x, gain, bias)
     return rates
 
@@ -85,7 +85,7 @@ def get_system(m, n, d, rng=None, sort=False):
 def test_cholesky(rng):
     m, n = 100, 100
     A = rng.normal(size=(m, n))
-    b = rng.normal(size=(m, ))
+    b = rng.normal(size=(m,))
 
     x0, _, _, _ = np.linalg.lstsq(A, b, rcond=-1)
     x1, _ = lstsq.Cholesky(transpose=False)(A, b, 0)
@@ -105,8 +105,9 @@ def test_conjgrad(rng):
     assert np.allclose(x0, x2, atol=1e-6, rtol=1e-3)
 
 
-@pytest.mark.parametrize('Solver', [
-    Lstsq, LstsqNoise, LstsqL2, LstsqL2nz, LstsqDrop, LstsqMultNoise])
+@pytest.mark.parametrize(
+    "Solver", [Lstsq, LstsqNoise, LstsqL2, LstsqL2nz, LstsqDrop, LstsqMultNoise]
+)
 def test_decoder_solver(Solver, plt, rng):
     solver = Solver()
 
@@ -127,19 +128,18 @@ def test_decoder_solver(Solver, plt, rng):
     est = np.dot(Atest, D)
     rel_rmse = rms(est - test) / rms(test)
 
-    plt.plot(test, np.zeros_like(test), 'k--')
+    plt.plot(test, np.zeros_like(test), "k--")
     plt.plot(test, test - est)
     plt.title("relative RMSE: %0.2e" % rel_rmse)
 
-    atol = (4e-2
-            if isinstance(solver, (LstsqNoise, LstsqDrop, LstsqMultNoise))
-            else 1.5e-2)
+    atol = (
+        4e-2 if isinstance(solver, (LstsqNoise, LstsqDrop, LstsqMultNoise)) else 1.5e-2
+    )
     assert np.allclose(test, est, atol=atol, rtol=1e-3)
     assert rel_rmse < 0.02
 
 
-@pytest.mark.parametrize('Solver', [
-    LstsqNoise, LstsqL2, LstsqL2nz])
+@pytest.mark.parametrize("Solver", [LstsqNoise, LstsqL2, LstsqL2nz])
 def test_subsolvers(Solver, seed, rng, tol=1e-2):
     get_rng = lambda: np.random.RandomState(seed)
 
@@ -156,15 +156,19 @@ def test_subsolvers(Solver, seed, rng, tol=1e-2):
         # in-situ. They are tested more robustly elsewhere.
 
 
-@pytest.mark.parametrize('Solver', [
-    Factory(LstsqL2, solver=Factory(lstsq.RandomizedSVD)),
-    Factory(LstsqL1, max_iter=2000)])
+@pytest.mark.parametrize(
+    "Solver",
+    [
+        Factory(LstsqL2, solver=Factory(lstsq.RandomizedSVD)),
+        Factory(LstsqL1, max_iter=2000),
+    ],
+)
 def test_decoder_solver_extra(Solver, plt, rng):
-    pytest.importorskip('sklearn')
+    pytest.importorskip("sklearn")
     test_decoder_solver(Solver, plt, rng)
 
 
-@pytest.mark.parametrize('Solver', [Lstsq, LstsqL2, LstsqL2nz])
+@pytest.mark.parametrize("Solver", [Lstsq, LstsqL2, LstsqL2nz])
 def test_weight_solver(Solver, rng):
     dims = 2
     a_neurons, b_neurons = 100, 101
@@ -175,8 +179,8 @@ def test_weight_solver(Solver, rng):
     Eb = get_encoders(b_neurons, dims, rng=rng)  # post encoders
 
     train = get_eval_points(n_points, dims, rng=rng)  # training eval points
-    Atrain = rates(np.dot(train, Ea))                 # training activations
-    Xtrain = train                                    # training targets
+    Atrain = rates(np.dot(train, Ea))  # training activations
+    Xtrain = train  # training targets
 
     # find decoders and multiply by encoders to get weights
     D, _ = Solver()(Atrain, Xtrain, rng=rng)
@@ -188,8 +192,8 @@ def test_weight_solver(Solver, rng):
     # assert that post inputs are close on test points
     test = get_eval_points(n_points, dims, rng=rng)  # testing eval points
     Atest = rates(np.dot(test, Ea))
-    Y1 = np.dot(Atest, W1)                         # post inputs from decoders
-    Y2 = np.dot(Atest, W2)                         # post inputs from weights
+    Y1 = np.dot(Atest, W1)  # post inputs from decoders
+    Y2 = np.dot(Atest, W2)  # post inputs from weights
     assert np.allclose(Y1, Y2)
 
     # assert that weights themselves are close (this is true for L2 weights)
@@ -197,41 +201,45 @@ def test_weight_solver(Solver, rng):
 
 
 def test_scipy_solvers(rng, logger):
-    pytest.importorskip('scipy', minversion='0.11')  # version for lsmr
+    pytest.importorskip("scipy", minversion="0.11")  # version for lsmr
 
     A, b = get_system(1000, 100, 2, rng=rng)
     sigma = 0.1 * A.max()
 
     x0, i0 = lstsq.Cholesky()(A, b, sigma)
-    logger.info("Cholesky rmse=%0.3f" % (i0['rmses'].mean(),))
+    logger.info("Cholesky rmse=%0.3f" % (i0["rmses"].mean(),))
     x1, i1 = lstsq.ConjgradScipy()(A, b, sigma)
-    logger.info("ConjgradScipy rmse=%0.3f, itns=%0.1f (%0.1f)" % (
-        i1['rmses'].mean(), i1['iterations'].mean(), i1['iterations'].std()))
+    logger.info(
+        "ConjgradScipy rmse=%0.3f, itns=%0.1f (%0.1f)"
+        % (i1["rmses"].mean(), i1["iterations"].mean(), i1["iterations"].std())
+    )
     x2, i2 = lstsq.LSMRScipy()(A, b, sigma)
-    logger.info("LSMRScipy rmse=%0.3f, itns=%0.1f (%0.1f)" % (
-        i2['rmses'].mean(), i2['iterations'].mean(), i2['iterations'].std()))
+    logger.info(
+        "LSMRScipy rmse=%0.3f, itns=%0.1f (%0.1f)"
+        % (i2["rmses"].mean(), i2["iterations"].mean(), i2["iterations"].std())
+    )
 
     assert np.allclose(x0, x1, atol=2e-5, rtol=1e-3)
     assert np.allclose(x0, x2, atol=2e-5, rtol=1e-3)
 
 
-@pytest.mark.parametrize('Solver', [Nnls, NnlsL2, NnlsL2nz])
+@pytest.mark.parametrize("Solver", [Nnls, NnlsL2, NnlsL2nz])
 def test_nnls(Solver, plt, rng):
-    pytest.importorskip('scipy')
+    pytest.importorskip("scipy")
 
     A, x = get_system(500, 100, 1, rng=rng, sort=True)
-    y = x**2
+    y = x ** 2
 
     d, _ = Solver()(A, y, rng)
     yest = np.dot(A, d)
     rel_rmse = rms(yest - y) / rms(y)
 
     plt.subplot(211)
-    plt.plot(x, y, 'k--')
+    plt.plot(x, y, "k--")
     plt.plot(x, yest)
     plt.ylim([-0.1, 1.1])
     plt.subplot(212)
-    plt.plot(x, np.zeros_like(x), 'k--')
+    plt.plot(x, np.zeros_like(x), "k--")
     plt.plot(x, yest - y)
 
     assert np.allclose(yest, y, atol=3e-2, rtol=1e-3)
@@ -239,7 +247,7 @@ def test_nnls(Solver, plt, rng):
     assert np.all(d >= 0)
 
 
-@pytest.mark.parametrize('Solver', [NnlsL2])
+@pytest.mark.parametrize("Solver", [NnlsL2])
 def test_nnls_weights(Simulator, Solver, seed):
     """Test NNLS solvers in the context of a network.
 
@@ -247,14 +255,14 @@ def test_nnls_weights(Simulator, Solver, seed):
     because it cannot be done by solving for decoders first then multiplying
     by encoders.
     """
-    pytest.importorskip('scipy')
+    pytest.importorskip("scipy")
 
     with nengo.Network(seed=seed) as net:
         a = nengo.Ensemble(26, 1)
         b = nengo.Ensemble(29, 3)
-        c = nengo.Connection(a, b[:2],
-                             solver=Solver(weights=True),
-                             transform=nengo.dists.Uniform(-1, 1))
+        c = nengo.Connection(
+            a, b[:2], solver=Solver(weights=True), transform=nengo.dists.Uniform(-1, 1)
+        )
 
     with Simulator(net) as sim:
         sim.step()
@@ -264,11 +272,15 @@ def test_nnls_weights(Simulator, Solver, seed):
 
 @pytest.mark.slow
 def test_subsolvers_L2(rng, logger):
-    pytest.importorskip('scipy', minversion='0.11')  # version for lsmr
+    pytest.importorskip("scipy", minversion="0.11")  # version for lsmr
 
     ref_solver = lstsq.Cholesky()
-    solvers = [lstsq.Conjgrad(), lstsq.BlockConjgrad(),
-               lstsq.ConjgradScipy(), lstsq.LSMRScipy()]
+    solvers = [
+        lstsq.Conjgrad(),
+        lstsq.BlockConjgrad(),
+        lstsq.ConjgradScipy(),
+        lstsq.LSMRScipy(),
+    ]
 
     A, B = get_system(m=2000, n=1000, d=10, rng=rng)
     sigma = 0.1 * A.max()
@@ -280,39 +292,43 @@ def test_subsolvers_L2(rng, logger):
     for i, solver in enumerate(solvers):
         with Timer() as t:
             xs[i], info = solver(A, B, sigma)
-        logger.info('solver: %r' % solver)
-        logger.info('duration: %0.3f', t.duration)
-        logger.info('duration relative to reference solver: %0.2f',
-                    (t.duration / t0.duration))
-        logger.info('info: %s', info)
+        logger.info("solver: %r" % solver)
+        logger.info("duration: %0.3f", t.duration)
+        logger.info(
+            "duration relative to reference solver: %0.2f", (t.duration / t0.duration)
+        )
+        logger.info("info: %s", info)
 
     for solver, x in zip(solvers, xs):
-        assert np.allclose(x0, x, atol=1e-5, rtol=1e-3), (
-            "Solver %s" % solver.__name__)
+        assert np.allclose(x0, x, atol=1e-5, rtol=1e-3), "Solver %s" % solver.__name__
 
 
 @pytest.mark.noassertions
-@pytest.mark.filterwarnings('ignore:Objective did not converge.')
+@pytest.mark.filterwarnings("ignore:Objective did not converge.")
 def test_subsolvers_L1(rng, logger):
-    pytest.importorskip('sklearn')
+    pytest.importorskip("sklearn")
 
     A, B = get_system(m=2000, n=1000, d=10, rng=rng)
 
     l1 = 1e-4
     with Timer() as t:
         LstsqL1(l1=l1, l2=0)(A, B, rng=rng)
-    logger.info('duration: %0.3f', t.duration)
+    logger.info("duration: %0.3f", t.duration)
 
 
 @pytest.mark.slow
 def test_compare_solvers(Simulator, plt, seed):
-    pytest.importorskip('sklearn')
+    pytest.importorskip("sklearn")
 
     N = 70
     decoder_solvers = [
-        Lstsq(), LstsqNoise(), LstsqL2(), LstsqL2nz(), LstsqL1(max_iter=5000)]
-    weight_solvers = [
-        LstsqL1(weights=True, max_iter=5000), LstsqDrop(weights=True)]
+        Lstsq(),
+        LstsqNoise(),
+        LstsqL2(),
+        LstsqL2nz(),
+        LstsqL1(max_iter=5000),
+    ]
+    weight_solvers = [LstsqL1(weights=True, max_iter=5000), LstsqDrop(weights=True)]
 
     tfinal = 4
 
@@ -332,8 +348,9 @@ def test_compare_solvers(Simulator, plt, seed):
             b = nengo.Ensemble(N, dimensions=1, seed=seed + 1)
             nengo.Connection(a, b, solver=solver)
             probes.append(nengo.Probe(b))
-            names.append("%s(%s)" % (
-                type(solver).__name__, 'w' if solver.weights else 'd'))
+            names.append(
+                "%s(%s)" % (type(solver).__name__, "w" if solver.weights else "d")
+            )
 
     with Simulator(model) as sim:
         sim.run(tfinal)
@@ -344,9 +361,18 @@ def test_compare_solvers(Simulator, plt, seed):
     outputs = np.array([sim.data[probe][:, 0] for probe in probes]).T
     outputs_f = nengo.Lowpass(0.02).filtfilt(outputs, dt=sim.dt)
 
-    close = allclose(t, ref, outputs_f,
-                     atol=0.07, rtol=0, buf=0.1, delay=0.007,
-                     plt=plt, labels=names, individual_results=True)
+    close = allclose(
+        t,
+        ref,
+        outputs_f,
+        atol=0.07,
+        rtol=0,
+        buf=0.1,
+        delay=0.007,
+        plt=plt,
+        labels=names,
+        individual_results=True,
+    )
 
     for name, c in zip(names, close):
         assert c, "Solver '%s' does not meet tolerances" % name
@@ -369,15 +395,15 @@ def test_regularization(Simulator, nl_nodirect, plt):
     def input_function(t):
         return np.interp(t, [1, 3], [-1, 1], left=-1, right=1)
 
-    model = nengo.Network('test_regularization')
+    model = nengo.Network("test_regularization")
     with model:
         model.config[nengo.Ensemble].neuron_type = nl_nodirect()
         u = nengo.Node(output=input_function)
         up = nengo.Probe(u)
 
         probes = np.zeros(
-            (len(Solvers), len(neurons), len(regs), len(filters)),
-            dtype='object')
+            (len(Solvers), len(neurons), len(regs), len(filters)), dtype="object"
+        )
 
         for j, n_neurons in enumerate(neurons):
             a = nengo.Ensemble(n_neurons, dimensions=1)
@@ -387,7 +413,8 @@ def test_regularization(Simulator, nl_nodirect, plt):
                 for k, reg in enumerate(regs):
                     for l, synapse in enumerate(filters):
                         probes[i, j, k, l] = nengo.Probe(
-                            a, solver=Solver(reg=reg), synapse=synapse)
+                            a, solver=Solver(reg=reg), synapse=synapse
+                        )
 
     with Simulator(model) as sim:
         sim.run(tfinal)
@@ -405,11 +432,11 @@ def test_regularization(Simulator, nl_nodirect, plt):
 
     for i, Solver in enumerate(Solvers):
         for j, n_neurons in enumerate(neurons):
-            plt.subplot(len(neurons), len(Solvers), len(Solvers)*j + i + 1)
+            plt.subplot(len(neurons), len(Solvers), len(Solvers) * j + i + 1)
             Z = rmses[i, j, :, :]
             plt.contourf(X, Y, Z, levels=np.linspace(Z.min(), Z.max(), 21))
-            plt.xlabel('filter')
-            plt.ylabel('reg')
+            plt.xlabel("filter")
+            plt.ylabel("reg")
             plt.title("%s (N=%d)" % (Solver.__name__, n_neurons))
 
     plt.tight_layout()
@@ -424,7 +451,7 @@ def test_eval_points_static(plt, rng):
     d = 5
 
     eval_points = np.logspace(np.log10(300), np.log10(5000), 21)
-    eval_points = np.round(eval_points).astype('int')
+    eval_points = np.round(eval_points).astype("int")
     max_points = eval_points.max()
     n_trials = 25
     # n_trials = 100
@@ -436,7 +463,9 @@ def test_eval_points_static(plt, rng):
         a = nengo.LIF(n)
         gain, bias = a.gain_bias(
             # rng.uniform(50, 100, n), rng.uniform(-1, 1, n))
-            rng.uniform(50, 100, n), rng.uniform(-0.9, 0.9, n))
+            rng.uniform(50, 100, n),
+            rng.uniform(-0.9, 0.9, n),
+        )
 
         e = get_encoders(n, d, rng=rng)
 
@@ -451,19 +480,18 @@ def test_eval_points_static(plt, rng):
             rmses[i, trial] = rms(np.dot(Atest, Di) - test)
 
     rmses_norm1 = rmses - rmses.mean(0, keepdims=True)
-    rmses_norm2 = (rmses - rmses.mean(0, keepdims=True)
-                   ) / rmses.std(0, keepdims=True)
+    rmses_norm2 = (rmses - rmses.mean(0, keepdims=True)) / rmses.std(0, keepdims=True)
 
     def make_plot(rmses):
         mean = rmses.mean(1)
         low = rmses.min(1)
         high = rmses.max(1)
         std = rmses.std(1)
-        plt.semilogx(eval_points, mean, 'k-', label='mean')
-        plt.semilogx(eval_points, mean - std, 'k--', label='+/- std')
-        plt.semilogx(eval_points, mean + std, 'k--')
-        plt.semilogx(eval_points, high, 'r-', label='high')
-        plt.semilogx(eval_points, low, 'b-', label='low')
+        plt.semilogx(eval_points, mean, "k-", label="mean")
+        plt.semilogx(eval_points, mean - std, "k--", label="+/- std")
+        plt.semilogx(eval_points, mean + std, "k--")
+        plt.semilogx(eval_points, high, "r-", label="high")
+        plt.semilogx(eval_points, low, "b-", label="low")
         plt.xlim([eval_points[0], eval_points[-1]])
         # plt.xticks(eval_points, eval_points)
         plt.legend(fontsize=8, loc=1)
@@ -471,13 +499,13 @@ def test_eval_points_static(plt, rng):
     plt.figure(figsize=(12, 8))
     plt.subplot(3, 1, 1)
     make_plot(rmses)
-    plt.ylabel('rmse')
+    plt.ylabel("rmse")
     plt.subplot(3, 1, 2)
     make_plot(rmses_norm1)
-    plt.ylabel('rmse - mean')
+    plt.ylabel("rmse - mean")
     plt.subplot(3, 1, 3)
     make_plot(rmses_norm2)
-    plt.ylabel('(rmse - mean) / std')
+    plt.ylabel("(rmse - mean) / std")
 
 
 @pytest.mark.slow
@@ -488,15 +516,14 @@ def test_eval_points(Simulator, nl_nodirect, plt, seed, rng, logger):
     filter = 0.08
 
     eval_points = np.logspace(np.log10(300), np.log10(5000), 11)
-    eval_points = np.round(eval_points).astype('int')
+    eval_points = np.round(eval_points).astype("int")
     max_points = eval_points.max()
     n_trials = 1
 
     rmses = np.nan * np.zeros((len(eval_points), n_trials))
     for j in range(n_trials):
         points = rng.normal(size=(max_points, d))
-        points *= (rng.uniform(size=max_points)
-                   / norm(points, axis=-1))[:, None]
+        points *= (rng.uniform(size=max_points) / norm(points, axis=-1))[:, None]
 
         rng_j = np.random.RandomState(348 + j)
         seed = 903824 + j
@@ -510,8 +537,7 @@ def test_eval_points(Simulator, nl_nodirect, plt, seed, rng, logger):
             with model:
                 model.config[nengo.Ensemble].neuron_type = nl_nodirect()
                 u = nengo.Node(output=x)
-                a = nengo.Ensemble(n * d, dimensions=d,
-                                   eval_points=points[:n_points])
+                a = nengo.Ensemble(n * d, dimensions=d, eval_points=points[:n_points])
                 nengo.Connection(u, a, synapse=0)
                 up = nengo.Probe(u)
                 ap = nengo.Probe(a)
@@ -529,9 +555,9 @@ def test_eval_points(Simulator, nl_nodirect, plt, seed, rng, logger):
             tmask = (t > t0) & (t < t1)
 
             rmses[i, j] = rms(yt[tmask] - xt[tmask])
-            logger.info('trial %d', j)
-            logger.info('  n_points: %d', n_points)
-            logger.info('  duration: %0.3f s', timer.duration)
+            logger.info("trial %d", j)
+            logger.info("  n_points: %d", n_points)
+            logger.info("  duration: %0.3f s", timer.duration)
 
     # subtract out mean for each model
     rmses_norm = rmses - rmses.mean(0, keepdims=True)
@@ -539,15 +565,16 @@ def test_eval_points(Simulator, nl_nodirect, plt, seed, rng, logger):
     mean = rmses_norm.mean(1)
     low = rmses_norm.min(1)
     high = rmses_norm.max(1)
-    plt.semilogx(eval_points, mean, 'k-')
-    plt.semilogx(eval_points, high, 'r-')
-    plt.semilogx(eval_points, low, 'b-')
+    plt.semilogx(eval_points, mean, "k-")
+    plt.semilogx(eval_points, high, "r-")
+    plt.semilogx(eval_points, low, "b-")
     plt.xlim([eval_points[0], eval_points[-1]])
     plt.xticks(eval_points, eval_points)
 
 
-@pytest.mark.parametrize('values, weights', [
-    (None, False), (None, True), ("ones", False), ("ones", True)])
+@pytest.mark.parametrize(
+    "values, weights", [(None, False), (None, True), ("ones", False), ("ones", True)]
+)
 def test_nosolver(values, weights, seed, Simulator):
     with nengo.Network(seed=seed) as net:
         pre = nengo.Ensemble(10, 2)
@@ -557,7 +584,8 @@ def test_nosolver(values, weights, seed, Simulator):
             values = np.ones((pre.n_neurons, post.dimensions))
 
         conn = nengo.Connection(
-            pre, post, solver=NoSolver(values=values, weights=weights))
+            pre, post, solver=NoSolver(values=values, weights=weights)
+        )
 
     with Simulator(net) as sim:
         built_weights = sim.data[conn].weights
@@ -569,8 +597,8 @@ def test_nosolver(values, weights, seed, Simulator):
         assert np.all(conn.solver.values == values)
         if weights:
             assert np.allclose(
-                built_weights,
-                np.dot(values, sim.data[post].scaled_encoders.T).T)
+                built_weights, np.dot(values, sim.data[post].scaled_encoders.T).T
+            )
         else:
             assert np.all(built_weights == 1)
 
@@ -594,19 +622,17 @@ def test_nosolver_validation():
     NoSolver(values=[[1], [1]])
 
 
-@pytest.mark.parametrize('solver', [
-    LstsqDrop(weights=True),
-])
+@pytest.mark.parametrize("solver", [LstsqDrop(weights=True)])
 def test_non_compositional_solver(Simulator, solver, rng, seed, plt):
     if isinstance(solver, LstsqL1):
-        pytest.importorskip('sklearn')
+        pytest.importorskip("sklearn")
     if isinstance(solver, Nnls):
-        pytest.importorskip('scipy')
+        pytest.importorskip("scipy")
 
     assert not solver.compositional
 
     with nengo.Network(seed=seed) as net:
-        u = nengo.Node(lambda t: 0.9*np.sin(2*np.pi*t))
+        u = nengo.Node(lambda t: 0.9 * np.sin(2 * np.pi * t))
         a = nengo.Ensemble(100, 1)
         b = nengo.Ensemble(101, 1)
         nengo.Connection(u, a, synapse=None)
@@ -632,9 +658,12 @@ def test_non_compositional_solver_transform_error(Simulator):
     with nengo.Network() as net:
         a = nengo.Ensemble(10, 1)
         b = nengo.Ensemble(10, 1)
-        nengo.Connection(a, b, solver=Nnls(weights=True),
-                         transform=nengo.Convolution(
-                             1, (1, 1), kernel_size=(1,), strides=(1,)))
+        nengo.Connection(
+            a,
+            b,
+            solver=Nnls(weights=True),
+            transform=nengo.Convolution(1, (1, 1), kernel_size=(1,), strides=(1,)),
+        )
 
     # build error for non-compositional solver with non-dense transform
     with pytest.raises(BuildError, match="Non-compositional solvers"):

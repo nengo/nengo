@@ -49,18 +49,22 @@ class InputGatedMemory(nengo.Network):
         effectively wiping out the vector currently being remembered.
     """
 
-    def __init__(self,
-                 n_neurons,
-                 dimensions,
-                 feedback=1.0,
-                 difference_gain=1.0,
-                 recurrent_synapse=0.1,
-                 difference_synapse=None,
-                 **kwargs):
+    def __init__(
+        self,
+        n_neurons,
+        dimensions,
+        feedback=1.0,
+        difference_gain=1.0,
+        recurrent_synapse=0.1,
+        difference_synapse=None,
+        # fmt: off
+        **kwargs
+        # fmt: on
+    ):
 
-        if 'net' in kwargs:
+        if "net" in kwargs:
             raise ObsoleteError("The 'net' argument is no longer supported.")
-        kwargs.setdefault('label', "Input gated memory")
+        kwargs.setdefault("label", "Input gated memory")
         super().__init__(**kwargs)
 
         if difference_synapse is None:
@@ -71,32 +75,44 @@ class InputGatedMemory(nengo.Network):
         with self:
             # integrator to store value
             self.mem = EnsembleArray(n_neurons, dimensions, label="mem")
-            nengo.Connection(self.mem.output, self.mem.input,
-                             transform=feedback,
-                             synapse=recurrent_synapse)
+            nengo.Connection(
+                self.mem.output,
+                self.mem.input,
+                transform=feedback,
+                synapse=recurrent_synapse,
+            )
 
             # calculate difference between stored value and input
             self.diff = EnsembleArray(n_neurons, dimensions, label="diff")
             nengo.Connection(self.mem.output, self.diff.input, transform=-1)
 
             # feed difference into integrator
-            nengo.Connection(self.diff.output, self.mem.input,
-                             transform=difference_gain,
-                             synapse=difference_synapse)
+            nengo.Connection(
+                self.diff.output,
+                self.mem.input,
+                transform=difference_gain,
+                synapse=difference_synapse,
+            )
 
             # gate difference (if gate==0, update stored value,
             # otherwise retain stored value)
             self.gate = nengo.Node(size_in=1)
             self.diff.add_neuron_input()
-            nengo.Connection(self.gate, self.diff.neuron_input,
-                             transform=np.ones((n_total_neurons, 1)) * -10,
-                             synapse=None)
+            nengo.Connection(
+                self.gate,
+                self.diff.neuron_input,
+                transform=np.ones((n_total_neurons, 1)) * -10,
+                synapse=None,
+            )
 
             # reset input (if reset=1, remove all values, and set to 0)
             self.reset = nengo.Node(size_in=1)
-            nengo.Connection(self.reset, self.mem.add_neuron_input(),
-                             transform=np.ones((n_total_neurons, 1)) * -3,
-                             synapse=None)
+            nengo.Connection(
+                self.reset,
+                self.mem.add_neuron_input(),
+                transform=np.ones((n_total_neurons, 1)) * -3,
+                synapse=None,
+            )
 
         self.input = self.diff.input
         self.output = self.mem.output

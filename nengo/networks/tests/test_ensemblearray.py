@@ -24,9 +24,9 @@ def test_multidim(Simulator, plt, seed, rng):
         inputB = nengo.Node(b)
         A = nengo.networks.EnsembleArray(n_neurons, dims, radius=radius)
         B = nengo.networks.EnsembleArray(n_neurons, dims, radius=radius)
-        C = nengo.networks.EnsembleArray(n_neurons * 2, dims,
-                                         ens_dimensions=2,
-                                         radius=radius)
+        C = nengo.networks.EnsembleArray(
+            n_neurons * 2, dims, ens_dimensions=2, radius=radius
+        )
         nengo.Connection(inputA, A.input)
         nengo.Connection(inputB, B.input)
         nengo.Connection(A.output, C.input[::2])
@@ -44,10 +44,10 @@ def test_multidim(Simulator, plt, seed, rng):
     def plot(sim, a, p, title=""):
         a_ref = np.tile(a, (len(t), 1))
         a_sim = sim.data[p]
-        colors = ['b', 'g', 'r', 'c', 'm', 'y']
+        colors = ["b", "g", "r", "c", "m", "y"]
         for i in range(a_sim.shape[1]):
-            plt.plot(t, a_ref[:, i], '--', color=colors[i % 6])
-            plt.plot(t, a_sim[:, i], '-', color=colors[i % 6])
+            plt.plot(t, a_ref[:, i], "--", color=colors[i % 6])
+            plt.plot(t, a_sim[:, i], "-", color=colors[i % 6])
         plt.xticks(np.linspace(0, 0.4, 5))
         plt.xlim(right=t[-1])
         plt.title(title)
@@ -76,7 +76,7 @@ def _mmul_transforms(A_shape, B_shape, C_dim):
     for i in range(A_shape[0]):
         for j in range(A_shape[1]):
             for k in range(B_shape[1]):
-                tmp = (j + k * A_shape[1] + i * B_shape[0] * B_shape[1])
+                tmp = j + k * A_shape[1] + i * B_shape[0] * B_shape[1]
                 transformA[tmp * 2][j + i * A_shape[1]] = 1
                 transformB[tmp * 2 + 1][k + j * B_shape[1]] = 1
 
@@ -89,9 +89,7 @@ def test_multifunc(Simulator, plt, seed, rng):
     n_neurons = 60
 
     inp = rng.uniform(low=-0.7, high=0.7, size=dims)
-    functions = [lambda x: [x*2],
-                 lambda x: [-x, -x*2],
-                 lambda x: [.5*x]]
+    functions = [lambda x: [x * 2], lambda x: [-x, -x * 2], lambda x: [0.5 * x]]
     output = []
     for i, func in enumerate(functions):
         output.extend(func(inp[i]))
@@ -100,7 +98,7 @@ def test_multifunc(Simulator, plt, seed, rng):
     with model:
         inp_node = nengo.Node(inp)
         ea = nengo.networks.EnsembleArray(n_neurons, dims)
-        ea_funcs = ea.add_output('multiple functions', function=functions)
+        ea_funcs = ea.add_output("multiple functions", function=functions)
 
         nengo.Connection(inp_node, ea.input)
 
@@ -114,9 +112,9 @@ def test_multifunc(Simulator, plt, seed, rng):
 
     def plot(sim, expected, probe, title=""):
         simdata = sim.data[probe]
-        colors = ['b', 'g', 'r', 'c']
+        colors = ["b", "g", "r", "c"]
         for i in range(simdata.shape[1]):
-            plt.axhline(expected[i], ls='--', color=colors[i % 4])
+            plt.axhline(expected[i], ls="--", color=colors[i % 4])
             plt.plot(t, simdata[:, i], color=colors[i % 4])
         plt.xticks(np.linspace(0, 0.4, 5))
         plt.xlim(right=t[-1])
@@ -135,12 +133,10 @@ def test_matrix_mul(Simulator, plt, seed):
     Bmat = np.asarray([[0.8, 0.3], [0.2, 0.7]])
     radius = 1
 
-    model = nengo.Network(label='Matrix Multiplication', seed=seed)
+    model = nengo.Network(label="Matrix Multiplication", seed=seed)
     with model:
-        A = nengo.networks.EnsembleArray(
-            N, Amat.size, radius=radius, label="A")
-        B = nengo.networks.EnsembleArray(
-            N, Bmat.size, radius=radius, label="B")
+        A = nengo.networks.EnsembleArray(N, Amat.size, radius=radius, label="A")
+        B = nengo.networks.EnsembleArray(N, Bmat.size, radius=radius, label="B")
 
         inputA = nengo.Node(output=Amat.ravel())
         inputB = nengo.Node(output=Bmat.ravel())
@@ -151,17 +147,21 @@ def test_matrix_mul(Simulator, plt, seed):
 
         Cdims = Amat.size * Bmat.shape[1]
         C = nengo.networks.EnsembleArray(
-            N, Cdims, ens_dimensions=2, radius=np.sqrt(2) * radius,
-            encoders=Choice([[1, 1], [-1, 1], [1, -1], [-1, -1]]))
+            N,
+            Cdims,
+            ens_dimensions=2,
+            radius=np.sqrt(2) * radius,
+            encoders=Choice([[1, 1], [-1, 1], [1, -1], [-1, -1]]),
+        )
 
-        transformA, transformB = _mmul_transforms(
-            Amat.shape, Bmat.shape, C.dimensions)
+        transformA, transformB = _mmul_transforms(Amat.shape, Bmat.shape, C.dimensions)
 
         nengo.Connection(A.output, C.input, transform=transformA)
         nengo.Connection(B.output, C.input, transform=transformB)
 
         D = nengo.networks.EnsembleArray(
-            N, Amat.shape[0] * Bmat.shape[1], radius=radius)
+            N, Amat.shape[0] * Bmat.shape[1], radius=radius
+        )
 
         transformC = np.zeros((D.dimensions, Bmat.size))
         for i in range(Bmat.size):
@@ -176,11 +176,11 @@ def test_matrix_mul(Simulator, plt, seed):
         sim.run(0.3)
 
     t = sim.trange()
-    tmask = (t >= 0.2)
+    tmask = t >= 0.2
 
     plt.plot(t, sim.data[D_p])
     for d in np.dot(Amat, Bmat).flatten():
-        plt.axhline(d, color='k')
+        plt.axhline(d, color="k")
 
     tols = dict(atol=0.1, rtol=0.01)
     for i in range(Amat.size):
@@ -227,8 +227,7 @@ def test_neuroninput(Simulator, seed):
 
 def test_neuronoutput(Simulator, seed):
     with nengo.Network(seed=seed) as net:
-        ea = nengo.networks.EnsembleArray(
-            10, 2, encoders=nengo.dists.Choice([[1]]))
+        ea = nengo.networks.EnsembleArray(10, 2, encoders=nengo.dists.Choice([[1]]))
         ea.add_neuron_output()
         inp = nengo.Node([-10, -10])
         nengo.Connection(inp, ea.input, synapse=None)
@@ -246,12 +245,14 @@ def test_ndarrays(Simulator, rng):
     eval_points = rng.uniform(-1, 1, size=(100, 1))
     with nengo.Network() as net:
         ea = nengo.networks.EnsembleArray(
-            10, 2,
+            10,
+            2,
             encoders=encoders,
             max_rates=max_rates,
             intercepts=intercepts,
             eval_points=eval_points,
-            n_eval_points=eval_points.shape[0])
+            n_eval_points=eval_points.shape[0],
+        )
 
     with Simulator(net) as sim:
         pass
@@ -265,12 +266,14 @@ def test_ndarrays(Simulator, rng):
     with nengo.Network() as net:
         # Incorrect shapes don't fail until build
         ea = nengo.networks.EnsembleArray(
-            10, 2,
+            10,
+            2,
             encoders=encoders,
             max_rates=max_rates,
             intercepts=intercepts,
             eval_points=eval_points[:10],
-            n_eval_points=eval_points.shape[0])
+            n_eval_points=eval_points.shape[0],
+        )
 
     with pytest.raises(ValidationError):
         with Simulator(net) as sim:

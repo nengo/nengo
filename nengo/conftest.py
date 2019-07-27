@@ -4,6 +4,7 @@ import inspect
 import importlib
 import os
 import re
+
 try:
     import resource
 except ImportError:  # pragma: no cover
@@ -18,8 +19,14 @@ import pytest
 
 import nengo
 import nengo.utils.numpy as npext
-from nengo.neurons import (Direct, LIF, LIFRate, RectifiedLinear,
-                           Sigmoid, SpikingRectifiedLinear)
+from nengo.neurons import (
+    Direct,
+    LIF,
+    LIFRate,
+    RectifiedLinear,
+    Sigmoid,
+    SpikingRectifiedLinear,
+)
 from nengo.rc import rc
 from nengo.utils.testing import Analytics, Logger, Plotter
 
@@ -39,7 +46,12 @@ class TestConfig:
     Simulator = nengo.Simulator
     RefSimulator = nengo.Simulator
     neuron_types = [
-        Direct, LIF, LIFRate, RectifiedLinear, Sigmoid, SpikingRectifiedLinear
+        Direct,
+        LIF,
+        LIFRate,
+        RectifiedLinear,
+        Sigmoid,
+        SpikingRectifiedLinear,
     ]
     compare_requested = False
     run_unsupported = False
@@ -58,31 +70,31 @@ class TestConfig:
 
 
 def pytest_configure(config):
-    matplotlib.use('agg')
-    warnings.simplefilter('always')
+    matplotlib.use("agg")
+    warnings.simplefilter("always")
 
-    if config.getoption('memory') and resource is None:  # pragma: no cover
+    if config.getoption("memory") and resource is None:  # pragma: no cover
         raise ValueError("'--memory' option not supported on this platform")
 
-    if config.getoption('simulator'):
-        TestConfig.Simulator = load_class(config.getoption('simulator')[0])
-    if config.getoption('ref_simulator'):
-        refsim = config.getoption('ref_simulator')[0]
+    if config.getoption("simulator"):
+        TestConfig.Simulator = load_class(config.getoption("simulator")[0])
+    if config.getoption("ref_simulator"):
+        refsim = config.getoption("ref_simulator")[0]
         TestConfig.RefSimulator = load_class(refsim)
 
-    if config.getoption('neurons'):
-        ntypes = config.getoption('neurons')[0].split(',')
+    if config.getoption("neurons"):
+        ntypes = config.getoption("neurons")[0].split(",")
         TestConfig.neuron_types = [load_class(n) for n in ntypes]
 
-    if config.getoption('seed_offset'):
-        TestConfig.test_seed = config.getoption('seed_offset')[0]
+    if config.getoption("seed_offset"):
+        TestConfig.test_seed = config.getoption("seed_offset")[0]
 
-    TestConfig.compare_requested = config.getvalue('compare') is not None
-    TestConfig.run_unsupported = config.getvalue('unsupported')
+    TestConfig.compare_requested = config.getvalue("compare") is not None
+    TestConfig.run_unsupported = config.getvalue("unsupported")
 
 
 def load_class(fully_qualified_name):
-    mod_name, cls_name = fully_qualified_name.rsplit('.', 1)
+    mod_name, cls_name = fully_qualified_name.rsplit(".", 1)
     mod = importlib.import_module(mod_name)
     return getattr(mod, cls_name)
 
@@ -123,13 +135,13 @@ def recorder_dirname(request, name):
         return None
 
     simulator, nl = TestConfig.RefSimulator, None
-    if 'Simulator' in request.fixturenames:
-        simulator = request.getfixturevalue('Simulator')
+    if "Simulator" in request.fixturenames:
+        simulator = request.getfixturevalue("Simulator")
     # 'nl' stands for the non-linearity used in the neuron equation
-    if 'nl' in request.fixturenames:
-        nl = request.getfixturevalue('nl')
-    elif 'nl_nodirect' in request.fixturenames:
-        nl = request.getfixturevalue('nl_nodirect')
+    if "nl" in request.fixturenames:
+        nl = request.getfixturevalue("nl")
+    elif "nl_nodirect" in request.fixturenames:
+        nl = request.getfixturevalue("nl_nodirect")
 
     dirname = "%s.%s" % (simulator.__module__, name)
     if nl is not None:
@@ -146,17 +158,18 @@ def parametrize_function_name(request, function_name):
     This function is used when naming plots saved through the ``plt`` fixture.
     """
     suffixes = []
-    if 'parametrize' in request.keywords:
+    if "parametrize" in request.keywords:
         argnames = []
         for marker in request.keywords.node.iter_markers("parametrize"):
-            argnames.extend([x.strip() for names in marker.args[::2]
-                             for x in names.split(',')])
+            argnames.extend(
+                [x.strip() for names in marker.args[::2] for x in names.split(",")]
+            )
         for name in argnames:
             value = request.getfixturevalue(name)
             if inspect.isclass(value):
                 value = value.__name__
-            suffixes.append('{}={}'.format(name, value))
-    return '+'.join([function_name] + suffixes)
+            suffixes.append("{}={}".format(name, value))
+    return "+".join([function_name] + suffixes)
 
 
 @pytest.fixture
@@ -172,10 +185,12 @@ def plt(request):
     If you need to override the default filename, set `plt.saveas` to
     the desired filename.
     """
-    dirname = recorder_dirname(request, 'plots')
+    dirname = recorder_dirname(request, "plots")
     plotter = Plotter(
-        dirname, request.module.__name__,
-        parametrize_function_name(request, request.function.__name__))
+        dirname,
+        request.module.__name__,
+        parametrize_function_name(request, request.function.__name__),
+    )
     request.addfinalizer(lambda: plotter.__exit__(None, None, None))
     return plotter.__enter__()
 
@@ -193,21 +208,24 @@ def analytics(request):
     ``analytics.add_summary_data``; these will be saved
     in a single ``.csv`` file.
     """
-    dirname = recorder_dirname(request, 'analytics')
+    dirname = recorder_dirname(request, "analytics")
     analytics = Analytics(
-        dirname, request.module.__name__,
-        parametrize_function_name(request, request.function.__name__))
+        dirname,
+        request.module.__name__,
+        parametrize_function_name(request, request.function.__name__),
+    )
     request.addfinalizer(lambda: analytics.__exit__(None, None, None))
     return analytics.__enter__()
 
 
 @pytest.fixture
 def analytics_data(request):
-    paths = request.config.getvalue('compare')
-    function_name = parametrize_function_name(request, re.sub(
-        '^test_[a-zA-Z0-9]*_', 'test_', request.function.__name__, count=1))
-    return [Analytics.load(
-        p, request.module.__name__, function_name) for p in paths]
+    paths = request.config.getvalue("compare")
+    function_name = parametrize_function_name(
+        request,
+        re.sub("^test_[a-zA-Z0-9]*_", "test_", request.function.__name__, count=1),
+    )
+    return [Analytics.load(p, request.module.__name__, function_name) for p in paths]
 
 
 @pytest.fixture
@@ -219,10 +237,12 @@ def logger(request):
     This will keep saved logs organized in a simulator-specific folder,
     with an automatically generated name.
     """
-    dirname = recorder_dirname(request, 'logs')
+    dirname = recorder_dirname(request, "logs")
     logger = Logger(
-        dirname, request.module.__name__,
-        parametrize_function_name(request, request.function.__name__))
+        dirname,
+        request.module.__name__,
+        parametrize_function_name(request, request.function.__name__),
+    )
     request.addfinalizer(lambda: logger.__exit__(None, None, None))
     return logger.__enter__()
 
@@ -240,7 +260,7 @@ def function_seed(function, mod=0):
 
     # take start of md5 hash of function file and name, should be unique
     hash_list = os.path.normpath(path).split(os.path.sep) + [c.co_name]
-    hash_bytes = '/'.join(hash_list).encode('utf-8')
+    hash_bytes = "/".join(hash_list).encode("utf-8")
     i = int(hashlib.md5(hash_bytes).hexdigest()[:15], 16)
     s = (i + mod) % npext.maxint
     int_s = int(s)  # numpy 1.8.0 bug when RandomState on long type inputs
@@ -256,10 +276,10 @@ def get_item_name(item):
         # if test is within the nengo directory, remove the nengo directory
         # prefix (so that we can move the nengo directory without changing
         # the name)
-        item_path = item_path[len(nengo_path) + 1:]
-    item_path = os.path.join('nengo', item_path)
-    item_path = item_path.replace(os.sep, '/')
-    return '%s:%s' % (item_path, item_name)
+        item_path = item_path[len(nengo_path) + 1 :]
+    item_path = os.path.join("nengo", item_path)
+    item_path = item_path.replace(os.sep, "/")
+    return "%s:%s" % (item_path, item_name)
 
 
 @pytest.fixture
@@ -286,64 +306,74 @@ def seed(request):
 def pytest_generate_tests(metafunc):
     marks = [
         getattr(pytest.mark, m.name)(*m.args, **m.kwargs)
-        for m in getattr(metafunc.function, 'pytestmark', [])]
+        for m in getattr(metafunc.function, "pytestmark", [])
+    ]
 
     def mark_nl(nl):
         if nl is Sigmoid:
-            nl = pytest.param(nl, marks=[pytest.mark.filterwarnings(
-                'ignore:overflow encountered in exp')] + marks)
+            nl = pytest.param(
+                nl,
+                marks=[pytest.mark.filterwarnings("ignore:overflow encountered in exp")]
+                + marks,
+            )
         return nl
 
     if "nl" in metafunc.fixturenames:
-        metafunc.parametrize(
-            "nl", [mark_nl(nl) for nl in TestConfig.neuron_types])
+        metafunc.parametrize("nl", [mark_nl(nl) for nl in TestConfig.neuron_types])
     if "nl_nodirect" in metafunc.fixturenames:
-        nodirect = [mark_nl(n) for n in TestConfig.neuron_types
-                    if n is not Direct]
+        nodirect = [mark_nl(n) for n in TestConfig.neuron_types if n is not Direct]
         metafunc.parametrize("nl_nodirect", nodirect)
 
 
 def pytest_collection_modifyitems(session, config, items):
-    if config.getvalue('noexamples'):
+    if config.getvalue("noexamples"):
         deselect_by_condition(
-            lambda item: item.get_closest_marker("example"), items, config)
-    if not config.getvalue('slow'):
+            lambda item: item.get_closest_marker("example"), items, config
+        )
+    if not config.getvalue("slow"):
         skip_slow = pytest.mark.skip("slow tests not requested")
         for item in items:
             if item.get_closest_marker("slow"):
                 item.add_marker(skip_slow)
     if not TestConfig.compare_requested:
         deselect_by_condition(
-            lambda item: item.get_closest_marker("compare"), items, config)
+            lambda item: item.get_closest_marker("compare"), items, config
+        )
     if not config.getvalue("spa"):
         deselect_by_condition(
-            lambda item: "nengo/spa/" in get_item_name(item), items, config)
+            lambda item: "nengo/spa/" in get_item_name(item), items, config
+        )
 
-    uses_sim = lambda item: 'Simulator' in item.fixturenames
-    uses_refsim = lambda item: 'RefSimulator' in item.fixturenames
+    uses_sim = lambda item: "Simulator" in item.fixturenames
+    uses_refsim = lambda item: "RefSimulator" in item.fixturenames
     if TestConfig.is_skipping_frontend_tests():
         deselect_by_condition(
-            lambda item: not (uses_sim(item) or uses_refsim(item)),
-            items, config)
+            lambda item: not (uses_sim(item) or uses_refsim(item)), items, config
+        )
         deselect_by_condition(
-            lambda item: uses_refsim(item)
-            and not TestConfig.is_refsim_overridden(),
-            items, config)
+            lambda item: uses_refsim(item) and not TestConfig.is_refsim_overridden(),
+            items,
+            config,
+        )
         deselect_by_condition(
-            lambda item: uses_sim(item)
-            and not TestConfig.is_sim_overridden(),
-            items, config)
+            lambda item: uses_sim(item) and not TestConfig.is_sim_overridden(),
+            items,
+            config,
+        )
 
     deselect_by_condition(
         lambda item: item.get_closest_marker("noassertions")
         and not any(
             fixture in item.fixturenames and config.getvalue(option)
             for fixture, option in [
-                ('analytics', 'analytics'),
-                ('plt', 'plots'),
-                ('logger', 'logs'),
-            ]),
-        items, config)
+                ("analytics", "analytics"),
+                ("plt", "plots"),
+                ("logger", "logs"),
+            ]
+        ),
+        items,
+        config,
+    )
 
 
 def deselect_by_condition(condition, items, config):
@@ -363,60 +393,61 @@ def deselect_by_condition(condition, items, config):
 def pytest_report_collectionfinish(config, startdir, items):
     deselect_reasons = ["Nengo core tests collected"]
 
-    if config.getvalue('noexamples'):
-        deselect_reasons.append(
-            " example tests deselected (--noexamples passed)")
-    if not config.getvalue('slow'):
-        deselect_reasons.append(
-            " slow tests skipped (pass --slow to run them)")
+    if config.getvalue("noexamples"):
+        deselect_reasons.append(" example tests deselected (--noexamples passed)")
+    if not config.getvalue("slow"):
+        deselect_reasons.append(" slow tests skipped (pass --slow to run them)")
     if not TestConfig.compare_requested:
         deselect_reasons.append(
-            " compare tests deselected (pass --compare to run them).")
-    if not config.getvalue('spa'):
-        deselect_reasons.append(
-            " spa tests deselected (pass --spa to run them)")
+            " compare tests deselected (pass --compare to run them)."
+        )
+    if not config.getvalue("spa"):
+        deselect_reasons.append(" spa tests deselected (pass --spa to run them)")
 
     if TestConfig.is_skipping_frontend_tests():
         deselect_reasons.append(
             " frontend tests deselected because --simulator or "
-            "--ref-simulator was passed")
+            "--ref-simulator was passed"
+        )
         if not TestConfig.is_refsim_overridden():
             deselect_reasons.append(
                 " backend tests for non-reference simulator deselected "
-                "because only --ref-simulator was passed")
+                "because only --ref-simulator was passed"
+            )
         if not TestConfig.is_sim_overridden():
             deselect_reasons.append(
                 " backend tests for reference simulator deselected "
-                "because only --simulator was passed")
+                "because only --simulator was passed"
+            )
 
-    for option in ('analytics', 'plots', 'logs'):
+    for option in ("analytics", "plots", "logs"):
         if not config.getvalue(option):
             deselect_reasons.append(
                 " {option} not requested (pass --{option} to generate)".format(
-                    option=option))
+                    option=option
+                )
+            )
 
     return deselect_reasons
 
 
 def pytest_runtest_setup(item):
     rc.reload_rc([])
-    rc.set('decoder_cache', 'enabled', 'False')
-    rc.set('exceptions', 'simplified', 'False')
-    rc.set('nengo.Simulator', 'fail_fast', 'True')
+    rc.set("decoder_cache", "enabled", "False")
+    rc.set("exceptions", "simplified", "False")
+    rc.set("nengo.Simulator", "fail_fast", "True")
 
     item_name = get_item_name(item)
 
     # join all the lines and then split (preserving quoted strings)
-    unsupported = shlex.split(
-        " ".join(item.config.getini("nengo_test_unsupported")))
+    unsupported = shlex.split(" ".join(item.config.getini("nengo_test_unsupported")))
     # group pairs (representing testname + reason)
-    unsupported = [
-        unsupported[i:i + 2] for i in range(0, len(unsupported), 2)]
+    unsupported = [unsupported[i : i + 2] for i in range(0, len(unsupported), 2)]
 
     for test, reason in unsupported:
         # wrap square brackets to interpret them literally
         # (see https://docs.python.org/3/library/fnmatch.html)
-        test = "".join("[%s]" % c if c in ('[', ']') else c for c in test)
+        test = "".join("[%s]" % c if c in ("[", "]") else c for c in test)
 
         # We add a '*' before test to eliminate the surprise of needing
         # a '*' before the name of a test function.
@@ -430,8 +461,8 @@ def pytest_runtest_setup(item):
 
 
 def pytest_terminal_summary(terminalreporter):
-    reports = terminalreporter.getreports('passed')
-    do_compare = terminalreporter.config.getvalue('compare') is not None
+    reports = terminalreporter.getreports("passed")
+    do_compare = terminalreporter.config.getvalue("compare") is not None
     if reports and do_compare:  # pragma: no cover
         terminalreporter.write_sep("=", "PASSED")
         for rep in reports:
@@ -442,13 +473,12 @@ def pytest_terminal_summary(terminalreporter):
     if resource and terminalreporter.config.option.memory:
         # Calculate memory usage; details at
         # http://fa.bianp.net/blog/2013/different-ways-to-get-memory-consumption-or-lessons-learned-from-memory_profiler/  # noqa, pylint: disable=line-too-long
-        rusage_denom = 1024.
-        if sys.platform == 'darwin':  # pragma: no cover
+        rusage_denom = 1024.0
+        if sys.platform == "darwin":  # pragma: no cover
             # ... it seems that in OSX the output is in different units ...
             rusage_denom = rusage_denom * rusage_denom
         mem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / rusage_denom
-        terminalreporter.write_sep("=",
-                                   "total memory consumed: %.2f MiB" % mem)
+        terminalreporter.write_sep("=", "total memory consumed: %.2f MiB" % mem)
 
         # Ensure we only print once
         terminalreporter.config.option.memory = False

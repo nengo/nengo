@@ -33,8 +33,7 @@ def test_seeding(RefSimulator, logger):
 
     def compare_objs(obj1, obj2, attrs, equal=True):
         for attr in attrs:
-            check = (np.allclose(getattr(obj1, attr), getattr(obj2, attr))
-                     == equal)
+            check = np.allclose(getattr(obj1, attr), getattr(obj2, attr)) == equal
             if not check:
                 logger.info("%s: %s", attr, getattr(obj1, attr))
                 logger.info("%s: %s", attr, getattr(obj2, attr))
@@ -48,7 +47,7 @@ def test_seeding(RefSimulator, logger):
     compare_objs(As[0], As[2], ens_attrs, equal=False)
     compare_objs(Bs[0], Bs[2], ens_attrs, equal=False)
 
-    conn_attrs = ('eval_points', 'weights')
+    conn_attrs = ("eval_points", "weights")
     Cs = [mi[C] for mi in [m1, m2, m3]]
     compare_objs(Cs[0], Cs[1], conn_attrs)
     compare_objs(Cs[0], Cs[2], conn_attrs, equal=False)
@@ -59,14 +58,14 @@ def test_hierarchical_seeding():
 
     def create(make_extra, seed):
         objs = []
-        with nengo.Network(seed=seed, label='n1') as model:
-            objs.append(nengo.Ensemble(10, 1, label='e1'))
-            with nengo.Network(label='n2'):
-                objs.append(nengo.Ensemble(10, 1, label='e2'))
+        with nengo.Network(seed=seed, label="n1") as model:
+            objs.append(nengo.Ensemble(10, 1, label="e1"))
+            with nengo.Network(label="n2"):
+                objs.append(nengo.Ensemble(10, 1, label="e2"))
                 if make_extra:
                     # This shouldn't affect any seeds
-                    objs.append(nengo.Ensemble(10, 1, label='e3'))
-            objs.append(nengo.Ensemble(10, 1, label='e4'))
+                    objs.append(nengo.Ensemble(10, 1, label="e3"))
+            objs.append(nengo.Ensemble(10, 1, label="e4"))
         return model, objs
 
     same1, same1objs = create(False, 9)

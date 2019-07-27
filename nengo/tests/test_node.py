@@ -23,13 +23,13 @@ def test_simple(Simulator, plt, seed):
     m = nengo.Network(seed=seed)
     with m:
         input = nengo.Node(output=np.sin)
-        p = nengo.Probe(input, 'output')
+        p = nengo.Probe(input, "output")
 
     with Simulator(m) as sim:
         sim.run(0.5)
 
-    plt.plot(sim.trange(), sim.data[p], label='sin')
-    plt.legend(loc='best')
+    plt.plot(sim.trange(), sim.data[p], label="sin")
+    plt.legend(loc="best")
 
     sim_t = sim.trange()
     sim_in = sim.data[p].ravel()
@@ -39,29 +39,27 @@ def test_simple(Simulator, plt, seed):
 def test_connected(Simulator, plt, seed):
     m = nengo.Network(seed=seed)
     with m:
-        input = nengo.Node(output=np.sin, label='input')
-        output = nengo.Node(output=lambda t, x: np.square(x),
-                            size_in=1,
-                            label='output')
+        input = nengo.Node(output=np.sin, label="input")
+        output = nengo.Node(output=lambda t, x: np.square(x), size_in=1, label="output")
         nengo.Connection(input, output, synapse=None)  # Direct connection
-        p_in = nengo.Probe(input, 'output')
-        p_out = nengo.Probe(output, 'output')
+        p_in = nengo.Probe(input, "output")
+        p_out = nengo.Probe(output, "output")
 
     with Simulator(m) as sim:
         sim.run(0.5)
 
     t = sim.trange()
-    plt.plot(t, sim.data[p_in], label='sin')
-    plt.plot(t, sim.data[p_out], label='sin squared')
-    plt.plot(t, np.sin(t), label='ideal sin')
-    plt.plot(t, np.sin(t) ** 2, label='ideal squared')
-    plt.legend(loc='best')
+    plt.plot(t, sim.data[p_in], label="sin")
+    plt.plot(t, sim.data[p_out], label="sin squared")
+    plt.plot(t, np.sin(t), label="ideal sin")
+    plt.plot(t, np.sin(t) ** 2, label="ideal squared")
+    plt.legend(loc="best")
 
     sim_t = sim.trange()
     sim_sin = sim.data[p_in].ravel()
     sim_sq = sim.data[p_out].ravel()
     assert np.allclose(sim_sin, np.sin(sim_t))
-    assert np.allclose(sim_sq, sim_sin**2)
+    assert np.allclose(sim_sq, sim_sin ** 2)
 
 
 def test_passthrough(Simulator, plt, seed):
@@ -76,16 +74,16 @@ def test_passthrough(Simulator, plt, seed):
         nengo.Connection(in2, passthrough, synapse=None)
         nengo.Connection(passthrough, out, synapse=None)
 
-        in1_p = nengo.Probe(in1, 'output')
-        in2_p = nengo.Probe(in2, 'output')
-        out_p = nengo.Probe(out, 'output')
+        in1_p = nengo.Probe(in1, "output")
+        in2_p = nengo.Probe(in2, "output")
+        out_p = nengo.Probe(out, "output")
 
     with Simulator(m) as sim:
         sim.run(0.5)
 
-    plt.plot(sim.trange(), sim.data[in1_p]+sim.data[in2_p], label='in+in2')
-    plt.plot(sim.trange()[:-2], sim.data[out_p][2:], label='out')
-    plt.legend(loc='best')
+    plt.plot(sim.trange(), sim.data[in1_p] + sim.data[in2_p], label="in+in2")
+    plt.plot(sim.trange()[:-2], sim.data[out_p][2:], label="out")
+    plt.legend(loc="best")
 
     sim_in = sim.data[in1_p] + sim.data[in2_p]
     sim_out = sim.data[out_p]
@@ -125,13 +123,13 @@ def test_passthrough_filter(Simulator, plt, seed):
 def test_circular(Simulator, seed):
     m = nengo.Network(seed=seed)
     with m:
-        a = nengo.Node(output=lambda t, x: x+1, size_in=1)
-        b = nengo.Node(output=lambda t, x: x+1, size_in=1)
+        a = nengo.Node(output=lambda t, x: x + 1, size_in=1)
+        b = nengo.Node(output=lambda t, x: x + 1, size_in=1)
         nengo.Connection(a, b, synapse=0)
         nengo.Connection(b, a, synapse=0)
 
-        a_p = nengo.Probe(a, 'output')
-        b_p = nengo.Probe(b, 'output')
+        a_p = nengo.Probe(a, "output")
+        b_p = nengo.Probe(b, "output")
 
     with Simulator(m) as sim:
         sim.run(0.5)
@@ -142,7 +140,7 @@ def test_circular(Simulator, seed):
 def test_outputparam_errors(Simulator):
     with nengo.Network() as model:
         # valid values
-        nengo.Node(output=lambda t: t+1)
+        nengo.Node(output=lambda t: t + 1)
         nengo.Node(output=0)
         nengo.Node(output=[0, 1])
         nengo.Node(output=nengo.processes.WhiteNoise())
@@ -153,13 +151,13 @@ def test_outputparam_errors(Simulator):
             nengo.Node(output=object())
 
         # function errors
-        nengo.Node(output=lambda t, x=[0]: t+1, size_in=1)
+        nengo.Node(output=lambda t, x=[0]: t + 1, size_in=1)
         with pytest.raises(ValidationError):
-            nengo.Node(output=lambda t, x: x+1)
+            nengo.Node(output=lambda t, x: x + 1)
         with pytest.raises(ValidationError):
-            nengo.Node(output=lambda t: t+1, size_in=1)
+            nengo.Node(output=lambda t: t + 1, size_in=1)
         with pytest.raises(ValidationError):
-            nengo.Node(output=lambda t, x, y: t+1, size_in=2)
+            nengo.Node(output=lambda t, x, y: t + 1, size_in=2)
         with pytest.raises(ValidationError):
             nengo.Node(output=[0], size_in=1)
         with pytest.raises(ValidationError):
@@ -169,7 +167,7 @@ def test_outputparam_errors(Simulator):
         with pytest.raises(ValidationError):
             nengo.Node(output=[[1, 2], [3, 4]])
         with pytest.raises(ValidationError):
-            nengo.Node(output=lambda t: [[t, t+1]])
+            nengo.Node(output=lambda t: [[t, t + 1]])
         with pytest.raises(ValidationError):
             nengo.Node(output=[[3, 1], [2, 9]], size_out=4)
         with pytest.raises(ValidationError):
@@ -221,6 +219,7 @@ def test_unconnected_node(Simulator):
 
     def f(t):
         hits[...] += 1
+
     model = nengo.Network()
     with model:
         nengo.Node(f, size_in=0, size_out=0)
@@ -302,7 +301,6 @@ def test_set_callable_output(Simulator):
         assert noreturn_func.size_out == 0
 
     class TestObject:
-
         def __init__(self):
             self.val = 0
 
@@ -391,7 +389,7 @@ def test_seed_error():
 
 
 def test_node_with_offset_array_view(Simulator):
-    v = np.array([[1., 2.], [3., 4.]])
+    v = np.array([[1.0, 2.0], [3.0, 4.0]])
     with nengo.Network() as model:
         node = nengo.Node(v[1])
         probe = nengo.Probe(node)
@@ -402,7 +400,7 @@ def test_node_with_offset_array_view(Simulator):
 
 
 def test_node_with_unusual_strided_view(Simulator, seed):
-    v = np.array([1., 2.], dtype=complex)  # 16 byte itemsize
+    v = np.array([1.0, 2.0], dtype=complex)  # 16 byte itemsize
     with nengo.Network(seed=seed) as model:
         node = nengo.Node(v.real)  # 8 byte itemsize, but 16 byte strides
         probe = nengo.Probe(node)

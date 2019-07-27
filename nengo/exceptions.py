@@ -24,8 +24,9 @@ class ValidationError(NengoException, ValueError):
     def __str__(self):
         if self.obj is None:
             return "{}: {}".format(self.attr, super().__str__())
-        klassname = (self.obj.__name__ if inspect.isclass(self.obj)
-                     else type(self.obj).__name__)
+        klassname = (
+            self.obj.__name__ if inspect.isclass(self.obj) else type(self.obj).__name__
+        )
         return "{}.{}: {}".format(klassname, self.attr, super().__str__())
 
 
@@ -55,7 +56,9 @@ class ObsoleteError(NengoException):
             "" if self.since is None else " since %s" % self.since,
             super().__str__(),
             "\nFor more information, please visit %s" % self.url
-            if self.url is not None else "")
+            if self.url is not None
+            else "",
+        )
 
 
 class MovedError(NengoException):
@@ -125,7 +128,8 @@ class NotAddedToNetworkWarning(NengoWarning):
             "{obj} was not added to the network. When copying objects, "
             "use the copy method on the object instead of Python's copy "
             "module. When unpickling objects, they have to be added to "
-            "networks manually.".format(obj=self.obj))
+            "networks manually.".format(obj=self.obj)
+        )
 
 
 class CacheIOWarning(NengoWarning):

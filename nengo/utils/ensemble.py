@@ -91,8 +91,7 @@ def response_curves(ens, sim, inputs=None):
 
     if inputs is None:
         inputs = np.linspace(-1.0, 1.0)
-    return inputs, ens.neuron_type.rates(
-        inputs, sim.data[ens].gain, sim.data[ens].bias)
+    return inputs, ens.neuron_type.rates(inputs, sim.data[ens].gain, sim.data[ens].bias)
 
 
 def _similarity(encoders, index, rows, cols=1):
@@ -110,7 +109,7 @@ def _similarity(encoders, index, rows, cols=1):
     cols: int
         The height of the 2d grid.
     """
-    i = index % cols   # find the 2d location of the indexth element
+    i = index % cols  # find the 2d location of the indexth element
     j = index // cols
 
     sim = 0  # total of dot products
@@ -185,14 +184,12 @@ def sorted_neurons(ensemble, sim, iterations=100, seed=None):
             j = target[i]
             if i != j:  # if not swapping with yourself
                 # compute similarity score how we are (unswapped)
-                sim1 = (_similarity(encoders, i, N)
-                        + _similarity(encoders, j, N))
+                sim1 = _similarity(encoders, i, N) + _similarity(encoders, j, N)
                 # swap the encoder
                 encoders[[i, j], :] = encoders[[j, i], :]
                 indices[[i, j]] = indices[[j, i]]
                 # compute similarity score how we are (swapped)
-                sim2 = (_similarity(encoders, i, N)
-                        + _similarity(encoders, j, N))
+                sim2 = _similarity(encoders, i, N) + _similarity(encoders, j, N)
 
                 # if we were better unswapped
                 if sim1 > sim2:

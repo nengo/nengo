@@ -26,7 +26,7 @@ class MemoryLeakWarning(UserWarning):
     pass
 
 
-warnings.filterwarnings('once', category=MemoryLeakWarning)
+warnings.filterwarnings("once", category=MemoryLeakWarning)
 
 
 def timestamp2timedelta(timestamp):
@@ -36,7 +36,7 @@ def timestamp2timedelta(timestamp):
 
 
 def _load_class(name):
-    mod_name, cls_name = name.rsplit('.', 1)
+    mod_name, cls_name = name.rsplit(".", 1)
     mod = importlib.import_module(mod_name)
     return getattr(mod, cls_name)
 
@@ -86,10 +86,11 @@ class Progress:
 
     """
 
-    def __init__(self, name_during='', name_after=None, max_steps=None):
+    def __init__(self, name_during="", name_after=None, max_steps=None):
         if max_steps is not None and max_steps <= 0:
-            raise ValidationError("must be at least 1 (got %d)"
-                                  % (max_steps,), attr="max_steps")
+            raise ValidationError(
+                "must be at least 1 (got %d)" % (max_steps,), attr="max_steps"
+            )
         self.n_steps = 0
         self.max_steps = max_steps
         self.name_during = name_during
@@ -109,7 +110,7 @@ class Progress:
         float
         """
         if self.max_steps is None:
-            return 0.
+            return 0.0
         return min(1.0, self.n_steps / self.max_steps)
 
     def elapsed_seconds(self):
@@ -134,9 +135,8 @@ class Progress:
         -------
         float
         """
-        if self.progress > 0.:
-            return (
-                (1. - self.progress) * self.elapsed_seconds() / self.progress)
+        if self.progress > 0.0:
+            return (1.0 - self.progress) * self.elapsed_seconds() / self.progress
         else:
             return -1
 
@@ -214,23 +214,25 @@ class TerminalProgressBar(ProgressBar):
         sys.stdout.flush()
 
     def _get_in_progress_line(self, progress):
-        line = "[{{}}] ETA: {eta}".format(
-            eta=timestamp2timedelta(progress.eta()))
+        line = "[{{}}] ETA: {eta}".format(eta=timestamp2timedelta(progress.eta()))
         percent_str = " {}... {}% ".format(
-            progress.name_during, int(100 * progress.progress))
+            progress.name_during, int(100 * progress.progress)
+        )
         width, _ = get_terminal_size()
         progress_width = max(0, width - len(line))
-        progress_str = (
-            int(progress_width * progress.progress) * "#").ljust(
-                progress_width)
+        progress_str = (int(progress_width * progress.progress) * "#").ljust(
+            progress_width
+        )
 
         percent_pos = (len(progress_str) - len(percent_str)) // 2
         if percent_pos > 0:
             progress_str = (
-                progress_str[:percent_pos] + percent_str
-                + progress_str[percent_pos + len(percent_str):])
+                progress_str[:percent_pos]
+                + percent_str
+                + progress_str[percent_pos + len(percent_str) :]
+            )
 
-        return '\r' + line.format(progress_str)
+        return "\r" + line.format(progress_str)
 
     def _get_unknown_progress_line(self, progress):
         """Generates a progress line with continuously moving marker.
@@ -240,27 +242,28 @@ class TerminalProgressBar(ProgressBar):
         """
         duration = progress.elapsed_seconds()
         line = "[{{}}] duration: {duration}".format(
-            duration=timestamp2timedelta(duration))
+            duration=timestamp2timedelta(duration)
+        )
         text = " {}... ".format(progress.name_during)
         width, _ = get_terminal_size()
-        marker = '>>>>'
+        marker = ">>>>"
         progress_width = max(0, width - len(line) + 2)
         index_width = progress_width + len(marker)
-        i = int(10. * duration) % (index_width + 1)
-        progress_str = (' ' * i) + marker + (' ' * (index_width - i))
-        progress_str = progress_str[len(marker):-len(marker)]
+        i = int(10.0 * duration) % (index_width + 1)
+        progress_str = (" " * i) + marker + (" " * (index_width - i))
+        progress_str = progress_str[len(marker) : -len(marker)]
         text_pos = (len(progress_str) - len(text)) // 2
         progress_str = (
-            progress_str[:text_pos] + text
-            + progress_str[text_pos + len(text):])
-        return '\r' + line.format(progress_str)
+            progress_str[:text_pos] + text + progress_str[text_pos + len(text) :]
+        )
+        return "\r" + line.format(progress_str)
 
     def _get_finished_line(self, progress):
         width, _ = get_terminal_size()
         line = "{} finished in {}.".format(
-            progress.name_after,
-            timestamp2timedelta(progress.elapsed_seconds())).ljust(width)
-        return '\r' + line
+            progress.name_after, timestamp2timedelta(progress.elapsed_seconds())
+        ).ljust(width)
+        return "\r" + line
 
     def close(self):
         sys.stdout.write(os.linesep)
@@ -287,71 +290,74 @@ class VdomProgressBar(ProgressBar):  # pragma: no cover
             self._handle.update(self)
 
     def _repr_mimebundle_(self, include, exclude, **kwargs):
-        return {
-            'application/vdom.v1+json': self._get_vdom(self.progress)
-        }
+        return {"application/vdom.v1+json": self._get_vdom(self.progress)}
 
     def _get_vdom(self, progress):
         return {
-            'tagName': 'div',
-            'attributes': {
-                'id': str(self._uuid),
-                'style': {
-                    'width': '100%',
-                    'boxSizing': 'border-box',
-                    'border': '1px solid #cfcfcf',
-                    'borderRadius': '4px',
-                    'textAlign': 'center',
-                    'position': 'relative',
+            "tagName": "div",
+            "attributes": {
+                "id": str(self._uuid),
+                "style": {
+                    "width": "100%",
+                    "boxSizing": "border-box",
+                    "border": "1px solid #cfcfcf",
+                    "borderRadius": "4px",
+                    "textAlign": "center",
+                    "position": "relative",
                 },
             },
-            'children': [{
-                'tagName': 'div',
-                'attributes': {
-                    'class': 'pb-text',
-                    'style': {'position': 'absolute', 'width': '100%'},
-                },
-                'children': [self._get_text(self.progress)],
-            }, {
-                'tagName': 'div',
-                'attributes': {
-                    'class': 'pb-fill',
-                    'style': self._get_fill_style(self.progress),
-                },
-                'children': [{
-                    'tagName': 'style',
-                    'attributes': {
-                        'type': 'text/css',
-                        'scoped': 'scoped',
+            "children": [
+                {
+                    "tagName": "div",
+                    "attributes": {
+                        "class": "pb-text",
+                        "style": {"position": "absolute", "width": "100%"},
                     },
-                    'children': ['''
+                    "children": [self._get_text(self.progress)],
+                },
+                {
+                    "tagName": "div",
+                    "attributes": {
+                        "class": "pb-fill",
+                        "style": self._get_fill_style(self.progress),
+                    },
+                    "children": [
+                        {
+                            "tagName": "style",
+                            "attributes": {"type": "text/css", "scoped": "scoped"},
+                            "children": [
+                                """
                         @keyframes pb-fill-anim {
                             0% { background-position: 0 0; }
                             100% { background-position: 100px 0; }
-                        }}'''],
-                    }, "\u00A0"  # non-breaking space
-                ],
-            }],
+                        }}"""
+                            ],
+                        },
+                        "\u00A0",  # non-breaking space
+                    ],
+                },
+            ],
         }
 
     def _get_text(self, progress):
         if progress is None:
-            text = ''
+            text = ""
         elif progress.finished:
             text = "{} finished in {}.".format(
                 escape(progress.name_after),
-                timestamp2timedelta(progress.elapsed_seconds()))
+                timestamp2timedelta(progress.elapsed_seconds()),
+            )
         elif progress.max_steps is None:
-            text = (
-                "{task}\u2026 duration: {duration}".format(
-                    task=escape(progress.name_during),
-                    duration=timestamp2timedelta(progress.elapsed_seconds())))
+            text = "{task}\u2026 duration: {duration}".format(
+                task=escape(progress.name_during),
+                duration=timestamp2timedelta(progress.elapsed_seconds()),
+            )
         else:
-            text = (
-                "{task}\u2026 {progress:.0f}%, ETA: {eta}".format(
-                    task=escape(progress.name_during),
-                    progress=100. * progress.progress,
-                    eta=timestamp2timedelta(progress.eta())))
+            text = "{task}\u2026 {progress:.0f}%, ETA: {eta}".format(
+                task=escape(progress.name_during),
+                progress=100.0 * progress.progress,
+                eta=timestamp2timedelta(progress.eta()),
+            )
         return text
 
     def _get_fill_style(self, progress):
@@ -361,30 +367,30 @@ class VdomProgressBar(ProgressBar):  # pragma: no cover
             style = self._get_known_steps_fill_style(progress)
 
         if progress.finished:
-            style['animation'] = 'none'
-            style['backgroundImage'] = 'none'
+            style["animation"] = "none"
+            style["backgroundImage"] = "none"
 
         return style
 
     def _get_known_steps_fill_style(self, progress):
         return {
-            'width': '{:.0f}%'.format(100. * progress.progress),
-            'animation': 'none',
-            'backgroundColor': '#bdd2e6',
-            'backgroundImage': 'none',
-            'transition':
-                'width 0.1s linear' if progress.progress > 0. else 'none',
+            "width": "{:.0f}%".format(100.0 * progress.progress),
+            "animation": "none",
+            "backgroundColor": "#bdd2e6",
+            "backgroundImage": "none",
+            "transition": "width 0.1s linear" if progress.progress > 0.0 else "none",
         }
 
     def _get_unknown_steps_fill_style(self, progress):
         return {
-            'width': '100%',
-            'animation': 'pb-fill-anim 2s linear infinite',
-            'backgroundColor': '#bdd2e6',
-            'backgroundSize': '100px 100%',
-            'backgroundImage': (
-                'repeating-linear-gradient('
-                '90deg, #bdd2e6, #edf2f8 40%, #bdd2e6 80%, #bdd2e6)'),
+            "width": "100%",
+            "animation": "pb-fill-anim 2s linear infinite",
+            "backgroundColor": "#bdd2e6",
+            "backgroundSize": "100px 100%",
+            "backgroundImage": (
+                "repeating-linear-gradient("
+                "90deg, #bdd2e6, #edf2f8 40%, #bdd2e6 80%, #bdd2e6)"
+            ),
         }
 
 
@@ -420,10 +426,11 @@ class HtmlProgressBar(ProgressBar):  # pragma: no cover
                 "HtmlProgressBar cannot be displayed. Please use the "
                 "TerminalProgressBar. It can be enabled with "
                 "`nengo.rc.set('progress', 'progress_bar', "
-                "'nengo.utils.progress.TerminalProgressBar')`.")
+                "'nengo.utils.progress.TerminalProgressBar')`."
+            )
 
         def _repr_html_(self):
-            return '''
+            return """
                 <script>
                     if (Jupyter.version.split(".")[0] < 5) {{
                         var pb = document.getElementById("{uuid}");
@@ -456,26 +463,29 @@ class HtmlProgressBar(ProgressBar):  # pragma: no cover
                     </style>
                     &nbsp;
                   </div>
-                </div>'''.format(uuid=self.uuid)
+                </div>""".format(
+                uuid=self.uuid
+            )
 
     def _js_update(self, progress):
         if progress is None:
-            text = ''
+            text = ""
         elif progress.finished:
             text = "{} finished in {}.".format(
                 escape(progress.name_after),
-                timestamp2timedelta(progress.elapsed_seconds()))
+                timestamp2timedelta(progress.elapsed_seconds()),
+            )
         elif progress.max_steps is None:
-            text = (
-                "{task}&hellip; duration: {duration}".format(
-                    task=escape(progress.name_during),
-                    duration=timestamp2timedelta(progress.elapsed_seconds())))
+            text = "{task}&hellip; duration: {duration}".format(
+                task=escape(progress.name_during),
+                duration=timestamp2timedelta(progress.elapsed_seconds()),
+            )
         else:
-            text = (
-                "{task}&hellip; {progress:.0f}%, ETA: {eta}".format(
-                    task=escape(progress.name_during),
-                    progress=100. * progress.progress,
-                    eta=timestamp2timedelta(progress.eta())))
+            text = "{task}&hellip; {progress:.0f}%, ETA: {eta}".format(
+                task=escape(progress.name_during),
+                progress=100.0 * progress.progress,
+                eta=timestamp2timedelta(progress.eta()),
+            )
 
         if progress.max_steps is None:
             update = self._update_unknown_steps(progress)
@@ -483,14 +493,15 @@ class HtmlProgressBar(ProgressBar):  # pragma: no cover
             update = self._update_known_steps(progress)
 
         if progress.finished:
-            finish = '''
+            finish = """
                 fill.style.animation = 'none';
                 fill.style.backgroundImage = 'none';
-            '''
+            """
         else:
-            finish = ''
+            finish = ""
 
-        return Javascript('''
+        return Javascript(
+            """
               (function () {{
                   var root = document.getElementById('{uuid}');
                   var text = root.getElementsByClassName('pb-text')[0];
@@ -500,10 +511,13 @@ class HtmlProgressBar(ProgressBar):  # pragma: no cover
                   {update}
                   {finish}
               }})();
-        '''.format(uuid=self._uuid, text=text, update=update, finish=finish))
+        """.format(
+                uuid=self._uuid, text=text, update=update, finish=finish
+            )
+        )
 
     def _update_known_steps(self, progress):
-        return '''
+        return """
             if ({progress} > 0.) {{
                 fill.style.transition = 'width 0.1s linear';
             }} else {{
@@ -513,16 +527,18 @@ class HtmlProgressBar(ProgressBar):  # pragma: no cover
             fill.style.width = '{progress}%';
             fill.style.animation = 'none';
             fill.style.backgroundImage = 'none'
-        '''.format(progress=100. * progress.progress)
+        """.format(
+            progress=100.0 * progress.progress
+        )
 
     def _update_unknown_steps(self, progress):
-        return '''
+        return """
             fill.style.width = '100%';
             fill.style.animation = 'pb-fill-anim 2s linear infinite';
             fill.style.backgroundSize = '100px 100%';
             fill.style.backgroundImage = 'repeating-linear-gradient(' +
                 '90deg, #bdd2e6, #edf2f8 40%, #bdd2e6 80%, #bdd2e6)';
-        '''
+        """
 
 
 class VdomOrHtmlProgressBar(ProgressBar):  # pragma: no cover
@@ -545,22 +561,24 @@ class VdomOrHtmlProgressBar(ProgressBar):  # pragma: no cover
         if self._handle is None:
             display(self._get_initial_bundle(progress), raw=True)
             self._handle = display(
-                self._get_update_bundle(progress), raw=True, display_id=True)
+                self._get_update_bundle(progress), raw=True, display_id=True
+            )
         self._handle.update(self._get_update_bundle(progress), raw=True)
 
     def _get_initial_bundle(self, progress):
         return {
-            'application/vdom.v1+json': {
-                'tagName': 'div', 'attributes': {}
-            },
-            'text/html': self._html._HtmlBase(self._html._uuid)._repr_html_(),
-            'text/plain': repr(self._html._HtmlBase(self._html._uuid)),
+            "application/vdom.v1+json": {"tagName": "div", "attributes": {}},
+            "text/html": self._html._HtmlBase(self._html._uuid)._repr_html_(),
+            "text/plain": repr(self._html._HtmlBase(self._html._uuid)),
         }
 
     def _get_update_bundle(self, progress):
         bundle = self._vdom._repr_mimebundle_([], [])
-        bundle['text/html'] = '<script>' + self._html._js_update(
-            progress)._repr_javascript_() + '</script>'
+        bundle["text/html"] = (
+            "<script>"
+            + self._html._js_update(progress)._repr_javascript_()
+            + "</script>"
+        )
         return bundle
 
 
@@ -585,8 +603,9 @@ class IPython5ProgressBar(ProgressBar):  # pragma: no cover
 
             def _ipython_display_(self):
                 self.display_requested = True
+
         d = Displayable()
-        display(d, exclude=['text/plain'])
+        display(d, exclude=["text/plain"])
 
         if d.display_requested:
             self._progress_bar = VdomOrHtmlProgressBar()
@@ -617,13 +636,15 @@ class WriteProgressToFile(ProgressBar):
         if progress.finished:
             text = "{} finished in {}.".format(
                 self.progress.name_after,
-                timestamp2timedelta(progress.elapsed_seconds()))
+                timestamp2timedelta(progress.elapsed_seconds()),
+            )
         else:
             text = "{progress:.0f}%, ETA: {eta}".format(
                 progress=100 * progress.progress,
-                eta=timestamp2timedelta(progress.eta()))
+                eta=timestamp2timedelta(progress.eta()),
+            )
 
-        with open(self.filename, 'w') as f:
+        with open(self.filename, "w") as f:
             f.write(text + os.linesep)
 
 
@@ -638,7 +659,7 @@ class AutoProgressBar(ProgressBar):
         The minimum ETA threshold for displaying the progress bar.
     """
 
-    def __init__(self, delegate, min_eta=1.):
+    def __init__(self, delegate, min_eta=1.0):
         self.delegate = delegate
 
         super().__init__()
@@ -648,8 +669,10 @@ class AutoProgressBar(ProgressBar):
 
     def update(self, progress):
         min_delay = progress.time_start + 0.1
-        long_eta = (progress.elapsed_seconds() + progress.eta() > self.min_eta
-                    and min_delay < time.time())
+        long_eta = (
+            progress.elapsed_seconds() + progress.eta() > self.min_eta
+            and min_delay < time.time()
+        )
         if self._visible:
             self.delegate.update(progress)
         elif long_eta or progress.finished:
@@ -673,6 +696,7 @@ class ProgressTracker:
     update_interval : float, optional
         Time to wait (in seconds) between updates to progress bar display.
     """
+
     def __init__(self, progress_bar, total_progress, update_interval=0.1):
         self.progress_bar = to_progressbar(progress_bar)
         self.total_progress = total_progress
@@ -682,7 +706,7 @@ class ProgressTracker:
         self._closing = False
         self.sub_progress = None
 
-    def next_stage(self, name_during='', name_after=None, max_steps=None):
+    def next_stage(self, name_during="", name_after=None, max_steps=None):
         """Begin tracking progress of a new stage.
 
         Parameters
@@ -719,8 +743,7 @@ class ProgressTracker:
         """Update the progress bar display (will run in a separate thread)."""
 
         while not self._closing:
-            if (self.sub_progress is not None
-                    and not self.sub_progress.finished):
+            if self.sub_progress is not None and not self.sub_progress.finished:
                 self.progress_bar.update(self.sub_progress)
             else:
                 self.progress_bar.update(self.total_progress)
@@ -735,20 +758,20 @@ def get_default_progressbar():
     ``ProgressBar``
     """
     try:
-        pbar = rc.getboolean('progress', 'progress_bar')
+        pbar = rc.getboolean("progress", "progress_bar")
         if pbar:
-            pbar = 'auto'
+            pbar = "auto"
         else:
-            pbar = 'none'
+            pbar = "none"
     except ValueError:
-        pbar = rc.get('progress', 'progress_bar')
+        pbar = rc.get("progress", "progress_bar")
 
-    if pbar.lower() == 'auto':
+    if pbar.lower() == "auto":
         if get_ipython() is not None and check_ipy_version((5, 0)):
             return AutoProgressBar(IPython5ProgressBar())
         else:
             return AutoProgressBar(TerminalProgressBar())
-    if pbar.lower() == 'none':
+    if pbar.lower() == "none":
         return NoProgressBar()
 
     try:

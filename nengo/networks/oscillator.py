@@ -28,21 +28,21 @@ class Oscillator(nengo.Network):
     input : Node
         Provides the input signal.
     """
+
     def __init__(self, recurrent_tau, frequency, n_neurons, **kwargs):
-        if 'net' in kwargs:
+        if "net" in kwargs:
             raise ObsoleteError("The 'net' argument is no longer supported.")
-        kwargs.setdefault('label', "Oscillator")
+        kwargs.setdefault("label", "Oscillator")
         super().__init__(**kwargs)
 
         with self:
             self.input = nengo.Node(label="In", size_in=2)
-            self.ensemble = nengo.Ensemble(
-                n_neurons, dimensions=2, label="Oscillator")
+            self.ensemble = nengo.Ensemble(n_neurons, dimensions=2, label="Oscillator")
 
-            tA = [[1, -frequency * recurrent_tau],
-                  [frequency * recurrent_tau, 1]]
-            nengo.Connection(self.ensemble, self.ensemble,
-                             synapse=recurrent_tau, transform=tA)
+            tA = [[1, -frequency * recurrent_tau], [frequency * recurrent_tau, 1]]
+            nengo.Connection(
+                self.ensemble, self.ensemble, synapse=recurrent_tau, transform=tA
+            )
             nengo.Connection(self.input, self.ensemble, synapse=None)
 
         self.output = self.ensemble

@@ -5,7 +5,11 @@ from nengo.config import Config
 from nengo.connection import Connection
 from nengo.ensemble import Ensemble
 from nengo.exceptions import (
-    ConfigError, NetworkContextError, NotAddedToNetworkWarning, ReadonlyError)
+    ConfigError,
+    NetworkContextError,
+    NotAddedToNetworkWarning,
+    ReadonlyError,
+)
 from nengo.node import Node
 from nengo.params import IntParam, StringParam
 from nengo.probe import Probe
@@ -78,17 +82,15 @@ class Network:
 
     context = ThreadLocalStack(maxsize=100)  # static stack of Network objects
 
-    label = StringParam('label', optional=True, readonly=False)
-    seed = IntParam('seed', optional=True, readonly=False)
+    label = StringParam("label", optional=True, readonly=False)
+    seed = IntParam("seed", optional=True, readonly=False)
 
     def __init__(self, label=None, seed=None, add_to_container=None):
         self.label = label
         self.seed = seed
         self._config = self.default_config()
 
-        self.objects = {
-            Ensemble: [], Node: [], Connection: [], Network: [], Probe: [],
-        }
+        self.objects = {Ensemble: [], Node: [], Connection: [], Network: [], Probe: []}
         self.ensembles = self.objects[Ensemble]
         self.nodes = self.objects[Node]
         self.connections = self.objects[Connection]
@@ -110,18 +112,20 @@ class Network:
             raise NetworkContextError(
                 "'%s' must either be created inside a ``with network:`` "
                 "block, or set add_to_container=False in the object's "
-                "constructor." % obj)
+                "constructor." % obj
+            )
         network = Network.context[-1]
         if not isinstance(network, Network):
-            raise NetworkContextError(
-                "Current context (%s) is not a network" % network)
+            raise NetworkContextError("Current context (%s) is not a network" % network)
         for cls in type(obj).__mro__:
             if cls in network.objects:
                 network.objects[cls].append(obj)
                 break
         else:
-            raise NetworkContextError("Objects of type %r cannot be added to "
-                                      "networks." % type(obj).__name__)
+            raise NetworkContextError(
+                "Objects of type %r cannot be added to "
+                "networks." % type(obj).__name__
+            )
 
     @staticmethod
     def default_config():
@@ -176,7 +180,7 @@ class Network:
 
     @config.setter
     def config(self, dummy):
-        raise ReadonlyError(attr='config', obj=self)
+        raise ReadonlyError(attr="config", obj=self)
 
     @property
     def n_neurons(self):
@@ -195,26 +199,30 @@ class Network:
         if len(Network.context) == 0:
             raise NetworkContextError(
                 "Network.context in bad state; was empty when "
-                "exiting from a 'with' block.")
+                "exiting from a 'with' block."
+            )
 
         config = Config.context[-1]
         if config is not self._config:
-            raise ConfigError("Config.context in bad state; was expecting "
-                              "current context to be '%s' but instead got "
-                              "'%s'." % (self._config, config))
+            raise ConfigError(
+                "Config.context in bad state; was expecting "
+                "current context to be '%s' but instead got "
+                "'%s'." % (self._config, config)
+            )
 
         network = Network.context.pop()
         if network is not self:
             raise NetworkContextError(
                 "Network.context in bad state; was expecting current context "
-                "to be '%s' but instead got '%s'." % (self, network))
+                "to be '%s' but instead got '%s'." % (self, network)
+            )
 
         self._config.__exit__(dummy_exc_type, dummy_exc_value, dummy_tb)
 
     def __getstate__(self):
         state = self.__dict__.copy()
-        state['label'] = self.label
-        state['seed'] = self.seed
+        state["label"] = self.label
+        state["seed"] = self.seed
         return state
 
     def __setstate__(self, state):
@@ -226,20 +234,23 @@ class Network:
     def __str__(self):
         return "<%s %s>" % (
             type(self).__name__,
-            '"%s"' % self.label if self.label is not None else
-            "(unlabeled) at 0x%x" % id(self))
+            '"%s"' % self.label
+            if self.label is not None
+            else "(unlabeled) at 0x%x" % id(self),
+        )
 
     def __repr__(self):
         return "<%s %s %s>" % (
             type(self).__name__,
             '"%s"' % self.label if self.label is not None else "(unlabeled)",
-            "at 0x%x" % id(self))
+            "at 0x%x" % id(self),
+        )
 
     def copy(self, add_to_container=None):
         with warnings.catch_warnings():
             # We warn when copying since we can't change add_to_container.
             # However, we deal with it here, so we ignore the warning.
-            warnings.simplefilter('ignore', category=NotAddedToNetworkWarning)
+            warnings.simplefilter("ignore", category=NotAddedToNetworkWarning)
             c = deepcopy(self)
         if add_to_container is None:
             add_to_container = len(Network.context) > 0

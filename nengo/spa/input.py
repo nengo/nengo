@@ -63,7 +63,7 @@ class Input(Module):
                 val = vocab.parse(value).v
 
             with self:
-                node = nengo.Node(val, label='input_%s' % name)
+                node = nengo.Node(val, label="input_%s" % name)
             self.input_nodes[name] = node
 
             with spa:

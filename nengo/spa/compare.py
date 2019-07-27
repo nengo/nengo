@@ -29,9 +29,17 @@ class Compare(Module):
         Determines if this Network will be added to the current container.
         If None, will be true if currently within a Network.
     """
-    def __init__(self, dimensions, vocab=None, neurons_per_multiply=200,
-                 input_magnitude=1.0, label=None, seed=None,
-                 add_to_container=None):
+
+    def __init__(
+        self,
+        dimensions,
+        vocab=None,
+        neurons_per_multiply=200,
+        input_magnitude=1.0,
+        label=None,
+        seed=None,
+        add_to_container=None,
+    ):
         super().__init__(label, seed, add_to_container)
         if vocab is None:
             # use the default vocab for this number of dimensions
@@ -39,12 +47,12 @@ class Compare(Module):
 
         with self:
             self.product = nengo.networks.Product(
-                neurons_per_multiply, dimensions,
-                input_magnitude=input_magnitude)
+                neurons_per_multiply, dimensions, input_magnitude=input_magnitude
+            )
 
-            self.inputA = nengo.Node(size_in=dimensions, label='inputA')
-            self.inputB = nengo.Node(size_in=dimensions, label='inputB')
-            self.output = nengo.Node(size_in=1, label='output')
+            self.inputA = nengo.Node(size_in=dimensions, label="inputA")
+            self.inputB = nengo.Node(size_in=dimensions, label="inputB")
+            self.output = nengo.Node(size_in=1, label="output")
 
         self.inputs = dict(A=(self.inputA, vocab), B=(self.inputB, vocab))
         self.outputs = dict(default=(self.output, None))
@@ -52,5 +60,6 @@ class Compare(Module):
         with self:
             nengo.Connection(self.inputA, self.product.input_a, synapse=None)
             nengo.Connection(self.inputB, self.product.input_b, synapse=None)
-            nengo.Connection(self.product.output, self.output,
-                             transform=np.ones((1, dimensions)))
+            nengo.Connection(
+                self.product.output, self.output, transform=np.ones((1, dimensions))
+            )

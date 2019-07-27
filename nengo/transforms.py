@@ -55,9 +55,10 @@ class ChannelShapeParam(ShapeParam):
             if shape.channels_last != transform.channels_last:
                 raise ValidationError(
                     "transform has channels_last=%s, but input shape has "
-                    "channels_last=%s"
-                    % (transform.channels_last, shape.channels_last),
-                    attr=self.name, obj=transform)
+                    "channels_last=%s" % (transform.channels_last, shape.channels_last),
+                    attr=self.name,
+                    obj=transform,
+                )
             super().coerce(transform, shape.shape)
         else:
             super().coerce(transform, shape)
@@ -104,7 +105,9 @@ class Dense(Transform):
             if expected_shape is not None and init.shape != expected_shape:
                 raise ValidationError(
                     "Shape of initial value %s does not match expected "
-                    "shape %s" % (init.shape, expected_shape), attr="init")
+                    "shape %s" % (init.shape, expected_shape),
+                    attr="init",
+                )
 
         self.init = init
 
@@ -121,8 +124,7 @@ class Dense(Transform):
     @property
     def init_shape(self):
         """The shape of the initial value."""
-        return (self.shape if isinstance(self.init, Distribution)
-                else self.init.shape)
+        return self.shape if isinstance(self.init, Distribution) else self.init.shape
 
     @property
     def size_in(self):
@@ -135,13 +137,16 @@ class Dense(Transform):
 
 class SparseInitParam(Parameter):
     def coerce(self, instance, value):
-        if not (isinstance(value, SparseMatrix) or (
-                scipy_sparse is not None
-                and isinstance(value, scipy_sparse.spmatrix))):
+        if not (
+            isinstance(value, SparseMatrix)
+            or (scipy_sparse is not None and isinstance(value, scipy_sparse.spmatrix))
+        ):
             raise ValidationError(
                 "Must be `nengo.transforms.SparseMatrix` or "
                 "`scipy.sparse.spmatrix`, got %s" % type(value),
-                attr="init", obj=instance)
+                attr="init",
+                obj=instance,
+            )
         return super().coerce(instance, value)
 
 
@@ -177,13 +182,14 @@ class SparseMatrix(FrozenObject):
 
             # convert scalars to vectors
             if data.size == 1:
-                data = data.item() * np.ones(self.indices.shape[0],
-                                             dtype=data.dtype)
+                data = data.item() * np.ones(self.indices.shape[0], dtype=data.dtype)
 
             if data.ndim != 1 or data.shape[0] != self.indices.shape[0]:
                 raise ValidationError(
                     "Must be a vector of the same length as `indices`",
-                    attr="data", obj=self)
+                    attr="data",
+                    obj=self,
+                )
 
         self.data = data
         self._allocated = None
@@ -213,8 +219,10 @@ class SparseMatrix(FrozenObject):
             return self._allocated
 
         if scipy_sparse is None:
-            warnings.warn("Sparse operations require Scipy, which is not "
-                          "installed. Using dense matrices instead.")
+            warnings.warn(
+                "Sparse operations require Scipy, which is not "
+                "installed. Using dense matrices instead."
+            )
             self._allocated = self.toarray().view()
         else:
             self._allocated = scipy_sparse.csr_matrix(
@@ -242,8 +250,10 @@ class SparseMatrix(FrozenObject):
         """
         if isinstance(self.data, Distribution):
             return SparseMatrix(
-                self.indices, self.data.sample(self.indices.shape[0], rng=rng),
-                self.shape)
+                self.indices,
+                self.data.sample(self.indices.shape[0], rng=rng),
+                self.shape,
+            )
         else:
             return self
 
@@ -294,7 +304,9 @@ class Sparse(Transform):
         else:
             raise ValidationError(
                 "Either `init` must be a `scipy.sparse.spmatrix`, "
-                "or `indices` must be specified.", attr="init")
+                "or `indices` must be specified.",
+                attr="init",
+            )
 
     @property
     def _argreprs(self):
@@ -366,9 +378,16 @@ class Convolution(Transform):
 
     _param_init_order = ["channels_last", "input_shape"]
 
-    def __init__(self, n_filters, input_shape, kernel_size=(3, 3),
-                 strides=(1, 1), padding="valid", channels_last=True,
-                 init=nengo.dists.Uniform(-1, 1)):
+    def __init__(
+        self,
+        n_filters,
+        input_shape,
+        kernel_size=(3, 3),
+        strides=(1, 1),
+        padding="valid",
+        channels_last=True,
+        init=nengo.dists.Uniform(-1, 1),
+    ):
         super().__init__()
 
         self.n_filters = n_filters
@@ -382,26 +401,34 @@ class Convolution(Transform):
         if len(kernel_size) != self.dimensions:
             raise ValidationError(
                 "Kernel dimensions (%d) do not match input dimensions (%d)"
-                % (len(kernel_size), self.dimensions), attr="kernel_size")
+                % (len(kernel_size), self.dimensions),
+                attr="kernel_size",
+            )
         if len(strides) != self.dimensions:
             raise ValidationError(
                 "Stride dimensions (%d) do not match input dimensions (%d)"
-                % (len(strides), self.dimensions), attr="strides")
+                % (len(strides), self.dimensions),
+                attr="strides",
+            )
         if not isinstance(init, Distribution):
             if init.shape != self.kernel_shape:
                 raise ValidationError(
                     "Kernel shape %s does not match expected shape %s"
-                    % (init.shape, self.kernel_shape), attr="init")
+                    % (init.shape, self.kernel_shape),
+                    attr="init",
+                )
 
     @property
     def _argreprs(self):
-        argreprs = ["n_filters=%r" % (self.n_filters,),
-                    "input_shape=%s" % (self.input_shape.shape,)]
+        argreprs = [
+            "n_filters=%r" % (self.n_filters,),
+            "input_shape=%s" % (self.input_shape.shape,),
+        ]
         if self.kernel_size != (3, 3):
             argreprs.append("kernel_size=%r" % (self.kernel_size,))
         if self.strides != (1, 1):
             argreprs.append("strides=%r" % (self.strides,))
-        if self.padding != 'valid':
+        if self.padding != "valid":
             argreprs.append("padding=%r" % (self.padding,))
         if self.channels_last is not True:
             argreprs.append("channels_last=%r" % (self.channels_last,))
@@ -412,8 +439,7 @@ class Convolution(Transform):
             # we sample this way so that any variancescaling distribution based
             # on n/d is scaled appropriately
             kernel = [
-                self.init.sample(
-                    self.input_shape.n_channels, self.n_filters, rng=rng)
+                self.init.sample(self.input_shape.n_channels, self.n_filters, rng=rng)
                 for _ in range(np.prod(self.kernel_size))
             ]
             kernel = np.reshape(kernel, self.kernel_shape)
@@ -442,15 +468,17 @@ class Convolution(Transform):
     @property
     def output_shape(self):
         """Output shape after applying convolution to input."""
-        output_shape = np.array(
-            self.input_shape.spatial_shape, dtype=rc.float_dtype)
+        output_shape = np.array(self.input_shape.spatial_shape, dtype=rc.float_dtype)
         if self.padding == "valid":
             output_shape -= self.kernel_size
             output_shape += 1
         output_shape /= self.strides
         output_shape = tuple(np.ceil(output_shape).astype(rc.int_dtype))
-        output_shape = (output_shape + (self.n_filters,) if self.channels_last
-                        else (self.n_filters,) + output_shape)
+        output_shape = (
+            output_shape + (self.n_filters,)
+            if self.channels_last
+            else (self.n_filters,) + output_shape
+        )
 
         return ChannelShape(output_shape, channels_last=self.channels_last)
 
@@ -474,14 +502,18 @@ class ChannelShape:
 
     def __repr__(self):
         return "%s(shape=%s, channels_last=%s)" % (
-            type(self).__name__, self.shape, self.channels_last)
+            type(self).__name__,
+            self.shape,
+            self.channels_last,
+        )
 
     def __str__(self):
         """Tuple-like string with channel position marked with 'ch'."""
         spatial = [str(s) for s in self.spatial_shape]
         channel = ["ch=%d" % self.n_channels]
-        return "(%s)" % ", ".join(spatial + channel if self.channels_last
-                                  else channel + spatial)
+        return "(%s)" % ", ".join(
+            spatial + channel if self.channels_last else channel + spatial
+        )
 
     @property
     def spatial_shape(self):

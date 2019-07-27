@@ -86,18 +86,17 @@ class Operator:
         self._updates = None
 
     def __repr__(self):
-        return "<%s %s at 0x%x>" % (
-            type(self).__name__, self._tagstr(), id(self))
+        return "<%s %s at 0x%x>" % (type(self).__name__, self._tagstr(), id(self))
 
     def __str__(self):
         strs = (s for s in (self._descstr(), self._tagstr()) if s)
-        return "%s{%s}" % (type(self).__name__, ' '.join(strs))
+        return "%s{%s}" % (type(self).__name__, " ".join(strs))
 
     def _descstr(self):
-        return ''
+        return ""
 
     def _tagstr(self):
-        return (' "%s"' % self.tag) if self.tag is not None else ''
+        return (' "%s"' % self.tag) if self.tag is not None else ""
 
     @property
     def all_signals(self):
@@ -299,6 +298,7 @@ class Reset(Operator):
 
         def step_reset():
             target[...] = value
+
         return step_reset
 
 
@@ -348,8 +348,7 @@ class Copy(Operator):
     4. updates ``[]``
     """
 
-    def __init__(self, src, dst,
-                 src_slice=None, dst_slice=None, inc=False, tag=None):
+    def __init__(self, src, dst, src_slice=None, dst_slice=None, inc=False, tag=None):
         super().__init__(tag=tag)
 
         if isinstance(src_slice, slice):
@@ -379,10 +378,13 @@ class Copy(Operator):
 
     def _descstr(self):
         def sigstring(sig, sl):
-            return '%s%s' % (sig, ('[%s]' % (sl,)) if sl is not None else '')
-        return '%s -> %s, inc=%s' % (sigstring(self.src, self.src_slice),
-                                     sigstring(self.dst, self.dst_slice),
-                                     self.inc)
+            return "%s%s" % (sig, ("[%s]" % (sl,)) if sl is not None else "")
+
+        return "%s -> %s, inc=%s" % (
+            sigstring(self.src, self.src_slice),
+            sigstring(self.dst, self.dst_slice),
+            self.inc,
+        )
 
     def make_step(self, signals, dt, rng):
         src = signals[self.src]
@@ -402,16 +404,22 @@ class Copy(Operator):
                 repeats = len(np.unique(dst_slice)) < len(dst_slice)
 
         if inc and repeats:
+
             def step_copy():
                 np.add.at(dst, dst_slice, src[src_slice])
+
         elif inc:
+
             def step_copy():
                 dst[dst_slice] += src[src_slice]
+
         elif repeats:
-            raise BuildError("%s: Cannot have repeated indices in "
-                             "``dst_slice`` when copy is not an increment"
-                             % self)
+            raise BuildError(
+                "%s: Cannot have repeated indices in "
+                "``dst_slice`` when copy is not an increment" % self
+            )
         else:
+
             def step_copy():
                 dst[dst_slice] = src[src_slice]
 
@@ -473,7 +481,7 @@ class ElementwiseInc(Operator):
         return self.incs[0]
 
     def _descstr(self):
-        return '%s, %s -> %s' % (self.A, self.X, self.Y)
+        return "%s, %s -> %s" % (self.A, self.X, self.Y)
 
     def make_step(self, signals, dt, rng):
         A = signals[self.A]
@@ -487,12 +495,14 @@ class ElementwiseInc(Operator):
         assert all(len(s) == 2 for s in [Ashape, Xshape, Yshape])
         for da, dx, dy in zip(Ashape, Xshape, Yshape):
             if not (da in [1, dy] and dx in [1, dy] and max(da, dx) == dy):
-                raise BuildError("Incompatible shapes in ElementwiseInc: "
-                                 "Trying to do %s += %s * %s" %
-                                 (Yshape, Ashape, Xshape))
+                raise BuildError(
+                    "Incompatible shapes in ElementwiseInc: "
+                    "Trying to do %s += %s * %s" % (Yshape, Ashape, Xshape)
+                )
 
         def step_elementwiseinc():
             Y[...] += A * X
+
         return step_elementwiseinc
 
 
@@ -517,8 +527,9 @@ def reshape_dot(A, X, Y, tag=None):
         incshape = ashape[:-1] + xshape[:-2] + xshape[-1:]
 
     if (badshape or incshape != Y.shape) and incshape != ():
-        raise BuildError("shape mismatch in %s: %s x %s -> %s"
-                         % (tag, A.shape, X.shape, Y.shape))
+        raise BuildError(
+            "shape mismatch in %s: %s x %s -> %s" % (tag, A.shape, X.shape, Y.shape)
+        )
 
     # Reshape to handle case when np.dot(A, X) and Y are both scalars
     return A.dot(X).size == Y.size == 1
@@ -573,7 +584,8 @@ class DotInc(Operator):
         self.reshape = reshape
         if self.reshape is None:
             self.reshape = reshape_dot(
-                A.initial_value, X.initial_value, Y.initial_value, self.tag)
+                A.initial_value, X.initial_value, Y.initial_value, self.tag
+            )
 
         self.sets = []
         self.incs = [Y]
@@ -593,7 +605,7 @@ class DotInc(Operator):
         return self.incs[0]
 
     def _descstr(self):
-        return '%s, %s -> %s' % (self.A, self.X, self.Y)
+        return "%s, %s -> %s" % (self.A, self.X, self.Y)
 
     def make_step(self, signals, dt, rng):
         X = signals[self.X]
@@ -681,6 +693,7 @@ class BsrDotInc(DotInc):
 
     def __init__(self, A, X, Y, indices, indptr, reshape=None, tag=None):
         from scipy.sparse import bsr_matrix
+
         self.bsr_matrix = bsr_matrix
 
         super().__init__(A, X, Y, reshape=reshape, tag=tag)
@@ -699,6 +712,7 @@ class BsrDotInc(DotInc):
             if self.reshape:
                 inc = inc.reshape(Y.shape)
             Y[...] += inc
+
         return step_dotinc
 
 
@@ -775,8 +789,7 @@ class SimPyFunc(Operator):
         return self.reads[-1] if self.x_passed else None
 
     def _descstr(self):
-        return '%s -> %s, fn=%r' % (
-            self.x, self.output, function_name(self.fn))
+        return "%s -> %s, fn=%r" % (self.x, self.output, function_name(self.fn))
 
     def make_step(self, signals, dt, rng):
         fn = self.fn
@@ -793,14 +806,16 @@ class SimPyFunc(Operator):
                     # required since Numpy turns None into NaN
                     if y is None or not np.all(np.isfinite(y)):
                         raise SimulationError(
-                            "Function %r returned non-finite value" %
-                            function_name(self.fn))
+                            "Function %r returned non-finite value"
+                            % function_name(self.fn)
+                        )
 
                     output[...] = y
 
                 except (TypeError, ValueError):
-                    raise SimulationError("Function %r returned a value "
-                                          "%r of invalid type %r" %
-                                          (function_name(self.fn), y, type(y)))
+                    raise SimulationError(
+                        "Function %r returned a value "
+                        "%r of invalid type %r" % (function_name(self.fn), y, type(y))
+                    )
 
         return step_simpyfunc

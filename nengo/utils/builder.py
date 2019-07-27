@@ -28,12 +28,14 @@ def full_transform(conn, slice_pre=True, slice_post=True, allow_scalars=True):
     """
 
     if not isinstance(conn.transform, nengo.Dense):
-        raise ValidationError("full_transform can only be applied to Dense "
-                              "transforms", attr="transform", obj=conn)
+        raise ValidationError(
+            "full_transform can only be applied to Dense " "transforms",
+            attr="transform",
+            obj=conn,
+        )
 
     transform = conn.transform.init
-    pre_slice = (conn.pre_slice if slice_pre and conn.function is None else
-                 slice(None))
+    pre_slice = conn.pre_slice if slice_pre and conn.function is None else slice(None)
     post_slice = conn.post_slice if slice_post else slice(None)
 
     eq_none_slice = lambda s: isinstance(s, slice) and s == slice(None)
@@ -49,24 +51,27 @@ def full_transform(conn, slice_pre=True, slice_post=True, allow_scalars=True):
 
     # Create the new transform matching the pre/post dimensions
     func_size = conn.function_info.size
-    size_in = (conn.pre_obj.size_out if func_size is None
-               else func_size) if slice_pre else conn.size_mid
+    size_in = (
+        (conn.pre_obj.size_out if func_size is None else func_size)
+        if slice_pre
+        else conn.size_mid
+    )
     size_out = conn.post_obj.size_in if slice_post else conn.size_out
     new_transform = np.zeros((size_out, size_in))
 
     if transform.ndim < 2:
-        new_transform[np.arange(size_out)[post_slice],
-                      np.arange(size_in)[pre_slice]] = transform
+        new_transform[
+            np.arange(size_out)[post_slice], np.arange(size_in)[pre_slice]
+        ] = transform
         return new_transform
     elif transform.ndim == 2:
         repeated_inds = lambda x: (
-            not isinstance(x, slice) and np.unique(x).size != len(x))
+            not isinstance(x, slice) and np.unique(x).size != len(x)
+        )
         if repeated_inds(pre_slice):
-            raise NotImplementedError(
-                "Input object selection has repeated indices")
+            raise NotImplementedError("Input object selection has repeated indices")
         if repeated_inds(post_slice):
-            raise NotImplementedError(
-                "Output object selection has repeated indices")
+            raise NotImplementedError("Output object selection has repeated indices")
 
         rows_transform = np.array(new_transform[post_slice])
         rows_transform[:, pre_slice] = transform
@@ -76,8 +81,9 @@ def full_transform(conn, slice_pre=True, slice_post=True, allow_scalars=True):
         #  just individual items
         return new_transform
     else:
-        raise ValidationError("Transforms with > 2 dims not supported",
-                              attr='transform', obj=conn)
+        raise ValidationError(
+            "Transforms with > 2 dims not supported", attr="transform", obj=conn
+        )
 
 
 def default_n_eval_points(n_neurons, dimensions):
@@ -137,16 +143,20 @@ def _create_replacement_connection(c_in, c_out):
     if np.all(transform == 0):
         return None
 
-    c = nengo.Connection(c_in.pre_obj, c_out.post_obj,
-                         synapse=synapse,
-                         transform=transform,
-                         function=function,
-                         add_to_container=False)
+    c = nengo.Connection(
+        c_in.pre_obj,
+        c_out.post_obj,
+        synapse=synapse,
+        transform=transform,
+        function=function,
+        add_to_container=False,
+    )
     return c
 
 
 def remove_passthrough_nodes(  # noqa: C901
-        objs, connections, create_connection_fn=None):
+    objs, connections, create_connection_fn=None
+):
     """Returns a version of the model without passthrough Nodes
 
     For some backends (such as SpiNNaker), it is useful to remove Nodes that
@@ -198,7 +208,8 @@ def remove_passthrough_nodes(  # noqa: C901
             for c_in in inputs[obj]:
                 if c_in.pre_obj is obj:
                     raise Unconvertible(
-                        "Cannot remove a Node with a feedback connection")
+                        "Cannot remove a Node with a feedback connection"
+                    )
 
                 for c_out in outputs[obj]:
                     c = create_connection_fn(c_in, c_out)

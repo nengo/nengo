@@ -9,8 +9,8 @@ def test_basic():
     with spa.SPA() as model:
         model.state = spa.State(dimensions=16)
 
-    input = model.get_module_input('state')
-    output = model.get_module_output('state')
+    input = model.get_module_input("state")
+    output = model.get_module_output("state")
     assert input[0] is model.state.input
     assert output[0] is model.state.output
     assert input[1] is output[1]
@@ -25,8 +25,7 @@ def test_neurons():
     assert model.state.state_ensembles.ensembles[0].n_neurons == 16 * 2
 
     with spa.SPA() as model:
-        model.state = spa.State(dimensions=16, subdimensions=1,
-                                neurons_per_dimension=2)
+        model.state = spa.State(dimensions=16, subdimensions=1, neurons_per_dimension=2)
 
     assert len(model.state.state_ensembles.ensembles) == 16
     assert model.state.state_ensembles.ensembles[0].n_neurons == 2
@@ -48,17 +47,18 @@ def test_no_feedback_run(Simulator, seed):
 
         def state_input(t):
             if 0 <= t < 0.2:
-                return 'A'
+                return "A"
             elif 0.2 <= t < 0.4:
-                return 'B'
+                return "B"
             else:
-                return '0'
+                return "0"
+
         model.state_input = spa.Input(state=state_input)
 
-    state, vocab = model.get_module_output('state')
+    state, vocab = model.get_module_output("state")
 
     with model:
-        p = nengo.Probe(state, 'output', synapse=0.03)
+        p = nengo.Probe(state, "output", synapse=0.03)
 
     with Simulator(model) as sim:
         sim.run(0.5)
@@ -74,21 +74,20 @@ def test_no_feedback_run(Simulator, seed):
 
 def test_memory_run(Simulator, seed, plt):
     with spa.SPA(seed=seed) as model:
-        model.memory = spa.State(dimensions=32, feedback=1.0,
-                                 feedback_synapse=0.01)
+        model.memory = spa.State(dimensions=32, feedback=1.0, feedback_synapse=0.01)
 
         def state_input(t):
             if 0 <= t < 0.05:
-                return 'A'
+                return "A"
             else:
-                return '0'
+                return "0"
 
         model.state_input = spa.Input(memory=state_input)
 
-    memory, vocab = model.get_module_output('memory')
+    memory, vocab = model.get_module_output("memory")
 
     with model:
-        p = nengo.Probe(memory, 'output', synapse=0.03)
+        p = nengo.Probe(memory, "output", synapse=0.03)
 
     with Simulator(model) as sim:
         sim.run(0.5)
@@ -107,21 +106,22 @@ def test_memory_run(Simulator, seed, plt):
 
 def test_memory_run_decay(Simulator, plt, seed):
     with spa.SPA(seed=seed) as model:
-        model.memory = spa.State(dimensions=32, feedback=(1.0 - 0.01/0.05),
-                                 feedback_synapse=0.01)
+        model.memory = spa.State(
+            dimensions=32, feedback=(1.0 - 0.01 / 0.05), feedback_synapse=0.01
+        )
 
         def state_input(t):
             if 0 <= t < 0.05:
-                return 'A'
+                return "A"
             else:
-                return '0'
+                return "0"
 
         model.state_input = spa.Input(memory=state_input)
 
-    memory, vocab = model.get_module_output('memory')
+    memory, vocab = model.get_module_output("memory")
 
     with model:
-        p = nengo.Probe(memory, 'output', synapse=0.03)
+        p = nengo.Probe(memory, "output", synapse=0.03)
 
     with Simulator(model) as sim:
         sim.run(0.3)

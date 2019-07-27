@@ -11,7 +11,13 @@ import numpy as np
 import nengo.utils.numpy as npext
 from nengo.exceptions import ValidationError
 from nengo.params import (
-    BoolParam, FrozenObject, IntParam, NdarrayParam, NumberParam, Parameter)
+    BoolParam,
+    FrozenObject,
+    IntParam,
+    NdarrayParam,
+    NumberParam,
+    Parameter,
+)
 
 
 def format_system(A, Y):
@@ -38,7 +44,7 @@ class LeastSquaresSolver(FrozenObject):
 class Cholesky(LeastSquaresSolver):
     """Solve a least-squares system using the Cholesky decomposition."""
 
-    transpose = BoolParam('transpose', optional=True)
+    transpose = BoolParam("transpose", optional=True)
 
     def __init__(self, transpose=None):
         super().__init__()
@@ -61,10 +67,11 @@ class Cholesky(LeastSquaresSolver):
             b = np.dot(A.T, Y)
 
         # add L2 regularization term 'lambda' = m * sigma**2
-        np.fill_diagonal(G, G.diagonal() + m * sigma**2)
+        np.fill_diagonal(G, G.diagonal() + m * sigma ** 2)
 
         try:
             import scipy.linalg
+
             factor = scipy.linalg.cho_factor(G, overwrite_a=True)
             X = scipy.linalg.cho_solve(factor, b)
         except ImportError:
@@ -73,7 +80,7 @@ class Cholesky(LeastSquaresSolver):
             X = np.dot(L, np.dot(L.T, b))
 
         X = np.dot(A.T, X) if transpose else X
-        info = {'rmses': rmses(A, X, Y)}
+        info = {"rmses": rmses(A, X, Y)}
         return X, info
 
 
@@ -93,8 +100,8 @@ class ConjgradScipy(LeastSquaresSolver):
         https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.cg.html
     """
 
-    tol = NumberParam('tol', low=0)
-    atol = NumberParam('atol', low=0)
+    tol = NumberParam("tol", low=0)
+    atol = NumberParam("atol", low=0)
 
     def __init__(self, tol=1e-4, atol=1e-8):
         super().__init__()
@@ -103,17 +110,19 @@ class ConjgradScipy(LeastSquaresSolver):
 
     def __call__(self, A, Y, sigma, rng=None):
         import scipy.sparse.linalg
+
         Y, m, n, d, matrix_in = format_system(A, Y)
 
-        damp = m * sigma**2
+        damp = m * sigma ** 2
         calcAA = lambda x: np.dot(A.T, np.dot(A, x)) + damp * x
         G = scipy.sparse.linalg.LinearOperator(
-            (n, n), matvec=calcAA, matmat=calcAA, dtype=A.dtype)
+            (n, n), matvec=calcAA, matmat=calcAA, dtype=A.dtype
+        )
         B = np.dot(A.T, Y)
 
         X = np.zeros((n, d), dtype=B.dtype)
-        infos = np.zeros(d, dtype='int')
-        itns = np.zeros(d, dtype='int')
+        infos = np.zeros(d, dtype="int")
+        itns = np.zeros(d, dtype="int")
         for i in range(d):
             # use the callback to count the number of iterations
             def callback(x, i=i):
@@ -121,23 +130,24 @@ class ConjgradScipy(LeastSquaresSolver):
 
             try:
                 X[:, i], infos[i] = scipy.sparse.linalg.cg(
-                    G, B[:, i], tol=self.tol, callback=callback,
-                    atol=self.atol)
+                    G, B[:, i], tol=self.tol, callback=callback, atol=self.atol
+                )
             except TypeError as e:  # pragma: no cover
                 # no atol parameter in Scipy < 1.1.0
-                if 'atol' not in str(e):
+                if "atol" not in str(e):
                     raise e
                 X[:, i], infos[i] = scipy.sparse.linalg.cg(
-                    G, B[:, i], tol=self.tol, callback=callback)
+                    G, B[:, i], tol=self.tol, callback=callback
+                )
 
-        info = {'rmses': rmses(A, X, Y), 'iterations': itns, 'info': infos}
+        info = {"rmses": rmses(A, X, Y), "iterations": itns, "info": infos}
         return X if matrix_in else X.ravel(), info
 
 
 class LSMRScipy(LeastSquaresSolver):
     """Solve a least-squares system using Scipy's LSMR."""
 
-    tol = NumberParam('tol', low=0)
+    tol = NumberParam("tol", low=0)
 
     def __init__(self, tol=1e-4):
         super().__init__()
@@ -145,25 +155,27 @@ class LSMRScipy(LeastSquaresSolver):
 
     def __call__(self, A, Y, sigma, rng=None):
         import scipy.sparse.linalg
+
         Y, m, n, d, matrix_in = format_system(A, Y)
 
         damp = sigma * np.sqrt(m)
         X = np.zeros((n, d), dtype=Y.dtype)
-        itns = np.zeros(d, dtype='int')
+        itns = np.zeros(d, dtype="int")
         for i in range(d):
             X[:, i], _, itns[i], _, _, _, _, _ = scipy.sparse.linalg.lsmr(
-                A, Y[:, i], damp=damp, atol=self.tol, btol=self.tol)
+                A, Y[:, i], damp=damp, atol=self.tol, btol=self.tol
+            )
 
-        info = {'rmses': rmses(A, X, Y), 'iterations': itns}
+        info = {"rmses": rmses(A, X, Y), "iterations": itns}
         return X if matrix_in else X.ravel(), info
 
 
 class Conjgrad(LeastSquaresSolver):
     """Solve a least-squares system using conjugate gradient."""
 
-    tol = NumberParam('tol', low=0)
-    maxiters = IntParam('maxiters', low=1, optional=True)
-    X0 = NdarrayParam('X0', shape=('*', '*'), optional=True)
+    tol = NumberParam("tol", low=0)
+    maxiters = IntParam("maxiters", low=1, optional=True)
+    X0 = NdarrayParam("X0", shape=("*", "*"), optional=True)
 
     def __init__(self, tol=1e-2, maxiters=None, X0=None):
         super().__init__()
@@ -175,20 +187,22 @@ class Conjgrad(LeastSquaresSolver):
         Y, m, n, d, matrix_in = format_system(A, Y)
         X = np.zeros((n, d)) if self.X0 is None else np.array(self.X0)
         if X.shape != (n, d):
-            raise ValidationError("Must be shape %s, got %s"
-                                  % ((n, d), X.shape), attr='X0', obj=self)
+            raise ValidationError(
+                "Must be shape %s, got %s" % ((n, d), X.shape), attr="X0", obj=self
+            )
 
-        damp = m * sigma**2
+        damp = m * sigma ** 2
         rtol = self.tol * np.sqrt(m)
         G = lambda x: np.dot(A.T, np.dot(A, x)) + damp * x
         B = np.dot(A.T, Y)
 
-        iters = -np.ones(d, dtype='int')
+        iters = -np.ones(d, dtype="int")
         for i in range(d):
             X[:, i], iters[i] = self._conjgrad_iters(
-                G, B[:, i], X[:, i], maxiters=self.maxiters, rtol=rtol)
+                G, B[:, i], X[:, i], maxiters=self.maxiters, rtol=rtol
+            )
 
-        info = {'rmses': rmses(A, X, Y), 'iterations': iters}
+        info = {"rmses": rmses(A, X, Y), "iterations": iters}
         return X if matrix_in else X.ravel(), info
 
     @staticmethod
@@ -222,14 +236,14 @@ class Conjgrad(LeastSquaresSolver):
             p += r
             rsold = rsnew
 
-        return x, i+1
+        return x, i + 1
 
 
 class BlockConjgrad(LeastSquaresSolver):
     """Solve a multiple-RHS least-squares system using block conj. gradient."""
 
-    tol = NumberParam('tol', low=0)
-    X0 = NdarrayParam('X0', shape=('*', '*'), optional=True)
+    tol = NumberParam("tol", low=0)
+    X0 = NdarrayParam("X0", shape=("*", "*"), optional=True)
 
     def __init__(self, tol=1e-2, X0=None):
         super().__init__()
@@ -238,15 +252,16 @@ class BlockConjgrad(LeastSquaresSolver):
 
     def __call__(self, A, Y, sigma, rng=None):
         Y, m, n, d, matrix_in = format_system(A, Y)
-        sigma = np.asarray(sigma, dtype='float')
+        sigma = np.asarray(sigma, dtype="float")
         sigma = sigma.reshape(sigma.size, 1)
 
         X = np.zeros((n, d)) if self.X0 is None else np.array(self.X0)
         if X.shape != (n, d):
-            raise ValidationError("Must be shape %s, got %s"
-                                  % ((n, d), X.shape), attr='X0', obj=self)
+            raise ValidationError(
+                "Must be shape %s, got %s" % ((n, d), X.shape), attr="X0", obj=self
+            )
 
-        damp = m * sigma**2
+        damp = m * sigma ** 2
         rtol = self.tol * np.sqrt(m)
         G = lambda x: np.dot(A.T, np.dot(A, x)) + damp * x
         B = np.dot(A.T, Y)
@@ -265,14 +280,14 @@ class BlockConjgrad(LeastSquaresSolver):
             R -= np.dot(AP, alpha)
 
             Rsnew = np.dot(R.T, R)
-            if (np.diag(Rsnew) < rtol**2).all():
+            if (np.diag(Rsnew) < rtol ** 2).all():
                 break
 
             beta = np.linalg.solve(Rsold, Rsnew)
             P = R + np.dot(P, beta)
             Rsold = Rsnew
 
-        info = {'rmses': rmses(A, X, Y), 'iterations': i + 1}
+        info = {"rmses": rmses(A, X, Y), "iterations": i + 1}
         return X if matrix_in else X.ravel(), info
 
 
@@ -282,9 +297,9 @@ class SVD(LeastSquaresSolver):
     def __call__(self, A, Y, sigma, rng=None):
         Y, m, _, _, matrix_in = format_system(A, Y)
         U, s, V = np.linalg.svd(A, full_matrices=0)
-        si = s / (s**2 + m * sigma**2)
+        si = s / (s ** 2 + m * sigma ** 2)
         X = np.dot(V.T, si[:, None] * np.dot(U.T, Y))
-        info = {'rmses': npext.rms(Y - np.dot(A, X), axis=0)}
+        info = {"rmses": npext.rms(Y - np.dot(A, X), axis=0)}
         return X if matrix_in else X.ravel(), info
 
 
@@ -309,12 +324,13 @@ class RandomizedSVD(LeastSquaresSolver):
     sklearn.utils.extmath.randomized_svd : Function used by this class
     """
 
-    n_components = IntParam('n_components', low=1)
-    n_oversamples = IntParam('n_oversamples', low=0)
-    n_iter = IntParam('n_iter', low=0)
+    n_components = IntParam("n_components", low=1)
+    n_oversamples = IntParam("n_oversamples", low=0)
+    n_iter = IntParam("n_iter", low=0)
 
     def __init__(self, n_components=60, n_oversamples=10, n_iter=0):
         from sklearn.utils.extmath import randomized_svd
+
         assert randomized_svd
         super().__init__()
         self.n_components = n_components
@@ -330,11 +346,15 @@ class RandomizedSVD(LeastSquaresSolver):
             return SVD()(A, Y, sigma, rng=rng)
 
         U, s, V = randomized_svd(
-            A, self.n_components, n_oversamples=self.n_oversamples,
-            n_iter=self.n_iter, random_state=rng)
-        si = s / (s**2 + m * sigma**2)
+            A,
+            self.n_components,
+            n_oversamples=self.n_oversamples,
+            n_iter=self.n_iter,
+            random_state=rng,
+        )
+        si = s / (s ** 2 + m * sigma ** 2)
         X = np.dot(V.T, si[:, None] * np.dot(U.T, Y))
-        info = {'rmses': npext.rms(Y - np.dot(A, X), axis=0)}
+        info = {"rmses": npext.rms(Y - np.dot(A, X), axis=0)}
         return X if matrix_in else X.ravel(), info
 
 

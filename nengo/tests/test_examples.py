@@ -28,36 +28,40 @@ _pytest.capture.DontReadFromInput.write = lambda: None
 _pytest.capture.DontReadFromInput.flush = lambda: None
 
 
-too_slow = ['inhibitory_gating',
-            'izhikevich',
-            'learn_communication_channel',
-            'learn_product',
-            'learn_square',
-            'learn_unsupervised',
-            'lorenz_attractor',
-            'nef_algorithm',
-            'nef_summary',
-            'network_design',
-            'network_design_advanced',
-            'question',
-            'question_control',
-            'question_memory',
-            'spa_parser',
-            'spa_sequence',
-            'spa_sequence_routed']
+too_slow = [
+    "inhibitory_gating",
+    "izhikevich",
+    "learn_communication_channel",
+    "learn_product",
+    "learn_square",
+    "learn_unsupervised",
+    "lorenz_attractor",
+    "nef_algorithm",
+    "nef_summary",
+    "network_design",
+    "network_design_advanced",
+    "question",
+    "question_control",
+    "question_memory",
+    "spa_parser",
+    "spa_sequence",
+    "spa_sequence_routed",
+]
 
 all_examples, slow_examples, fast_examples = [], [], []
 
 for subdir, _, files in os.walk(examples_dir):
-    if (os.path.sep + '.') in subdir:
+    if (os.path.sep + ".") in subdir:
         continue
-    files = [f for f in files if f.endswith('.ipynb')]
+    files = [f for f in files if f.endswith(".ipynb")]
     examples = [os.path.join(subdir, os.path.splitext(f)[0]) for f in files]
     all_examples.extend(examples)
-    slow_examples.extend([e for e, f in zip(examples, files)
-                          if os.path.splitext(f)[0] in too_slow])
-    fast_examples.extend([e for e, f in zip(examples, files)
-                          if os.path.splitext(f)[0] not in too_slow])
+    slow_examples.extend(
+        [e for e, f in zip(examples, files) if os.path.splitext(f)[0] in too_slow]
+    )
+    fast_examples.extend(
+        [e for e, f in zip(examples, files) if os.path.splitext(f)[0] not in too_slow]
+    )
 
 # os.walk goes in arbitrary order, so sort after the fact to keep pytest happy
 all_examples.sort()
@@ -66,18 +70,17 @@ fast_examples.sort()
 
 
 def assert_noexceptions(nb_file, tmpdir):
-    plt = pytest.importorskip('matplotlib.pyplot')
+    plt = pytest.importorskip("matplotlib.pyplot")
     nb_path = os.path.join(examples_dir, "%s.ipynb" % nb_file)
     nb = load_notebook(nb_path)
-    pyfile = "%s.py" % (
-        tmpdir.join(os.path.splitext(os.path.basename(nb_path))[0]))
+    pyfile = "%s.py" % (tmpdir.join(os.path.splitext(os.path.basename(nb_path))[0]))
     export_py(nb, pyfile)
     execfile(pyfile, {})
-    plt.close('all')
+    plt.close("all")
 
 
 @pytest.mark.example
-@pytest.mark.parametrize('nb_file', fast_examples)
+@pytest.mark.parametrize("nb_file", fast_examples)
 @pytest.mark.filterwarnings("ignore:Creating new attribute 'memory_location'")
 def test_fast_noexceptions(nb_file, tmpdir):
     """Ensure that no cells raise an exception."""
@@ -88,7 +91,7 @@ def test_fast_noexceptions(nb_file, tmpdir):
 
 @pytest.mark.slow
 @pytest.mark.example
-@pytest.mark.parametrize('nb_file', slow_examples)
+@pytest.mark.parametrize("nb_file", slow_examples)
 def test_slow_noexceptions(nb_file, tmpdir):
     """Ensure that no cells raise an exception."""
     pytest.importorskip("IPython", minversion="3.0")
@@ -97,7 +100,7 @@ def test_slow_noexceptions(nb_file, tmpdir):
 
 
 @pytest.mark.example
-@pytest.mark.parametrize('nb_file', all_examples)
+@pytest.mark.parametrize("nb_file", all_examples)
 def test_no_outputs(nb_file):
     """Ensure that no cells have output."""
     pytest.importorskip("IPython", minversion="3.0")
@@ -108,7 +111,7 @@ def test_no_outputs(nb_file):
 
 
 @pytest.mark.example
-@pytest.mark.parametrize('nb_file', all_examples)
+@pytest.mark.parametrize("nb_file", all_examples)
 def test_version_4(nb_file):
     pytest.importorskip("IPython", minversion="3.0")
     nb = load_notebook(os.path.join(examples_dir, "%s.ipynb" % nb_file))
@@ -116,7 +119,7 @@ def test_version_4(nb_file):
 
 
 @pytest.mark.example
-@pytest.mark.parametrize('nb_file', all_examples)
+@pytest.mark.parametrize("nb_file", all_examples)
 def test_minimal_metadata(nb_file):
     pytest.importorskip("IPython", minversion="3.0")
     nb = load_notebook(os.path.join(examples_dir, "%s.ipynb" % nb_file))

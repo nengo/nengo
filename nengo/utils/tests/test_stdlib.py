@@ -19,10 +19,10 @@ def test_checked_call():
         return a
 
     def func2(a, b=0, **kwargs):
-        return a+b
+        return a + b
 
     def func3(a, b=0, c=0, *args, **kwargs):
-        return a+b+c+sum(args)
+        return a + b + c + sum(args)
 
     func4 = lambda x=[0]: sum(x)
 
@@ -57,8 +57,8 @@ def test_checked_call():
 
     assert checked_call(np.sin) == (None, False)
     assert checked_call(np.sin, 0) == (0, True)
-    assert checked_call(np.sin, 0, np.array([1.])) == (np.array([0.]), True)
-    assert checked_call(np.sin, 0, np.array([1.]), 1) == (None, False)
+    assert checked_call(np.sin, 0, np.array([1.0])) == (np.array([0.0]), True)
+    assert checked_call(np.sin, 0, np.array([1.0]), 1) == (None, False)
 
 
 def test_checked_call_errors():
@@ -76,8 +76,8 @@ def test_checked_call_errors():
 
 
 @pytest.mark.parametrize(
-    "hashable, force_list",
-    [(False, False), (False, True), (True, False), (True, True)])
+    "hashable, force_list", [(False, False), (False, True), (True, False), (True, True)]
+)
 def test_groupby(hashable, force_list, rng):
     if hashable:
         keys = list(range(1, 5))
@@ -122,22 +122,22 @@ class C:
 
 
 def test_weakkeydefaultdict():
-    factory = lambda: 'default'
+    factory = lambda: "default"
     d = WeakKeyDefaultDict(factory)
     o = C()
 
     assert len(d) == 0
-    assert d[o] == 'default'
+    assert d[o] == "default"
 
-    d[o] = 'changed'
+    d[o] = "changed"
     assert len(d) == 1
-    assert d[o] == 'changed'
+    assert d[o] == "changed"
 
     del d[o]
     assert len(d) == 0
     assert o not in d
 
-    d[o] = 'changed'
+    d[o] = "changed"
     del o
     assert len(d) == 0
 
@@ -212,8 +212,8 @@ def test_weakkeydict_delitem():
     d = WeakKeyIDDictionary()
     o1 = C()
     o2 = C()
-    d[o1] = 'something'
-    d[o2] = 'something'
+    d[o1] = "something"
+    d[o2] = "something"
     assert len(d) == 2
     del d[o1]
     assert len(d) == 1

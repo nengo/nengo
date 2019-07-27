@@ -57,6 +57,7 @@ class Subfile:
     end : int
         Offset of the last readable position + 1 in the file.
     """
+
     def __init__(self, fileobj, start, end):
         self.fileobj = fileobj
         self.start = start
@@ -93,9 +94,9 @@ class Subfile:
         return self.fileobj.tell() - self.start
 
 
-MAGIC_STRING = 'NCO'.encode('utf-8')
+MAGIC_STRING = "NCO".encode("utf-8")
 SUPPORTED_PROTOCOLS = [0]
-HEADER_FORMAT = '@{}sBLLLL'.format(len(MAGIC_STRING))
+HEADER_FORMAT = "@{}sBLLLL".format(len(MAGIC_STRING))
 HEADER_SIZE = struct.calcsize(HEADER_FORMAT)
 ALIGNMENT = 16
 
@@ -124,8 +125,8 @@ def write(fileobj, metadata, array):
     array_end = fileobj.tell()
 
     header = struct.pack(
-        HEADER_FORMAT, MAGIC_STRING, 0, pickle_start, pickle_end,
-        array_start, array_end)
+        HEADER_FORMAT, MAGIC_STRING, 0, pickle_start, pickle_end, array_start, array_end
+    )
     fileobj.seek(start)
     fileobj.write(header)
     fileobj.seek(array_end)
@@ -146,14 +147,14 @@ def read(fileobj):
         element and the array with the actual data as second element.
     """
     header = fileobj.read(HEADER_SIZE)
-    magic, version, pickle_start, pickle_end, array_start, array_end = (
-        struct.unpack(HEADER_FORMAT, header))
+    magic, version, pickle_start, pickle_end, array_start, array_end = struct.unpack(
+        HEADER_FORMAT, header
+    )
 
     if magic != MAGIC_STRING:
         raise CacheIOError("Not a Nengo cache object file.")
     if version not in SUPPORTED_PROTOCOLS:
-        raise CacheIOError(
-            "NCO protocol version {} is not supported.".format(version))
+        raise CacheIOError("NCO protocol version {} is not supported.".format(version))
 
     metadata = pickle.load(Subfile(fileobj, pickle_start, pickle_end))
     array = np.load(Subfile(fileobj, array_start, array_end))

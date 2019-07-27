@@ -61,10 +61,11 @@ class Product(nengo.Network):
     sq2 : EnsembleArray
         Represents the second squared term. See `Gosmann, 2015`_ for details.
     """
-    def __init__(self, n_neurons, dimensions, input_magnitude=1., **kwargs):
-        if 'net' in kwargs:
+
+    def __init__(self, n_neurons, dimensions, input_magnitude=1.0, **kwargs):
+        if "net" in kwargs:
             raise ObsoleteError("The 'net' argument is no longer supported.")
-        kwargs.setdefault('label', "Product")
+        kwargs.setdefault("label", "Product")
         super().__init__(**kwargs)
 
         with self:
@@ -85,20 +86,16 @@ class Product(nengo.Network):
                 radius=input_magnitude * np.sqrt(2),
             )
 
-            tr = 1. / np.sqrt(2.)
-            nengo.Connection(
-                self.input_a, self.sq1.input, transform=tr, synapse=None)
-            nengo.Connection(
-                self.input_b, self.sq1.input, transform=tr, synapse=None)
-            nengo.Connection(
-                self.input_a, self.sq2.input, transform=tr, synapse=None)
-            nengo.Connection(
-                self.input_b, self.sq2.input, transform=-tr, synapse=None)
+            tr = 1.0 / np.sqrt(2.0)
+            nengo.Connection(self.input_a, self.sq1.input, transform=tr, synapse=None)
+            nengo.Connection(self.input_b, self.sq1.input, transform=tr, synapse=None)
+            nengo.Connection(self.input_a, self.sq2.input, transform=tr, synapse=None)
+            nengo.Connection(self.input_b, self.sq2.input, transform=-tr, synapse=None)
 
-            sq1_out = self.sq1.add_output('square', np.square)
-            nengo.Connection(sq1_out, self.output, transform=.5, synapse=None)
-            sq2_out = self.sq2.add_output('square', np.square)
-            nengo.Connection(sq2_out, self.output, transform=-.5, synapse=None)
+            sq1_out = self.sq1.add_output("square", np.square)
+            nengo.Connection(sq1_out, self.output, transform=0.5, synapse=None)
+            sq2_out = self.sq2.add_output("square", np.square)
+            nengo.Connection(sq2_out, self.output, transform=-0.5, synapse=None)
 
     @property
     def A(self):

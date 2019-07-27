@@ -18,12 +18,12 @@ class ProgressBarMock(ProgressBar):
 class TestProgress:
     def test_progress_calculation(self):
         with Progress(max_steps=10) as p:
-            assert p.progress == 0.
+            assert p.progress == 0.0
             for _ in range(5):
                 p.step()
             assert p.progress == 0.5
             p.step(5)
-            assert p.progress == 1.
+            assert p.progress == 1.0
 
     def test_finished_property(self):
         with Progress(max_steps=10) as p:
@@ -45,19 +45,19 @@ class TestProgress:
         assert not p2.success
 
     def test_elapsed_seconds(self, monkeypatch):
-        t = 1.
-        monkeypatch.setattr(time, 'time', lambda: t)
+        t = 1.0
+        monkeypatch.setattr(time, "time", lambda: t)
 
         with Progress(max_steps=10) as p:
-            t = 10.
+            t = 10.0
 
-        assert p.elapsed_seconds() == 9.
+        assert p.elapsed_seconds() == 9.0
 
     def test_eta(self):
         with Progress(max_steps=10) as p:
             assert p.eta() == -1  # no estimate available yet
             p.step()
-            assert p.eta() >= 0.
+            assert p.eta() >= 0.0
 
     def test_max_steps(self):
         with pytest.raises(ValidationError):
@@ -69,17 +69,17 @@ class TestProgress:
                 pass
 
     def test_unknown_number_of_steps(self, monkeypatch):
-        t = 1.
-        monkeypatch.setattr(time, 'time', lambda: t)
+        t = 1.0
+        monkeypatch.setattr(time, "time", lambda: t)
 
         with Progress() as p:
             p.step()
-            t = 10.
-            assert p.progress == 0.
+            t = 10.0
+            assert p.progress == 0.0
             assert p.eta() == -1
 
         assert p.n_steps == 1
-        assert p.elapsed_seconds() == 9.
+        assert p.elapsed_seconds() == 9.0
 
 
 class TestAutoProgressBar:
@@ -93,7 +93,7 @@ class TestAutoProgressBar:
     def test_progress_not_shown_if_eta_below_threshold(self):
         progress_mock = self.ProgressMock(0.2)
         progress_bar = ProgressBarMock()
-        auto_progress = AutoProgressBar(progress_bar, min_eta=10.)
+        auto_progress = AutoProgressBar(progress_bar, min_eta=10.0)
 
         for _ in range(10):
             auto_progress.update(progress_mock)
@@ -103,7 +103,7 @@ class TestAutoProgressBar:
     def test_progress_shown_if_eta_above_threshold(self):
         progress_mock = self.ProgressMock(20)
         progress_bar = ProgressBarMock()
-        auto_progress = AutoProgressBar(progress_bar, min_eta=10.)
+        auto_progress = AutoProgressBar(progress_bar, min_eta=10.0)
 
         for _ in range(10):
             auto_progress.update(progress_mock)
@@ -113,7 +113,7 @@ class TestAutoProgressBar:
     def test_progress_shown_when_finished(self):
         progress_mock = self.ProgressMock(0.2)
         progress_bar = ProgressBarMock()
-        auto_progress = AutoProgressBar(progress_bar, min_eta=10.)
+        auto_progress = AutoProgressBar(progress_bar, min_eta=10.0)
 
         auto_progress.update(progress_mock)
         assert progress_bar.n_update_calls == 0

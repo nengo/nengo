@@ -8,8 +8,9 @@ def test_inputgatedmemory(Simulator, plt, seed):
     to_memorize = 0.5
     start_memorizing = 0.4
     with nengo.Network(seed=seed) as net:
-        test_input = nengo.Node(Piecewise(
-            {0.0: 0, 0.1: to_memorize, start_memorizing + 0.1: 0}))
+        test_input = nengo.Node(
+            Piecewise({0.0: 0, 0.1: to_memorize, start_memorizing + 0.1: 0})
+        )
         gate_input = nengo.Node(Piecewise({0.0: 0, start_memorizing: 1}))
         reset_input = nengo.Node(0)
 
@@ -28,9 +29,9 @@ def test_inputgatedmemory(Simulator, plt, seed):
 
     plt.title("gating at %.1f s" % start_memorizing)
     plt.plot(t, data, label="value in memory")
-    plt.axhline(to_memorize, c='k', lw=2, label="value to remember")
-    plt.axvline(start_memorizing, c='k', ls=':', label="start gating")
-    plt.legend(loc='best')
+    plt.axhline(to_memorize, c="k", lw=2, label="value to remember")
+    plt.axvline(start_memorizing, c="k", ls=":", label="start gating")
+    plt.legend(loc="best")
 
     assert abs(np.mean(data[t < 0.1])) < 0.01
     assert abs(np.mean(data[(t > 0.2) & (t <= 0.4)]) - 0.5) < 0.02

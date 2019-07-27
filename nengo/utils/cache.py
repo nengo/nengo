@@ -17,15 +17,15 @@ def bytes2human(n, fmt="%(value).1f %(symbol)s"):
     >>> bytes2human(100001221)
     '95 MB'
     """
-    symbols = ('B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB')
+    symbols = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
     prefix = {}
     for i, s in enumerate(symbols[1:]):
         prefix[s] = 1 << (i + 1) * 10
     for symbol in reversed(symbols[1:]):
         if n >= prefix[symbol]:
             value = float(n) / prefix[symbol]
-            return fmt % {'value': value, 'symbol': symbol}
-    return fmt % {'value': n, 'symbol': symbols[0]}
+            return fmt % {"value": value, "symbol": symbol}
+    return fmt % {"value": n, "symbol": symbols[0]}
 
 
 def human2bytes(s):
@@ -38,7 +38,7 @@ def human2bytes(s):
     >>> human2bytes('1 GB')
     1073741824
     """
-    symbols = ('B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB')
+    symbols = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
 
     ix = -1 if s[-2].isdigit() else -2
     letter = s[ix:].strip().upper()

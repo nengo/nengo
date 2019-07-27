@@ -3,13 +3,13 @@ from nengo._vendor import portalocker
 
 
 class FileLock:
-    def __init__(self, filename, timeout=10., poll=0.1):
+    def __init__(self, filename, timeout=10.0, poll=0.1):
         self.filename = filename
         self.timeout = timeout
         self.poll = poll
         self._lock = portalocker.Lock(
-            self.filename, timeout=timeout, check_interval=poll,
-            fail_when_locked=True)
+            self.filename, timeout=timeout, check_interval=poll, fail_when_locked=True
+        )
         self._acquired = False
 
     def acquire(self):
@@ -18,8 +18,8 @@ class FileLock:
             self._acquired = True
         except (portalocker.AlreadyLocked, portalocker.LockException):
             raise TimeoutError(
-                "Could not acquire lock '{filename}'.".format(
-                    filename=self.filename))
+                "Could not acquire lock '{filename}'.".format(filename=self.filename)
+            )
 
     def release(self):
         self._lock.release()

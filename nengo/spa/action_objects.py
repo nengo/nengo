@@ -25,45 +25,45 @@ class Symbol:
 
     def __add__(self, other):
         if is_number(other):
-            other = Symbol('%g' % other)
+            other = Symbol("%g" % other)
         if isinstance(other, Symbol):
-            return Symbol('(%s + %s)' % (self.symbol, other.symbol))
+            return Symbol("(%s + %s)" % (self.symbol, other.symbol))
         return NotImplemented
 
     def __sub__(self, other):
         if isinstance(other, Symbol):
-            return Symbol('(%s - %s)' % (self.symbol, other.symbol))
+            return Symbol("(%s - %s)" % (self.symbol, other.symbol))
         return NotImplemented
 
     def __mul__(self, other):
         if isinstance(other, Symbol):
-            if other.symbol == '1':
+            if other.symbol == "1":
                 return self
-            if self.symbol == '1':
+            if self.symbol == "1":
                 return other
-            return Symbol('(%s * %s)' % (self.symbol, other.symbol))
+            return Symbol("(%s * %s)" % (self.symbol, other.symbol))
         if is_number(other):
             if other == 1:
                 return self
-            if self.symbol == '1':
-                return Symbol('%g' % other)
-            return Symbol('(%s * %g)' % (self.symbol, other))
+            if self.symbol == "1":
+                return Symbol("%g" % other)
+            return Symbol("(%s * %g)" % (self.symbol, other))
         return NotImplemented
 
     def __rmul__(self, other):
         return self.__mul__(other)
 
     def __invert__(self):
-        if self.symbol.startswith('~'):
+        if self.symbol.startswith("~"):
             return Symbol(self.symbol[1:])
         else:
-            return Symbol('~%s' % self.symbol)
+            return Symbol("~%s" % self.symbol)
 
     def __neg__(self):
-        if self.symbol.startswith('-'):
+        if self.symbol.startswith("-"):
             return Symbol(self.symbol[1:])
         else:
-            return Symbol('-%s' % self.symbol)
+            return Symbol("-%s" % self.symbol)
 
     def __str__(self):
         return str(self.symbol)
@@ -81,22 +81,21 @@ class Source:
     This is used by the `.spa.Actions` parsing system.
     """
 
-    def __init__(self, name, transform=Symbol('1'), inverted=False):
-        self.name = name            # the name of the module output
+    def __init__(self, name, transform=Symbol("1"), inverted=False):
+        self.name = name  # the name of the module output
         self.transform = transform  # the Symbol for the transformation
         self.inverted = inverted
 
     def __invert__(self):
-        if self.transform.symbol != '1':
-            raise SpaParseError(
-                "You can only invert sources without transforms")
+        if self.transform.symbol != "1":
+            raise SpaParseError("You can only invert sources without transforms")
         return Source(self.name, self.transform, not self.inverted)
 
     def __mul__(self, other):
         if isinstance(other, Source):
             return Convolution(self, other)
         elif is_number(other) or isinstance(other, Symbol):
-            return Source(self.name, self.transform*other, self.inverted)
+            return Source(self.name, self.transform * other, self.inverted)
         return NotImplemented
 
     def __rmul__(self, other):
@@ -118,7 +117,7 @@ class Source:
         return (-self).__add__(other)
 
     def __str__(self):
-        if self.transform.symbol == '1':
+        if self.transform.symbol == "1":
             trans_text = ""
         else:
             trans_text = "%s * " % self.transform
@@ -144,14 +143,20 @@ class DotProduct:
         if isinstance(item2, (int, float)):
             item2 = Symbol(item2)
         if not isinstance(item1, (Source, Symbol)):
-            raise SpaParseError("The first item in the dot product is not a "
-                                "semantic pointer or a spa.Module output.")
+            raise SpaParseError(
+                "The first item in the dot product is not a "
+                "semantic pointer or a spa.Module output."
+            )
         if not isinstance(item2, (Source, Symbol)):
-            raise SpaParseError("The second item in the dot product is not a "
-                                "semantic pointer or a spa.Module output.")
+            raise SpaParseError(
+                "The second item in the dot product is not a "
+                "semantic pointer or a spa.Module output."
+            )
         if not isinstance(item1, Source) and not isinstance(item2, Source):
-            raise SpaParseError("One of the two terms for the dot product "
-                                "must be a spa.Module output.")
+            raise SpaParseError(
+                "One of the two terms for the dot product "
+                "must be a spa.Module output."
+            )
         self.item1 = item1
         self.item2 = item2
         self.scale = float(scale)
@@ -198,15 +203,14 @@ class DotProduct:
 class Convolution:
     """The convolution of two sources together."""
 
-    def __init__(self, source1, source2, transform=Symbol('1')):
+    def __init__(self, source1, source2, transform=Symbol("1")):
         self.source1 = source1
         self.source2 = source2
         self.transform = transform
 
     def __mul__(self, other):
         if isinstance(other, (Symbol, int, float)):
-            return Convolution(
-                self.source1, self.source2, self.transform * other)
+            return Convolution(self.source1, self.source2, self.transform * other)
         return NotImplemented
 
     def __rmul__(self, other):
@@ -228,8 +232,7 @@ class Convolution:
         return (-self).__add__(other)
 
     def __str__(self):
-        return "((%s) * (%s)) * %s" % (
-            self.source1, self.source2, self.transform)
+        return "((%s) * (%s)) * %s" % (self.source1, self.source2, self.transform)
 
 
 class Summation:
@@ -239,7 +242,7 @@ class Summation:
         self.items = items
 
     def __mul__(self, other):
-        return Summation([x*other for x in self.items])
+        return Summation([x * other for x in self.items])
 
     def __rmul__(self, other):
         return self.__mul__(other)
@@ -251,8 +254,7 @@ class Summation:
         return self.__div__(other)
 
     def __add__(self, other):
-        if isinstance(other,
-                      (int, float, Source, Symbol, DotProduct, Convolution)):
+        if isinstance(other, (int, float, Source, Symbol, DotProduct, Convolution)):
             return Summation(self.items + [other])
         if isinstance(other, Summation):
             return Summation(self.items + other.items)

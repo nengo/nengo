@@ -20,25 +20,35 @@ class OutputParam(Parameter):
 
     def _fn_args_validation_error(self, output, attr, node):
         n_args = 2 if node.size_in > 0 else 1
-        msg = ("output function '%s' is expected to accept exactly "
-               "%d argument" % (output, n_args))
-        msg += (' (time, as a float)' if n_args == 1 else
-                's (time, as a float and data, as a NumPy array)')
+        msg = "output function '%s' is expected to accept exactly " "%d argument" % (
+            output,
+            n_args,
+        )
+        msg += (
+            " (time, as a float)"
+            if n_args == 1
+            else "s (time, as a float and data, as a NumPy array)"
+        )
         return ValidationError(msg, attr=attr, obj=node)
 
     def check_ndarray(self, node, output):
         if len(output.shape) > 1:
-            raise ValidationError("Node output must be a vector (got shape "
-                                  "%s)" % (output.shape,),
-                                  attr=self.name, obj=node)
+            raise ValidationError(
+                "Node output must be a vector (got shape " "%s)" % (output.shape,),
+                attr=self.name,
+                obj=node,
+            )
         if node.size_in != 0:
-            raise ValidationError("output must be callable if size_in != 0",
-                                  attr=self.name, obj=node)
+            raise ValidationError(
+                "output must be callable if size_in != 0", attr=self.name, obj=node
+            )
         if node.size_out is not None and node.size_out != output.size:
-            raise ValidationError("Size of Node output (%d) does not match "
-                                  "size_out (%d)"
-                                  % (output.size, node.size_out),
-                                  attr=self.name, obj=node)
+            raise ValidationError(
+                "Size of Node output (%d) does not match "
+                "size_out (%d)" % (output.size, node.size_out),
+                attr=self.name,
+                obj=node,
+            )
 
     def coerce(self, node, output):
         output = super().coerce(node, output)
@@ -49,8 +59,10 @@ class OutputParam(Parameter):
         # --- Validate and set the new size_out
         if output is None:
             if node.size_out is not None:
-                warnings.warn("'Node.size_out' is being overwritten with "
-                              "'Node.size_in' since 'Node.output=None'")
+                warnings.warn(
+                    "'Node.size_out' is being overwritten with "
+                    "'Node.size_in' since 'Node.output=None'"
+                )
             node.size_out = node.size_in
         elif isinstance(output, Process):
             if not size_in_set:
@@ -65,17 +77,19 @@ class OutputParam(Parameter):
                 node.size_out = self.check_callable_output(node, output)
         elif is_array_like(output):
             # Make into correctly shaped numpy array before validation
-            output = npext.array(
-                output, min_dims=1, copy=False, dtype=rc.float_dtype)
+            output = npext.array(output, min_dims=1, copy=False, dtype=rc.float_dtype)
             self.check_ndarray(node, output)
             if not np.all(np.isfinite(output)):
-                raise ValidationError("Output value must be finite.",
-                                      attr=self.name, obj=node)
+                raise ValidationError(
+                    "Output value must be finite.", attr=self.name, obj=node
+                )
             node.size_out = output.size
         else:
-            raise ValidationError("Invalid node output type %r" %
-                                  type(output).__name__,
-                                  attr=self.name, obj=node)
+            raise ValidationError(
+                "Invalid node output type %r" % type(output).__name__,
+                attr=self.name,
+                obj=node,
+            )
 
         return output
 
@@ -88,9 +102,11 @@ class OutputParam(Parameter):
         if result is not None:
             result = np.asarray(result)
             if len(result.shape) > 1:
-                raise ValidationError("Node output must be a vector "
-                                      "(got shape %s)" % (result.shape,),
-                                      attr=self.name, obj=node)
+                raise ValidationError(
+                    "Node output must be a vector " "(got shape %s)" % (result.shape,),
+                    attr=self.name,
+                    obj=node,
+                )
         # return callable output size
         return 0 if result is None else result.size
 
@@ -164,17 +180,22 @@ class Node(NengoObject):
         The number of output dimensions.
     """
 
-    probeable = ('output',)
+    probeable = ("output",)
 
-    output = OutputParam('output', default=None)
-    size_in = IntParam('size_in', default=None, low=0, optional=True)
-    size_out = IntParam('size_out', default=None, low=0, optional=True)
+    output = OutputParam("output", default=None)
+    size_in = IntParam("size_in", default=None, low=0, optional=True)
+    size_out = IntParam("size_out", default=None, low=0, optional=True)
 
-    def __init__(self, output=Default, size_in=Default, size_out=Default,
-                 label=Default, seed=Default):
+    def __init__(
+        self,
+        output=Default,
+        size_in=Default,
+        size_out=Default,
+        label=Default,
+        seed=Default,
+    ):
         if not (seed is Default or seed is None):
-            raise NotImplementedError(
-                "Changing the seed of a node has no effect")
+            raise NotImplementedError("Changing the seed of a node has no effect")
         super().__init__(label=label, seed=seed)
 
         self.size_in = size_in

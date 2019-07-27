@@ -88,11 +88,15 @@ def validate_ops(sets, ups, incs):
     # -- assert that no two views are both set and aliased
     for _, base_group in groupby(sets, lambda x: x.base, hashable=True):
         for sig, sig2 in itertools.combinations(base_group, 2):
-            assert not sig.may_share_memory(sig2), (
-                "%s shares memory with %s" % (sig, sig2))
+            assert not sig.may_share_memory(sig2), "%s shares memory with %s" % (
+                sig,
+                sig2,
+            )
 
     # -- assert that no two views are both updated and aliased
     for _, base_group in groupby(ups, lambda x: x.base, hashable=True):
         for sig, sig2 in itertools.combinations(base_group, 2):
-            assert not sig.may_share_memory(sig2), (
-                "%s shares memory with %s" % (sig, sig2))
+            assert not sig.may_share_memory(sig2), "%s shares memory with %s" % (
+                sig,
+                sig2,
+            )

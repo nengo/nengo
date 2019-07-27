@@ -5,7 +5,7 @@ from nengo.utils.network import activate_direct_mode
 
 
 def test_withself():
-    model = nengo.Network(label='test_withself')
+    model = nengo.Network(label="test_withself")
     with model:
         n1 = nengo.Node(0.5)
         assert n1 in model.nodes
@@ -30,8 +30,7 @@ def test_activate_direct_mode():
         non_direct_pre = nengo.Ensemble(10, 1)
         non_direct_post = nengo.Ensemble(10, 1)
         non_direct_probe = nengo.Ensemble(10, 1)
-        non_direct_mode_ens = [
-            non_direct_pre, non_direct_post, non_direct_probe]
+        non_direct_mode_ens = [non_direct_pre, non_direct_post, non_direct_probe]
 
         nengo.Connection(direct_mode_ens[0], direct_mode_ens[1])
 
@@ -47,18 +46,22 @@ def test_activate_direct_mode():
         assert type(ens.neuron_type) is not nengo.Direct
 
 
-@pytest.mark.parametrize('learning_rule, weights', (
-    (nengo.PES(), False),
-    (nengo.BCM(), True),
-    (nengo.Oja(), True),
-    (nengo.Voja(), False)
-))
+@pytest.mark.parametrize(
+    "learning_rule, weights",
+    (
+        (nengo.PES(), False),
+        (nengo.BCM(), True),
+        (nengo.Oja(), True),
+        (nengo.Voja(), False),
+    ),
+)
 def test_activate_direct_mode_learning(RefSimulator, learning_rule, weights):
     with nengo.Network() as model:
         pre = nengo.Ensemble(10, 1)
         post = nengo.Ensemble(10, 1)
         conn = nengo.Connection(
-            pre, post, solver=nengo.solvers.LstsqL2(weights=weights))
+            pre, post, solver=nengo.solvers.LstsqL2(weights=weights)
+        )
         conn.learning_rule_type = learning_rule
 
     activate_direct_mode(model)

@@ -10,15 +10,14 @@ from nengo.utils.testing import ThreadedAssertion
 
 def test_config_basic():
     model = nengo.Network()
-    model.config[nengo.Ensemble].set_param('something',
-                                           Parameter('something', None))
-    model.config[nengo.Ensemble].set_param('other',
-                                           Parameter('other', default=0))
-    model.config[nengo.Connection].set_param('something_else',
-                                             Parameter('something_else', None))
+    model.config[nengo.Ensemble].set_param("something", Parameter("something", None))
+    model.config[nengo.Ensemble].set_param("other", Parameter("other", default=0))
+    model.config[nengo.Connection].set_param(
+        "something_else", Parameter("something_else", None)
+    )
 
     with pytest.raises(ConfigError):
-        model.config[nengo.Ensemble].set_param('fails', 1.0)
+        model.config[nengo.Ensemble].set_param("fails", 1.0)
 
     with model:
         a = nengo.Ensemble(50, dimensions=1)
@@ -26,7 +25,7 @@ def test_config_basic():
         a2b = nengo.Connection(a, b, synapse=0.01)
 
     with pytest.raises(ConfigError):
-        model.config[a].set_param('thing', Parameter('thing', None))
+        model.config[a].set_param("thing", Parameter("thing", None))
 
     assert model.config[a].something is None
     assert model.config[b].something is None
@@ -34,10 +33,10 @@ def test_config_basic():
     assert model.config[b].other == 0
     assert model.config[a2b].something_else is None
 
-    model.config[a].something = 'hello'
-    assert model.config[a].something == 'hello'
-    model.config[a].something = 'world'
-    assert model.config[a].something == 'world'
+    model.config[a].something = "hello"
+    assert model.config[a].something == "hello"
+    model.config[a].something = "world"
+    assert model.config[a].something == "world"
     del model.config[a].something
     assert model.config[a].something is None
 
@@ -49,7 +48,7 @@ def test_config_basic():
         model.config[a2b].something = 1
 
     with pytest.raises(ConfigError):
-        model.config['a'].something
+        model.config["a"].something
     with pytest.raises(ConfigError):
         model.config[None].something
 
@@ -102,7 +101,7 @@ def test_network_nesting():
 def test_context_is_threadsafe():
     class CheckIndependence(ThreadedAssertion):
         def init_thread(self, worker):
-            setattr(worker, 'model', nengo.Network())
+            setattr(worker, "model", nengo.Network())
             worker.model.__enter__()
 
         def assert_thread(self, worker):
@@ -116,8 +115,7 @@ def test_context_is_threadsafe():
 
 def test_defaults():
     """Test that settings defaults propagates appropriately."""
-    b = nengo.Ensemble(10, dimensions=1, radius=nengo.Default,
-                       add_to_container=False)
+    b = nengo.Ensemble(10, dimensions=1, radius=nengo.Default, add_to_container=False)
 
     assert b.radius == nengo.Ensemble.radius.default
 
@@ -163,30 +161,31 @@ def test_config_property():
 
 def test_external_class():
     class A:
-        thing = Parameter('thing', default='hey')
+        thing = Parameter("thing", default="hey")
 
     inst = A()
     config = nengo.Config(A)
-    config[A].set_param('amount', Parameter('amount', default=1))
+    config[A].set_param("amount", Parameter("amount", default=1))
 
     # Extra param
     assert config[inst].amount == 1
 
     # Default still works like Nengo object
-    assert inst.thing == 'hey'
+    assert inst.thing == "hey"
     with pytest.raises(ConfigError):
         config[inst].thing
 
 
 def test_instance_fallthrough():
     """If the class default is set, instances should use that."""
+
     class A:
         pass
 
     inst1 = A()
     inst2 = A()
     config = nengo.Config(A)
-    config[A].set_param('amount', Parameter('amount', default=1))
+    config[A].set_param("amount", Parameter("amount", default=1))
     assert config[A].amount == 1
     assert config[inst1].amount == 1
     assert config[inst2].amount == 1
@@ -218,7 +217,7 @@ def test_contains():
 
 def test_subclass_config():
     class MyParent(SupportDefaultsMixin):
-        p = Parameter('p', default='baba')
+        p = Parameter("p", default="baba")
 
         def __init__(self, p=Default):
             self.p = p

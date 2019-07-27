@@ -52,8 +52,7 @@ def test_nested_context():
                 with con3:
                     e3 = nengo.Ensemble(1, dimensions=1)
                     assert e3 in con3.ensembles
-                    assert e3 not in con2.ensembles \
-                        and e3 not in con1.ensembles
+                    assert e3 not in con2.ensembles and e3 not in con1.ensembles
 
                 e4 = nengo.Ensemble(1, dimensions=1)
                 assert e4 in con2.ensembles
@@ -93,7 +92,7 @@ def test_context_errors():
 def test_context_is_threadsafe():
     class CheckIndependence(ThreadedAssertion):
         def init_thread(self, worker):
-            setattr(worker, 'model', nengo.Network())
+            setattr(worker, "model", nengo.Network())
             worker.model.__enter__()
 
         def assert_thread(self, worker):
@@ -125,9 +124,19 @@ def test_get_objects():
             with subnet2:
                 ens3 = nengo.Ensemble(10, 1)
 
-    all_objects = [ens1, pr1, node1, conn1,
-                   subnet, ens2, node2, conn2,
-                   pr2, ens3, subnet2]
+    all_objects = [
+        ens1,
+        pr1,
+        node1,
+        conn1,
+        subnet,
+        ens2,
+        node2,
+        conn2,
+        pr2,
+        ens3,
+        subnet2,
+    ]
 
     # Test that the lists contain the same elements, but order doesn't matter.
     # Counter is like a set, but also keeps track of the number of objects.
@@ -145,7 +154,7 @@ def test_raises_exception_on_incompatiple_type_arguments():
     with pytest.raises(ValueError):
         nengo.Network(label=1)
     with pytest.raises(ValueError):
-        nengo.Network(seed='label')
+        nengo.Network(seed="label")
 
 
 def test_n_neurons():

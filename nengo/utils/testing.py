@@ -30,8 +30,8 @@ class Mock:
 
     @classmethod
     def __getattr__(cls, name):
-        if name in ('__file__', '__path__'):
-            return '/dev/null'
+        if name in ("__file__", "__path__"):
+            return "/dev/null"
         elif name[0] == name[0].upper():
             mockType = type(name, (), {})
             mockType.__module__ = __name__
@@ -64,13 +64,13 @@ class Recorder:
 
         self._dirname = _dirname
 
-    def get_filename(self, ext=''):
-        modparts = self.module_name.split('.')[1:]
-        if 'tests' in modparts:
-            modparts.remove('tests')
-        return "%s.%s.%s" % ('.'.join(modparts), self.function_name, ext)
+    def get_filename(self, ext=""):
+        modparts = self.module_name.split(".")[1:]
+        if "tests" in modparts:
+            modparts.remove("tests")
+        return "%s.%s.%s" % (".".join(modparts), self.function_name, ext)
 
-    def get_filepath(self, ext=''):
+    def get_filepath(self, ext=""):
         if not self.record:
             raise ValueError("Cannot construct path when not recording")
         return os.path.join(self.dirname, self.get_filename(ext=ext))
@@ -86,17 +86,18 @@ class Plotter(Recorder):
     def __enter__(self):
         if self.record:
             import matplotlib.pyplot as plt
+
             self.plt = plt
         else:
             self.plt = Mock()
-        self.plt.saveas = self.get_filename(ext='pdf')
+        self.plt.saveas = self.get_filename(ext="pdf")
         return self.plt
 
     def __exit__(self, type, value, traceback):
         if self.record:
             if self.plt.saveas is None:
                 del self.plt.saveas
-                self.plt.close('all')
+                self.plt.close("all")
                 return
             # Save it again in case the user changed it
             self.filename = self.plt.saveas
@@ -106,18 +107,17 @@ class Plotter(Recorder):
                 # tight_layout errors if no axes are present
                 self.plt.tight_layout()
 
-            savefig_kw = {'bbox_inches': 'tight'}
-            if hasattr(self.plt, 'bbox_extra_artists'):
-                savefig_kw['bbox_extra_artists'] = self.plt.bbox_extra_artists
+            savefig_kw = {"bbox_inches": "tight"}
+            if hasattr(self.plt, "bbox_extra_artists"):
+                savefig_kw["bbox_extra_artists"] = self.plt.bbox_extra_artists
                 del self.plt.bbox_extra_artists
 
-            self.plt.savefig(os.path.join(self.dirname, self.filename),
-                             **savefig_kw)
-            self.plt.close('all')
+            self.plt.savefig(os.path.join(self.dirname, self.filename), **savefig_kw)
+            self.plt.close("all")
 
 
 class Analytics(Recorder):
-    DOC_KEY = 'documentation'
+    DOC_KEY = "documentation"
 
     def __init__(self, dirname, module_name, function_name):
         super().__init__(dirname, module_name, function_name)
@@ -127,12 +127,13 @@ class Analytics(Recorder):
 
     @staticmethod
     def load(path, module, function_name):
-        modparts = module.split('.')
+        modparts = module.split(".")
         modparts = modparts[1:]
-        modparts.remove('tests')
+        modparts.remove("tests")
 
-        return np.load(os.path.join(path, "%s.%s.npz" % (
-            '.'.join(modparts), function_name)))
+        return np.load(
+            os.path.join(path, "%s.%s.npz" % (".".join(modparts), function_name))
+        )
 
     def __enter__(self):
         return self
@@ -153,7 +154,7 @@ class Analytics(Recorder):
         npz_data = dict(self.data)
         if len(self.doc) > 0:
             npz_data.update({self.DOC_KEY: self.doc})
-        np.savez(self.get_filepath(ext='npz'), **npz_data)
+        np.savez(self.get_filepath(ext="npz"), **npz_data)
 
     def __exit__(self, type, value, traceback):
         if self.record:
@@ -169,8 +170,9 @@ class Logger(Recorder):
             self.logger.addHandler(self.handler)
             self.old_level = self.logger.getEffectiveLevel()
             self.logger.setLevel(logging.INFO)
-            self.logger.info("=== Test run at %s ===",
-                             time.strftime("%Y-%m-%d %H:%M:%S"))
+            self.logger.info(
+                "=== Test run at %s ===", time.strftime("%Y-%m-%d %H:%M:%S")
+            )
         else:
             self.logger = Mock()
         return self.logger
@@ -179,15 +181,25 @@ class Logger(Recorder):
         if self.record:
             self.logger.removeHandler(self.handler)
             self.logger.setLevel(self.old_level)
-            with open(self.get_filepath(ext='txt'), 'a') as fp:
+            with open(self.get_filepath(ext="txt"), "a") as fp:
                 fp.write(self.handler.stream.getvalue())
             self.handler.close()
             del self.handler
 
 
-def allclose(t, targets, signals,  # noqa: C901
-             atol=1e-8, rtol=1e-5, buf=0, delay=0,
-             plt=None, show=False, labels=None, individual_results=False):
+def allclose(  # noqa: C901
+    t,
+    targets,
+    signals,
+    atol=1e-8,
+    rtol=1e-5,
+    buf=0,
+    delay=0,
+    plt=None,
+    show=False,
+    labels=None,
+    individual_results=False,
+):
     """Ensure all signal elements are within tolerances.
 
     Allows for delay, removing the beginning of the signal, and plotting.
@@ -242,14 +254,14 @@ def allclose(t, targets, signals,  # noqa: C901
         elif isinstance(labels, str):
             labels = [labels]
 
-        colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
+        colors = ["b", "g", "r", "c", "m", "y", "k"]
 
-        def plot_target(ax, x, b=0, c='k'):
+        def plot_target(ax, x, b=0, c="k"):
             bound = atol + rtol * np.abs(x)
             y = x - b
-            ax.plot(t[slice2], y[slice1], c + ':')
-            ax.plot(t[slice2], (y + bound)[slice1], c + '--')
-            ax.plot(t[slice2], (y - bound)[slice1], c + '--')
+            ax.plot(t[slice2], y[slice1], c + ":")
+            ax.plot(t[slice2], (y + bound)[slice1], c + "--")
+            ax.plot(t[slice2], (y - bound)[slice1], c + "--")
 
         # signal plot
         ax = plt.subplot(2, 1, 1)
@@ -257,21 +269,21 @@ def allclose(t, targets, signals,  # noqa: C901
             ax.plot(t, y, label=label)
 
         if targets.shape[1] == 1:
-            plot_target(ax, targets[:, 0], c='k')
+            plot_target(ax, targets[:, 0], c="k")
         else:
             color_cycle = itertools.cycle(colors)
             for x in targets.T:
                 plot_target(ax, x, c=next(color_cycle))
 
-        ax.set_ylabel('signal')
+        ax.set_ylabel("signal")
         if labels[0] is not None:
-            lgd = ax.legend(loc='upper left', bbox_to_anchor=(1., 1.))
+            lgd = ax.legend(loc="upper left", bbox_to_anchor=(1.0, 1.0))
             plt.bbox_extra_artists = (lgd,)
 
         ax = plt.subplot(2, 1, 2)
         if targets.shape[1] == 1:
             x = targets[:, 0]
-            plot_target(ax, x, b=x, c='k')
+            plot_target(ax, x, b=x, c="k")
             for y, label in zip(signals.T, labels):
                 ax.plot(t[slice2], y[slice2] - x[slice1])
         else:
@@ -281,25 +293,28 @@ def allclose(t, targets, signals,  # noqa: C901
                 plot_target(ax, x, b=x, c=c)
                 ax.plot(t[slice2], y[slice2] - x[slice1], c, label=label)
 
-        ax.set_xlabel('time')
-        ax.set_ylabel('error')
+        ax.set_xlabel("time")
+        ax.set_ylabel("error")
 
         if show:
             plt.show()
 
     if individual_results:
         if targets.shape[1] == 1:
-            return [np.allclose(y[slice2], targets[slice1, 0],
-                                atol=atol, rtol=rtol) for y in signals.T]
+            return [
+                np.allclose(y[slice2], targets[slice1, 0], atol=atol, rtol=rtol)
+                for y in signals.T
+            ]
         else:
-            return [np.allclose(y[slice2], x[slice1], atol=atol, rtol=rtol)
-                    for x, y in zip(targets.T, signals.T)]
+            return [
+                np.allclose(y[slice2], x[slice1], atol=atol, rtol=rtol)
+                for x, y in zip(targets.T, signals.T)
+            ]
     else:
-        return np.allclose(signals[slice2, :], targets[slice1, :],
-                           atol=atol, rtol=rtol)
+        return np.allclose(signals[slice2, :], targets[slice1, :], atol=atol, rtol=rtol)
 
 
-def find_modules(root_path, prefix=None, pattern='^test_.*\\.py$'):
+def find_modules(root_path, prefix=None, pattern="^test_.*\\.py$"):
     """Find matching modules (files) in all subdirectories of a given path.
 
     Parameters
@@ -335,7 +350,7 @@ def find_modules(root_path, prefix=None, pattern='^test_.*\\.py$'):
     return modules
 
 
-def load_functions(modules, pattern='^test_', arg_pattern='^Simulator$'):
+def load_functions(modules, pattern="^test_", arg_pattern="^Simulator$"):
     """Load matching functions from a list of modules.
 
     Parameters
@@ -378,14 +393,14 @@ def load_functions(modules, pattern='^test_', arg_pattern='^Simulator$'):
     """
     tests = {}
     for module in modules:
-        m = __import__('.'.join(module), globals(), locals(), ['*'])
+        m = __import__(".".join(module), globals(), locals(), ["*"])
         for k in dir(m):
             test = getattr(m, k)
             if callable(test) and re.search(pattern, k):
                 args = getfullargspec(test).args
                 if any(re.search(arg_pattern, arg) for arg in args):
-                    tests['.'.join(['test'] + module + [k])] = test
-            if k.startswith('pytest'):  # automatically load py.test hooks
+                    tests[".".join(["test"] + module + [k])] = test
+            if k.startswith("pytest"):  # automatically load py.test hooks
                 # TODO: different files with different implementations of the
                 #   same pytest hook will break here!
                 tests[k] = getattr(m, k)
@@ -427,8 +442,7 @@ class ThreadedAssertion:
 
     def __init__(self, n_threads):
         barriers = [threading.Event() for _ in range(n_threads)]
-        threads = [self.AssertionWorker(self, barriers, i)
-                   for i in range(n_threads)]
+        threads = [self.AssertionWorker(self, barriers, i) for i in range(n_threads)]
         for t in threads:
             t.start()
         for t in threads:

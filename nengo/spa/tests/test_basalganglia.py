@@ -15,33 +15,33 @@ def test_basal_ganglia(Simulator, seed, plt):
 
         # test all acceptable condition formats
         actions = spa.Actions(
-            '0.5 --> motor=A',
-            'dot(vision, CAT) --> motor=B',
-            'dot(vision*CAT, DOG) --> motor=C',
-            '2*dot(vision, CAT*0.5) --> motor=D',
-            'dot(vision, CAT) + 0.5 - dot(vision,CAT) --> motor=E',
-            'dot(vision, PARROT) + compare --> motor=F',
-            '0.5*dot(vision, MOUSE) + 0.5*compare --> motor=G',
-            '( dot(vision, MOUSE) - compare ) * 0.5 --> motor=H'
+            "0.5 --> motor=A",
+            "dot(vision, CAT) --> motor=B",
+            "dot(vision*CAT, DOG) --> motor=C",
+            "2*dot(vision, CAT*0.5) --> motor=D",
+            "dot(vision, CAT) + 0.5 - dot(vision,CAT) --> motor=E",
+            "dot(vision, PARROT) + compare --> motor=F",
+            "0.5*dot(vision, MOUSE) + 0.5*compare --> motor=G",
+            "( dot(vision, MOUSE) - compare ) * 0.5 --> motor=H",
         )
         model.bg = spa.BasalGanglia(actions)
 
         def input(t):
             if t < 0.1:
-                return '0'
+                return "0"
             elif t < 0.2:
-                return 'CAT'
+                return "CAT"
             elif t < 0.3:
-                return 'DOG*~CAT'
+                return "DOG*~CAT"
             elif t < 0.4:
-                return 'PARROT'
+                return "PARROT"
             elif t < 0.5:
-                return 'MOUSE'
+                return "MOUSE"
             else:
-                return '0'
-        model.input = spa.Input(vision=input,
-                                compare_A='SHOOP', compare_B='SHOOP')
-        p = nengo.Probe(model.bg.input, 'output', synapse=0.03)
+                return "0"
+
+        model.input = spa.Input(vision=input, compare_A="SHOOP", compare_B="SHOOP")
+        p = nengo.Probe(model.bg.input, "output", synapse=0.03)
 
     with Simulator(model) as sim:
         sim.run(0.5)
@@ -49,7 +49,7 @@ def test_basal_ganglia(Simulator, seed, plt):
 
     plt.plot(t, sim.data[p])
     plt.legend(["A", "B", "C", "D", "E", "F", "G", "H"])
-    plt.title('Basal Ganglia output')
+    plt.title("Basal Ganglia output")
 
     # assert the basal ganglia is prioritizing things correctly
     # Motor F
@@ -75,7 +75,7 @@ def test_errors():
         with spa.SPA() as model:
             model.vision = spa.Buffer(dimensions=16)
             model.motor = spa.Buffer(dimensions=16)
-            actions = spa.Actions('dot(vision, motor) --> motor=A')
+            actions = spa.Actions("dot(vision, motor) --> motor=A")
             model.bg = spa.BasalGanglia(actions)
 
     # inversion of sources not implemented both ways
@@ -83,19 +83,19 @@ def test_errors():
         with spa.SPA() as model:
             model.vision = spa.Buffer(dimensions=16)
             model.motor = spa.Buffer(dimensions=16)
-            actions = spa.Actions('dot(~vision, FOO) --> motor=A')
+            actions = spa.Actions("dot(~vision, FOO) --> motor=A")
             model.bg = spa.BasalGanglia(actions)
 
     with pytest.raises(NotImplementedError):
         with spa.SPA() as model:
             model.vision = spa.Buffer(dimensions=16)
             model.motor = spa.Buffer(dimensions=16)
-            actions = spa.Actions('dot(FOO, ~vision) --> motor=A')
+            actions = spa.Actions("dot(FOO, ~vision) --> motor=A")
             model.bg = spa.BasalGanglia(actions)
 
     # convolution not implemented
     with pytest.raises(NotImplementedError):
         with spa.SPA() as model:
             model.scalar = spa.Buffer(dimensions=1, subdimensions=1)
-            actions = spa.Actions('scalar*scalar --> scalar=1')
+            actions = spa.Actions("scalar*scalar --> scalar=1")
             model.bg = spa.BasalGanglia(actions)

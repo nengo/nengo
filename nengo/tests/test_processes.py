@@ -8,8 +8,14 @@ import nengo.utils.numpy as npext
 from nengo.base import Process
 from nengo.dists import Distribution, Gaussian
 from nengo.exceptions import ValidationError
-from nengo.processes import (BrownNoise, FilteredNoise, Piecewise,
-                             PresentInput, WhiteNoise, WhiteSignal)
+from nengo.processes import (
+    BrownNoise,
+    FilteredNoise,
+    Piecewise,
+    PresentInput,
+    WhiteNoise,
+    WhiteSignal,
+)
 from nengo.synapses import Lowpass
 
 
@@ -35,8 +41,8 @@ class TimeProcess(Process):
 
 
 def test_time(RefSimulator):
-    t_run = 1.
-    c = 2.
+    t_run = 1.0
+    c = 2.0
     process = TimeProcess()
 
     with nengo.Network() as model:
@@ -93,7 +99,7 @@ def test_brownnoise(Simulator, seed, plt):
     plt.ylabel("Standard deviation")
     plt.plot(trange, np.abs(np.std(samples, axis=1)), label="Actual")
     plt.plot(trange, expected_std, label="Expected")
-    plt.legend(loc='best')
+    plt.legend(loc="best")
 
     assert np.all(np.abs(np.mean(samples, axis=1)) < atol)
     assert np.all(np.abs(np.std(samples, axis=1) - expected_std) < atol)
@@ -101,15 +107,18 @@ def test_brownnoise(Simulator, seed, plt):
 
 def psd(values, dt=0.001):
     freq = npext.rfftfreq(values.shape[0], d=dt)
-    power = 2. * np.std(np.abs(np.fft.rfft(
-        values, axis=0)), axis=1) / np.sqrt(values.shape[0])
+    power = (
+        2.0
+        * np.std(np.abs(np.fft.rfft(values, axis=0)), axis=1)
+        / np.sqrt(values.shape[0])
+    )
     return freq, power
 
 
-@pytest.mark.parametrize('rms', [0.5, 1, 100])
+@pytest.mark.parametrize("rms", [0.5, 1, 100])
 def test_gaussian_whitenoise(Simulator, rms, seed, plt):
     d = 500
-    process = WhiteNoise(Gaussian(0., rms), scale=False)
+    process = WhiteNoise(Gaussian(0.0, rms), scale=False)
     with nengo.Network() as model:
         u = nengo.Node(process, size_out=d)
         up = nengo.Probe(u)
@@ -126,16 +135,16 @@ def test_gaussian_whitenoise(Simulator, rms, seed, plt):
     plt.xlim(right=trange[-1])
     plt.subplot(2, 1, 2)
     plt.title("Power spectrum")
-    plt.plot(freq, val_psd, drawstyle='steps')
+    plt.plot(freq, val_psd, drawstyle="steps")
 
     val_rms = npext.rms(values, axis=0)
     assert np.allclose(val_rms.mean(), rms, rtol=0.02)
     assert np.allclose(val_psd[1:-1], rms, rtol=0.2)
 
 
-@pytest.mark.parametrize('rms', [0.5, 1, 100])
+@pytest.mark.parametrize("rms", [0.5, 1, 100])
 def test_whitesignal_rms(Simulator, rms, seed, plt):
-    t = 1.
+    t = 1.0
     d = 500
     process = WhiteSignal(t, high=500, rms=rms)
     with nengo.Network() as model:
@@ -154,15 +163,15 @@ def test_whitesignal_rms(Simulator, rms, seed, plt):
     plt.xlim(right=trange[-1])
     plt.subplot(2, 1, 2)
     plt.title("Power spectrum")
-    plt.plot(freq, val_psd, drawstyle='steps')
+    plt.plot(freq, val_psd, drawstyle="steps")
 
     assert np.allclose(np.std(values), rms, rtol=0.02)
     assert np.allclose(val_psd[1:-1], rms, rtol=0.35)
 
 
-@pytest.mark.parametrize('y0,d', [(0, 1), (-0.3, 3), (0.4, 1)])
+@pytest.mark.parametrize("y0,d", [(0, 1), (-0.3, 3), (0.4, 1)])
 def test_whitesignal_y0(Simulator, seed, y0, d):
-    t = .1
+    t = 0.1
     process = WhiteSignal(t, high=500, y0=y0)
     with nengo.Network() as model:
         u = nengo.Node(process, size_out=d)
@@ -176,9 +185,9 @@ def test_whitesignal_y0(Simulator, seed, y0, d):
     assert ((y0 - error <= values[0, :]) & (values[0, :] <= y0 + error)).all()
 
 
-@pytest.mark.parametrize('high,dt', [(10, 0.01), (5, 0.001), (50, 0.001)])
+@pytest.mark.parametrize("high,dt", [(10, 0.01), (5, 0.001), (50, 0.001)])
 def test_whitesignal_high_dt(Simulator, high, dt, seed, plt):
-    t = 1.
+    t = 1.0
     rms = 0.5
     d = 500
     process = WhiteSignal(t, high, rms=rms)
@@ -198,14 +207,14 @@ def test_whitesignal_high_dt(Simulator, high, dt, seed, plt):
     plt.xlim(right=trange[-1])
     plt.subplot(2, 1, 2)
     plt.title("Power spectrum")
-    plt.plot(freq, val_psd, drawstyle='steps')
+    plt.plot(freq, val_psd, drawstyle="steps")
     plt.xlim(0, high * 2.0)
 
     assert np.allclose(np.std(values, axis=1), rms, rtol=0.15)
     assert np.all(val_psd[npext.rfftfreq(len(trange), dt) > high] < rms * 0.5)
 
 
-@pytest.mark.parametrize('high,dt', [(501, 0.001), (500, 0.002)])
+@pytest.mark.parametrize("high,dt", [(501, 0.001), (500, 0.002)])
 def test_whitesignal_nyquist(Simulator, dt, high, seed):
     # check that high cannot exceed nyquist frequency
     process = WhiteSignal(1.0, high=high)
@@ -218,7 +227,7 @@ def test_whitesignal_nyquist(Simulator, dt, high, seed):
 
 def test_whitesignal_continuity(Simulator, seed, plt):
     """Test that WhiteSignal is continuous over multiple periods."""
-    t = 1.
+    t = 1.0
     high = 10
     rms = 0.5
     process = WhiteSignal(t, high=high, rms=rms)
@@ -234,17 +243,17 @@ def test_whitesignal_continuity(Simulator, seed, plt):
     plt.plot(sim.trange(), x)
 
     # tolerances approximated from derivatives of sine wave of highest freq
-    safety_factor = 2.
+    safety_factor = 2.0
     a, f = np.sqrt(2) * rms, (2 * np.pi * high) * dt
     assert abs(np.diff(x, axis=0)).max() <= safety_factor * a * f
-    assert abs(np.diff(x, n=2, axis=0)).max() <= safety_factor**2 * a * f**2
+    assert abs(np.diff(x, n=2, axis=0)).max() <= safety_factor ** 2 * a * f ** 2
 
 
 def test_sampling_shape():
     process = WhiteSignal(0.1, high=500)
     assert process.run_steps(1).shape == (1, 1)
     assert process.run_steps(5, d=1).shape == (5, 1)
-    assert process.run_steps(1, d=2). shape == (1, 2)
+    assert process.run_steps(1, d=2).shape == (1, 2)
 
 
 def test_reset(Simulator, seed):
@@ -291,7 +300,7 @@ def test_frozen():
 def test_seed(Simulator, seed):
     with nengo.Network() as model:
         a = nengo.Node(WhiteSignal(0.1, high=100, seed=seed))
-        b = nengo.Node(WhiteSignal(0.1, high=100, seed=seed+1))
+        b = nengo.Node(WhiteSignal(0.1, high=100, seed=seed + 1))
         c = nengo.Node(WhiteSignal(0.1, high=100))
         d = nengo.Node(WhiteNoise(seed=seed))
         e = nengo.Node(WhiteNoise())
@@ -338,7 +347,6 @@ def test_present_input(Simulator, rng):
 
 
 class TestPiecewise:
-
     def run_sim(self, data, interpolation, Simulator):
         process = Piecewise(data, interpolation=interpolation)
 
@@ -352,37 +360,39 @@ class TestPiecewise:
         return sim.trange(), sim.data[up]
 
     def test_basic(self, Simulator):
-        t, f = self.run_sim({0.05: 1, 0.1: 0}, 'zero', Simulator)
-        assert np.allclose(f[t == 0.001], [0.])
-        assert np.allclose(f[t == 0.025], [0.])
-        assert np.allclose(f[t == 0.049], [0.])
-        assert np.allclose(f[t == 0.05], [1.])
-        assert np.allclose(f[t == 0.075], [1.])
-        assert np.allclose(f[t == 0.1], [0.])
-        assert np.allclose(f[t == 0.15], [0.])
+        t, f = self.run_sim({0.05: 1, 0.1: 0}, "zero", Simulator)
+        assert np.allclose(f[t == 0.001], [0.0])
+        assert np.allclose(f[t == 0.025], [0.0])
+        assert np.allclose(f[t == 0.049], [0.0])
+        assert np.allclose(f[t == 0.05], [1.0])
+        assert np.allclose(f[t == 0.075], [1.0])
+        assert np.allclose(f[t == 0.1], [0.0])
+        assert np.allclose(f[t == 0.15], [0.0])
 
     def test_lists(self, Simulator):
-        t, f = self.run_sim({0.05: [1, 0], 0.1: [0, 1]}, 'zero', Simulator)
-        assert np.allclose(f[t == 0.001], [0., 0.])
-        assert np.allclose(f[t == 0.025], [0., 0.])
-        assert np.allclose(f[t == 0.049], [0., 0.])
-        assert np.allclose(f[t == 0.05], [1., 0.])
-        assert np.allclose(f[t == 0.075], [1., 0.])
-        assert np.allclose(f[t == 0.1], [0., 1.])
-        assert np.allclose(f[t == 0.15], [0., 1.])
+        t, f = self.run_sim({0.05: [1, 0], 0.1: [0, 1]}, "zero", Simulator)
+        assert np.allclose(f[t == 0.001], [0.0, 0.0])
+        assert np.allclose(f[t == 0.025], [0.0, 0.0])
+        assert np.allclose(f[t == 0.049], [0.0, 0.0])
+        assert np.allclose(f[t == 0.05], [1.0, 0.0])
+        assert np.allclose(f[t == 0.075], [1.0, 0.0])
+        assert np.allclose(f[t == 0.1], [0.0, 1.0])
+        assert np.allclose(f[t == 0.15], [0.0, 1.0])
 
     def test_default_zero(self):
         process = Piecewise({0.05: 1, 0.1: 0})
-        f = process.make_step(shape_in=(process.default_size_in,),
-                              shape_out=(process.default_size_out,),
-                              dt=process.default_dt,
-                              rng=None,
-                              state={})
-        assert np.allclose(f(-10), [0.])
-        assert np.allclose(f(0), [0.])
+        f = process.make_step(
+            shape_in=(process.default_size_in,),
+            shape_out=(process.default_size_out,),
+            dt=process.default_dt,
+            rng=None,
+            state={},
+        )
+        assert np.allclose(f(-10), [0.0])
+        assert np.allclose(f(0), [0.0])
 
     def test_invalid_key(self):
-        data = {0.05: 1, 0.1: 0, 'a': 0.2}
+        data = {0.05: 1, 0.1: 0, "a": 0.2}
         with pytest.raises(ValidationError):
             Piecewise(data)
 
@@ -398,46 +408,46 @@ class TestPiecewise:
     def test_invalid_interpolation_type(self):
         data = {0.05: 1, 0.1: 0}
         with pytest.raises(ValidationError):
-            Piecewise(data, interpolation='not-interpolation')
+            Piecewise(data, interpolation="not-interpolation")
 
     def test_fallback_to_zero(self, Simulator, monkeypatch):
         # Emulate not having scipy in case we have scipy
         monkeypatch.setitem(sys.modules, "scipy.interpolate", None)
 
         with pytest.warns(UserWarning):
-            process = Piecewise({0.05: 1, 0.1: 0}, interpolation='linear')
-        assert process.interpolation == 'zero'
+            process = Piecewise({0.05: 1, 0.1: 0}, interpolation="linear")
+        assert process.interpolation == "zero"
 
     def test_interpolation_1d(self, plt, Simulator):
-        pytest.importorskip('scipy')
+        pytest.importorskip("scipy")
 
         # Note: cubic requires an explicit start of 0
         data = {0: -0.5, 0.05: 1, 0.075: -1, 0.1: -0.5}
 
         def test_and_plot(interp):
             t, f = self.run_sim(data, interp, Simulator)
-            assert np.allclose(f[t == 0.05], [1.])
-            assert np.allclose(f[t == 0.075], [-1.])
+            assert np.allclose(f[t == 0.05], [1.0])
+            assert np.allclose(f[t == 0.075], [-1.0])
             assert np.allclose(f[t == 0.1], [-0.5])
             plt.plot(t, f, label=interp)
 
-        test_and_plot('zero')
-        test_and_plot('linear')
-        test_and_plot('nearest')
-        test_and_plot('slinear')
-        test_and_plot('quadratic')
-        test_and_plot('cubic')
+        test_and_plot("zero")
+        test_and_plot("linear")
+        test_and_plot("nearest")
+        test_and_plot("slinear")
+        test_and_plot("quadratic")
+        test_and_plot("cubic")
         plt.legend(loc="lower left")
 
     def test_interpolation_2d(self, plt, Simulator):
-        pytest.importorskip('scipy')
+        pytest.importorskip("scipy")
 
         # Note: cubic requires an explicit start of 0
         data = {
             0: [-0.5, -0.5],
             0.05: [1.0, 0.5],
             0.075: [-1, -0.5],
-            0.1: [-0.5, -0.25]
+            0.1: [-0.5, -0.25],
         }
 
         ax1 = plt.subplot(2, 1, 1)
@@ -445,36 +455,38 @@ class TestPiecewise:
 
         def test_and_plot(interp):
             t, f = self.run_sim(data, interp, Simulator)
-            assert np.allclose(f[t == 0.05], [1., 0.5])
-            assert np.allclose(f[t == 0.075], [-1., -0.5])
+            assert np.allclose(f[t == 0.05], [1.0, 0.5])
+            assert np.allclose(f[t == 0.075], [-1.0, -0.5])
             assert np.allclose(f[t == 0.1], [-0.5, -0.25])
             ax1.plot(t, f.T[0], label=interp)
             ax2.plot(t, f.T[1], label=interp)
 
-        test_and_plot('zero')
-        test_and_plot('linear')
-        test_and_plot('nearest')
-        test_and_plot('slinear')
-        test_and_plot('quadratic')
-        test_and_plot('cubic')
+        test_and_plot("zero")
+        test_and_plot("linear")
+        test_and_plot("nearest")
+        test_and_plot("slinear")
+        test_and_plot("quadratic")
+        test_and_plot("cubic")
         plt.legend(loc="lower left")
 
     @pytest.mark.parametrize("value", (1, [1, 1]))
     def test_shape_out(self, value):
         process = Piecewise({1: value})
-        f = process.make_step(shape_in=(process.default_size_in,),
-                              shape_out=(process.default_size_out,),
-                              dt=process.default_dt,
-                              rng=None,
-                              state={})
+        f = process.make_step(
+            shape_in=(process.default_size_in,),
+            shape_out=(process.default_size_out,),
+            dt=process.default_dt,
+            rng=None,
+            state={},
+        )
 
         assert np.array_equal(f(0), np.zeros(process.default_size_out))
         assert np.array_equal(f(2), np.ones(process.default_size_out))
 
     def test_function(self, Simulator):
-        t, f = self.run_sim({0.05: np.sin, 0.1: np.cos}, 'zero', Simulator)
-        assert np.allclose(f[t == 0.001], [0.])
-        assert np.allclose(f[t == 0.049], [0.])
+        t, f = self.run_sim({0.05: np.sin, 0.1: np.cos}, "zero", Simulator)
+        assert np.allclose(f[t == 0.001], [0.0])
+        assert np.allclose(f[t == 0.049], [0.0])
         assert np.allclose(f[t == 0.05], [np.sin(0.05)])
         assert np.allclose(f[t == 0.075], [np.sin(0.075)])
         assert np.allclose(f[t == 0.1], [np.cos(0.1)])
@@ -482,37 +494,37 @@ class TestPiecewise:
 
     def test_function_list(self, Simulator):
         def func1(t):
-            return t, t**2, t**3
+            return t, t ** 2, t ** 3
 
         def func2(t):
-            return t**4, t**5, t**6
+            return t ** 4, t ** 5, t ** 6
 
-        t, f = self.run_sim({0.05: func1, 0.1: func2}, 'zero', Simulator)
-        assert np.allclose(f[t == 0.001], [0.])
-        assert np.allclose(f[t == 0.049], [0.])
+        t, f = self.run_sim({0.05: func1, 0.1: func2}, "zero", Simulator)
+        assert np.allclose(f[t == 0.001], [0.0])
+        assert np.allclose(f[t == 0.049], [0.0])
         assert np.allclose(f[t == 0.05], func1(0.05))
         assert np.allclose(f[t == 0.075], func1(0.075))
         assert np.allclose(f[t == 0.1], func2(0.1))
         assert np.allclose(f[t == 0.15], func2(0.15))
 
     def test_mixture(self, Simulator):
-        t, f = self.run_sim({0.05: 1, 0.1: np.cos}, 'zero', Simulator)
-        assert np.allclose(f[t == 0.001], [0.])
-        assert np.allclose(f[t == 0.049], [0.])
-        assert np.allclose(f[t == 0.05], [1.])
-        assert np.allclose(f[t == 0.075], [1.])
+        t, f = self.run_sim({0.05: 1, 0.1: np.cos}, "zero", Simulator)
+        assert np.allclose(f[t == 0.001], [0.0])
+        assert np.allclose(f[t == 0.049], [0.0])
+        assert np.allclose(f[t == 0.05], [1.0])
+        assert np.allclose(f[t == 0.075], [1.0])
         assert np.allclose(f[t == 0.1], [np.cos(0.1)])
         assert np.allclose(f[t == 0.15], [np.cos(0.15)])
 
     def test_mixture_3d(self, Simulator):
         def func(t):
-            return t, t**2, t**3
+            return t, t ** 2, t ** 3
 
-        t, f = self.run_sim({0.05: [1, 1, 1], 0.1: func}, 'zero', Simulator)
-        assert np.allclose(f[t == 0.001], [0., 0., 0.])
-        assert np.allclose(f[t == 0.049], [0., 0., 0.])
-        assert np.allclose(f[t == 0.05], [1., 1., 1.])
-        assert np.allclose(f[t == 0.075], [1., 1., 1.])
+        t, f = self.run_sim({0.05: [1, 1, 1], 0.1: func}, "zero", Simulator)
+        assert np.allclose(f[t == 0.001], [0.0, 0.0, 0.0])
+        assert np.allclose(f[t == 0.049], [0.0, 0.0, 0.0])
+        assert np.allclose(f[t == 0.05], [1.0, 1.0, 1.0])
+        assert np.allclose(f[t == 0.075], [1.0, 1.0, 1.0])
         assert np.allclose(f[t == 0.1], func(0.1))
         assert np.allclose(f[t == 0.15], func(0.15))
 
@@ -525,5 +537,5 @@ class TestPiecewise:
             return t
 
         with pytest.warns(UserWarning):
-            process = Piecewise({0.05: 0, 0.1: func}, interpolation='linear')
-        assert process.interpolation == 'zero'
+            process = Piecewise({0.05: 0, 0.1: func}, interpolation="linear")
+        assert process.interpolation == "zero"

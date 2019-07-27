@@ -62,12 +62,20 @@ class Vocabulary:
         as in ``keys``.
     """
 
-    def __init__(self, dimensions, randomize=True, unitary=False,
-                 max_similarity=0.1, include_pairs=False, rng=None):
+    def __init__(
+        self,
+        dimensions,
+        randomize=True,
+        unitary=False,
+        max_similarity=0.1,
+        include_pairs=False,
+        rng=None,
+    ):
 
         if not is_integer(dimensions) or dimensions < 1:
-            raise ValidationError("dimensions must be a positive integer",
-                                  attr='dimensions', obj=self)
+            raise ValidationError(
+                "dimensions must be a positive integer", attr="dimensions", obj=self
+            )
         self.dimensions = dimensions
         self.randomize = randomize
         self.unitary = unitary
@@ -108,11 +116,10 @@ class Vocabulary:
                             break
                 else:
                     warnings.warn(
-                        'Could not create a semantic pointer with '
-                        'max_similarity=%1.2f (D=%d, M=%d)'
-                        % (self.max_similarity,
-                           self.dimensions,
-                           len(self.pointers)))
+                        "Could not create a semantic pointer with "
+                        "max_similarity=%1.2f (D=%d, M=%d)"
+                        % (self.max_similarity, self.dimensions, len(self.pointers))
+                    )
 
             # Check and make vector unitary if needed
             if unitary:
@@ -123,7 +130,9 @@ class Vocabulary:
                 raise ValidationError(
                     "Tried to make more semantic pointers than "
                     "dimensions with non-randomized Vocabulary",
-                    attr='dimensions', obj=self)
+                    attr="dimensions",
+                    obj=self,
+                )
             p = pointer.SemanticPointer(np.eye(self.dimensions)[index])
         return p
 
@@ -135,8 +144,7 @@ class Vocabulary:
         with a capital letter.
         """
         if not key[0].isupper():
-            raise SpaParseError(
-                "Semantic pointers must begin with a capital letter.")
+            raise SpaParseError("Semantic pointers must begin with a capital letter.")
         value = self.pointers.get(key, None)
         if value is None:
             if is_iterable(self.unitary):
@@ -153,19 +161,23 @@ class Vocabulary:
         The pointer value can be a `.SemanticPointer` or a vector.
         """
         if self.readonly:
-            raise ReadonlyError(attr='Vocabulary',
-                                msg="Cannot add semantic pointer '%s' to "
-                                    "read-only vocabulary." % key)
+            raise ReadonlyError(
+                attr="Vocabulary",
+                msg="Cannot add semantic pointer '%s' to "
+                "read-only vocabulary." % key,
+            )
 
         if not key[0].isupper():
-            raise SpaParseError(
-                "Semantic pointers must begin with a capital letter.")
+            raise SpaParseError("Semantic pointers must begin with a capital letter.")
         if not isinstance(p, pointer.SemanticPointer):
             p = pointer.SemanticPointer(p)
 
         if key in self.pointers:
-            raise ValidationError("The semantic pointer %r already exists"
-                                  % key, attr='pointers', obj=self)
+            raise ValidationError(
+                "The semantic pointer %r already exists" % key,
+                attr="pointers",
+                obj=self,
+            )
 
         self.pointers[key] = p
         self.keys.append(key)
@@ -174,7 +186,7 @@ class Vocabulary:
         # Generate vector pairs
         if self.include_pairs and len(self.keys) > 1:
             for k in self.keys[:-1]:
-                self.key_pairs.append('%s*%s' % (k, key))
+                self.key_pairs.append("%s*%s" % (k, key))
                 v = (self.pointers[k] * p).v
                 self.vector_pairs = np.vstack([self.vector_pairs, v])
 
@@ -194,12 +206,11 @@ class Vocabulary:
         self._include_pairs = value
         if self._include_pairs:
             self.key_pairs = []
-            self.vector_pairs = np.zeros((0, self.dimensions),
-                                         dtype=rc.float_dtype)
+            self.vector_pairs = np.zeros((0, self.dimensions), dtype=rc.float_dtype)
             for i in range(1, len(self.keys)):
                 for k in self.keys[:i]:
                     key = self.keys[i]
-                    self.key_pairs.append('%s*%s' % (k, key))
+                    self.key_pairs.append("%s*%s" % (k, key))
                     v = (self.pointers[k] * self.pointers[key]).v
                     self.vector_pairs = np.vstack((self.vector_pairs, v))
         else:
@@ -226,14 +237,14 @@ class Vocabulary:
         try:
             value = eval(text, {}, self)
         except NameError:
-            raise SpaParseError(
-                "Semantic pointers must start with a capital letter.")
+            raise SpaParseError("Semantic pointers must start with a capital letter.")
 
         if is_number(value):
             value = value * self.identity
         if not isinstance(value, pointer.SemanticPointer):
             raise SpaParseError(
-                "The result of parsing '%s' is not a SemanticPointer" % text)
+                "The result of parsing '%s' is not a SemanticPointer" % text
+            )
         return value
 
     @property
@@ -245,8 +256,16 @@ class Vocabulary:
             self._identity = pointer.SemanticPointer(v)
         return self._identity
 
-    def text(self, v, minimum_count=1, maximum_count=None,  # noqa: C901
-             threshold=0.1, join=';', terms=None, normalize=False):
+    def text(
+        self,
+        v,
+        minimum_count=1,
+        maximum_count=None,  # noqa: C901
+        threshold=0.1,
+        join=";",
+        terms=None,
+        normalize=False,
+    ):
         """Return a human-readable text version of the provided vector.
 
         This is meant to give a quick text version of a vector for display
@@ -309,7 +328,7 @@ class Vocabulary:
             else:
                 break
 
-        return join.join(['%0.2f%s' % (sim, key) for (sim, key) in r])
+        return join.join(["%0.2f%s" % (sim, key) for (sim, key) in r])
 
     def dot(self, v):
         """Returns the dot product with all terms in the Vocabulary.
@@ -328,7 +347,9 @@ class Vocabulary:
         if not self.include_pairs:
             raise ValidationError(
                 "'include_pairs' must be True to call dot_pairs",
-                attr='include_pairs', obj=self)
+                attr="include_pairs",
+                obj=self,
+            )
 
         if isinstance(v, pointer.SemanticPointer):
             v = v.v
@@ -371,8 +392,7 @@ class Vocabulary:
                     keys = list(self.keys)
                     keys.extend([k for k in other.keys if k not in self.keys])
 
-            t = np.zeros((other.dimensions, self.dimensions),
-                         dtype=rc.float_dtype)
+            t = np.zeros((other.dimensions, self.dimensions), dtype=rc.float_dtype)
             for k in keys:
                 a = self[k].v
                 b = other[k].v
@@ -407,10 +427,10 @@ class Vocabulary:
         angle = np.arccos(similarity)
 
         x = np.linspace(0, np.pi, steps)
-        y = np.sin(x) ** (self.dimensions-2)
+        y = np.sin(x) ** (self.dimensions - 2)
 
         total = np.sum(y)
-        too_close = np.sum(y[:int(angle * steps / np.pi)])
+        too_close = np.sum(y[: int(angle * steps / np.pi)])
 
         perror1 = too_close / total
 
@@ -460,12 +480,14 @@ class Vocabulary:
             new vocabulary.
         """
         # Make new Vocabulary object
-        subset = Vocabulary(self.dimensions,
-                            self.randomize,
-                            self.unitary,
-                            self.max_similarity,
-                            self.include_pairs,
-                            self.rng)
+        subset = Vocabulary(
+            self.dimensions,
+            self.randomize,
+            self.unitary,
+            self.max_similarity,
+            self.include_pairs,
+            self.rng,
+        )
 
         # Copy over the new keys
         for key in keys:

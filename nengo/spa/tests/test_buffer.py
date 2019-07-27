@@ -9,8 +9,8 @@ def test_basic():
     with spa.SPA() as model:
         model.buffer = spa.Buffer(dimensions=16)
 
-    input = model.get_module_input('buffer')
-    output = model.get_module_output('buffer')
+    input = model.get_module_input("buffer")
+    output = model.get_module_output("buffer")
     assert input[0] is model.buffer.state.input
     assert output[0] is model.buffer.state.output
     assert input[1] is output[1]
@@ -25,8 +25,9 @@ def test_neurons():
     assert model.buffer.state.ensembles[0].n_neurons == 16 * 2
 
     with spa.SPA() as model:
-        model.buffer = spa.Buffer(dimensions=16, subdimensions=1,
-                                  neurons_per_dimension=2)
+        model.buffer = spa.Buffer(
+            dimensions=16, subdimensions=1, neurons_per_dimension=2
+        )
 
     assert len(model.buffer.state.ensembles) == 16
     assert model.buffer.state.ensembles[0].n_neurons == 2
@@ -48,17 +49,18 @@ def test_run(Simulator, seed):
 
         def input(t):
             if 0 <= t < 0.2:
-                return 'A'
+                return "A"
             elif 0.2 <= t < 0.4:
-                return 'B'
+                return "B"
             else:
-                return '0'
+                return "0"
+
         model.input = spa.Input(buffer=input)
 
-    buffer, vocab = model.get_module_output('buffer')
+    buffer, vocab = model.get_module_output("buffer")
 
     with model:
-        p = nengo.Probe(buffer, 'output', synapse=0.03)
+        p = nengo.Probe(buffer, "output", synapse=0.03)
 
     with Simulator(model) as sim:
         sim.run(0.5)

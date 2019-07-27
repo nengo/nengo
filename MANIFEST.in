@@ -7,6 +7,8 @@ include *.rst
 
 # Include files for CI and recreating the source dist
 include *.yml
+include *.yaml
+include *.toml
 include MANIFEST.in
 include .gitlint
 include .pylintrc

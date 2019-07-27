@@ -131,8 +131,7 @@ def toposort(edges):
     """
     incoming_edges = reverse_edges(edges)
     incoming_edges = {k: set(val) for k, val in incoming_edges.items()}
-    vertices = {v for v in edges
-                if v not in incoming_edges or not incoming_edges[v]}
+    vertices = {v for v in edges if v not in incoming_edges or not incoming_edges[v]}
     ordered = []
 
     while vertices:
@@ -147,7 +146,8 @@ def toposort(edges):
         raise BuildError(
             "Input graph has cycles. This usually occurs because "
             "too many connections have no synapses. Try setting "
-            "more synapses to '0' instead of 'None'.")
+            "more synapses to '0' instead of 'None'."
+        )
     return ordered
 
 

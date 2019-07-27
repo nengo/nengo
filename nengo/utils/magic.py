@@ -96,16 +96,16 @@ class ObjectProxy(metaclass=ObjectProxyMeta):
     except ``__call__``.
     """
 
-    __slots__ = '__wrapped__'
+    __slots__ = "__wrapped__"
 
     def __init__(self, wrapped):
-        object.__setattr__(self, '__wrapped__', wrapped)
+        object.__setattr__(self, "__wrapped__", wrapped)
 
         # Python 3 has the __qualname__ attribute, but it does not
         # allow it to be overridden using a property and it must instead
         # be an actual string object instead.
         try:
-            object.__setattr__(self, '__qualname__', wrapped.__qualname__)
+            object.__setattr__(self, "__qualname__", wrapped.__qualname__)
         except AttributeError:
             pass
 
@@ -137,10 +137,12 @@ class ObjectProxy(metaclass=ObjectProxyMeta):
         return str(self.__wrapped__)
 
     def __repr__(self):
-        return '<%s at 0x%x for %s at 0x%x>' % (
-            type(self).__name__, id(self),
+        return "<%s at 0x%x for %s at 0x%x>" % (
+            type(self).__name__,
+            id(self),
             type(self.__wrapped__).__name__,
-            id(self.__wrapped__))
+            id(self.__wrapped__),
+        )
 
 
 class BoundFunctionWrapper(ObjectProxy):
@@ -151,34 +153,34 @@ class BoundFunctionWrapper(ObjectProxy):
     be done on bound functions.
     """
 
-    __slots__ = ('instance', 'wrapper', 'binding', 'parent')
+    __slots__ = ("instance", "wrapper", "binding", "parent")
 
     def __init__(self, wrapped, instance, wrapper, binding, parent):
         super().__init__(wrapped)
         # Using object.__setattr__ to subvert ObjectProxy.__setattr__
-        object.__setattr__(self, 'instance', instance)
-        object.__setattr__(self, 'wrapper', wrapper)
-        object.__setattr__(self, 'binding', binding)
-        object.__setattr__(self, 'parent', parent)
+        object.__setattr__(self, "instance", instance)
+        object.__setattr__(self, "wrapper", wrapper)
+        object.__setattr__(self, "binding", binding)
+        object.__setattr__(self, "parent", parent)
 
     def __get__(self, instance, owner):
-        if self.instance is None and self.binding == 'function':
+        if self.instance is None and self.binding == "function":
             descriptor = self.parent.__wrapped__.__get__(instance, owner)
             return BoundFunctionWrapper(
-                descriptor, instance, self.wrapper, self.binding, self.parent)
+                descriptor, instance, self.wrapper, self.binding, self.parent
+            )
         return self
 
     def __call__(self, *args, **kwargs):
-        if self.binding == 'function':
+        if self.binding == "function":
             if self.instance is None:
                 instance, args = args[0], args[1:]
                 wrapped = functools.partial(self.__wrapped__, instance)
                 return self.wrapper(wrapped, instance, args, kwargs)
             else:
-                return self.wrapper(
-                    self.__wrapped__, self.instance, args, kwargs)
+                return self.wrapper(self.__wrapped__, self.instance, args, kwargs)
         else:
-            instance = getattr(self.__wrapped__, '__self__', None)
+            instance = getattr(self.__wrapped__, "__self__", None)
             return self.wrapper(self.__wrapped__, instance, args, kwargs)
 
 
@@ -190,23 +192,22 @@ class FunctionWrapper(ObjectProxy):
     be done on functions.
     """
 
-    __slots__ = ('wrapper', 'binding')
+    __slots__ = ("wrapper", "binding")
 
     def __init__(self, wrapped, wrapper):
         super().__init__(wrapped)
         # Using object.__setattr__ to subvert ObjectProxy.__setattr__
-        object.__setattr__(self, 'wrapper', wrapper)
+        object.__setattr__(self, "wrapper", wrapper)
         if isinstance(wrapped, classmethod):
-            object.__setattr__(self, 'binding', 'classmethod')
+            object.__setattr__(self, "binding", "classmethod")
         elif isinstance(wrapped, staticmethod):
-            object.__setattr__(self, 'binding', 'staticmethod')
+            object.__setattr__(self, "binding", "staticmethod")
         else:
-            object.__setattr__(self, 'binding', 'function')
+            object.__setattr__(self, "binding", "function")
 
     def __get__(self, instance, owner):
         wrapped = self.__wrapped__.__get__(instance, owner)
-        return BoundFunctionWrapper(
-            wrapped, instance, self.wrapper, self.binding, self)
+        return BoundFunctionWrapper(wrapped, instance, self.wrapper, self.binding, self)
 
     def __call__(self, *args, **kwargs):
         return self.wrapper(self.__wrapped__, None, args, kwargs)
@@ -248,6 +249,7 @@ def decorator(wrapper):
             def f(self):
                 return self.num + 1
     """
+
     def _wrapper(wrapped, instance, args, kwargs):
         def _execute(wrapped, *_args, **_kwargs):
             if instance is None:
@@ -257,31 +259,36 @@ def decorator(wrapper):
             else:
                 target_wrapper = wrapper.__get__(instance, type(instance))
             return FunctionWrapper(wrapped, target_wrapper)
+
         return _execute(*args, **kwargs)
+
     return FunctionWrapper(wrapper, _wrapper)
 
 
 class DocstringInheritor(type):
-    '''Metaclass to inherit docstrings from parents.
+    """Metaclass to inherit docstrings from parents.
 
     Taken from https://stackoverflow.com/questions/8100166, which in turn was
     a variation on Paul McGuire's code at
     https://groups.google.com/group/comp.lang.python/msg/26f7b4fcb4d66c95
-    '''
+    """
+
     def __new__(metacls, name, bases, clsdict):
-        if not('__doc__' in clsdict and clsdict['__doc__']):
-            for mro_cls in (
-                    mro_cls for base in bases for mro_cls in base.mro()):
+        if not ("__doc__" in clsdict and clsdict["__doc__"]):
+            for mro_cls in (mro_cls for base in bases for mro_cls in base.mro()):
                 doc = mro_cls.__doc__
                 if doc:
-                    clsdict['__doc__'] = doc
+                    clsdict["__doc__"] = doc
                     break
         for attr, attribute in clsdict.items():
             if not attribute.__doc__:
                 for mro_cls in (
-                        mro_cls for base in bases for mro_cls in base.mro()
-                        if hasattr(mro_cls, attr)):
-                    doc = getattr(getattr(mro_cls, attr), '__doc__')
+                    mro_cls
+                    for base in bases
+                    for mro_cls in base.mro()
+                    if hasattr(mro_cls, attr)
+                ):
+                    doc = getattr(getattr(mro_cls, attr), "__doc__")
                     if doc:
                         attribute.__doc__ = doc
                         break

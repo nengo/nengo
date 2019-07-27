@@ -9,9 +9,9 @@ def test_basic():
     with spa.SPA() as model:
         model.bind = spa.Bind(dimensions=16)
 
-    inputA = model.get_module_input('bind_A')
-    inputB = model.get_module_input('bind_B')
-    output = model.get_module_output('bind')
+    inputA = model.get_module_input("bind_A")
+    inputB = model.get_module_input("bind_B")
+    output = model.get_module_output("bind")
     # all nodes should be acquired correctly
     assert inputA[0] is model.bind.A
     assert inputB[0] is model.bind.B
@@ -31,16 +31,16 @@ def test_run(Simulator, seed):
 
         def inputA(t):
             if 0 <= t < 0.1:
-                return 'A'
+                return "A"
             else:
-                return 'B'
+                return "B"
 
-        model.input = spa.Input(bind_A=inputA, bind_B='A')
+        model.input = spa.Input(bind_A=inputA, bind_B="A")
 
-    bind, vocab = model.get_module_output('bind')
+    bind, vocab = model.get_module_output("bind")
 
     with model:
-        p = nengo.Probe(bind, 'output', synapse=0.03)
+        p = nengo.Probe(bind, "output", synapse=0.03)
 
     with Simulator(model) as sim:
         sim.run(0.2)

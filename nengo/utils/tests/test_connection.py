@@ -11,8 +11,7 @@ from nengo.utils.numpy import rms
 @pytest.mark.parametrize("dimensions", [1, 4])
 @pytest.mark.parametrize("radius", [1, 2.0])
 @pytest.mark.filterwarnings("ignore:'targets' can be passed directly")
-def test_target_function(Simulator, nl_nodirect, plt, dimensions, radius,
-                         seed, rng):
+def test_target_function(Simulator, nl_nodirect, plt, dimensions, radius, seed, rng):
     eval_points = UniformHypersphere().sample(1000, dimensions, rng=rng)
     eval_points *= radius
     f = lambda x: x ** 2
@@ -39,10 +38,10 @@ def test_target_function(Simulator, nl_nodirect, plt, dimensions, radius,
 
     plt.subplot(2, 1, 1)
     plt.plot(sim.trange(), sim.data[probe1])
-    plt.title('Square manually with target_function')
+    plt.title("Square manually with target_function")
     plt.subplot(2, 1, 2)
     plt.plot(sim.trange(), sim.data[probe2])
-    plt.title('Square by passing in function to connection')
+    plt.title("Square by passing in function to connection")
 
     assert np.allclose(sim.data[probe1], sim.data[probe2], atol=0.2 * radius)
 
@@ -60,7 +59,7 @@ def test_eval_point_decoding(points_arg, Simulator, nl_nodirect, plt, seed):
         x = np.linspace(-1, 1, 51)
         y = np.linspace(-1, 1, 51)
         X, Y = np.meshgrid(x, y)
-        kwargs['eval_points'] = np.column_stack([X.ravel(), Y.ravel()])
+        kwargs["eval_points"] = np.column_stack([X.ravel(), Y.ravel()])
 
     with Simulator(model) as sim:
         eval_points, targets, decoded = eval_point_decoding(c, sim, **kwargs)
