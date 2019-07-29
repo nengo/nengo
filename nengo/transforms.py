@@ -26,7 +26,7 @@ class Transform(FrozenObject):
 
         Parameters
         ----------
-        rng : `numpy.random.RandomState`, optional
+        rng : `numpy.random.mtrand.RandomState`, optional
             Random number generator state.
 
         Returns
@@ -237,7 +237,7 @@ class SparseMatrix(FrozenObject):
 
         Parameters
         ----------
-        rng : `.numpy.random.RandomState`
+        rng : `.numpy.random.mtrand.RandomState`
             Random number generator that will be used when
             sampling distribution.
 

@@ -39,7 +39,7 @@ class Vocabulary:
         is helpful for determining if a vector is similar to ``A*B`` (in
         addition to being similar to ``A`` or ``B``), but exponentially
         increases the processing time.
-    rng : `numpy.random.RandomState`, optional
+    rng : `numpy.random.mtrand.RandomState`, optional
         The random number generator to use to create new vectors.
 
     Attributes

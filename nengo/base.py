@@ -301,7 +301,7 @@ class Process(FrozenObject):
             Output dimensionality. If None, ``default_size_out`` will be used.
         dt : float, optional
             Simulation timestep. If None, ``default_dt`` will be used.
-        rng : `numpy.random.RandomState`
+        rng : `numpy.random.mtrand.RandomState`
             Random number generator used for stochstic processes.
         copy : bool, optional
             If True, a new output array will be created for output.
@@ -323,7 +323,7 @@ class Process(FrozenObject):
 
         Parameters
         ----------
-        rng : `numpy.random.RandomState`
+        rng : `numpy.random.mtrand.RandomState`
             The parent random number generator to use if the seed is not set.
         """
         seed = rng.randint(maxint) if self.seed is None else self.seed
@@ -370,7 +370,7 @@ class Process(FrozenObject):
             The shape of the output signal.
         dt : float
             The simulation timestep.
-        rng : `numpy.random.RandomState`
+        rng : `numpy.random.mtrand.RandomState`
             A random number generator.
         state : {string: `numpy.ndarray`}
             A dictionary mapping keys to signals, where the signals fully
@@ -393,7 +393,7 @@ class Process(FrozenObject):
             Output dimensionality. If None, ``default_size_out`` will be used.
         dt : float, optional
             Simulation timestep. If None, ``default_dt`` will be used.
-        rng : `numpy.random.RandomState`
+        rng : `numpy.random.mtrand.RandomState`
             Random number generator used for stochstic processes.
         """
         dt = self.default_dt if dt is None else dt
@@ -414,7 +414,7 @@ class Process(FrozenObject):
             Output dimensionality. If None, ``default_size_out`` will be used.
         dt : float, optional
             Simulation timestep. If None, ``default_dt`` will be used.
-        rng : `numpy.random.RandomState`
+        rng : `numpy.random.mtrand.RandomState`
             Random number generator used for stochstic processes.
         """
         shape_in = as_shape(0)

@@ -38,7 +38,7 @@ class Distribution(FrozenObject):
             The number of dimensions to return. If this is an int, the return
             value will be of shape ``(n, d)``. If None, the return
             value will be of shape ``(n,)``.
-        rng : `numpy.random.RandomState`, optional
+        rng : `numpy.random.mtrand.RandomState`, optional
             Random number generator state.
 
         Returns
@@ -262,8 +262,8 @@ class UniformHypersphere(Distribution):
 class Choice(Distribution):
     """Discrete distribution across a set of possible values.
 
-    The same as `numpy.random.choice`, except can take vector or matrix values
-    for the choices.
+    The same as Numpy random's `~numpy.random.mtrand.RandomState.choice`,
+    except can take vector or matrix values for the choices.
 
     Parameters
     ----------

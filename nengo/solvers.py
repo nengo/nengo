@@ -46,7 +46,7 @@ class Solver(FrozenObject, metaclass=DocstringInheritor):
         Y : (n_eval_points, dimensions) array_like
             Matrix of the target decoded values for each of the D dimensions,
             at each of the evaluation points.
-        rng : `numpy.random.RandomState`, optional
+        rng : `numpy.random.mtrand.RandomState`, optional
             A random number generator to use as required.
 
         Returns
