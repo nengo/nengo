@@ -199,7 +199,6 @@ class LinearFilter(Synapse):
 
         Examples
         --------
-
         Using the ``evaluate`` function to make a Bode plot::
 
             synapse = nengo.synapses.LinearFilter([1], [0.02, 1])

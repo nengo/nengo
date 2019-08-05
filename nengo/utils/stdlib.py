@@ -1,6 +1,4 @@
-"""
-Functions that extend the Python Standard Library.
-"""
+"""Functions that extend the Python Standard Library."""
 
 import collections
 import inspect
@@ -94,7 +92,7 @@ class WeakKeyIDDictionary(collections.abc.MutableMapping):
         self._id2ref[id(k)] = ref
 
     def __free_value(self, ref):
-        """Free corresponding value when key has no more references"""
+        """Free corresponding value when key has no more references."""
         id_ = self._ref2id[id(ref)]
         # key already removed from _keyrefs since it is a WeakValueDictionary
         del self._keyvalues[id_]

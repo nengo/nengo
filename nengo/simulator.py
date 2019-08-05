@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 class ProbeDict(Mapping):
-    """Map from Probe -> ndarray
+    """Map from Probe -> ndarray.
 
     This is more like a view on the dict that the simulator manipulates.
     However, for speed reasons, the simulator uses Python lists,

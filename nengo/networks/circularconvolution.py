@@ -8,7 +8,7 @@ from nengo.networks.product import Product
 
 
 def circconv(a, b, invert_a=False, invert_b=False, axis=-1):
-    """A reference Numpy implementation of circular convolution"""
+    """A reference Numpy implementation of circular convolution."""
     A = np.fft.fft(a, axis=axis)
     B = np.fft.fft(b, axis=axis)
     if invert_a:
@@ -72,7 +72,7 @@ def transform_out(dims):
 
 
 def remove_imag_rows(tr):
-    """Throw away imaginary row we don't need (since they're zero)"""
+    """Throw away imaginary rows we do not need (they are zero)."""
     i = np.arange(tr.shape[0])
     if tr.shape[1] % 2 == 0:
         tr = tr[(i == 0) | (i > 3) & (i < len(i) - 3)]

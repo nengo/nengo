@@ -10,9 +10,8 @@ def with_self(method, network, args, kwargs):
     Nengo objects. Instead of writing ``with self`` at the top of the method
     and indenting everything over, you can instead use this decorator.
 
-    Example
-    -------
-
+    Examples
+    --------
     The two methods in the following class do the same thing::
 
         class MyNetwork(nengo.Network):

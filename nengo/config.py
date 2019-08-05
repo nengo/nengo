@@ -1,5 +1,4 @@
-"""A customizable configuration system for setting default parameters and
-backend-specific info.
+"""Configuration system to set defaults and backend-specific info.
 
 The idea here is that a backend can create a Config and ConfigItems to
 define the set of parameters that their backend supports.
@@ -294,7 +293,6 @@ class Config:
 
     Examples
     --------
-
     To configure defaults on a network::
 
         net = nengo.Network()

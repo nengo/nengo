@@ -6,7 +6,6 @@ Use ``%load_ext nengo.ipynb`` in a Jupyter notebook to load the extension.
 
 Note
 ----
-
 This IPython extension cannot be unloaded.
 """
 

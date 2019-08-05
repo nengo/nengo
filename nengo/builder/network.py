@@ -141,7 +141,7 @@ def seed_network(network, seeds, seeded, base_rng=np.random):
 
 
 def _seed_network(network, seeds, seeded):
-    """Recursive helper to set seeds for all child objects and subnetworks"""
+    """Recursive helper to set seeds for all child objects and subnetworks."""
     rng = np.random.RandomState(seeds[network])
 
     # Put probes last so that they don't influence other seeds

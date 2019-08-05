@@ -337,7 +337,6 @@ class Connection(NengoObject):
         The source Nengo object for the connection.
     post : Ensemble or Neurons or Node or Probe
         The destination object for the connection.
-
     synapse : Synapse or None, optional
         Synapse model to use for filtering (see `~nengo.synapses.Synapse`).
         If *None*, no synapse will be used and information will be transmitted
@@ -365,8 +364,7 @@ class Connection(NengoObject):
         Solver instance to compute decoders or weights
         (see `~nengo.solvers.Solver`). If ``solver.weights`` is True, a full
         connection weight matrix is computed instead of decoders.
-    learning_rule_type : LearningRuleType or iterable of LearningRuleType, \
-                         optional
+    learning_rule_type : LearningRuleType or iterable of LearningRuleType, optional
         Modifies the decoders or connection weights during simulation.
     eval_points : (n_eval_points, size_in) array_like or int, optional
         Points at which to evaluate ``function`` when computing decoders,

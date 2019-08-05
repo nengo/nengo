@@ -395,7 +395,6 @@ class Piecewise(Process):
 
     Examples
     --------
-
     >>> from nengo.processes import Piecewise
     >>> process = Piecewise({0.5: 1, 0.75: -1, 1: 0})
     >>> with nengo.Network() as model:

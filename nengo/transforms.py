@@ -38,12 +38,12 @@ class Transform(FrozenObject):
 
     @property
     def size_in(self):
-        """Expected size of input to transform"""
+        """Expected size of input to transform."""
         raise NotImplementedError()
 
     @property
     def size_out(self):
-        """Expected size of output from transform"""
+        """Expected size of output from transform."""
         raise NotImplementedError()
 
 

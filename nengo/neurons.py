@@ -19,7 +19,7 @@ def settled_firingrate(step_math, J, states, dt=0.001, settle_time=0.1, sim_time
     and find the average (which should approximate the firing rate).
 
     Parameters
-    ---------
+    ----------
     step_math : function
         the step function of the neuron type
     J : ndarray

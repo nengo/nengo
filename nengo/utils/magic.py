@@ -214,7 +214,7 @@ class FunctionWrapper(ObjectProxy):
 
 
 def decorator(wrapper):
-    """Decorates decorators.
+    """Decorate decorators.
 
     This imposes a particular style of writing descriptors.
     The descriptor must accept four positional arguments:

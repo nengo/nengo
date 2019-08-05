@@ -130,8 +130,7 @@ class Signal:
             self._initial_value.setflags(write=False)
 
     def __getitem__(self, item):
-        """Index or slice into array"""
-
+        """Index or slice into array."""
         if self.sparse:
             raise SignalError("Attempting to create a view of a sparse Signal")
 
@@ -313,7 +312,7 @@ class Signal:
 
 
 class SignalDict(dict):
-    """Map from Signal -> ndarray
+    """Map from Signal -> ndarray.
 
     This dict subclass ensures that the ndarray values aren't overwritten,
     and instead data are written into them, which ensures that
@@ -386,6 +385,6 @@ class SignalDict(dict):
             dict.__setitem__(self, signal, data)
 
     def reset(self, signal):
-        """Reset ndarray to the base value of the signal that maps to it"""
+        """Reset ndarray to the base value of the signal that maps to it."""
         if not signal.readonly:
             self[signal] = signal.initial_value

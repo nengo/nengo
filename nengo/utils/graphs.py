@@ -101,7 +101,7 @@ class BidirectionalDAG:
 
 
 def toposort(edges):
-    """Topological sort algorithm by Kahn[1]
+    """Topological sort algorithm by Kahn [1]_.
 
     Complexity is O(nodes + vertices).
 
@@ -116,18 +116,18 @@ def toposort(edges):
 
     Example
     -------
-
     >>> toposort({1: {2, 3}, 2: {3}, 3: set()})
     [1, 2, 3]
 
     Notes
     -----
+    Closely follows the wikipedia page [2]_.
 
-    Closely follows the wikipedia page [2]
-
-    [1] Kahn, Arthur B. (1962), "Topological sorting of large networks",
-    Communications of the ACM
-    [2] https://en.wikipedia.org/wiki/Toposort#Algorithms
+    References
+    ----------
+    .. [1] Kahn, Arthur B. (1962), "Topological sorting of large networks",
+       Communications of the ACM
+    .. [2] https://en.wikipedia.org/wiki/Toposort#Algorithms
     """
     incoming_edges = reverse_edges(edges)
     incoming_edges = {k: set(val) for k, val in incoming_edges.items()}
