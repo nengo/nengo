@@ -41,6 +41,7 @@ jobs:
     addons:
       apt:
         packages:
+          - graphviz
           - pandoc
     stage: advanced
   -

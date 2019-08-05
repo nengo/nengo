@@ -225,6 +225,7 @@ Decoder and connection weight solvers
    :nosignatures:
 
    nengo.solvers.Solver
+   nengo.solvers.SolverParam
    nengo.solvers.Lstsq
    nengo.solvers.LstsqNoise
    nengo.solvers.LstsqMultNoise
@@ -245,9 +246,12 @@ Decoder and connection weight solvers
    nengo.utils.least_squares_solvers.SVD
    nengo.utils.least_squares_solvers.RandomizedSVD
 
+.. automodule:: nengo.solvers
 
 .. autoclass:: nengo.solvers.Solver
    :special-members: __call__
+
+.. autoclass:: nengo.solvers.SolverParam
 
 .. autoclass:: nengo.solvers.Lstsq
 

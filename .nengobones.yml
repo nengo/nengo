@@ -138,6 +138,7 @@ docs_conf_py:
   analytics_id: UA-41658423-2
   extensions:
     - nengo_sphinx_theme.ext.resolvedefaults
+    - sphinx.ext.inheritance_diagram
 
 travis_yml:
   python: 3.6
@@ -153,6 +154,9 @@ travis_yml:
       python: 3.5
     - stage: advanced
       script: docs
+      apt_install:
+        - graphviz
+        - pandoc
     - env:
         NUMPY: numpy==1.11
       cache: false  # disable the cache for one build to make sure that works

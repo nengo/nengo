@@ -18,6 +18,7 @@ extensions = [
     "nengo_sphinx_theme",
     "numpydoc",
     "nengo_sphinx_theme.ext.resolvedefaults",
+    "sphinx.ext.inheritance_diagram",
 ]
 
 # -- sphinx.ext.autodoc

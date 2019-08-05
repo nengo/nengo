@@ -263,33 +263,3 @@ def decorator(wrapper):
         return _execute(*args, **kwargs)
 
     return FunctionWrapper(wrapper, _wrapper)
-
-
-class DocstringInheritor(type):
-    """Metaclass to inherit docstrings from parents.
-
-    Taken from https://stackoverflow.com/questions/8100166, which in turn was
-    a variation on Paul McGuire's code at
-    https://groups.google.com/group/comp.lang.python/msg/26f7b4fcb4d66c95
-    """
-
-    def __new__(metacls, name, bases, clsdict):
-        if not ("__doc__" in clsdict and clsdict["__doc__"]):
-            for mro_cls in (mro_cls for base in bases for mro_cls in base.mro()):
-                doc = mro_cls.__doc__
-                if doc:
-                    clsdict["__doc__"] = doc
-                    break
-        for attr, attribute in clsdict.items():
-            if not attribute.__doc__:
-                for mro_cls in (
-                    mro_cls
-                    for base in bases
-                    for mro_cls in base.mro()
-                    if hasattr(mro_cls, attr)
-                ):
-                    doc = getattr(getattr(mro_cls, attr), "__doc__")
-                    if doc:
-                        attribute.__doc__ = doc
-                        break
-        return type.__new__(metacls, name, bases, clsdict)
