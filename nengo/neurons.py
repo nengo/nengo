@@ -53,6 +53,54 @@ class NeuronType(FrozenObject):
 
     probeable = ()
 
+    max_x = NumberParam("max_x", low=1)
+
+    def __init__(self, max_x=1.5):
+        super().__init__()
+        self.max_x = max_x
+
+    @property
+    def _max_x_norm(self):
+        return 0.5 * self.max_x + 0.5  # == 1 if max_x == 1, 0.5*max_x if max_x >> 1
+
+    def _actual_max_x(self, intercepts):
+        """The exact x points where the max_rates will occur"""
+        return intercepts + (self.max_x - intercepts) / self._max_x_norm
+
+    def _j_intercepts_to_gain(self, max_j, intercepts):
+        """Find gain, given the max_rates currents and intercepts.
+
+        Parameters
+        ----------
+        max_j : ndarray
+            The currents that produce the desired max rates in the neuron.
+        intercepts : ndarray
+            The desired intercepts for the tuning curves.
+
+        Returns
+        -------
+        gain : ndarray
+            The required gains.
+        """
+        return max_j * self._max_x_norm / (self.max_x - intercepts)
+
+    def _gain_intercepts_to_j(self, gain, intercepts):
+        """Find the max_rates currents, given the gain and intercepts.
+
+        Parameters
+        ----------
+        gain : ndarray
+            The gains of the tuning curves.
+        intercepts : ndarray
+            The intercepts for the tuning curves.
+
+        Returns
+        -------
+        max_j : ndarray
+            The currents that produce the desired max rates in the neuron.
+        """
+        return gain * (self.max_x - intercepts) / self._max_x_norm
+
     def current(self, x, gain, bias):
         """Compute current injected in each neuron given input, gain and bias.
 
@@ -117,7 +165,7 @@ class NeuronType(FrozenObject):
         max_rates = np.array(max_rates, dtype=float, copy=False, ndmin=1)
         intercepts = np.array(intercepts, dtype=float, copy=False, ndmin=1)
 
-        J_steps = 101  # Odd number so that 0 is a sample
+        J_steps = 1001  # Odd number so that 0 is a sample
         max_rate = max_rates.max()
 
         # Start with dummy gain and bias so x == J in rate calculation
@@ -152,8 +200,10 @@ class NeuronType(FrozenObject):
         bias = np.zeros_like(max_rates)
         J_tops = np.interp(max_rates, rate, J)
 
-        gain[:] = (J_threshold - J_tops) / (intercepts - 1)
-        bias[:] = J_tops - gain
+        # J_tops == gain * self.actual_max_x + bias
+        # J_threshold == gain * intercepts + bias
+        gain[:] = self._j_intercepts_to_gain(J_tops - J_threshold, intercepts)
+        bias[:] = J_threshold - gain * intercepts
         return gain, bias
 
     def max_rates_intercepts(self, gain, bias):
@@ -176,13 +226,13 @@ class NeuronType(FrozenObject):
         intercepts : (n_neurons,) array_like
             X-intercepts of neurons.
         """
-
-        max_rates = self.rates(1, gain, bias).squeeze(axis=0)
-
-        x_range = np.linspace(-1, 1, 101)
+        x_range = np.linspace(-1, 1, 10001)
         rates = self.rates(x_range, gain, bias)
         last_zeros = np.maximum(np.argmax(rates > 0, axis=0) - 1, 0)
         intercepts = x_range[last_zeros]
+
+        actual_max_x = self._actual_max_x(intercepts)
+        max_rates = self.rates(actual_max_x[np.newaxis, :], gain, bias).squeeze(axis=0)
 
         return max_rates, intercepts
 
@@ -289,8 +339,8 @@ class RectifiedLinear(NeuronType):
 
     amplitude = NumberParam("amplitude", low=0, low_open=True)
 
-    def __init__(self, amplitude=1):
-        super().__init__()
+    def __init__(self, amplitude=1, max_x=1.5):
+        super().__init__(max_x=max_x)
 
         self.amplitude = amplitude
 
@@ -298,14 +348,14 @@ class RectifiedLinear(NeuronType):
         """Determine gain and bias by shifting and scaling the lines."""
         max_rates = np.array(max_rates, dtype=float, copy=False, ndmin=1)
         intercepts = np.array(intercepts, dtype=float, copy=False, ndmin=1)
-        gain = max_rates / (1 - intercepts)
+        gain = self._j_intercepts_to_gain(max_rates, intercepts)
         bias = -intercepts * gain
         return gain, bias
 
     def max_rates_intercepts(self, gain, bias):
         """Compute the inverse of gain_bias."""
         intercepts = -bias / gain
-        max_rates = gain * (1 - intercepts)
+        max_rates = self._gain_intercepts_to_j(gain, intercepts)
         return max_rates, intercepts
 
     def step_math(self, dt, J, output):
@@ -359,8 +409,8 @@ class Sigmoid(NeuronType):
 
     tau_ref = NumberParam("tau_ref", low=0)
 
-    def __init__(self, tau_ref=0.0025):
-        super().__init__()
+    def __init__(self, tau_ref=0.0025, max_x=1.5):
+        super().__init__(max_x=max_x)
         self.tau_ref = tau_ref
 
     def gain_bias(self, max_rates, intercepts):
@@ -368,17 +418,17 @@ class Sigmoid(NeuronType):
         max_rates = np.array(max_rates, dtype=float, copy=False, ndmin=1)
         intercepts = np.array(intercepts, dtype=float, copy=False, ndmin=1)
         lim = 1.0 / self.tau_ref
-        inverse = -np.log(lim / max_rates - 1.0)
-        gain = inverse / (1.0 - intercepts)
-        bias = inverse - gain
+        max_j = -np.log(lim / max_rates - 1.0)
+        gain = self._j_intercepts_to_gain(max_j, intercepts)
+        bias = -gain * intercepts
         return gain, bias
 
     def max_rates_intercepts(self, gain, bias):
         """Compute the inverse of gain_bias."""
-        inverse = gain + bias
-        intercepts = 1 - inverse / gain
+        intercepts = -bias / gain
+        max_j = self._gain_intercepts_to_j(gain, intercepts)
         lim = 1.0 / self.tau_ref
-        max_rates = lim / (1 + np.exp(-inverse))
+        max_rates = lim / (1 + np.exp(-max_j))
         return max_rates, intercepts
 
     def step_math(self, dt, J, output):
@@ -408,8 +458,8 @@ class LIFRate(NeuronType):
     tau_ref = NumberParam("tau_ref", low=0)
     amplitude = NumberParam("amplitude", low=0, low_open=True)
 
-    def __init__(self, tau_rc=0.02, tau_ref=0.002, amplitude=1):
-        super().__init__()
+    def __init__(self, tau_rc=0.02, tau_ref=0.002, amplitude=1, max_x=1.5):
+        super().__init__(max_x=max_x)
         self.tau_rc = tau_rc
         self.tau_ref = tau_ref
         self.amplitude = amplitude
@@ -428,17 +478,16 @@ class LIFRate(NeuronType):
                 obj=self,
             )
 
-        x = 1.0 / (1 - np.exp((self.tau_ref - (1.0 / max_rates)) / self.tau_rc))
-        gain = (1 - x) / (intercepts - 1.0)
+        x = -1 / np.expm1((self.tau_ref - 1 / max_rates) / self.tau_rc)
+        gain = self._j_intercepts_to_gain(x - 1, intercepts)
         bias = 1 - gain * intercepts
         return gain, bias
 
     def max_rates_intercepts(self, gain, bias):
         """Compute the inverse of gain_bias."""
         intercepts = (1 - bias) / gain
-        max_rates = 1.0 / (
-            self.tau_ref - self.tau_rc * np.log1p(1.0 / (gain * (intercepts - 1) - 1))
-        )
+        max_j = self._gain_intercepts_to_j(gain, intercepts)
+        max_rates = 1.0 / (self.tau_ref - self.tau_rc * np.log1p(-1 / (max_j + 1)))
         if not np.all(np.isfinite(max_rates)):
             warnings.warn(
                 "Non-finite values detected in `max_rates`; this "
@@ -488,8 +537,12 @@ class LIF(LIFRate):
 
     min_voltage = NumberParam("min_voltage", high=0)
 
-    def __init__(self, tau_rc=0.02, tau_ref=0.002, min_voltage=0, amplitude=1):
-        super().__init__(tau_rc=tau_rc, tau_ref=tau_ref, amplitude=amplitude)
+    def __init__(
+        self, tau_rc=0.02, tau_ref=0.002, min_voltage=0, amplitude=1, max_x=1.5
+    ):
+        super().__init__(
+            tau_rc=tau_rc, tau_ref=tau_ref, amplitude=amplitude, max_x=max_x
+        )
         self.min_voltage = min_voltage
 
     def step_math(self, dt, J, spiked, voltage, refractory_time):
@@ -563,8 +616,12 @@ class AdaptiveLIFRate(LIFRate):
     tau_n = NumberParam("tau_n", low=0, low_open=True)
     inc_n = NumberParam("inc_n", low=0)
 
-    def __init__(self, tau_n=1, inc_n=0.01, tau_rc=0.02, tau_ref=0.002, amplitude=1):
-        super().__init__(tau_rc=tau_rc, tau_ref=tau_ref, amplitude=amplitude)
+    def __init__(
+        self, tau_n=1, inc_n=0.01, tau_rc=0.02, tau_ref=0.002, amplitude=1, max_x=1.5
+    ):
+        super().__init__(
+            tau_rc=tau_rc, tau_ref=tau_ref, amplitude=amplitude, max_x=max_x
+        )
         self.tau_n = tau_n
         self.inc_n = inc_n
 
@@ -626,9 +683,14 @@ class AdaptiveLIF(LIF):
         tau_ref=0.002,
         min_voltage=0,
         amplitude=1,
+        max_x=1.5,
     ):
         super().__init__(
-            tau_rc=tau_rc, tau_ref=tau_ref, min_voltage=min_voltage, amplitude=amplitude
+            tau_rc=tau_rc,
+            tau_ref=tau_ref,
+            min_voltage=min_voltage,
+            amplitude=amplitude,
+            max_x=max_x,
         )
         self.tau_n = tau_n
         self.inc_n = inc_n
@@ -688,9 +750,14 @@ class Izhikevich(NeuronType):
     reset_recovery = NumberParam("reset_recovery")
 
     def __init__(
-        self, tau_recovery=0.02, coupling=0.2, reset_voltage=-65.0, reset_recovery=8.0
+        self,
+        tau_recovery=0.02,
+        coupling=0.2,
+        reset_voltage=-65.0,
+        reset_recovery=8.0,
+        max_x=1.5,
     ):
-        super().__init__()
+        super().__init__(max_x=max_x)
         self.tau_recovery = tau_recovery
         self.coupling = coupling
         self.reset_voltage = reset_voltage
