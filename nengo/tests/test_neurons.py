@@ -521,33 +521,37 @@ def test_gain_bias(rng, nl_nodirect, generic):
     n = 100
     max_rates = rng.uniform(300, 400, size=n)
     intercepts = rng.uniform(-0.5, 0.5, size=n)
-    nl = nl_nodirect()
     tolerance = 0.1 if generic else 1e-8
 
-    if generic:
-        gain, bias = NeuronType.gain_bias(nl, max_rates, intercepts)
-    else:
+    for max_x in (1.0, 1.1, 1.5, 3.1):
+        nl = nl_nodirect(max_x=max_x)
+
+        if generic:
+            gain, bias = NeuronType.gain_bias(nl, max_rates, intercepts)
+        else:
+            gain, bias = nl.gain_bias(max_rates, intercepts)
+
+        rates = nl.rates(max_x, gain, bias)
+        assert np.allclose(rates, max_rates, atol=tolerance)
+
+        if nl_nodirect == Sigmoid:
+            threshold = 0.5 / nl.tau_ref
+        else:
+            threshold = 0
+
+        x = (intercepts - tolerance)[np.newaxis, :]
+        assert np.all(nl.rates(x, gain, bias) <= threshold)
+        x = (intercepts + tolerance)[np.newaxis, :]
+        assert np.all(nl.rates(x, gain, bias) > threshold)
+
         gain, bias = nl.gain_bias(max_rates, intercepts)
+        if generic:
+            max_rates0, intercepts0 = NeuronType.max_rates_intercepts(nl, gain, bias)
+        else:
+            max_rates0, intercepts0 = nl.max_rates_intercepts(gain, bias)
 
-    assert np.allclose(nl.rates(1, gain, bias), max_rates, atol=tolerance)
-
-    if nl_nodirect == Sigmoid:
-        threshold = 0.5 / nl.tau_ref
-    else:
-        threshold = 0
-
-    x = (intercepts - tolerance)[np.newaxis, :]
-    assert np.all(nl.rates(x, gain, bias) <= threshold)
-    x = (intercepts + tolerance)[np.newaxis, :]
-    assert np.all(nl.rates(x, gain, bias) > threshold)
-
-    if generic:
-        max_rates0, intercepts0 = NeuronType.max_rates_intercepts(nl, gain, bias)
-    else:
-        max_rates0, intercepts0 = nl.max_rates_intercepts(gain, bias)
-
-    assert np.allclose(max_rates, max_rates0, atol=tolerance)
-    assert np.allclose(intercepts, intercepts0, atol=tolerance)
+        assert np.allclose(intercepts, intercepts0, atol=tolerance)
+        assert np.allclose(max_rates, max_rates0, atol=tolerance)
 
 
 def test_current(rng):
