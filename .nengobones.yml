@@ -131,6 +131,7 @@ setup_cfg:
       - unused-variable
     known_third_party:
       - mpl_toolkits
+      - pytest_allclose
 
 docs_conf_py:
   intersphinx_mapping:

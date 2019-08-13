@@ -16,6 +16,7 @@ import warnings
 import matplotlib
 import numpy as np
 import pytest
+from pytest_allclose import report_rmses
 
 import nengo
 import nengo.utils.numpy as npext
@@ -460,7 +461,7 @@ def pytest_runtest_setup(item):
                 pytest.skip(reason)
 
 
-def pytest_terminal_summary(terminalreporter):
+def report_compares(terminalreporter):
     reports = terminalreporter.getreports("passed")
     do_compare = terminalreporter.config.getvalue("compare") is not None
     if reports and do_compare:  # pragma: no cover
@@ -470,15 +471,23 @@ def pytest_terminal_summary(terminalreporter):
                 terminalreporter.writer.sep("-", name)
                 terminalreporter.writer.line(content)
 
-    if resource and terminalreporter.config.option.memory:
-        # Calculate memory usage; details at
-        # http://fa.bianp.net/blog/2013/different-ways-to-get-memory-consumption-or-lessons-learned-from-memory_profiler/  # noqa, pylint: disable=line-too-long
-        rusage_denom = 1024.0
-        if sys.platform == "darwin":  # pragma: no cover
-            # ... it seems that in OSX the output is in different units ...
-            rusage_denom = rusage_denom * rusage_denom
-        mem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / rusage_denom
-        terminalreporter.write_sep("=", "total memory consumed: %.2f MiB" % mem)
 
-        # Ensure we only print once
-        terminalreporter.config.option.memory = False
+def report_memory_usage(terminalreporter):
+    # Calculate memory usage; details at
+    # http://fa.bianp.net/blog/2013/different-ways-to-get-memory-consumption-or-lessons-learned-from-memory_profiler/  # noqa, pylint: disable=line-too-long
+    rusage_denom = 1024.0
+    if sys.platform == "darwin":  # pragma: no cover
+        # ... it seems that in OSX the output is in different units ...
+        rusage_denom = rusage_denom * rusage_denom
+    mem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / rusage_denom
+    terminalreporter.write_sep("=", "total memory consumed: %.2f MiB" % mem)
+
+    # Ensure we only print once
+    terminalreporter.config.option.memory = False
+
+
+def pytest_terminal_summary(terminalreporter):
+    report_compares(terminalreporter)
+    report_rmses(terminalreporter)
+    if resource and terminalreporter.config.option.memory:
+        report_memory_usage(terminalreporter)
