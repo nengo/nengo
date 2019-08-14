@@ -134,7 +134,7 @@ def test_scalar(Simulator, nl, plt, seed, allclose):
         t, target, sim.data[in_p], rtol=1e-3, atol=1e-5, allclose=allclose
     )
     assert signals_allclose(
-        t, target, sim.data[A_p], atol=0.1, delay=0.03, plt=plt, allclose=allclose
+        t, target, sim.data[A_p], atol=0.1, delay=0.02, plt=plt, allclose=allclose
     )
 
 

@@ -331,12 +331,14 @@ def test_weights(Simulator, nl, plt, seed, allclose):
     with m:
         m.config[nengo.Ensemble].neuron_type = nl()
         u = nengo.Node(output=func)
-        a = nengo.Ensemble(n1, dimensions=2, radius=1.5)
+        a = nengo.Ensemble(n1, dimensions=2, radius=1.4)
         b = nengo.Ensemble(n2, dimensions=1)
         bp = nengo.Probe(b)
 
         nengo.Connection(u, a)
-        nengo.Connection(a, b, transform=transform, solver=LstsqL2(weights=True))
+        nengo.Connection(
+            a, b, synapse=0.01, transform=transform, solver=LstsqL2(weights=True)
+        )
 
     with Simulator(m) as sim:
         sim.run(1.0)
@@ -344,9 +346,9 @@ def test_weights(Simulator, nl, plt, seed, allclose):
     t = sim.trange()
     x = np.array(func(t)).T
     y = np.dot(x, transform.T)
-    z = nengo.Lowpass(0.005).filtfilt(sim.data[bp], dt=sim.dt)
+    z = nengo.Lowpass(0.01).filt(sim.data[bp], dt=sim.dt)
     assert signals_allclose(
-        t, y, z, atol=0.1, buf=0.1, delay=0.01, plt=plt, allclose=allclose
+        t, y, z, atol=0.1, buf=0.1, delay=0.025, plt=plt, allclose=allclose
     )
 
 

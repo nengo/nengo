@@ -144,6 +144,10 @@ Release History
 - Renamed ``utils.testing.allclose`` to ``utils.testing.signals_allclose``,
   to differentiate it from the ``allclose`` fixture.
   (`#1563 <https://github.com/nengo/nengo/pull/1563>`__)
+- The default ``intercepts`` value has been changed to ``Uniform(-1, 0.9)``
+  to avoid high gains when intercepts are close to 1.
+  (`#1534 <https://github.com/nengo/nengo/issues/1534>`__,
+  `#1561 <https://github.com/nengo/nengo/pull/1561>`__)
 
 **Deprecated**
 

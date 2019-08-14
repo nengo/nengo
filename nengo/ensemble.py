@@ -113,7 +113,7 @@ class Ensemble(NengoObject):
     )
     intercepts = DistOrArrayParam(
         "intercepts",
-        default=Uniform(-1.0, 1.0),
+        default=Uniform(-1.0, 0.9),
         optional=True,
         sample_shape=("n_neurons",),
     )
