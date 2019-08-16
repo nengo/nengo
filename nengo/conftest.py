@@ -269,16 +269,6 @@ def pytest_collection_modifyitems(session, config, items):
             config,
         )
 
-    deselect_by_condition(
-        lambda item: item.get_closest_marker("noassertions")
-        and not any(
-            fixture in item.fixturenames and config.getvalue(option)
-            for fixture, option in [("analytics", "analytics"), ("plt", "plots")]
-        ),
-        items,
-        config,
-    )
-
 
 def deselect_by_condition(condition, items, config):
     remaining = []

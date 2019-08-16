@@ -309,7 +309,6 @@ def test_subsolvers_L2(rng, allclose):
         assert allclose(x0, x, atol=1e-5, rtol=1e-3), "Solver %s" % solver.__name__
 
 
-@pytest.mark.noassertions
 @pytest.mark.filterwarnings("ignore:Objective did not converge.")
 def test_subsolvers_L1(rng):
     pytest.importorskip("sklearn")
@@ -320,6 +319,8 @@ def test_subsolvers_L1(rng):
     with Timer() as t:
         LstsqL1(l1=l1, l2=0)(A, B, rng=rng)
     logging.info("duration: %0.3f", t.duration)
+
+    # TODO: add assertions
 
 
 @pytest.mark.slow
@@ -386,7 +387,6 @@ def test_compare_solvers(Simulator, plt, seed, allclose):
 
 
 @pytest.mark.slow
-@pytest.mark.noassertions
 def test_regularization(Simulator, nl_nodirect, plt):
     # TODO: multiple trials per parameter set, with different seeds
 
@@ -445,11 +445,10 @@ def test_regularization(Simulator, nl_nodirect, plt):
             plt.ylabel("reg")
             plt.title("%s (N=%d)" % (Solver.__name__, n_neurons))
 
-    plt.tight_layout()
+    # TODO: add assertions
 
 
 @pytest.mark.slow
-@pytest.mark.noassertions
 def test_eval_points_static(plt, rng):
     solver = LstsqL2()
 
@@ -513,9 +512,10 @@ def test_eval_points_static(plt, rng):
     make_plot(rmses_norm2)
     plt.ylabel("(rmse - mean) / std")
 
+    # TODO: add assertions
+
 
 @pytest.mark.slow
-@pytest.mark.noassertions
 def test_eval_points(Simulator, nl_nodirect, plt, seed, rng):
     n = 100
     d = 5
@@ -576,6 +576,8 @@ def test_eval_points(Simulator, nl_nodirect, plt, seed, rng):
     plt.semilogx(eval_points, low, "b-")
     plt.xlim([eval_points[0], eval_points[-1]])
     plt.xticks(eval_points, eval_points)
+
+    # TODO: add assertions
 
 
 @pytest.mark.parametrize(

@@ -548,7 +548,6 @@ with nengo.Simulator(model):
         return args
 
     @pytest.mark.slow
-    @pytest.mark.noassertions
     @pytest.mark.parametrize("varying_param", ["D", "N", "M"])
     def test_cache_benchmark(self, tmpdir, varying_param, analytics, plt):
         varying = {
@@ -572,6 +571,8 @@ with nengo.Simulator(model):
         plt.xlabel("Number of %s" % axis_label)
         plt.ylabel("Build time (s)")
         plt.legend(loc="best")
+
+        # TODO: add assertions
 
     @pytest.mark.compare
     @pytest.mark.parametrize("varying_param", ["D", "N", "M"])
@@ -641,7 +642,6 @@ cache = nengo.cache.DecoderCache()
     stmt = "with cache: cache.shrink()"
 
     @pytest.mark.slow
-    @pytest.mark.noassertions
     def test_cache_shrink_benchmark(self, tmpdir, analytics):
         times = timeit.repeat(
             stmt=self.stmt,
@@ -656,6 +656,8 @@ cache = nengo.cache.DecoderCache()
             np.mean(reject_outliers(times)),
         )
         analytics.add_data("times", times)
+
+        # TODO: add assertions
 
     @pytest.mark.compare
     def test_compare_cache_shrink_benchmark(self, analytics_data, plt):
