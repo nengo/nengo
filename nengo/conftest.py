@@ -1,5 +1,4 @@
 from fnmatch import fnmatch
-import hashlib
 import inspect
 import importlib
 import os
@@ -14,12 +13,10 @@ import sys
 import warnings
 
 import matplotlib
-import numpy as np
 import pytest
 from pytest_allclose import report_rmses
 
 import nengo
-import nengo.utils.numpy as npext
 from nengo.neurons import (
     Direct,
     LIF,
@@ -43,7 +40,6 @@ class TestConfig:
     module modify these values accordingly.
     """
 
-    test_seed = 0  # changing this will change seeds for all tests
     Simulator = nengo.Simulator
     RefSimulator = nengo.Simulator
     neuron_types = [
@@ -86,9 +82,6 @@ def pytest_configure(config):
     if config.getoption("neurons"):
         ntypes = config.getoption("neurons")[0].split(",")
         TestConfig.neuron_types = [load_class(n) for n in ntypes]
-
-    if config.getoption("seed_offset"):
-        TestConfig.test_seed = config.getoption("seed_offset")[0]
 
     TestConfig.compare_requested = config.getvalue("compare") is not None
     TestConfig.run_unsupported = config.getvalue("unsupported")
@@ -248,27 +241,6 @@ def logger(request):
     return logger.__enter__()
 
 
-def function_seed(function, mod=0):
-    """Generates a unique seed for the given test function.
-
-    The seed should be the same across all machines/platforms.
-    """
-    c = function.__code__
-
-    # get function file path relative to Nengo directory root
-    nengo_path = os.path.abspath(os.path.dirname(nengo.__file__))
-    path = os.path.relpath(c.co_filename, start=nengo_path)
-
-    # take start of md5 hash of function file and name, should be unique
-    hash_list = os.path.normpath(path).split(os.path.sep) + [c.co_name]
-    hash_bytes = "/".join(hash_list).encode("utf-8")
-    i = int(hashlib.md5(hash_bytes).hexdigest()[:15], 16)
-    s = (i + mod) % npext.maxint
-    int_s = int(s)  # numpy 1.8.0 bug when RandomState on long type inputs
-    assert type(int_s) == int  # should not still be a long because < maxint
-    return int_s
-
-
 def get_item_name(item):
     """Get a unique backend-independent name for an item (test function)."""
     item_path, item_name = str(item.fspath), item.location[2]
@@ -281,27 +253,6 @@ def get_item_name(item):
     item_path = os.path.join("nengo", item_path)
     item_path = item_path.replace(os.sep, "/")
     return "%s:%s" % (item_path, item_name)
-
-
-@pytest.fixture
-def rng(request):
-    """A seeded random number generator.
-
-    This should be used in lieu of np.random because we control its seed.
-    """
-    # add 1 to seed to be different from `seed` fixture
-    seed = function_seed(request.function, mod=TestConfig.test_seed + 1)
-    return np.random.RandomState(seed)
-
-
-@pytest.fixture
-def seed(request):
-    """A seed for seeding Networks.
-
-    This should be used in lieu of an integer seed so that we can ensure that
-    tests are not dependent on specific seeds.
-    """
-    return function_seed(request.function, mod=TestConfig.test_seed)
 
 
 def pytest_generate_tests(metafunc):

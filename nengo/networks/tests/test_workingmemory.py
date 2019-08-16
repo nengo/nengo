@@ -1,10 +1,8 @@
-import numpy as np
-
 import nengo
 from nengo.processes import Piecewise
 
 
-def test_inputgatedmemory(Simulator, plt, seed):
+def test_inputgatedmemory(Simulator, allclose, plt, seed):
     to_memorize = 0.5
     start_memorizing = 0.4
     with nengo.Network(seed=seed) as net:
@@ -33,6 +31,6 @@ def test_inputgatedmemory(Simulator, plt, seed):
     plt.axvline(start_memorizing, c="k", ls=":", label="start gating")
     plt.legend(loc="best")
 
-    assert abs(np.mean(data[t < 0.1])) < 0.01
-    assert abs(np.mean(data[(t > 0.2) & (t <= 0.4)]) - 0.5) < 0.02
-    assert abs(np.mean(data[t > 0.4]) - 0.5) < 0.02
+    assert allclose(data[t < 0.1], 0, atol=0.05)
+    assert allclose(data[(t > 0.2) & (t <= 0.4)], 0.5, atol=0.05)
+    assert allclose(data[t > 0.4], 0.5, atol=0.1)

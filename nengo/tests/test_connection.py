@@ -63,39 +63,38 @@ def test_node_to_neurons(Simulator, nl_nodirect, plt, seed, allclose):
 
 
 def test_ensemble_to_neurons(Simulator, nl_nodirect, plt, seed, allclose):
-    N = 30
+    with nengo.Network(seed=seed) as net:
+        net.config[nengo.Ensemble].neuron_type = nl_nodirect()
+        ens = nengo.Ensemble(40, dimensions=1)
+        inhibitor = nengo.Ensemble(20, dimensions=1)
+        stim = nengo.Node(output=np.sin)
+        inhibition = nengo.Node(Piecewise({0: 0, 0.5: 1}))
+        nengo.Connection(stim, ens)
+        nengo.Connection(inhibition, inhibitor)
+        nengo.Connection(
+            inhibitor, ens.neurons, transform=-10 * np.ones((ens.n_neurons, 1))
+        )
 
-    m = nengo.Network(seed=seed)
-    with m:
-        m.config[nengo.Ensemble].neuron_type = nl_nodirect()
-        a = nengo.Ensemble(N, dimensions=1)
-        b = nengo.Ensemble(N, dimensions=1)
-        inn = nengo.Node(output=np.sin)
-        inh = nengo.Node(Piecewise({0: 0, 0.5: 1}))
-        nengo.Connection(inn, a)
-        nengo.Connection(inh, b)
-        nengo.Connection(b, a.neurons, transform=[[-10]] * N)
+        stim_p = nengo.Probe(stim, "output")
+        ens_p = nengo.Probe(ens, "decoded_output", synapse=0.05)
+        inhibitor_p = nengo.Probe(inhibitor, "decoded_output", synapse=0.05)
+        inhibition_p = nengo.Probe(inhibition, "output")
 
-        inn_p = nengo.Probe(inn, "output")
-        a_p = nengo.Probe(a, "decoded_output", synapse=0.1)
-        b_p = nengo.Probe(b, "decoded_output", synapse=0.1)
-        inh_p = nengo.Probe(inh, "output")
-
-    with Simulator(m) as sim:
+    with Simulator(net) as sim:
         sim.run(1.0)
     t = sim.trange()
     ideal = np.sin(t)
     ideal[t >= 0.5] = 0
 
-    plt.plot(t, sim.data[inn_p], label="Input")
-    plt.plot(t, sim.data[a_p], label="Neuron approx, pstc=0.1")
-    plt.plot(t, sim.data[b_p], label="Neuron approx of inhib sig, pstc=0.1")
-    plt.plot(t, sim.data[inh_p], label="Inhib signal")
+    plt.plot(t, sim.data[stim_p], label="Input")
+    plt.plot(t, sim.data[ens_p], label="`ens` value, pstc=0.05")
+    plt.plot(t, sim.data[inhibitor_p], label="`inhibitor` value, pstc=0.05")
+    plt.plot(t, sim.data[inhibition_p], label="Inhibition signal")
     plt.plot(t, ideal, label="Ideal output")
     plt.legend(loc=0, prop={"size": 10})
 
-    assert allclose(sim.data[a_p][-10:], 0, atol=0.1, rtol=0.01)
-    assert allclose(sim.data[b_p][-10:], 1, atol=0.1, rtol=0.01)
+    assert allclose(sim.data[ens_p][-10:], 0, atol=0.1, rtol=0.01)
+    assert allclose(sim.data[inhibitor_p][-10:], 1, atol=0.1, rtol=0.01)
 
 
 def test_node_to_ensemble(Simulator, nl_nodirect, plt, seed, allclose):
@@ -348,7 +347,7 @@ def test_weights(Simulator, nl, plt, seed, allclose):
     y = np.dot(x, transform.T)
     z = nengo.Lowpass(0.01).filt(sim.data[bp], dt=sim.dt)
     assert signals_allclose(
-        t, y, z, atol=0.1, buf=0.1, delay=0.025, plt=plt, allclose=allclose
+        t, y, z, atol=0.15, buf=0.1, delay=0.025, plt=plt, allclose=allclose
     )
 
 

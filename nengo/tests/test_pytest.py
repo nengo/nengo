@@ -1,15 +1,6 @@
 import pytest
 
-import nengo.conftest
-import nengo.utils.numpy as npext
-
 pytest_plugins = ["pytester"]
-
-
-def test_seed_fixture(seed):
-    """The seed should be the same on all machines"""
-    i = (seed - nengo.conftest.TestConfig.test_seed) % npext.maxint
-    assert i == 1832276344
 
 
 @pytest.mark.parametrize("xfail", (True, False))

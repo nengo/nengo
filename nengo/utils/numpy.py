@@ -27,6 +27,7 @@ except ImportError as e:
         return False
 
 
+maxseed = np.iinfo(np.uint32).max
 maxint = np.iinfo(np.int32).max
 
 

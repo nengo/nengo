@@ -34,21 +34,20 @@ def _test_pes(
 ):
     vout = np.array(vin) if vout is None else vout
 
-    model = nengo.Network(seed=seed)
-    with model:
+    with nengo.Network(seed=seed) as model:
         model.config[nengo.Ensemble].neuron_type = nl()
 
-        u = nengo.Node(output=vin)
-        v = nengo.Node(output=vout)
-        a = nengo.Ensemble(n, dimensions=u.size_out)
-        b = nengo.Ensemble(n, dimensions=u.size_out)
-        e = nengo.Ensemble(n, dimensions=v.size_out)
+        stim = nengo.Node(output=vin)
+        target = nengo.Node(output=vout)
+        pre = nengo.Ensemble(n, dimensions=stim.size_out)
+        post = nengo.Ensemble(n, dimensions=stim.size_out)
+        error = nengo.Ensemble(n, dimensions=target.size_out)
 
-        nengo.Connection(u, a)
+        nengo.Connection(stim, pre)
 
-        bslice = b[: v.size_out] if v.size_out < u.size_out else b
-        pre = a.neurons if pre_neurons else a
-        post = b.neurons if post_neurons else bslice
+        postslice = post[: target.size_out] if target.size_out < stim.size_out else post
+        pre = pre.neurons if pre_neurons else pre
+        post = post.neurons if post_neurons else postslice
 
         conn = nengo.Connection(
             pre,
@@ -60,12 +59,12 @@ def _test_pes(
         if weight_solver:
             conn.solver = nengo.solvers.LstsqL2(weights=True)
 
-        nengo.Connection(v, e, transform=-1)
-        nengo.Connection(bslice, e)
-        nengo.Connection(e, conn.learning_rule)
+        nengo.Connection(target, error, transform=-1)
+        nengo.Connection(postslice, error)
+        nengo.Connection(error, conn.learning_rule)
 
-        b_p = nengo.Probe(bslice, synapse=0.03)
-        e_p = nengo.Probe(e, synapse=0.03)
+        post_p = nengo.Probe(postslice, synapse=0.03)
+        error_p = nengo.Probe(error, synapse=0.03)
 
         weights_p = nengo.Probe(conn, "weights", sample_every=0.01)
 
@@ -75,16 +74,16 @@ def _test_pes(
     weights = sim.data[weights_p]
 
     plt.subplot(211)
-    plt.plot(t, sim.data[b_p])
+    plt.plot(t, sim.data[post_p])
     plt.ylabel("Post decoded value")
     plt.subplot(212)
-    plt.plot(t, sim.data[e_p])
+    plt.plot(t, sim.data[error_p])
     plt.ylabel("Error decoded value")
     plt.xlabel("Time (s)")
 
     tend = t > 0.4
-    assert allclose(sim.data[b_p][tend], vout, atol=0.05)
-    assert allclose(sim.data[e_p][tend], 0, atol=0.05)
+    assert allclose(sim.data[post_p][tend], vout, atol=0.05)
+    assert allclose(sim.data[error_p][tend], 0, atol=0.05)
     assert not allclose(weights[0], weights[-1], atol=1e-5, record_rmse=False)
 
 
@@ -122,6 +121,7 @@ def test_pes_neuron_neuron(Simulator, plt, seed, rng, allclose):
         post_neurons=True,
         n=n,
         transform=initial_weights,
+        rate=7e-4,
     )
 
 
@@ -263,10 +263,10 @@ def test_pes_recurrent_slice(Simulator, seed, weights):
         p = nengo.Probe(post, synapse=0.025)
 
     with Simulator(net) as sim:
-        sim.run(0.1)
+        sim.run(0.2)
 
     # Learning rule should drive second dimension high, but not first
-    assert np.all(sim.data[p][-10:, 0] < 0.2)
+    assert np.all(sim.data[p][-10:, 0] < 0.25)
     assert np.all(sim.data[p][-10:, 1] > 0.8)
 
 

@@ -3,7 +3,7 @@ import pytest
 
 import nengo
 from nengo.utils.functions import HilbertCurve
-from nengo.utils.numpy import rms, maxint
+from nengo.utils.numpy import rms, maxseed
 
 
 def test_sine_waves(Simulator, plt, seed):
@@ -89,7 +89,7 @@ def test_product_benchmark(Simulator, analytics, rng):
         return np.squeeze(hc(t / duration).T * 2 - 1)
 
     def run_trial():
-        model = nengo.Network(seed=rng.randint(maxint))
+        model = nengo.Network(seed=rng.randint(maxseed))
         with model:
             model.config[nengo.Ensemble].n_eval_points = n_eval_points
 

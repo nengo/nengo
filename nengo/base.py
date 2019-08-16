@@ -15,7 +15,7 @@ from nengo.params import (
     StringParam,
     Unconfigurable,
 )
-from nengo.utils.numpy import as_shape, maxint, is_integer
+from nengo.utils.numpy import as_shape, maxint, maxseed, is_integer
 
 
 class NetworkMember(type):
@@ -63,7 +63,7 @@ class NengoObject(SupportDefaultsMixin, metaclass=NetworkMember):
     _param_init_order = []
 
     label = StringParam("label", default=None, optional=True)
-    seed = IntParam("seed", default=None, optional=True)
+    seed = IntParam("seed", default=None, low=0, high=maxseed, optional=True)
 
     def __init__(self, label, seed):
         super().__init__()
@@ -276,7 +276,7 @@ class Process(FrozenObject):
     default_size_in = IntParam("default_size_in", low=0)
     default_size_out = IntParam("default_size_out", low=0)
     default_dt = NumberParam("default_dt", low=0, low_open=True)
-    seed = IntParam("seed", low=0, high=maxint, optional=True)
+    seed = IntParam("seed", low=0, high=maxseed, optional=True)
 
     def __init__(
         self, default_size_in=0, default_size_out=1, default_dt=0.001, seed=None

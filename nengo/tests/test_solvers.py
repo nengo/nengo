@@ -242,8 +242,8 @@ def test_nnls(Solver, plt, rng, allclose):
     plt.plot(x, np.zeros_like(x), "k--")
     plt.plot(x, yest - y)
 
-    assert allclose(yest, y, atol=3e-2, rtol=1e-3)
-    assert rel_rmse < 0.02
+    assert allclose(yest, y, atol=0.05, rtol=0.001)
+    assert rel_rmse < 0.03
     assert np.all(d >= 0)
 
 

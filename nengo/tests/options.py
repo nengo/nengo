@@ -89,13 +89,6 @@ def pytest_addoption(parser):
         "--slow", action="store_true", default=False, help="Also run slow tests."
     )
     parser.addoption(
-        "--seed-offset",
-        nargs=1,
-        type=int,
-        default=0,
-        help="Specify offset of the seed values used in tests.",
-    )
-    parser.addoption(
         "--spa", action="store_true", default=False, help="Run deprecated SPA tests"
     )
     parser.addoption(

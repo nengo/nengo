@@ -39,7 +39,13 @@ docs_req = [
     "nengo_sphinx_theme>=0.12.0",
 ]
 optional_req = ["scipy>=0.13", "scikit-learn"]
-tests_req = ["jupyter", "matplotlib>=1.4", "pytest>=3.6", "pytest-allclose"]
+tests_req = [
+    "jupyter",
+    "matplotlib>=1.4",
+    "pytest>=3.6",
+    "pytest-allclose",
+    "pytest-rng",
+]
 
 setup(
     name="nengo",
