@@ -1,12 +1,9 @@
-import logging
 import warnings
 
 import numpy as np
 
 from nengo.exceptions import SimulationError, ValidationError
 from nengo.params import Parameter, NumberParam, FrozenObject
-
-logger = logging.getLogger(__name__)
 
 
 def settled_firingrate(step_math, J, states, dt=0.001, settle_time=0.1, sim_time=1.0):

@@ -69,13 +69,6 @@ def pytest_addoption(parser):
         help="Compare analytics results (specify directories to compare).",
     )
     parser.addoption(
-        "--logs",
-        nargs="?",
-        default=False,
-        const=True,
-        help="Save logs (can optionally specify a directory for logs).",
-    )
-    parser.addoption(
         "--noexamples", action="store_true", default=False, help="Do not run examples"
     )
     parser.addoption(

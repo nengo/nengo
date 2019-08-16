@@ -4,7 +4,7 @@ import os
 import numpy as np
 import pytest
 
-from nengo.utils.testing import Analytics, Logger, signals_allclose
+from nengo.utils.testing import Analytics, signals_allclose
 
 
 def test_analytics_empty():
@@ -51,30 +51,6 @@ def test_analytics_norecord():
         assert "test" not in analytics.doc
     with pytest.raises(ValueError):
         analytics.get_filepath(ext="npz")
-
-
-def test_logger_record():
-    logger_obj = Logger(
-        "nengo.simulator.logs", "nengo.utils.tests.test_testing", "test_logger_record"
-    )
-    with logger_obj as logger:
-        logger.info("Testing that logger records")
-    path = logger_obj.get_filepath(ext="txt")
-    assert os.path.exists(path)
-    os.remove(path)
-    # This will remove the logger directory, only if it's empty
-    try:
-        os.rmdir(logger_obj.dirname)
-    except OSError as ex:
-        assert ex.errno == errno.ENOTEMPTY
-
-
-def test_logger_norecord():
-    logger_obj = Logger(None, "nengo.utils.tests.test_testing", "test_logger_norecord")
-    with logger_obj as logger:
-        logger.info("Testing that logger doesn't record")
-    with pytest.raises(ValueError):
-        logger_obj.get_filepath(ext="txt")
 
 
 def add_close_noise(x, atol, rtol, rng):

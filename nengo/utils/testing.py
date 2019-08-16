@@ -1,15 +1,11 @@
 from inspect import getfullargspec
 import itertools
-import logging
 import os
 import re
 import sys
 import threading
-import time
 
 import numpy as np
-
-from .logging import CaptureLogHandler, console_formatter
 
 
 class Mock:
@@ -125,32 +121,6 @@ class Analytics(Recorder):
     def __exit__(self, type, value, traceback):
         if self.record:
             self.save_data()
-
-
-class Logger(Recorder):
-    def __enter__(self):
-        if self.record:
-            self.handler = CaptureLogHandler()
-            self.handler.setFormatter(console_formatter)
-            self.logger = logging.getLogger()
-            self.logger.addHandler(self.handler)
-            self.old_level = self.logger.getEffectiveLevel()
-            self.logger.setLevel(logging.INFO)
-            self.logger.info(
-                "=== Test run at %s ===", time.strftime("%Y-%m-%d %H:%M:%S")
-            )
-        else:
-            self.logger = Mock()
-        return self.logger
-
-    def __exit__(self, type, value, traceback):
-        if self.record:
-            self.logger.removeHandler(self.handler)
-            self.logger.setLevel(self.old_level)
-            with open(self.get_filepath(ext="txt"), "a") as fp:
-                fp.write(self.handler.stream.getvalue())
-            self.handler.close()
-            del self.handler
 
 
 def signals_allclose(  # noqa: C901

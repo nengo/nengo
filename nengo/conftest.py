@@ -25,7 +25,7 @@ from nengo.neurons import (
     SpikingRectifiedLinear,
 )
 from nengo.rc import rc
-from nengo.utils.testing import Analytics, Logger
+from nengo.utils.testing import Analytics
 
 
 class TestConfig:
@@ -197,25 +197,6 @@ def analytics_data(request):
     return [Analytics.load(p, request.module.__name__, function_name) for p in paths]
 
 
-@pytest.fixture
-def logger(request):
-    """A logging.Logger object.
-
-    Please use this if your test emits log messages.
-
-    This will keep saved logs organized in a simulator-specific folder,
-    with an automatically generated name.
-    """
-    dirname = recorder_dirname(request, "logs")
-    logger = Logger(
-        dirname,
-        request.module.__name__,
-        parametrize_function_name(request, request.function.__name__),
-    )
-    request.addfinalizer(lambda: logger.__exit__(None, None, None))
-    return logger.__enter__()
-
-
 def get_item_name(item):
     """Get a unique backend-independent name for an item (test function)."""
     item_path, item_name = str(item.fspath), item.location[2]
@@ -292,11 +273,7 @@ def pytest_collection_modifyitems(session, config, items):
         lambda item: item.get_closest_marker("noassertions")
         and not any(
             fixture in item.fixturenames and config.getvalue(option)
-            for fixture, option in [
-                ("analytics", "analytics"),
-                ("plt", "plots"),
-                ("logger", "logs"),
-            ]
+            for fixture, option in [("analytics", "analytics"), ("plt", "plots")]
         ),
         items,
         config,
@@ -347,7 +324,7 @@ def pytest_report_collectionfinish(config, startdir, items):
                 "because only --simulator was passed"
             )
 
-    for option in ("analytics", "plots", "logs"):
+    for option in ("analytics", "plots"):
         if not config.getvalue(option):
             deselect_reasons.append(
                 " {option} not requested (pass --{option} to generate)".format(

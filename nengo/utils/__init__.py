@@ -7,7 +7,6 @@ from . import filter_design
 from . import functions
 from . import graphs
 from . import ipython
-from . import logging
 from . import magic
 from . import nco
 from . import network

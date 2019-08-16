@@ -1,3 +1,4 @@
+import logging
 import numpy as np
 import pytest
 
@@ -123,7 +124,7 @@ def test_product_benchmark(Simulator, analytics, rng):
 
 
 @pytest.mark.compare
-def test_compare_product_benchmark(analytics_data, logger):
+def test_compare_product_benchmark(analytics_data):
     stats = pytest.importorskip("scipy.stats")
     data1, data2 = (d["error"] for d in analytics_data)
     improvement = np.mean(data1) - np.mean(data2)
@@ -133,7 +134,7 @@ def test_compare_product_benchmark(analytics_data, logger):
         )
         / 1000.0
     )
-    logger.info(
+    logging.info(
         "Multiplication improvement by %f (%.0f%%, p < %.3f)",
         improvement,
         (1.0 - np.mean(data2) / np.mean(data1)) * 100.0,

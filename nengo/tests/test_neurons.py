@@ -1,4 +1,5 @@
 from inspect import getfullargspec
+import logging
 
 import numpy as np
 import pytest
@@ -50,7 +51,7 @@ def test_lif_builtin(rng, allclose):
 
 
 @pytest.mark.parametrize("dt", (0.001, 0.002))
-def test_lif(Simulator, plt, rng, logger, dt, allclose):
+def test_lif(Simulator, plt, rng, dt, allclose):
     """Test that the dynamic model approximately matches the rates."""
     n = 5000
     x = 0.5
@@ -93,8 +94,8 @@ def test_lif(Simulator, plt, rng, logger, dt, allclose):
     )
     spikes = sim.data[spike_probe]
     sim_rates = (spikes > 0).sum(0) / t_final
-    logger.info("ME = %f", (sim_rates - math_rates).mean())
-    logger.info("RMSE = %f", rms(sim_rates - math_rates) / (rms(math_rates) + 1e-20))
+    logging.info("ME = %f", (sim_rates - math_rates).mean())
+    logging.info("RMSE = %f", rms(sim_rates - math_rates) / (rms(math_rates) + 1e-20))
     assert np.sum(math_rates > 0) > 0.5 * n, "At least 50% of neurons must fire"
     assert allclose(sim_rates, math_rates, atol=1, rtol=0.02)
 

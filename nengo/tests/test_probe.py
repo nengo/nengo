@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 import pytest
 
@@ -55,7 +57,7 @@ def test_dts(Simulator, seed, rng):
         )
 
 
-def test_large(Simulator, seed, logger, allclose):
+def test_large(Simulator, seed, allclose):
     """Test with a lot of big probes. Can also be used for speed."""
 
     n = 10
@@ -75,7 +77,7 @@ def test_large(Simulator, seed, logger, allclose):
 
         with Timer() as timer:
             sim.run(simtime)
-    logger.info(
+    logging.info(
         "Ran %d probes for %f sec simtime in %0.3f sec", n, simtime, timer.duration
     )
 

@@ -51,7 +51,7 @@ def optimize(model, dg, max_passes=None):
         specifying the operator dependency graph of the model.
     """
 
-    logger.info("Optimizing model...")
+    logger.debug("Optimizing model...")
 
     # We try first to merge operators with views only as these have a fixed
     # order for the memory alignment whereas operators without views could
@@ -87,7 +87,7 @@ def optimize(model, dg, max_passes=None):
             single_pass(only_merge_ops_with_view)
 
         after = len(single_pass.dg.forward)
-        logger.info(
+        logger.debug(
             "Pass %i [%s]: Reduced %i to %i operators in %fs.",
             i,
             "views" if only_merge_ops_with_view else "non-views",
@@ -107,7 +107,7 @@ def optimize(model, dg, max_passes=None):
         threshold = 0.01
         scaled_rate = threshold * mean_reduction_rate
         if 0.0 < last_reduction_rate < scaled_rate:  # pragma: no cover
-            logger.info(
+            logger.debug(
                 "Operator reduction rate fell below {} mean reduction rate. "
                 "Stopping optimizer.".format(threshold)
             )

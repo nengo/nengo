@@ -7,7 +7,6 @@ dist
 *~
 *.bak
 *.swp
-nengo.simulator.logs/
 nengo.simulator.analytics/
 plots/
 log.txt

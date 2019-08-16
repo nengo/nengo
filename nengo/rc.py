@@ -146,7 +146,7 @@ class _RC(configparser.SafeConfigParser):
                 filename = fp.name
             else:
                 filename = "<???>"
-        logger.info("Reading configuration from {}".format(filename))
+        logger.debug("Reading configuration from {}".format(filename))
         try:
             return configparser.SafeConfigParser.read_file(self, fp, filename)
         except AttributeError:
@@ -154,7 +154,7 @@ class _RC(configparser.SafeConfigParser):
             return configparser.SafeConfigParser.readfp(self, fp, filename)
 
     def read(self, filenames):
-        logger.info("Reading configuration files {}".format(filenames))
+        logger.debug("Reading configuration files {}".format(filenames))
         return configparser.SafeConfigParser.read(self, filenames)
 
     def reload_rc(self, filenames=None):

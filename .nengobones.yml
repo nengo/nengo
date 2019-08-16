@@ -68,7 +68,6 @@ setup_cfg:
   pytest:
     norecursedirs:
       - "*.analytics"
-      - "*.logs"
       - "plots"
       - "nengo/_vendor"
     filterwarnings:

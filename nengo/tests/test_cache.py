@@ -1,4 +1,5 @@
 import errno
+import logging
 import multiprocessing
 import os
 import sys
@@ -574,7 +575,7 @@ with nengo.Simulator(model):
 
     @pytest.mark.compare
     @pytest.mark.parametrize("varying_param", ["D", "N", "M"])
-    def test_compare_cache_benchmark(self, varying_param, analytics_data, plt, logger):
+    def test_compare_cache_benchmark(self, varying_param, analytics_data, plt):
         stats = pytest.importorskip("scipy.stats")
 
         d1, d2 = analytics_data
@@ -583,7 +584,7 @@ with nengo.Simulator(model):
         ), "Cannot compare different parametrizations"
         axis_label = self.param_to_axis_label[varying_param]
 
-        logger.info("Cache, varying %s:", axis_label)
+        logging.info("Cache, varying %s:", axis_label)
         for label, key in zip(self.labels, self.keys):
             clean_d1 = [reject_outliers(d) for d in d1[key]]
             clean_d2 = [reject_outliers(d) for d in d2[key]]
@@ -597,13 +598,13 @@ with nengo.Simulator(model):
             )
             overall_p = 1.0 - np.prod(1.0 - p_values)
             if overall_p < 0.05:
-                logger.info(
+                logging.info(
                     "  %s: Significant change (p <= %.3f). See plots.",
                     label,
                     np.ceil(overall_p * 1000.0) / 1000.0,
                 )
             else:
-                logger.info("  %s: No significant change.", label)
+                logging.info("  %s: No significant change.", label)
 
             plt.plot(d1[varying_param], diff, label=label)
 
@@ -641,23 +642,23 @@ cache = nengo.cache.DecoderCache()
 
     @pytest.mark.slow
     @pytest.mark.noassertions
-    def test_cache_shrink_benchmark(self, tmpdir, analytics, logger):
+    def test_cache_shrink_benchmark(self, tmpdir, analytics):
         times = timeit.repeat(
             stmt=self.stmt,
             setup=self.setup.format(tmpdir=str(tmpdir)),
             number=1,
             repeat=self.n_trials,
         )
-        logger.info("Shrink took a minimum of %f seconds.", np.min(times))
-        logger.info("Shrink took a %f seconds on average.", np.mean(times))
-        logger.info(
+        logging.info("Shrink took a minimum of %f seconds.", np.min(times))
+        logging.info("Shrink took a %f seconds on average.", np.mean(times))
+        logging.info(
             "Shrink took a %f seconds on average with outliers rejected.",
             np.mean(reject_outliers(times)),
         )
         analytics.add_data("times", times)
 
     @pytest.mark.compare
-    def test_compare_cache_shrink_benchmark(self, analytics_data, plt, logger):
+    def test_compare_cache_shrink_benchmark(self, analytics_data, plt):
         stats = pytest.importorskip("scipy.stats")
 
         d1, d2 = (x["times"] for x in analytics_data)
@@ -670,14 +671,14 @@ cache = nengo.cache.DecoderCache()
             2.0 * stats.mannwhitneyu(clean_d1, clean_d2, alternative="two-sided")[1]
         )
         if p_value < 0.05:
-            logger.info(
+            logging.info(
                 "Significant change of %d seconds (p <= %.3f).",
                 diff,
                 np.ceil(p_value * 1000.0) / 1000.0,
             )
         else:
-            logger.info("No significant change (%d).", diff)
-        logger.info("Speed up: %s", np.median(clean_d1) / np.median(clean_d2))
+            logging.info("No significant change (%d).", diff)
+        logging.info("Speed up: %s", np.median(clean_d1) / np.median(clean_d2))
 
         plt.scatter(np.ones_like(d1), d1, c="b")
         plt.scatter(2 * np.ones_like(d2), d2, c="g")

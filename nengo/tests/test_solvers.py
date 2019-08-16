@@ -3,6 +3,8 @@ TODO:
   - add a test to test each solver many times on different populations,
     and record the error.
 """
+import logging
+
 import numpy as np
 import pytest
 
@@ -200,23 +202,27 @@ def test_weight_solver(Solver, rng, allclose):
     assert allclose(W1, W2)
 
 
-def test_scipy_solvers(rng, logger, allclose):
+def test_scipy_solvers(rng, allclose):
     pytest.importorskip("scipy", minversion="0.11")  # version for lsmr
 
     A, b = get_system(1000, 100, 2, rng=rng)
     sigma = 0.1 * A.max()
 
     x0, i0 = lstsq.Cholesky()(A, b, sigma)
-    logger.info("Cholesky rmse=%0.3f" % (i0["rmses"].mean(),))
+    logging.info("Cholesky rmse=%0.3f", i0["rmses"].mean())
     x1, i1 = lstsq.ConjgradScipy()(A, b, sigma)
-    logger.info(
-        "ConjgradScipy rmse=%0.3f, itns=%0.1f (%0.1f)"
-        % (i1["rmses"].mean(), i1["iterations"].mean(), i1["iterations"].std())
+    logging.info(
+        "ConjgradScipy rmse=%0.3f, itns=%0.1f (%0.1f)",
+        i1["rmses"].mean(),
+        i1["iterations"].mean(),
+        i1["iterations"].std(),
     )
     x2, i2 = lstsq.LSMRScipy()(A, b, sigma)
-    logger.info(
-        "LSMRScipy rmse=%0.3f, itns=%0.1f (%0.1f)"
-        % (i2["rmses"].mean(), i2["iterations"].mean(), i2["iterations"].std())
+    logging.info(
+        "LSMRScipy rmse=%0.3f, itns=%0.1f (%0.1f)",
+        i2["rmses"].mean(),
+        i2["iterations"].mean(),
+        i2["iterations"].std(),
     )
 
     assert allclose(x0, x1, atol=2e-5, rtol=1e-3)
@@ -271,7 +277,7 @@ def test_nnls_weights(Simulator, Solver, seed):
 
 
 @pytest.mark.slow
-def test_subsolvers_L2(rng, logger, allclose):
+def test_subsolvers_L2(rng, allclose):
     pytest.importorskip("scipy", minversion="0.11")  # version for lsmr
 
     ref_solver = lstsq.Cholesky()
@@ -292,12 +298,12 @@ def test_subsolvers_L2(rng, logger, allclose):
     for i, solver in enumerate(solvers):
         with Timer() as t:
             xs[i], info = solver(A, B, sigma)
-        logger.info("solver: %r" % solver)
-        logger.info("duration: %0.3f", t.duration)
-        logger.info(
+        logging.info("solver: %r", solver)
+        logging.info("duration: %0.3f", t.duration)
+        logging.info(
             "duration relative to reference solver: %0.2f", (t.duration / t0.duration)
         )
-        logger.info("info: %s", info)
+        logging.info("info: %s", info)
 
     for solver, x in zip(solvers, xs):
         assert allclose(x0, x, atol=1e-5, rtol=1e-3), "Solver %s" % solver.__name__
@@ -305,7 +311,7 @@ def test_subsolvers_L2(rng, logger, allclose):
 
 @pytest.mark.noassertions
 @pytest.mark.filterwarnings("ignore:Objective did not converge.")
-def test_subsolvers_L1(rng, logger):
+def test_subsolvers_L1(rng):
     pytest.importorskip("sklearn")
 
     A, B = get_system(m=2000, n=1000, d=10, rng=rng)
@@ -313,7 +319,7 @@ def test_subsolvers_L1(rng, logger):
     l1 = 1e-4
     with Timer() as t:
         LstsqL1(l1=l1, l2=0)(A, B, rng=rng)
-    logger.info("duration: %0.3f", t.duration)
+    logging.info("duration: %0.3f", t.duration)
 
 
 @pytest.mark.slow
@@ -510,7 +516,7 @@ def test_eval_points_static(plt, rng):
 
 @pytest.mark.slow
 @pytest.mark.noassertions
-def test_eval_points(Simulator, nl_nodirect, plt, seed, rng, logger):
+def test_eval_points(Simulator, nl_nodirect, plt, seed, rng):
     n = 100
     d = 5
     filter = 0.08
@@ -555,9 +561,9 @@ def test_eval_points(Simulator, nl_nodirect, plt, seed, rng, logger):
             tmask = (t > t0) & (t < t1)
 
             rmses[i, j] = rms(yt[tmask] - xt[tmask])
-            logger.info("trial %d", j)
-            logger.info("  n_points: %d", n_points)
-            logger.info("  duration: %0.3f s", timer.duration)
+            logging.info("trial %d", j)
+            logging.info("  n_points: %d", n_points)
+            logging.info("  duration: %0.3f s", timer.duration)
 
     # subtract out mean for each model
     rmses_norm = rmses - rmses.mean(0, keepdims=True)

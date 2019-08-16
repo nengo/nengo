@@ -6,7 +6,6 @@
 
 """
 
-import logging
 import time
 
 import numpy as np
@@ -18,8 +17,6 @@ from nengo.utils.least_squares_solvers import (
     rmses,
     LeastSquaresSolverParam,
 )
-
-logger = logging.getLogger(__name__)
 
 
 class Solver(FrozenObject):

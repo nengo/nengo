@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 import pytest
 
@@ -114,7 +116,7 @@ def test_graphviz_moved():
         generate_graphviz()
 
 
-def test_remove_passthrough(logger):
+def test_remove_passthrough():
     """Test scanning through a model and removing Nodes with output=None"""
 
     model = nengo.Network()
@@ -125,7 +127,7 @@ def test_remove_passthrough(logger):
         b = nengo.networks.EnsembleArray(50, D, label="b")
 
         def printout(t, x):
-            logger.info("%s, %s", t, x)
+            logging.info("%s, %s", t, x)
 
         output = nengo.Node(printout, size_in=D, label="output")
 
@@ -141,7 +143,7 @@ def test_remove_passthrough(logger):
     assert len(conns) == 21
 
 
-def test_remove_passthrough_bg(logger):
+def test_remove_passthrough_bg():
     """Test scanning through a model and removing Nodes with output=None"""
 
     model = nengo.Network()
@@ -150,7 +152,7 @@ def test_remove_passthrough_bg(logger):
         input = nengo.Node([1] * D, label="input")
 
         def printout(t, x):
-            logger.info("%s, %s", t, x)
+            logging.info("%s, %s", t, x)
 
         output = nengo.Node(printout, size_in=D, label="output")
         bg = nengo.networks.BasalGanglia(D, 20)

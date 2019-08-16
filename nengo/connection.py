@@ -1,5 +1,3 @@
-import logging
-
 import numpy as np
 
 from nengo.base import NengoObject, NengoObjectParam, ObjView
@@ -24,8 +22,6 @@ from nengo.transforms import Dense, Transform
 from nengo.utils.functions import function_name
 from nengo.utils.numpy import is_array_like, is_iterable
 from nengo.utils.stdlib import checked_call
-
-logger = logging.getLogger(__name__)
 
 
 class PrePostParam(NengoObjectParam):

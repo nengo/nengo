@@ -1,3 +1,5 @@
+import logging
+
 import pytest
 
 import nengo
@@ -6,7 +8,7 @@ from nengo.builder.ensemble import BuiltEnsemble
 from nengo.exceptions import ObsoleteError
 
 
-def test_seeding(RefSimulator, logger, allclose):
+def test_seeding(RefSimulator, allclose):
     """Test that setting the model seed fixes everything"""
 
     #  TODO: this really just checks random parameters in ensembles.
@@ -34,8 +36,8 @@ def test_seeding(RefSimulator, logger, allclose):
         for attr in attrs:
             check = allclose(getattr(obj1, attr), getattr(obj2, attr)) == equal
             if not check:
-                logger.info("%s: %s", attr, getattr(obj1, attr))
-                logger.info("%s: %s", attr, getattr(obj2, attr))
+                logging.info("%s: %s", attr, getattr(obj1, attr))
+                logging.info("%s: %s", attr, getattr(obj2, attr))
             assert check
 
     ens_attrs = BuiltEnsemble._fields
