@@ -77,28 +77,6 @@ def test_logger_norecord():
         logger_obj.get_filepath(ext="txt")
 
 
-def test_mock_iter(plt):
-    fig = plt.figure()
-    for i, ax in enumerate(fig.axes):
-        assert False, "Mock object iterating forever"
-    plt.saveas = None
-
-
-@pytest.mark.parametrize("a", [0, 1])
-@pytest.mark.parametrize("b", [2, 3])
-def test_double_parametrize(a, b, plt):
-    assert plt.saveas == "{}.pdf".format(
-        "+".join(
-            [
-                "utils.test_testing.test_double_parametrize",
-                "b={}".format(b),
-                "a={}".format(a),
-            ]
-        )
-    )
-    plt.saveas = None  # Skip saving empty plot
-
-
 def add_close_noise(x, atol, rtol, rng):
     scale = rng.uniform(-rtol, rtol, size=x.shape)
     offset = rng.uniform(-atol, atol, size=x.shape)

@@ -42,6 +42,7 @@ setup_py:
     - matplotlib>=1.4
     - pytest>=3.6
     - pytest-allclose
+    - pytest-plt
     - pytest-rng
   classifiers:
     - "Development Status :: 5 - Production/Stable"
@@ -68,7 +69,7 @@ setup_cfg:
     norecursedirs:
       - "*.analytics"
       - "*.logs"
-      - "*.plots"
+      - "plots"
       - "nengo/_vendor"
     filterwarnings:
       - "ignore::ImportWarning"
@@ -91,6 +92,9 @@ setup_cfg:
         Mark a test as running a small benchmark.
       compare:
         Mark a test as comparing previous test runs.
+    plt_filename_drop:
+      - ^nengo\.
+      - tests\.
   pylint:
     ignore:
       - _vendor

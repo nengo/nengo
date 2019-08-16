@@ -44,6 +44,7 @@ tests_req = [
     "matplotlib>=1.4",
     "pytest>=3.6",
     "pytest-allclose",
+    "pytest-plt",
     "pytest-rng",
 ]
 

@@ -9,7 +9,7 @@ dist
 *.swp
 nengo.simulator.logs/
 nengo.simulator.analytics/
-nengo.simulator.plots/
+plots/
 log.txt
 .ipynb_checkpoints/
 .cache

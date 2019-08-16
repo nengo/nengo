@@ -12,7 +12,6 @@ import shlex
 import sys
 import warnings
 
-import matplotlib
 import pytest
 from pytest_allclose import report_rmses
 
@@ -26,7 +25,7 @@ from nengo.neurons import (
     SpikingRectifiedLinear,
 )
 from nengo.rc import rc
-from nengo.utils.testing import Analytics, Logger, Plotter
+from nengo.utils.testing import Analytics, Logger
 
 
 class TestConfig:
@@ -67,7 +66,6 @@ class TestConfig:
 
 
 def pytest_configure(config):
-    matplotlib.use("agg")
     warnings.simplefilter("always")
 
     if config.getoption("memory") and resource is None:  # pragma: no cover
@@ -164,29 +162,6 @@ def parametrize_function_name(request, function_name):
                 value = value.__name__
             suffixes.append("{}={}".format(name, value))
     return "+".join([function_name] + suffixes)
-
-
-@pytest.fixture
-def plt(request):
-    """A pyplot-compatible plotting interface.
-
-    Please use this if your test creates plots.
-
-    This will keep saved plots organized in a simulator-specific folder,
-    with an automatically generated name. savefig() and close() will
-    automatically be called when the test function completes.
-
-    If you need to override the default filename, set `plt.saveas` to
-    the desired filename.
-    """
-    dirname = recorder_dirname(request, "plots")
-    plotter = Plotter(
-        dirname,
-        request.module.__name__,
-        parametrize_function_name(request, request.function.__name__),
-    )
-    request.addfinalizer(lambda: plotter.__exit__(None, None, None))
-    return plotter.__enter__()
 
 
 @pytest.fixture

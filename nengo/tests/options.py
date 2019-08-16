@@ -57,13 +57,6 @@ def pytest_addoption(parser):
         help="Neuron types under test (comma separated).",
     )
     parser.addoption(
-        "--plots",
-        nargs="?",
-        default=False,
-        const=True,
-        help="Save plots (can optionally specify a directory for plots).",
-    )
-    parser.addoption(
         "--analytics",
         nargs="?",
         default=False,

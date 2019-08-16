@@ -55,6 +55,8 @@ Release History
   (`#1563 <https://github.com/nengo/nengo/pull/1563>`__)
 - Nengo tests now use the ``rng`` and ``seed`` fixtures from ``pytest-rng``.
   (`#1566 <https://github.com/nengo/nengo/pull/1566>`__)
+- Nengo tests now use the ``plt``fixture from ``pytest-plt``.
+  (`#1566 <https://github.com/nengo/nengo/pull/1566>`__)
 
 **Changed**
 
@@ -185,6 +187,9 @@ Release History
   (`#1398 <https://github.com/nengo/nengo/pull/1398>`_)
 - The internal ``rng`` and ``seed`` fixtures have been removed. Use the
   external `pytest-rng <https://www.nengo.ai/pytest-rng/>`__ package instead.
+  (`#1566 <https://github.com/nengo/nengo/pull/1566>`__)
+- The internal ``plt`` fixture has been removed. Use the
+  external `pytest-plt <https://www.nengo.ai/pytest-plt/>`__ package instead.
   (`#1566 <https://github.com/nengo/nengo/pull/1566>`__)
 
 **Fixed**

@@ -82,40 +82,6 @@ class Recorder:
         raise NotImplementedError()
 
 
-class Plotter(Recorder):
-    def __enter__(self):
-        if self.record:
-            import matplotlib.pyplot as plt
-
-            self.plt = plt
-        else:
-            self.plt = Mock()
-        self.plt.saveas = self.get_filename(ext="pdf")
-        return self.plt
-
-    def __exit__(self, type, value, traceback):
-        if self.record:
-            if self.plt.saveas is None:
-                del self.plt.saveas
-                self.plt.close("all")
-                return
-            # Save it again in case the user changed it
-            self.filename = self.plt.saveas
-            del self.plt.saveas
-
-            if len(self.plt.gcf().get_axes()) > 0:
-                # tight_layout errors if no axes are present
-                self.plt.tight_layout()
-
-            savefig_kw = {"bbox_inches": "tight"}
-            if hasattr(self.plt, "bbox_extra_artists"):
-                savefig_kw["bbox_extra_artists"] = self.plt.bbox_extra_artists
-                del self.plt.bbox_extra_artists
-
-            self.plt.savefig(os.path.join(self.dirname, self.filename), **savefig_kw)
-            self.plt.close("all")
-
-
 class Analytics(Recorder):
     DOC_KEY = "documentation"
 
