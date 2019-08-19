@@ -57,18 +57,6 @@ def pytest_addoption(parser):
         help="Neuron types under test (comma separated).",
     )
     parser.addoption(
-        "--analytics",
-        nargs="?",
-        default=False,
-        const=True,
-        help="Save analytics (can optionally specify a directory for data).",
-    )
-    parser.addoption(
-        "--compare",
-        nargs=2,
-        help="Compare analytics results (specify directories to compare).",
-    )
-    parser.addoption(
         "--noexamples", action="store_true", default=False, help="Do not run examples"
     )
     parser.addoption(

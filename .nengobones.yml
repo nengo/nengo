@@ -67,7 +67,6 @@ setup_cfg:
       - nengo/_vendor
   pytest:
     norecursedirs:
-      - "*.analytics"
       - "plots"
       - "nengo/_vendor"
     filterwarnings:
@@ -84,10 +83,6 @@ setup_cfg:
         Mark a test as an example.
       slow:
         Mark a test as slow to skip it per default.
-      benchmark:
-        Mark a test as running a small benchmark.
-      compare:
-        Mark a test as comparing previous test runs.
     plt_filename_drop:
       - ^nengo\.
       - tests\.

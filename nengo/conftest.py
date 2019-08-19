@@ -1,8 +1,6 @@
 from fnmatch import fnmatch
-import inspect
 import importlib
 import os
-import re
 
 try:
     import resource
@@ -25,7 +23,6 @@ from nengo.neurons import (
     SpikingRectifiedLinear,
 )
 from nengo.rc import rc
-from nengo.utils.testing import Analytics
 
 
 class TestConfig:
@@ -49,7 +46,6 @@ class TestConfig:
         Sigmoid,
         SpikingRectifiedLinear,
     ]
-    compare_requested = False
     run_unsupported = False
 
     @classmethod
@@ -81,7 +77,6 @@ def pytest_configure(config):
         ntypes = config.getoption("neurons")[0].split(",")
         TestConfig.neuron_types = [load_class(n) for n in ntypes]
 
-    TestConfig.compare_requested = config.getvalue("compare") is not None
     TestConfig.run_unsupported = config.getvalue("unsupported")
 
 
@@ -110,91 +105,6 @@ def RefSimulator(request):
     reference simulator; this allows them to test easily.
     """
     return TestConfig.RefSimulator
-
-
-def recorder_dirname(request, name):
-    """Returns the directory to put test artifacts in.
-
-    Test artifacts produced by Nengo include plots and analytics.
-
-    Note that the return value might be None, which indicates that the
-    artifacts should not be saved.
-    """
-    record = request.config.getvalue(name)
-    if isinstance(record, str):
-        return record
-    elif not record:
-        return None
-
-    simulator, nl = TestConfig.RefSimulator, None
-    if "Simulator" in request.fixturenames:
-        simulator = request.getfixturevalue("Simulator")
-    # 'nl' stands for the non-linearity used in the neuron equation
-    if "nl" in request.fixturenames:
-        nl = request.getfixturevalue("nl")
-    elif "nl_nodirect" in request.fixturenames:
-        nl = request.getfixturevalue("nl_nodirect")
-
-    dirname = "%s.%s" % (simulator.__module__, name)
-    if nl is not None:
-        dirname = os.path.join(dirname, nl.__name__)
-    return dirname
-
-
-def parametrize_function_name(request, function_name):
-    """Creates a unique name for a test function.
-
-    The unique name accounts for values passed through
-    ``pytest.mark.parametrize``.
-
-    This function is used when naming plots saved through the ``plt`` fixture.
-    """
-    suffixes = []
-    if "parametrize" in request.keywords:
-        argnames = []
-        for marker in request.keywords.node.iter_markers("parametrize"):
-            argnames.extend(
-                [x.strip() for names in marker.args[::2] for x in names.split(",")]
-            )
-        for name in argnames:
-            value = request.getfixturevalue(name)
-            if inspect.isclass(value):
-                value = value.__name__
-            suffixes.append("{}={}".format(name, value))
-    return "+".join([function_name] + suffixes)
-
-
-@pytest.fixture
-def analytics(request):
-    """An object to store data for analytics.
-
-    Please use this if you're concerned that accuracy or speed may regress.
-
-    This will keep saved data organized in a simulator-specific folder,
-    with an automatically generated name. Raw data (for later processing)
-    can be saved with ``analytics.add_raw_data``; these will be saved in
-    separate compressed ``.npz`` files. Summary data can be saved with
-    ``analytics.add_summary_data``; these will be saved
-    in a single ``.csv`` file.
-    """
-    dirname = recorder_dirname(request, "analytics")
-    analytics = Analytics(
-        dirname,
-        request.module.__name__,
-        parametrize_function_name(request, request.function.__name__),
-    )
-    request.addfinalizer(lambda: analytics.__exit__(None, None, None))
-    return analytics.__enter__()
-
-
-@pytest.fixture
-def analytics_data(request):
-    paths = request.config.getvalue("compare")
-    function_name = parametrize_function_name(
-        request,
-        re.sub("^test_[a-zA-Z0-9]*_", "test_", request.function.__name__, count=1),
-    )
-    return [Analytics.load(p, request.module.__name__, function_name) for p in paths]
 
 
 def get_item_name(item):
@@ -243,10 +153,6 @@ def pytest_collection_modifyitems(session, config, items):
         for item in items:
             if item.get_closest_marker("slow"):
                 item.add_marker(skip_slow)
-    if not TestConfig.compare_requested:
-        deselect_by_condition(
-            lambda item: item.get_closest_marker("compare"), items, config
-        )
     if not config.getvalue("spa"):
         deselect_by_condition(
             lambda item: "nengo/spa/" in get_item_name(item), items, config
@@ -291,10 +197,6 @@ def pytest_report_collectionfinish(config, startdir, items):
         deselect_reasons.append(" example tests deselected (--noexamples passed)")
     if not config.getvalue("slow"):
         deselect_reasons.append(" slow tests skipped (pass --slow to run them)")
-    if not TestConfig.compare_requested:
-        deselect_reasons.append(
-            " compare tests deselected (pass --compare to run them)."
-        )
     if not config.getvalue("spa"):
         deselect_reasons.append(" spa tests deselected (pass --spa to run them)")
 
@@ -312,14 +214,6 @@ def pytest_report_collectionfinish(config, startdir, items):
             deselect_reasons.append(
                 " backend tests for reference simulator deselected "
                 "because only --simulator was passed"
-            )
-
-    for option in ("analytics", "plots"):
-        if not config.getvalue(option):
-            deselect_reasons.append(
-                " {option} not requested (pass --{option} to generate)".format(
-                    option=option
-                )
             )
 
     return deselect_reasons
@@ -354,17 +248,6 @@ def pytest_runtest_setup(item):
                 pytest.skip(reason)
 
 
-def report_compares(terminalreporter):
-    reports = terminalreporter.getreports("passed")
-    do_compare = terminalreporter.config.getvalue("compare") is not None
-    if reports and do_compare:  # pragma: no cover
-        terminalreporter.write_sep("=", "PASSED")
-        for rep in reports:
-            for name, content in rep.sections:
-                terminalreporter.writer.sep("-", name)
-                terminalreporter.writer.line(content)
-
-
 def report_memory_usage(terminalreporter):
     # Calculate memory usage; details at
     # http://fa.bianp.net/blog/2013/different-ways-to-get-memory-consumption-or-lessons-learned-from-memory_profiler/  # noqa, pylint: disable=line-too-long
@@ -380,7 +263,6 @@ def report_memory_usage(terminalreporter):
 
 
 def pytest_terminal_summary(terminalreporter):
-    report_compares(terminalreporter)
     report_rmses(terminalreporter)
     if resource and terminalreporter.config.option.memory:
         report_memory_usage(terminalreporter)

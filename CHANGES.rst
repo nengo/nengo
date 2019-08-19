@@ -197,6 +197,10 @@ Release History
 - Removed ``nengo.log`` and ``nengo.utils.logging``. Use the standard Python
   and pytest logging modules instead.
   (`#1566 <https://github.com/nengo/nengo/pull/1566>`__)
+- The internal ``analytics`` and ``analytics_data`` fixtures have been removed.
+  Use pytest's `cache fixture <https://docs.pytest.org/en/latest/cache.html>`__
+  instead.
+  (`#1566 <https://github.com/nengo/nengo/pull/1566>`__)
 
 **Fixed**
 
