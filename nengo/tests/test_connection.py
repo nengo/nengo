@@ -980,7 +980,7 @@ def test_function_points(Simulator, seed, rng, plt, allclose):
     )
 
 
-def test_connectionfunctionparam_array(RefSimulator, seed):
+def test_connectionfunctionparam_array(Simulator, seed):
     points_1d = np.zeros((100, 1))
     points_2d = np.zeros((100, 2))
     points_v = np.zeros((100,))
@@ -1011,7 +1011,7 @@ def test_connectionfunctionparam_array(RefSimulator, seed):
             a, b, eval_points=points_1d, function=points_2d, transform=np.ones((1, 2))
         )
 
-    with RefSimulator(model):
+    with Simulator(model):
         pass
 
 

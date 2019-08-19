@@ -8,7 +8,7 @@ from nengo.builder.ensemble import BuiltEnsemble
 from nengo.exceptions import ObsoleteError
 
 
-def test_seeding(RefSimulator, allclose):
+def test_seeding(Simulator, allclose):
     """Test that setting the model seed fixes everything"""
 
     #  TODO: this really just checks random parameters in ensembles.
@@ -24,12 +24,12 @@ def test_seeding(RefSimulator, allclose):
         C = nengo.Connection(A, B, function=lambda x: x ** 2)
 
     m.seed = 872
-    with RefSimulator(m) as sim:
+    with Simulator(m) as sim:
         m1 = sim.data
-    with RefSimulator(m) as sim:
+    with Simulator(m) as sim:
         m2 = sim.data
     m.seed = 873
-    with RefSimulator(m) as sim:
+    with Simulator(m) as sim:
         m3 = sim.data
 
     def compare_objs(obj1, obj2, attrs, equal=True):
@@ -121,11 +121,11 @@ def test_seed_override(seed, allclose):
     assert allclose(model.params[a].gain, model.params[b].gain)
 
 
-def test_obsolete_params(RefSimulator):
+def test_obsolete_params(Simulator):
     with nengo.Network() as net:
         e = nengo.Ensemble(10, 1)
         c = nengo.Connection(e, e)
-    with RefSimulator(net) as sim:
+    with Simulator(net) as sim:
         pass
     with pytest.raises(ObsoleteError):
         sim.data[c].decoders

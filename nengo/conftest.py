@@ -37,7 +37,6 @@ class TestConfig:
     """
 
     Simulator = nengo.Simulator
-    RefSimulator = nengo.Simulator
     neuron_types = [
         Direct,
         LIF,
@@ -52,14 +51,6 @@ class TestConfig:
     def is_sim_overridden(cls):
         return cls.Simulator is not nengo.Simulator
 
-    @classmethod
-    def is_refsim_overridden(cls):
-        return cls.RefSimulator is not nengo.Simulator
-
-    @classmethod
-    def is_skipping_frontend_tests(cls):
-        return cls.is_sim_overridden() or cls.is_refsim_overridden()
-
 
 def pytest_configure(config):
     warnings.simplefilter("always")
@@ -69,9 +60,6 @@ def pytest_configure(config):
 
     if config.getoption("simulator"):
         TestConfig.Simulator = load_class(config.getoption("simulator")[0])
-    if config.getoption("ref_simulator"):
-        refsim = config.getoption("ref_simulator")[0]
-        TestConfig.RefSimulator = load_class(refsim)
 
     if config.getoption("neurons"):
         ntypes = config.getoption("neurons")[0].split(",")
@@ -90,21 +78,9 @@ def load_class(fully_qualified_name):
 def Simulator(request):
     """The Simulator class being tested.
 
-    Please use this, and not ``nengo.Simulator`` directly. If the test is
-    reference simulator specific, then use ``RefSimulator`` below.
+    Please use this, and not ``nengo.Simulator`` directly.
     """
     return TestConfig.Simulator
-
-
-@pytest.fixture(scope="session")
-def RefSimulator(request):
-    """The reference simulator.
-
-    Please use this if the test is reference simulator specific.
-    Other simulators may choose to implement the same API as the
-    reference simulator; this allows them to test easily.
-    """
-    return TestConfig.RefSimulator
 
 
 def get_item_name(item):
@@ -159,21 +135,8 @@ def pytest_collection_modifyitems(session, config, items):
         )
 
     uses_sim = lambda item: "Simulator" in item.fixturenames
-    uses_refsim = lambda item: "RefSimulator" in item.fixturenames
-    if TestConfig.is_skipping_frontend_tests():
-        deselect_by_condition(
-            lambda item: not (uses_sim(item) or uses_refsim(item)), items, config
-        )
-        deselect_by_condition(
-            lambda item: uses_refsim(item) and not TestConfig.is_refsim_overridden(),
-            items,
-            config,
-        )
-        deselect_by_condition(
-            lambda item: uses_sim(item) and not TestConfig.is_sim_overridden(),
-            items,
-            config,
-        )
+    if TestConfig.is_sim_overridden():
+        deselect_by_condition(lambda item: not uses_sim(item), items, config)
 
 
 def deselect_by_condition(condition, items, config):
@@ -200,21 +163,10 @@ def pytest_report_collectionfinish(config, startdir, items):
     if not config.getvalue("spa"):
         deselect_reasons.append(" spa tests deselected (pass --spa to run them)")
 
-    if TestConfig.is_skipping_frontend_tests():
+    if TestConfig.is_sim_overridden():
         deselect_reasons.append(
-            " frontend tests deselected because --simulator or "
-            "--ref-simulator was passed"
+            " frontend tests deselected because --simulator was passed"
         )
-        if not TestConfig.is_refsim_overridden():
-            deselect_reasons.append(
-                " backend tests for non-reference simulator deselected "
-                "because only --ref-simulator was passed"
-            )
-        if not TestConfig.is_sim_overridden():
-            deselect_reasons.append(
-                " backend tests for reference simulator deselected "
-                "because only --simulator was passed"
-            )
 
     return deselect_reasons
 

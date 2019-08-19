@@ -55,7 +55,7 @@ def test_activate_direct_mode():
         (nengo.Voja(), False),
     ),
 )
-def test_activate_direct_mode_learning(RefSimulator, learning_rule, weights):
+def test_activate_direct_mode_learning(Simulator, learning_rule, weights):
     with nengo.Network() as model:
         pre = nengo.Ensemble(10, 1)
         post = nengo.Ensemble(10, 1)
@@ -66,5 +66,5 @@ def test_activate_direct_mode_learning(RefSimulator, learning_rule, weights):
 
     activate_direct_mode(model)
 
-    with RefSimulator(model) as sim:
+    with Simulator(model) as sim:
         sim.run(0.01)

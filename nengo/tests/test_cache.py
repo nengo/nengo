@@ -375,7 +375,7 @@ def test_fails_for_lambda_expression():
         Fingerprint(lambda x: x)
 
 
-def test_cache_works(tmpdir, RefSimulator, seed):
+def test_cache_works(tmpdir, Simulator, seed):
     cache_dir = str(tmpdir)
 
     model = nengo.Network(seed=seed)
@@ -383,7 +383,7 @@ def test_cache_works(tmpdir, RefSimulator, seed):
         nengo.Connection(nengo.Ensemble(10, 1), nengo.Ensemble(10, 1))
 
     assert len(os.listdir(cache_dir)) == 0
-    with RefSimulator(
+    with Simulator(
         model,
         model=nengo.builder.Model(
             dt=0.001, decoder_cache=DecoderCache(cache_dir=cache_dir)
@@ -392,7 +392,7 @@ def test_cache_works(tmpdir, RefSimulator, seed):
         assert len(os.listdir(cache_dir)) == 3  # index, index.lock, and *.nco
 
 
-def test_cache_not_used_without_seed(tmpdir, RefSimulator):
+def test_cache_not_used_without_seed(tmpdir, Simulator):
     cache_dir = str(tmpdir)
 
     model = nengo.Network()
@@ -400,7 +400,7 @@ def test_cache_not_used_without_seed(tmpdir, RefSimulator):
         nengo.Connection(nengo.Ensemble(10, 1), nengo.Ensemble(10, 1))
 
     assert len(os.listdir(cache_dir)) == 0
-    with RefSimulator(
+    with Simulator(
         model,
         model=nengo.builder.Model(
             dt=0.001, decoder_cache=DecoderCache(cache_dir=cache_dir)
@@ -409,12 +409,12 @@ def test_cache_not_used_without_seed(tmpdir, RefSimulator):
         assert len(os.listdir(cache_dir)) == 2  # index, index.lock
 
 
-def build_many_ensembles(cache_dir, RefSimulator):
+def build_many_ensembles(cache_dir, Simulator):
     with nengo.Network(seed=1) as model:
         for _ in range(100):
             nengo.Connection(nengo.Ensemble(10, 1), nengo.Ensemble(10, 1))
 
-    with RefSimulator(
+    with Simulator(
         model,
         model=nengo.builder.Model(
             dt=0.001, decoder_cache=DecoderCache(cache_dir=cache_dir)
@@ -424,13 +424,13 @@ def build_many_ensembles(cache_dir, RefSimulator):
 
 
 @pytest.mark.slow
-def test_cache_concurrency(tmpdir, RefSimulator):
+def test_cache_concurrency(tmpdir, Simulator):
     cache_dir = str(tmpdir)
 
     n_processes = 100
     processes = [
         multiprocessing.Process(
-            target=build_many_ensembles, args=(cache_dir, RefSimulator)
+            target=build_many_ensembles, args=(cache_dir, Simulator)
         )
         for _ in range(n_processes)
     ]

@@ -43,13 +43,6 @@ def pytest_addoption(parser):
         help="Specify simulator under test.",
     )
     parser.addoption(
-        "--ref-simulator",
-        nargs=1,
-        type=str,
-        default=None,
-        help="Specify reference simulator under test.",
-    )
-    parser.addoption(
         "--neurons",
         nargs=1,
         type=str,

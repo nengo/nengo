@@ -201,6 +201,9 @@ Release History
   Use pytest's `cache fixture <https://docs.pytest.org/en/latest/cache.html>`__
   instead.
   (`#1566 <https://github.com/nengo/nengo/pull/1566>`__)
+- The ``RefSimulator`` fixture has been removed. Use the ``Simulator`` fixture
+  and the ``nengo_test_unsupported`` configuration option instead.
+  (`#1566 <https://github.com/nengo/nengo/pull/1566>`__)
 
 **Fixed**
 

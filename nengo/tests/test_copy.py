@@ -167,8 +167,8 @@ def test_copies_structure():
     assert cp.probes[0].target in cp.ensembles
 
 
-def test_network_copy_builds(RefSimulator):
-    with RefSimulator(make_network().copy()):
+def test_network_copy_builds(Simulator):
+    with Simulator(make_network().copy()):
         pass
 
 
@@ -325,7 +325,7 @@ class TestFrozenObjectCopies:
         assert_is_deepcopy(pickle.loads(pickle.dumps(original)), original)
 
 
-def test_copy_spa(RefSimulator):
+def test_copy_spa(Simulator):
     with spa.SPA() as original:
         original.state = spa.State(16)
         original.cortex = spa.Cortical(spa.Actions("state = A"))
@@ -333,7 +333,7 @@ def test_copy_spa(RefSimulator):
     cp = original.copy()
 
     # Check that it still builds.
-    with RefSimulator(cp):
+    with Simulator(cp):
         pass
 
     # check vocab instance param is set
@@ -354,7 +354,7 @@ def test_copy_instance_params():
     assert cp.config[cp.ensembles[0]].test == 42
 
 
-def test_pickle_model(RefSimulator, seed, allclose):
+def test_pickle_model(Simulator, seed, allclose):
     t_run = 0.5
     simseed = seed + 1
 
@@ -368,7 +368,7 @@ def test_pickle_model(RefSimulator, seed, allclose):
         ap = nengo.Probe(a, synapse=0.01)
         bp = nengo.Probe(b, synapse=nengo.Alpha(0.01))
 
-    with RefSimulator(network, seed=simseed) as sim:
+    with Simulator(network, seed=simseed) as sim:
         sim.run(t_run)
         t0, u0, a0, b0 = sim.trange(), sim.data[up], sim.data[ap], sim.data[bp]
         pkls = pickle.dumps(dict(model=sim.model, up=up, ap=ap, bp=bp))
@@ -378,7 +378,7 @@ def test_pickle_model(RefSimulator, seed, allclose):
     pkl = pickle.loads(pkls)
     up, ap, bp = pkl["up"], pkl["ap"], pkl["bp"]
 
-    with RefSimulator(None, model=pkl["model"], seed=simseed) as sim:
+    with Simulator(None, model=pkl["model"], seed=simseed) as sim:
         sim.run(t_run)
         t1, u1, a1, b1 = sim.trange(), sim.data[up], sim.data[ap], sim.data[bp]
 
@@ -401,7 +401,7 @@ def test_copy_convolution():
 @pytest.mark.parametrize(
     "optimize, dt, progress_bar", [(True, 0.001, False), (False, 0.002, True)]
 )
-def test_pickle_sim(RefSimulator, seed, allclose, optimize, dt, progress_bar):
+def test_pickle_sim(Simulator, seed, allclose, optimize, dt, progress_bar):
     trun0 = 0.5
     trun1 = 0.5
     simseed = seed + 1
@@ -417,7 +417,7 @@ def test_pickle_sim(RefSimulator, seed, allclose, optimize, dt, progress_bar):
         ap = nengo.Probe(a, synapse=0.01)
         bp = nengo.Probe(b, synapse=nengo.Alpha(0.01))
 
-    with RefSimulator(
+    with Simulator(
         network, seed=simseed, dt=dt, optimize=optimize, progress_bar=progress
     ) as sim:
         sim.run(trun0)

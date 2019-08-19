@@ -15,10 +15,10 @@ from nengo.rc import rc
 from nengo.utils.progress import ProgressBar
 
 
-def test_steps(RefSimulator, allclose):
+def test_steps(Simulator, allclose):
     dt = 0.001
     m = nengo.Network(label="test_steps")
-    with RefSimulator(m, dt=dt) as sim:
+    with Simulator(m, dt=dt) as sim:
         assert sim.n_steps == 0
         assert allclose(sim.time, 0 * dt)
         sim.step()
@@ -33,7 +33,7 @@ def test_steps(RefSimulator, allclose):
 
 
 @pytest.mark.parametrize("bits", ["16", "32", "64"])
-def test_dtype(RefSimulator, request, seed, bits):
+def test_dtype(Simulator, request, seed, bits):
     # Ensure dtype is set back to default after the test, even if it fails
     request.addfinalizer(lambda: rc.set("precision", "bits", "64"))
 
@@ -47,7 +47,7 @@ def test_dtype(RefSimulator, request, seed, bits):
         p = nengo.Probe(a)
 
     rc.set("precision", "bits", bits)
-    with RefSimulator(model) as sim:
+    with Simulator(model) as sim:
         sim.step()
 
         for k, v in sim.signals.items():
@@ -90,13 +90,13 @@ def test_probedict():
     assert np.all(probedict.get("list") == np.asarray(raw.get("list")))
 
 
-def test_probedict_with_repeated_simulator_runs(RefSimulator):
+def test_probedict_with_repeated_simulator_runs(Simulator):
     with nengo.Network() as model:
         ens = nengo.Ensemble(10, 1)
         p = nengo.Probe(ens)
 
     dt = 0.001
-    with RefSimulator(model, dt=dt) as sim:
+    with Simulator(model, dt=dt) as sim:
         sim.run(0.01)
         assert len(sim.data[p]) == 10
         sim.run(0.01)
@@ -130,14 +130,14 @@ def test_close_context(Simulator):
         sim.reset()
 
 
-def test_close_steps(RefSimulator):
-    """For RefSimulator, closed simulators should fail for ``step``"""
+def test_close_steps(Simulator):
+    """For Simulator, closed simulators should fail for ``step``"""
     m = nengo.Network()
     with m:
         nengo.Ensemble(10, 1)
 
     # test close function
-    sim = RefSimulator(m)
+    sim = Simulator(m)
     sim.close()
     with pytest.raises(SimulatorClosed):
         sim.run_steps(1)
@@ -145,7 +145,7 @@ def test_close_steps(RefSimulator):
         sim.step()
 
     # test close context
-    with RefSimulator(m) as sim:
+    with Simulator(m) as sim:
         sim.run(0.01)
 
     with pytest.raises(SimulatorClosed):
@@ -169,7 +169,7 @@ def test_entry_point(Simulator):
     assert Simulator in sims
 
 
-def test_signal_init_values(RefSimulator):
+def test_signal_init_values(Simulator):
     """Tests that initial values are not overwritten."""
     zero = Signal([0])
     one = Signal([1])
@@ -180,7 +180,7 @@ def test_signal_init_values(RefSimulator):
     m = Model(dt=0)
     m.operators += [DotInc(zero, zero, five), DotInc(zeroarray, one, array)]
 
-    with RefSimulator(None, model=m) as sim:
+    with Simulator(None, model=m) as sim:
         assert sim.signals[zero][0] == 0
         assert sim.signals[one][0] == 1
         assert sim.signals[five][0] == 5.0
@@ -192,7 +192,7 @@ def test_signal_init_values(RefSimulator):
         assert np.all(np.array([1, 2, 3]) == sim.signals[array])
 
 
-def test_seeding(RefSimulator, allclose):
+def test_seeding(Simulator, allclose):
     """Test that setting the model seed fixes everything"""
 
     #  TODO: this really just checks random parameters in ensembles.
@@ -208,12 +208,12 @@ def test_seeding(RefSimulator, allclose):
         C = nengo.Connection(A, B, function=lambda x: x ** 2)
 
     m.seed = 872
-    with RefSimulator(m) as sim:
+    with Simulator(m) as sim:
         m1 = sim.data
-    with RefSimulator(m) as sim:
+    with Simulator(m) as sim:
         m2 = sim.data
     m.seed = 873
-    with RefSimulator(m) as sim:
+    with Simulator(m) as sim:
         m3 = sim.data
 
     def compare_objs(obj1, obj2, attrs, equal=True):
@@ -281,11 +281,11 @@ def test_hierarchical_seeding():
         assert same1seeds[same1obj] == same2seeds[same2obj]
 
 
-def test_obsolete_params(RefSimulator):
+def test_obsolete_params(Simulator):
     with nengo.Network() as net:
         e = nengo.Ensemble(10, 1)
         c = nengo.Connection(e, e)
-    with RefSimulator(net) as sim:
+    with Simulator(net) as sim:
         pass
     with pytest.raises(ObsoleteError):
         sim.data[c].decoders
@@ -327,7 +327,7 @@ def test_sim_seed_set_by_network_seed(Simulator, seed):
         assert sim.seed == sim_seed
 
 
-def test_simulator_progress_bars(RefSimulator):
+def test_simulator_progress_bars(Simulator):
     class ProgressBarInvariants(ProgressBar):
         def __init__(self):
             super().__init__()
@@ -357,7 +357,7 @@ def test_simulator_progress_bars(RefSimulator):
                 [nengo.Ensemble(10, 1) for i in range(3)]
 
     build_invariants = ProgressBarInvariants()
-    with RefSimulator(model, progress_bar=build_invariants) as sim:
+    with Simulator(model, progress_bar=build_invariants) as sim:
         run_invariants = ProgressBarInvariants()
         sim.run(0.01, progress_bar=run_invariants)
         assert run_invariants.n_steps == run_invariants.max_steps
