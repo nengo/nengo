@@ -36,7 +36,7 @@ class TestConfig:
     module modify these values accordingly.
     """
 
-    Simulator = nengo.Simulator
+    SimLoader = None
     neuron_types = [
         Direct,
         LIF,
@@ -49,7 +49,13 @@ class TestConfig:
 
     @classmethod
     def is_sim_overridden(cls):
-        return cls.Simulator is not nengo.Simulator
+        return cls.SimLoader is not None
+
+    @classmethod
+    def Simulator(cls, request):
+        if cls.SimLoader is None:
+            return nengo.Simulator
+        return cls.SimLoader(request)
 
 
 def pytest_configure(config):
@@ -59,8 +65,12 @@ def pytest_configure(config):
         raise ValueError("'--memory' option not supported on this platform")
 
     if config.getoption("simulator"):
-        TestConfig.Simulator = load_class(config.getoption("simulator")[0])
-
+        SimClass = load_class(config.getoption("simulator")[0])
+        TestConfig.SimLoader = lambda request: SimClass
+    # We do --simloader second so that it takes precedence over --simulator.
+    # Some backends might specify both for backwards compatibility reasons.
+    if config.getoption("simloader"):
+        TestConfig.SimLoader = load_class(config.getoption("simloader")[0])
     if config.getoption("neurons"):
         ntypes = config.getoption("neurons")[0].split(",")
         TestConfig.neuron_types = [load_class(n) for n in ntypes]
@@ -80,7 +90,7 @@ def Simulator(request):
 
     Please use this, and not ``nengo.Simulator`` directly.
     """
-    return TestConfig.Simulator
+    return TestConfig.Simulator(request)
 
 
 def get_item_name(item):

@@ -95,7 +95,7 @@ def test_pyargs(testdir):
         class MockSimulator:
             pass
 
-        nengo.conftest.TestConfig.Simulator = MockSimulator
+        nengo.conftest.TestConfig.SimLoader = lambda request: MockSimulator
         """
     )
 

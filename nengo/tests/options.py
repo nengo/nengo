@@ -40,7 +40,14 @@ def pytest_addoption(parser):
         nargs=1,
         type=str,
         default=None,
-        help="Specify simulator under test.",
+        help="Specify the simulator class to test.",
+    )
+    parser.addoption(
+        "--simloader",
+        nargs=1,
+        type=str,
+        default=None,
+        help="Specify a function that returns the simulator class to test.",
     )
     parser.addoption(
         "--neurons",
@@ -67,7 +74,7 @@ def pytest_addoption(parser):
     parser.addini(
         "nengo_test_unsupported",
         type="linelist",
-        help="List of unsupported unit tests with reason for " "exclusion",
+        help="List of unsupported unit tests with reason for exclusion",
     )
 
     group = parser.getgroup("terminal reporting", "reporting", after="general")

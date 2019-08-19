@@ -57,6 +57,10 @@ Release History
   (`#1566 <https://github.com/nengo/nengo/pull/1566>`__)
 - Nengo tests now use the ``plt``fixture from ``pytest-plt``.
   (`#1566 <https://github.com/nengo/nengo/pull/1566>`__)
+- Added a ``--simloader`` pytest option for specifying a callable that
+  takes a pytest ``request`` and returns a callable to be used
+  as ``Simulator`` in the Nengo test suite.
+  (`#1566 <https://github.com/nengo/nengo/pull/1566>`__)
 
 **Changed**
 
