@@ -117,7 +117,7 @@ def psd(values, dt=0.001):
 
 @pytest.mark.parametrize("rms", [0.5, 1, 100])
 def test_gaussian_whitenoise(Simulator, rms, seed, plt, allclose):
-    d = 500
+    d = 800
     process = WhiteNoise(Gaussian(0.0, rms), scale=False)
     with nengo.Network() as model:
         u = nengo.Node(process, size_out=d)

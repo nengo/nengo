@@ -131,8 +131,8 @@ def test_lif_min_voltage(Simulator, plt, min_voltage, seed):
     plt.plot(sim.trange(), sim.data[p_voltage])
     plt.ylabel("Voltage")
 
-    if min_voltage < -100:
-        assert np.min(sim.data[p_voltage]) < -100
+    if min_voltage < -10:
+        assert np.min(sim.data[p_voltage]) < -10
     else:
         assert np.min(sim.data[p_voltage]) == min_voltage
 
@@ -345,8 +345,8 @@ def test_dt_dependence(Simulator, nl_nodirect, plt, seed, allclose):
     with nengo.Network(seed=seed) as m:
         m.config[nengo.Ensemble].neuron_type = nl_nodirect()
         u = nengo.Node(input_signal, size_out=2)
-        pre = nengo.Ensemble(60, dimensions=2)
-        square = nengo.Ensemble(60, dimensions=2)
+        pre = nengo.Ensemble(80, dimensions=2)
+        square = nengo.Ensemble(80, dimensions=2)
         nengo.Connection(u, pre)
         nengo.Connection(pre, square, function=lambda x: x ** 2)
 

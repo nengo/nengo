@@ -242,13 +242,13 @@ def test_pes_synapse(Simulator, seed, pre_synapse, allclose):
 
 
 @pytest.mark.parametrize("weights", [False, True])
-def test_pes_recurrent_slice(Simulator, seed, weights):
+def test_pes_recurrent_slice(Simulator, seed, weights, allclose):
     """Test that PES works on recurrent connections from N to 1 dims."""
 
     with nengo.Network(seed=seed) as net:
-        err = nengo.Node(output=[-10])
+        err = nengo.Node(output=[-1])
         stim = nengo.Node(output=[0, 0])
-        post = nengo.Ensemble(20, 2)
+        post = nengo.Ensemble(50, 2, radius=2)
         nengo.Connection(stim, post)
 
         conn = nengo.Connection(
@@ -256,7 +256,7 @@ def test_pes_recurrent_slice(Simulator, seed, weights):
             post[1],
             function=lambda x: 0.0,
             solver=nengo.solvers.LstsqL2(weights=weights),
-            learning_rule_type=nengo.PES(),
+            learning_rule_type=nengo.PES(learning_rate=5e-4),
         )
 
         nengo.Connection(err, conn.learning_rule)
@@ -266,7 +266,7 @@ def test_pes_recurrent_slice(Simulator, seed, weights):
         sim.run(0.2)
 
     # Learning rule should drive second dimension high, but not first
-    assert np.all(sim.data[p][-10:, 0] < 0.25)
+    assert allclose(sim.data[p][-10:, 0], 0, atol=0.2)
     assert np.all(sim.data[p][-10:, 1] > 0.8)
 
 
@@ -670,7 +670,7 @@ def test_tau_deprecation(LearningRule):
 
 def test_slicing(Simulator, seed, allclose):
     with nengo.Network(seed=seed) as model:
-        a = nengo.Ensemble(30, 1)
+        a = nengo.Ensemble(50, 1)
         b = nengo.Ensemble(30, 2)
         conn = nengo.Connection(
             a, b, learning_rule_type=PES(), function=lambda x: (0, 0)

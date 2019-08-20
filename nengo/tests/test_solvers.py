@@ -70,7 +70,7 @@ def get_eval_points(n_points, dims, rng=None, sort=False):
 def get_rate_function(n_neurons, dims, neuron_type=nengo.LIF, rng=None):
     neurons = neuron_type(n_neurons)
     gain, bias = neurons.gain_bias(
-        rng.uniform(50, 100, n_neurons), rng.uniform(-1, 1, n_neurons)
+        rng.uniform(50, 100, n_neurons), rng.uniform(-0.9, 0.9, n_neurons)
     )
     rates = lambda x: neurons.rates(x, gain, bias)
     return rates
@@ -115,7 +115,7 @@ def test_decoder_solver(Solver, plt, rng, allclose):
 
     dims = 1
     n_neurons = 100
-    n_points = 500
+    n_points = 1000
 
     rates = get_rate_function(n_neurons, dims, rng=rng)
     E = get_encoders(n_neurons, dims, rng=rng)
@@ -135,7 +135,7 @@ def test_decoder_solver(Solver, plt, rng, allclose):
     plt.title("relative RMSE: %0.2e" % rel_rmse)
 
     atol = (
-        4e-2 if isinstance(solver, (LstsqNoise, LstsqDrop, LstsqMultNoise)) else 1.5e-2
+        0.1 if isinstance(solver, (LstsqNoise, LstsqDrop, LstsqMultNoise)) else 1.5e-2
     )
     assert allclose(test, est, atol=atol, rtol=1e-3)
     assert rel_rmse < 0.02
@@ -145,15 +145,15 @@ def test_decoder_solver(Solver, plt, rng, allclose):
 def test_subsolvers(Solver, seed, rng, tol=1e-2):
     get_rng = lambda: np.random.RandomState(seed)
 
-    A, b = get_system(500, 100, 5, rng=rng)
+    A, b = get_system(2000, 100, 5, rng=rng)
     x0, _ = Solver(solver=lstsq.Cholesky())(A, b, rng=get_rng())
 
     subsolvers = [lstsq.Conjgrad, lstsq.BlockConjgrad]
     for subsolver in subsolvers:
         x, info = Solver(solver=subsolver(tol=tol))(A, b, rng=get_rng())
         rel_rmse = rms(x - x0) / rms(x0)
-        assert rel_rmse < 4 * tol
-        # the above 4 * tol is just a heuristic; the main purpose of this
+        assert rel_rmse < 5 * tol
+        # the above 5 * tol is just a heuristic; the main purpose of this
         # test is to make sure that the subsolvers don't throw errors
         # in-situ. They are tested more robustly elsewhere.
 

@@ -12,7 +12,7 @@ def test_inputgatedmemory(Simulator, allclose, plt, seed):
         gate_input = nengo.Node(Piecewise({0.0: 0, start_memorizing: 1}))
         reset_input = nengo.Node(0)
 
-        mem = nengo.networks.InputGatedMemory(100, 1, difference_gain=5.0)
+        mem = nengo.networks.InputGatedMemory(150, 1, difference_gain=5.0)
         nengo.Connection(test_input, mem.input)
         nengo.Connection(gate_input, mem.gate)
         nengo.Connection(reset_input, mem.reset)
@@ -32,5 +32,5 @@ def test_inputgatedmemory(Simulator, allclose, plt, seed):
     plt.legend(loc="best")
 
     assert allclose(data[t < 0.1], 0, atol=0.05)
-    assert allclose(data[(t > 0.2) & (t <= 0.4)], 0.5, atol=0.05)
+    assert allclose(data[(t > 0.2) & (t <= 0.4)], 0.5, atol=0.1)
     assert allclose(data[t > 0.4], 0.5, atol=0.1)

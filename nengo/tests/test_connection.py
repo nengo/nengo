@@ -32,7 +32,7 @@ def test_args(nl, seed, rng):
 
 
 def test_node_to_neurons(Simulator, nl_nodirect, plt, seed, allclose):
-    N = 30
+    N = 50
 
     m = nengo.Network(seed=seed)
     with m:
@@ -66,7 +66,7 @@ def test_ensemble_to_neurons(Simulator, nl_nodirect, plt, seed, allclose):
     with nengo.Network(seed=seed) as net:
         net.config[nengo.Ensemble].neuron_type = nl_nodirect()
         ens = nengo.Ensemble(40, dimensions=1)
-        inhibitor = nengo.Ensemble(20, dimensions=1)
+        inhibitor = nengo.Ensemble(40, dimensions=1)
         stim = nengo.Node(output=np.sin)
         inhibition = nengo.Node(Piecewise({0: 0, 0.5: 1}))
         nengo.Connection(stim, ens)
@@ -213,7 +213,7 @@ def test_neurons_to_node(Simulator, nl_nodirect, plt, seed, allclose):
 
 
 def test_neurons_to_neurons(Simulator, nl_nodirect, plt, seed, allclose):
-    N1, N2 = 30, 50
+    N1, N2 = 50, 80
 
     m = nengo.Network(seed=seed)
     with m:
@@ -278,10 +278,10 @@ def test_dist_transform(Simulator, seed, allclose):
 
     with nengo.Network(seed=seed) as net:
         net.config[nengo.Connection].transform = nengo.dists.Gaussian(0.5, 1)
-        a = nengo.Node(output=[0] * 100)
-        b = nengo.Node(size_in=101)
-        c = nengo.Ensemble(102, 10)
-        d = nengo.Ensemble(103, 11)
+        a = nengo.Node(output=[0] * 200)
+        b = nengo.Node(size_in=201)
+        c = nengo.Ensemble(202, 10)
+        d = nengo.Ensemble(203, 11)
 
         # make a couple different types of connections to make sure that a
         # correctly sized transform is being generated
@@ -299,18 +299,18 @@ def test_dist_transform(Simulator, seed, allclose):
     w = sim.data[conn1].weights
     assert allclose(np.mean(w), 0.5, atol=0.01)
     assert allclose(np.std(w), 1, atol=0.01)
-    assert w.shape == (101, 100)
+    assert w.shape == (201, 200)
 
-    assert sim.data[conn2].weights.shape == (10, 101)
-    assert sim.data[conn3].weights.shape == (102, 101)
+    assert sim.data[conn2].weights.shape == (10, 201)
+    assert sim.data[conn3].weights.shape == (202, 201)
     assert sim.data[conn4].weights.shape == (1, 2)
-    assert sim.data[conn5].weights.shape == (103, 102)
+    assert sim.data[conn5].weights.shape == (203, 202)
 
     # make sure the seed works (gives us the same transform)
     with nengo.Network(seed=seed) as net:
         net.config[nengo.Connection].transform = nengo.dists.Gaussian(0.5, 1)
-        a = nengo.Node(output=[0] * 100)
-        b = nengo.Node(size_in=101)
+        a = nengo.Node(output=[0] * 200)
+        b = nengo.Node(size_in=201)
         conn = nengo.Connection(a, b)
 
     with Simulator(net) as sim:
@@ -482,7 +482,7 @@ def test_slicing(Simulator, nl, plt, seed, allclose):
             weight_probes.append(nengo.Probe(b, synapse=0.03))
 
     with Simulator(m) as sim:
-        sim.run(0.2)
+        sim.run(0.25)
     t = sim.trange()
 
     for i, [y, p] in enumerate(zip(ys, probes)):
@@ -616,8 +616,8 @@ def test_slicing_function(Simulator, plt, seed, allclose):
         nengo.Connection(u, a)
         nengo.Connection(a[1], b, function=f_x)
 
-        up = nengo.Probe(u, synapse=0.03)
-        bp = nengo.Probe(b, synapse=0.03)
+        up = nengo.Probe(u, synapse=0.05)
+        bp = nengo.Probe(b, synapse=0.05)
 
     with Simulator(model) as sim:
         sim.run(1.0)
@@ -637,10 +637,10 @@ def test_slicing_function(Simulator, plt, seed, allclose):
 def test_list_indexing(Simulator, plt, seed, negative_indices, allclose):
     with nengo.Network(seed=seed) as model:
         u = nengo.Node([-1, 1])
-        a = nengo.Ensemble(40, dimensions=1)
-        b = nengo.Ensemble(40, dimensions=1, radius=2.2)
-        c = nengo.Ensemble(80, dimensions=2, radius=1.3)
-        d = nengo.Ensemble(80, dimensions=2, radius=1.3)
+        a = nengo.Ensemble(50, dimensions=1)
+        b = nengo.Ensemble(50, dimensions=1, radius=2.2)
+        c = nengo.Ensemble(100, dimensions=2, radius=1.3)
+        d = nengo.Ensemble(100, dimensions=2, radius=1.3)
         if negative_indices:
             nengo.Connection(u[[0, 1]], a[[0, -1]])
             nengo.Connection(u[[1, -1]], b[[0, -1]])
@@ -658,7 +658,7 @@ def test_list_indexing(Simulator, plt, seed, negative_indices, allclose):
         d_probe = nengo.Probe(d, synapse=0.03)
 
     with Simulator(model) as sim:
-        sim.run(0.2)
+        sim.run(0.4)
 
     t = sim.trange()
     a_data = sim.data[a_probe]
@@ -675,10 +675,10 @@ def test_list_indexing(Simulator, plt, seed, negative_indices, allclose):
     line = plt.plot(t, d_data)
     plt.axhline(1, color=line[1].get_color())
 
-    assert allclose(a_data[t > 0.15], [0], atol=0.15)
-    assert allclose(b_data[t > 0.15], [2], atol=0.15)
-    assert allclose(c_data[t > 0.15], [-1, 1], atol=0.15)
-    assert allclose(d_data[t > 0.15], [1, 1], atol=0.15)
+    assert allclose(a_data[t > 0.3], [0], atol=0.2)
+    assert allclose(b_data[t > 0.3], [2], atol=0.2)
+    assert allclose(c_data[t > 0.3], [-1, 1], atol=0.2)
+    assert allclose(d_data[t > 0.3], [1, 1], atol=0.2)
 
 
 @pytest.mark.filterwarnings("ignore:boolean index did not match")
@@ -801,7 +801,13 @@ def test_eval_points_scaling(Simulator, sample, radius, seed, rng, scale):
 
     model = nengo.Network(seed=seed)
     with model:
-        a = nengo.Ensemble(1, 3, radius=radius)
+        a = nengo.Ensemble(
+            1,
+            3,
+            encoders=np.ones((1, 3)),
+            intercepts=nengo.dists.Choice([-1]),
+            radius=radius,
+        )
         b = nengo.Ensemble(1, 3)
         con = nengo.Connection(a, b, eval_points=eval_points, scale_eval_points=scale)
 
@@ -955,7 +961,7 @@ def test_function_points(Simulator, seed, rng, plt, allclose):
     y = -x
 
     with nengo.Network(seed=seed) as model:
-        u = nengo.Node(nengo.processes.WhiteSignal(1.0, high=10, rms=0.4))
+        u = nengo.Node(nengo.processes.WhiteSignal(1.0, high=9, rms=0.3))
         a = nengo.Ensemble(100, 1)
         v = nengo.Node(size_in=1)
         nengo.Connection(u, a, synapse=None)

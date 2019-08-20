@@ -45,7 +45,7 @@ def test_pdf(rng, allclose):
 
 @pytest.mark.parametrize("low,high", [(-2, -1), (-1, 1), (1, 2), (1, -1)])
 def test_uniform(low, high, rng, allclose):
-    n = 100
+    n = 200
     dist = Uniform(low, high)
     samples = dist.sample(n, rng=rng)
     if low < high:
@@ -55,20 +55,20 @@ def test_uniform(low, high, rng, allclose):
         assert np.all(samples <= low)
         assert np.all(samples > high)
     hist, _ = np.histogram(samples, bins=5)
-    assert allclose(hist - np.mean(hist), 0, atol=0.1 * n)
+    assert allclose(hist, np.mean(hist), atol=0.1 * n)
 
 
 @pytest.mark.parametrize("mean,std", [(0, 1), (0, 0), (10, 2)])
 def test_gaussian(mean, std, rng):
-    n = 100
+    n = 500
     if std <= 0:
         with pytest.raises(ValueError):
             dist = Gaussian(mean, std)
     else:
         dist = Gaussian(mean, std)
         samples = dist.sample(n, rng=rng)
-        assert abs(np.mean(samples) - mean) < 2 * std / np.sqrt(n)
-        assert abs(np.std(samples) - std) < 0.25  # using chi2 for n=100
+        assert abs(np.mean(samples) - mean) < 3 * std / np.sqrt(n)
+        assert abs(np.std(samples) - std) < 0.25
 
 
 @pytest.mark.parametrize(
@@ -90,7 +90,7 @@ def test_exponential(scale, shift, high, rng):
     "min_magnitude,d", [(0, 1), (0, 2), (0, 5), (0.6, 1), (0.3, 2), (0.4, 5)]
 )
 def test_hypersphere_volume(min_magnitude, d, rng, allclose):
-    n = 150 * d
+    n = 250 * d
     dist = UniformHypersphere(min_magnitude=min_magnitude)
     samples = dist.sample(n, d, rng=rng)
     assert samples.shape == (n, d)
@@ -100,7 +100,7 @@ def test_hypersphere_volume(min_magnitude, d, rng, allclose):
 
 @pytest.mark.parametrize("dimensions", [1, 2, 5])
 def test_hypersphere_surface(dimensions, rng, allclose):
-    n = 150 * dimensions
+    n = 200 * dimensions
     dist = UniformHypersphere(surface=True)
     samples = dist.sample(n, dimensions, rng=rng)
     assert samples.shape == (n, dimensions)
@@ -173,7 +173,7 @@ def test_samples_errors(rng):
 
 @pytest.mark.parametrize("n,m", [(99, 1), (50, 50)])
 def test_sqrt_beta(n, m, rng):
-    num_samples = 250
+    num_samples = 1000
     num_bins = 5
 
     vectors = rng.randn(num_samples, n + m)
@@ -223,7 +223,7 @@ def test_sqrt_beta_analytical(n, m, rng, allclose):
 def test_cosine_similarity(d, rng):
     """Tests CosineSimilarity sampling."""
     num_samples = 2500
-    num_bins = 5
+    num_bins = 8
 
     # Check that it gives a single dimension from UniformHypersphere
     exp_dist = UniformHypersphere(surface=True)
@@ -235,7 +235,7 @@ def test_cosine_similarity(d, rng):
     exp_hist, _ = np.histogram(exp, bins=num_bins)
     act_hist, _ = np.histogram(act, bins=num_bins)
 
-    assert np.all(np.abs(np.asfarray(exp_hist - act_hist) / num_samples) < 0.1)
+    assert np.all(np.abs(np.asfarray(exp_hist - act_hist) / num_samples) < 0.15)
 
 
 @pytest.mark.parametrize("d", [2, 3, 10])
@@ -283,7 +283,7 @@ def test_cosine_intercept(d, p, rng, allclose):
     """Tests CosineSimilarity inverse cdf for finding intercepts."""
     pytest.importorskip("scipy")  # betaincinv
 
-    num_samples = 250
+    num_samples = 500
 
     exp_dist = UniformHypersphere(surface=True)
     act_dist = CosineSimilarity(d)

@@ -3,7 +3,7 @@ import pytest
 
 import nengo
 import nengo.utils.numpy as npext
-from nengo.dists import Choice, Gaussian, UniformHypersphere
+from nengo.dists import Choice, Uniform, UniformHypersphere
 from nengo.exceptions import BuildError, NengoWarning
 from nengo.processes import WhiteNoise, FilteredNoise
 from nengo.utils.testing import signals_allclose
@@ -111,7 +111,7 @@ def test_constant_vector(Simulator, nl, plt, seed, allclose):
 
 def test_scalar(Simulator, nl, plt, seed, allclose):
     """A network that represents sin(t)."""
-    N = 40
+    N = 50
     f = lambda t: np.sin(2 * np.pi * t)
 
     m = nengo.Network(label="test_scalar", seed=seed)
@@ -344,13 +344,13 @@ def test_noise_gen(Simulator, nl_nodirect, seed, plt, allclose):
     """Ensure that setting Ensemble.noise generates noise."""
     with nengo.Network(seed=seed) as model:
         intercepts = -0.5
-        neg_noise, pos_noise = -4, 5
+        neg_noise, pos_noise = -5, 5
         model.config[nengo.Ensemble].neuron_type = nl_nodirect()
         model.config[nengo.Ensemble].encoders = Choice([[1]])
         model.config[nengo.Ensemble].intercepts = Choice([intercepts])
-        pos = nengo.Ensemble(1, 1, noise=WhiteNoise(Gaussian(pos_noise, 0.01)))
+        pos = nengo.Ensemble(1, 1, noise=WhiteNoise(Uniform(0, pos_noise)))
         normal = nengo.Ensemble(1, 1)
-        neg = nengo.Ensemble(1, 1, noise=WhiteNoise(Gaussian(neg_noise, 0.01)))
+        neg = nengo.Ensemble(1, 1, noise=WhiteNoise(Uniform(neg_noise, 0)))
         pos_p = nengo.Probe(pos.neurons, synapse=0.1)
         normal_p = nengo.Probe(normal.neurons, synapse=0.1)
         neg_p = nengo.Probe(neg.neurons, synapse=0.1)
@@ -364,8 +364,8 @@ def test_noise_gen(Simulator, nl_nodirect, seed, plt, allclose):
     plt.plot(t, sim.data[neg_p], c="r", label="noise=%d" % neg_noise)
     plt.legend(loc="best")
 
-    assert np.all(sim.data[pos_p] >= sim.data[normal_p])
-    assert np.all(sim.data[normal_p] >= sim.data[neg_p])
+    assert np.sum(sim.data[pos_p], axis=0) >= np.sum(sim.data[normal_p], axis=0)
+    assert np.sum(sim.data[normal_p], axis=0) >= np.sum(sim.data[neg_p], axis=0)
     assert not allclose(sim.data[normal_p], sim.data[pos_p], record_rmse=False)
     assert not allclose(sim.data[normal_p], sim.data[neg_p], record_rmse=False)
 
