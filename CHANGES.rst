@@ -208,6 +208,10 @@ Release History
 - The ``RefSimulator`` fixture has been removed. Use the ``Simulator`` fixture
   and the ``nengo_test_unsupported`` configuration option instead.
   (`#1566 <https://github.com/nengo/nengo/pull/1566>`__)
+- Removed ``find_modules`` and ``load_functions`` from ``nengo.utils.testing``.
+  Backends wanting to run Nengo test should use ``pytest --pyargs nengo``
+  instead.
+  (`#1566 <https://github.com/nengo/nengo/pull/1566>`__)
 
 **Fixed**
 
