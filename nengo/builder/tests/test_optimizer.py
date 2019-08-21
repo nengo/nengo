@@ -3,7 +3,14 @@ from numpy.testing import assert_almost_equal
 import pytest
 
 import nengo
-from nengo.builder.optimizer import SigMerger
+from nengo.builder.optimizer import (
+    CopyMerger,
+    ElementwiseIncMerger,
+    OpMerger,
+    OpsToMerge,
+    SigMerger,
+)
+from nengo.builder.operator import Copy, ElementwiseInc
 from nengo.builder.signal import Signal
 from nengo.tests.test_learning_rules import learning_net
 from nengo.transforms import SparseMatrix
@@ -50,6 +57,10 @@ def test_sigmerger_check():
             Signal(SparseMatrix([[0, 0]], 1.0, (1, 1))),
         ]
     )
+
+    # same signal cannot appear twice
+    sig = Signal(0)
+    assert not SigMerger.check([sig, sig])
 
 
 def test_sigmerger_check_signals():
@@ -125,6 +136,50 @@ def test_sigmerger_merge_views(allclose):
     assert allclose(merged.initial_value, s.initial_value)
     assert v1.base is s
     assert v2.base is s
+
+
+def test_opstomerge_check_signals():
+    sig = Signal(np.arange(10))
+    sig_orig = sig.reshape(10)
+    sig_reshaped = sig.reshape(2, 5)
+    assert not OpsToMerge.check_signals(
+        Copy(sig_orig, sig_orig), Copy(sig_reshaped, sig_reshaped)
+    )
+
+
+def test_opmerger_warning():
+    with pytest.warns(UserWarning, match="Merger for operator type"):
+        OpMerger.register(Copy)(CopyMerger)
+
+
+def test_copymerger_merge_slice():
+    sig1 = Signal(np.ones(2))
+    slice1 = [1]
+    sig2 = Signal(np.ones(3))
+    with pytest.raises(ValueError, match="Mixed Ellipsis with list of indices."):
+        CopyMerger.merge_slice([sig1, sig2], [slice1, None])
+    merged = CopyMerger.merge_slice([sig1, sig2], [slice1, [0, 2]])
+    assert merged == [1, 2, 4]
+
+
+def test_elementwiseincmerger_scalars():
+    y1 = Signal(shape=(1,))
+    y2 = Signal(shape=(1,))
+    a = Signal(shape=(1,))
+    x1 = Signal(shape=(1,))
+    x2 = Signal(shape=(1,))
+
+    inc1 = ElementwiseInc(a, x1, y1)
+    inc2 = ElementwiseInc(a, x2, y2)
+
+    assert ElementwiseIncMerger.is_mergeable(inc1, inc2)
+    merged_inc, _ = ElementwiseIncMerger.merge([inc1, inc2])
+    assert merged_inc.Y.shape == (2,)
+    assert merged_inc.Y.name.startswith("merged")
+    assert merged_inc.A.shape == (1,)
+    assert merged_inc.A is a
+    assert merged_inc.X.shape == (2,)
+    assert merged_inc.X.name.startswith("merged")
 
 
 def test_optimizer_does_not_change_result(seed):

@@ -1,6 +1,6 @@
 """Operator graph optimizers."""
 
-from collections import defaultdict, Mapping, namedtuple
+from collections import defaultdict, namedtuple
 from itertools import zip_longest
 import logging
 import warnings
@@ -8,8 +8,7 @@ import warnings
 import numpy as np
 
 from nengo.builder.neurons import SimNeurons
-from nengo.builder import operator
-from nengo.builder.operator import DotInc, ElementwiseInc, Copy
+from nengo.builder import operator as op
 from nengo.builder.signal import Signal
 from nengo.rc import rc
 from nengo.utils.graphs import BidirectionalDAG, transitive_closure
@@ -20,7 +19,7 @@ logger = logging.getLogger(__name__)
 __all__ = ["optimize"]
 
 
-def optimize(model, dg, max_passes=None):
+def optimize(model, dg):
     """Optimizes the operator graph by merging operators.
 
     This reduces the number of iterators to iterate over in slow Python code
@@ -68,18 +67,8 @@ def optimize(model, dg, max_passes=None):
     n_initial_ops = len(dg)
     cum_duration = 0.0
     before, after = None, None
-    i = 0
     only_merge_ops_with_view = True
     while only_merge_ops_with_view or after < before:
-        if max_passes is not None and i >= max_passes:
-            break
-
-        i += 1
-
-        if logger.isEnabledFor(logging.DEBUG):
-            for tp, ops in groupby(dg, type).items():
-                logger.debug("%s: %d", tp, len(ops))
-
         only_merge_ops_with_view = before is None or before != after
         before = len(single_pass.dg.forward)
 
@@ -88,8 +77,7 @@ def optimize(model, dg, max_passes=None):
 
         after = len(single_pass.dg.forward)
         logger.debug(
-            "Pass %i [%s]: Reduced %i to %i operators in %fs.",
-            i,
+            "[%s]: Reduced %i to %i operators in %fs.",
             "views" if only_merge_ops_with_view else "non-views",
             before,
             after,
@@ -121,8 +109,8 @@ def optimize(model, dg, max_passes=None):
 
     # Reinitialize the model's operator list
     del model.operators[:]
-    for op in dg:
-        model.add_op(op)
+    for operator in dg:
+        model.add_op(operator)
 
 
 class OpMergePass:
@@ -133,9 +121,9 @@ class OpMergePass:
 
         self.sig2ops = WeakKeyDefaultDict(WeakSet)
         self.base2views = WeakKeyDefaultDict(WeakSet)
-        for op in self.dg.forward:
-            for s in op.all_signals:
-                self.sig2ops[s].add(op)
+        for operator in self.dg.forward:
+            for s in operator.all_signals:
+                self.sig2ops[s].add(operator)
                 self.base2views[s.base].add(s)
 
         # These variables will be initialized and used on each pass
@@ -184,7 +172,7 @@ class OpMergePass:
         # before merging other operator types.
 
         # We go through ops in a heuristic order to reduce runtime
-        firstops = [ElementwiseInc, Copy, DotInc, SimNeurons]
+        firstops = [op.ElementwiseInc, op.Copy, op.DotInc, SimNeurons]
         sortedops = firstops + [op for op in by_type if op not in firstops]
         for optype in sortedops:
 
@@ -207,7 +195,7 @@ class OpMergePass:
         subset : list
             Subset of operators.
         """
-        by_view = groupby(subset, lambda op: self.opinfo[op].v_base)
+        by_view = groupby(subset, lambda op: self.opinfo.get(op).v_base)
         if self.only_merge_ops_with_view:
             if None in by_view:
                 # If an op has no views, v_base will be None.
@@ -233,7 +221,7 @@ class OpMergePass:
 
         # Sort to have sequential memory.
         offsets = np.array(
-            [self.opinfo[op].v_offset for op in subset], dtype=rc.float_dtype
+            [self.opinfo.get(op).v_offset for op in subset], dtype=rc.float_dtype
         )
         sort_indices = np.argsort(offsets)
         offsets = offsets[sort_indices]
@@ -259,7 +247,7 @@ class OpMergePass:
             # operators by the start of their views we can do a binary search
             # and potentially skip a number of operators at the beginning.
             start = np.searchsorted(
-                offsets, offsets[i] + self.opinfo[op1].v_size, side="left"
+                offsets, offsets[i] + self.opinfo.get(op1).v_size, side="left"
             )
 
             for op2 in sorted_subset[start:]:
@@ -302,11 +290,11 @@ class OpMergePass:
         self.merged.update(tomerge.ops)
         self.merged_dependents.update(tomerge.all_dependents)
 
-        for op in tomerge.ops:
+        for operator in tomerge.ops:
             # Mark all operators referencing the same signals as merged
             # (even though they are not) to prevent them from getting
             # merged before their signals have been updated.
-            for s in op.all_signals:
+            for s in operator.all_signals:
                 self.merged.update(self.sig2ops[s])
 
         # Signal related updates
@@ -372,7 +360,7 @@ class OpMergePass:
                 self.base2views[to_sig.base].add(to_sig)
 
 
-class OpInfo(Mapping):
+class OpInfo:
     """Analyze and store extra information about operators."""
 
     _OpDetails = namedtuple(
@@ -383,7 +371,7 @@ class OpInfo(Mapping):
         super().__init__()
         self.info = {}
 
-    def __getitem__(self, op):
+    def get(self, op):
         if op not in self.info:
             try:
                 first_view = next(s for s in op.all_signals if s.is_view)
@@ -398,18 +386,6 @@ class OpInfo(Mapping):
                     first_view=None, v_offset=0, v_size=0, v_base=None
                 )
         return self.info[op]
-
-    def __iter__(self):
-        return iter(self.info)
-
-    def __len__(self):
-        return len(self.info)
-
-    def __repr__(self):
-        return repr(self.info)
-
-    def __str__(self):
-        return str(self.info)
 
     def clear(self):
         self.info.clear()
@@ -449,9 +425,6 @@ class OpsToMerge:
                 # Views must be on the same base
                 if s1.base is not s2.base:
                     return False
-                # Views must have the same dtype
-                elif s1.dtype is not s2.dtype:
-                    return False
                 # Views must have the same strides
                 elif s1.strides != s2.strides:
                     return False
@@ -459,8 +432,8 @@ class OpsToMerge:
         return True
 
     def not_sequential(self, op):
-        lastop = self.opinfo[self.ops[-1]]
-        return lastop.v_offset + lastop.v_size < self.opinfo[op].v_offset
+        lastop = self.opinfo.get(self.ops[-1])
+        return lastop.v_offset + lastop.v_size < self.opinfo.get(op).v_offset
 
 
 class OpMerger:
@@ -515,7 +488,7 @@ class Merger:
 
     @staticmethod
     def is_mergeable(op1, op2):
-        return False
+        raise NotImplementedError("Subclasses must implement `is_mergeable`")
 
     @staticmethod
     def merge(ops):
@@ -534,23 +507,7 @@ class Merger:
         return d
 
 
-@OpMerger.register(operator.TimeUpdate)
-class TimeUpdateMerger(Merger):
-    @staticmethod
-    def is_mergeable(op1, op2):
-        return True
-
-    @staticmethod
-    def merge(ops):
-        step, step_sigr = SigMerger.merge([o.step for o in ops])
-        time, time_sigr = SigMerger.merge([o.time for o in ops])
-        return (
-            operator.TimeUpdate(step, time),
-            Merger.merge_dicts(step_sigr, time_sigr),
-        )
-
-
-@OpMerger.register(operator.Reset)
+@OpMerger.register(op.Reset)
 class ResetMerger(Merger):
     @staticmethod
     def is_mergeable(op1, op2):
@@ -559,10 +516,10 @@ class ResetMerger(Merger):
     @staticmethod
     def merge(ops):
         dst, replacements = SigMerger.merge([o.dst for o in ops])
-        return operator.Reset(dst, ops[0].value), replacements
+        return op.Reset(dst, ops[0].value), replacements
 
 
-@OpMerger.register(operator.Copy)
+@OpMerger.register(op.Copy)
 class CopyMerger(Merger):
     @staticmethod
     def is_mergeable(op1, op2):
@@ -586,6 +543,7 @@ class CopyMerger(Merger):
         offset = 0
         merged_slice = []
         for sig, sl in zip(signals, slices):
+            assert isinstance(sl, list), "Expecting a list of indices, got %s" % sl
             merged_slice.extend([i + offset for i in sl])
             offset += sig.size
         return merged_slice
@@ -600,14 +558,12 @@ class CopyMerger(Merger):
         src_slice = CopyMerger.merge_slice(src_sigs, [o.src_slice for o in ops])
         dst_slice = CopyMerger.merge_slice(dst_sigs, [o.dst_slice for o in ops])
         return (
-            operator.Copy(
-                src, dst, src_slice=src_slice, dst_slice=dst_slice, inc=ops[0].inc
-            ),
+            op.Copy(src, dst, src_slice=src_slice, dst_slice=dst_slice, inc=ops[0].inc),
             Merger.merge_dicts(src_sigr, dst_sigr),
         )
 
 
-@OpMerger.register(operator.ElementwiseInc)
+@OpMerger.register(op.ElementwiseInc)
 class ElementwiseIncMerger(Merger):
     @staticmethod
     def is_mergeable(op1, op2):
@@ -634,13 +590,10 @@ class ElementwiseIncMerger(Merger):
             A, A_sigr = SigMerger.merge([o.A for o in ops], axis=ops[0].A.ndim - 1)
         X, X_sigr = SigMerger.merge([o.X for o in ops], axis=ops[0].X.ndim - 1)
         Y, Y_sigr = SigMerger.merge([o.Y for o in ops], axis=ops[0].Y.ndim - 1)
-        return (
-            operator.ElementwiseInc(A, X, Y),
-            Merger.merge_dicts(A_sigr, X_sigr, Y_sigr),
-        )
+        return (op.ElementwiseInc(A, X, Y), Merger.merge_dicts(A_sigr, X_sigr, Y_sigr))
 
 
-@OpMerger.register(operator.DotInc)
+@OpMerger.register(op.DotInc)
 class DotIncMerger(Merger):
     @staticmethod
     def check_signals(op, tomerge):
@@ -679,6 +632,7 @@ class DotIncMerger(Merger):
         return (
             SigMerger.check([op1.X, op2.X])
             and SigMerger.check([op1.Y, op2.Y])
+            and op1.A.shape != (1,)
             and op1.A.shape == op2.A.shape
         )
 
@@ -688,7 +642,7 @@ class DotIncMerger(Merger):
         if all(o.X is ops[0].X for o in ops):
             A, A_sigr = SigMerger.merge([o.A for o in ops])
             Y, Y_sigr = SigMerger.merge([o.Y for o in ops])
-            return (operator.DotInc(A, ops[0].X, Y), Merger.merge_dicts(A_sigr, Y_sigr))
+            return (op.DotInc(A, ops[0].X, Y), Merger.merge_dicts(A_sigr, Y_sigr))
 
         assert all(o1.X is not o2.X for i, o1 in enumerate(ops) for o2 in ops[i + 1 :])
 
@@ -699,9 +653,9 @@ class DotIncMerger(Merger):
         # Construct sparse A representation
         data = np.array([o.A.initial_value for o in ops], dtype=rc.float_dtype)
         if data.ndim == 1:
-            data = data.reshape((data.size, 1, 1))
+            raise NotImplementedError("A.ndim should be > 2")
         elif data.ndim == 2:
-            data = data.reshape(data.shape + (1,))
+            raise NotImplementedError("A.ndim should be > 2")
         indptr = np.arange(len(ops) + 1, dtype=rc.int_dtype)
         indices = np.arange(len(ops), dtype=rc.int_dtype)
         name = "bsr_merged<{first}, ..., {last}>".format(
@@ -722,16 +676,14 @@ class DotIncMerger(Merger):
                 s.shape == () and A_sigr[s].shape == (1, 1)
             )
 
-        reshape = operator.reshape_dot(
+        reshape = op.reshape_dot(
             ops[0].A.initial_value,
             ops[0].X.initial_value,
             ops[0].Y.initial_value,
             tag=ops[0].tag,
         )
         return (
-            operator.BsrDotInc(
-                A, X, Y, indices=indices, indptr=indptr, reshape=reshape
-            ),
+            op.BsrDotInc(A, X, Y, indices=indices, indptr=indptr, reshape=reshape),
             Merger.merge_dicts(X_sigr, Y_sigr, A_sigr),
         )
 
