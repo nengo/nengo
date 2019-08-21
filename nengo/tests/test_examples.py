@@ -29,6 +29,7 @@ _pytest.capture.DontReadFromInput.flush = lambda: None
 
 
 too_slow = [
+    "basal_ganglia",
     "inhibitory_gating",
     "izhikevich",
     "learn_communication_channel",

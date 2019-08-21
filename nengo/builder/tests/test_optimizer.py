@@ -5,7 +5,6 @@ import pytest
 import nengo
 from nengo.builder.optimizer import SigMerger
 from nengo.builder.signal import Signal
-from nengo.spa.tests.test_thalamus import thalamus_net
 from nengo.tests.test_learning_rules import learning_net
 from nengo.transforms import SparseMatrix
 
@@ -128,12 +127,11 @@ def test_sigmerger_merge_views(allclose):
     assert v2.base is s
 
 
-@pytest.mark.parametrize("net", (thalamus_net, learning_net))
-def test_optimizer_does_not_change_result(seed, net):
+def test_optimizer_does_not_change_result(seed):
     dtype_resolution = np.finfo(nengo.rc.float_dtype).resolution
     dtype_decimal = int(np.floor(-np.log10(dtype_resolution) * 0.5))
 
-    model = net()
+    model = learning_net()
     model.seed = seed
 
     with model:

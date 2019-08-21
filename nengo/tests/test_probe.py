@@ -31,6 +31,7 @@ def test_multirun(Simulator, rng, allclose):
             assert allclose(sim_t[-1], t_sum, rtol=rtol)
 
 
+@pytest.mark.slow
 def test_dts(Simulator, seed, rng):
     """Test probes with different dts and runtimes"""
 
