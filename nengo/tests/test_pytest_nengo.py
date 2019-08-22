@@ -5,7 +5,14 @@ pytest_plugins = ["pytester"]
 
 @pytest.mark.parametrize("xfail", (True, False))
 def test_unsupported(xfail, testdir):
-    """Test `nengo_test_unsupported` config option and `--unsupported` arg"""
+    """Test ``nengo_test_unsupported`` config option and ``--unsupported`` arg"""
+
+    # Set up a dummy nengo package directory, so that `pytest_nengo.is_nengo_test`
+    # returns True
+    testdir.tmpdir = testdir.tmpdir.mkdir("nengo")
+    testdir.chdir()
+    testdir.makefile(".py", __init__="")
+
     # Create a test file with some dummy tests
     testdir.makefile(
         ".py",
@@ -41,17 +48,13 @@ def test_unsupported(xfail, testdir):
                 with multiline comment"
             test_file.py:test_unsupported_all*
                 "Two unsupported params with single-line comment"
+
+        # avoid trying to load neurons from dummy nengo package
+        nengo_neurons =
         """,
     )
 
-    testdir.makefile(
-        ".py",
-        conftest="""
-        from nengo.conftest import pytest_runtest_setup, pytest_configure
-        """,
-    )
-
-    args = "-p nengo.tests.options -rsx -sv".split()
+    args = "-rsx -sv".split()
     if xfail:
         args.append("--unsupported")
     output = testdir.runpytest_subprocess(*args)
@@ -85,36 +88,28 @@ def test_unsupported(xfail, testdir):
     assert outcomes["passed"] == 2
 
 
+class MockSimulator:
+    """A Simulator that does not support any tests."""
+
+    pass
+
+
 def test_pyargs(testdir):
-    # create a simulator that does not support any tests
-    # (we don't actually want to run all the tests)
-    testdir.makeconftest(
-        """
-        import nengo.conftest
-
-        class MockSimulator:
-            pass
-
-        nengo.conftest.TestConfig.SimLoader = lambda request: MockSimulator
-        """
-    )
-
     # mark all the tests as unsupported
     testdir.makefile(
         ".ini",
         pytest="""
         [pytest]
+        nengo_simulator = nengo.tests.test_pytest_nengo.MockSimulator
         nengo_test_unsupported =
             *
                 "Using mock simulator"
         """,
     )
 
-    outcomes = testdir.runpytest_subprocess(
-        "-p", "nengo.tests.options", "--pyargs", "nengo"
-    ).parseoutcomes()
+    outcomes = testdir.runpytest_subprocess("--pyargs", "nengo").parseoutcomes()
 
     assert "failed" not in outcomes
     assert "passed" not in outcomes
-    assert outcomes["skipped"] > 350
+    assert outcomes["skipped"] > 250
     assert outcomes["deselected"] > 700

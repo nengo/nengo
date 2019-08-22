@@ -22,9 +22,13 @@ setup_py:
   package_data:
     nengo:
       - nengo-data/nengorc
+  py_modules:
+    - pytest_nengo
   entry_points:
     nengo.backends:
       - reference = nengo:Simulator
+    pytest11:
+      - nengo = pytest_nengo
   install_req:
     - numpy>=1.11
   docs_req:
@@ -70,6 +74,7 @@ setup_cfg:
       - "plots"
       - "nengo/_vendor"
     filterwarnings:
+      - always
       - "ignore::ImportWarning"
       - "ignore:(Buffer|Memory|The nengo\\.spa):DeprecationWarning"
       - "ignore:Skipping some optimization steps"
@@ -174,12 +179,12 @@ ci_scripts:
   - template: test
     pip_install:
       - $NUMPY
-  - template: coverage
+  - template: test
     output_name: test-coverage
     pip_install:
       - $NUMPY
     coverage: true
-  - template: coverage
+  - template: test
     output_name: test-coverage-scipy
     pip_install:
       - $NUMPY

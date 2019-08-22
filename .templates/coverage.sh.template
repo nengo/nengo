@@ -1,8 +1,0 @@
-{% extends "templates/test.sh.template" %}
-
-{% block script %}
-    {# pytest-cov doesn't work well with -p nengo.tests.options #}
-    # shellcheck disable=SC2086
-    exe coverage run -m pytest {{ pkg_name }} -v --color=yes --durations 20 $TEST_ARGS
-    exe coverage report -m
-{% endblock %}

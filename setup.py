@@ -69,7 +69,11 @@ setup(
     },
     python_requires=">=3.5",
     package_data={"nengo": ["nengo-data/nengorc"]},
-    entry_points={"nengo.backends": ["reference = nengo:Simulator"]},
+    py_modules=["pytest_nengo"],
+    entry_points={
+        "nengo.backends": ["reference = nengo:Simulator"],
+        "pytest11": ["nengo = pytest_nengo"],
+    },
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Framework :: Nengo",

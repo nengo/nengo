@@ -57,7 +57,7 @@ Release History
   (`#1566 <https://github.com/nengo/nengo/pull/1566>`__)
 - Nengo tests now use the ``plt``fixture from ``pytest-plt``.
   (`#1566 <https://github.com/nengo/nengo/pull/1566>`__)
-- Added a ``--simloader`` pytest option for specifying a callable that
+- Added a ``nengo_simloader`` pytest option for specifying a callable that
   takes a pytest ``request`` and returns a callable to be used
   as ``Simulator`` in the Nengo test suite.
   (`#1566 <https://github.com/nengo/nengo/pull/1566>`__)
@@ -156,6 +156,10 @@ Release History
   to avoid high gains when intercepts are close to 1.
   (`#1534 <https://github.com/nengo/nengo/issues/1534>`__,
   `#1561 <https://github.com/nengo/nengo/pull/1561>`__)
+- The ``--simulator`` and ``--neurons`` pytest command line arguments are now specified
+  by ``nengo_simulator`` and ``nengo_neurons`` entries in the pytest config file
+  instead.
+  (`#1566 <https://github.com/nengo/nengo/pull/1566>`__)
 
 **Deprecated**
 
@@ -211,6 +215,11 @@ Release History
 - Removed ``find_modules`` and ``load_functions`` from ``nengo.utils.testing``.
   Backends wanting to run Nengo test should use ``pytest --pyargs nengo``
   instead.
+  (`#1566 <https://github.com/nengo/nengo/pull/1566>`__)
+- Removed ``nengo.tests.options``.  It is no longer necessary to use
+  ``-p nengo.tests.options`` when running Nengo tests.
+  (`#1566 <https://github.com/nengo/nengo/pull/1566>`__)
+- Removed ``nengo.conftest``. Use pytest configuration options instead.
   (`#1566 <https://github.com/nengo/nengo/pull/1566>`__)
 
 **Fixed**
