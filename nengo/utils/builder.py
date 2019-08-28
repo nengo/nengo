@@ -158,7 +158,7 @@ def _create_replacement_connection(c_in, c_out):
         synapse=synapse,
         transform=transform,
         function=function,
-        add_to_container=False,
+        add_to_network=False,
     )
     return c
 

@@ -13,7 +13,7 @@ from nengo.exceptions import (
 from nengo.node import Node
 from nengo.params import IntParam, StringParam
 from nengo.probe import Probe
-from nengo.utils.threading import ThreadLocalStack
+from nengo.pyext import ThreadLocalStack
 
 
 class Network:
@@ -61,10 +61,10 @@ class Network:
     seed : int, optional
         Random number seed that will be fed to the random number generator.
         Setting the seed makes the network's build process deterministic.
-    add_to_container : bool, optional
-        Determines if this network will be added to the current container.
-        If None, this network will be added to the network at the top of the
-        ``Network.context`` stack unless the stack is empty.
+    add_to_network : bool, optional
+        Determines if this network will be added to the first network in
+        ``Network.context``. If None, will default to True if there is a
+        network in ``Network.context``.
 
     Attributes
     ----------
@@ -89,7 +89,7 @@ class Network:
     label = StringParam("label", optional=True, readonly=False)
     seed = IntParam("seed", optional=True, readonly=False)
 
-    def __init__(self, label=None, seed=None, add_to_container=None):
+    def __init__(self, label=None, seed=None, add_to_network=None) -> None:
         self.label = label
         self.seed = seed
         self._config = self.default_config()
@@ -103,10 +103,9 @@ class Network:
 
         # By default, we want to add to the current context, unless there is
         # no context; i.e., we're creating a top-level network.
-        if add_to_container is None:
-            add_to_container = len(Network.context) > 0
-
-        if add_to_container:
+        if add_to_network is None:
+            add_to_network = len(Network.context) > 0
+        if add_to_network:
             Network.add(self)
 
     @staticmethod
@@ -115,7 +114,7 @@ class Network:
         if len(Network.context) == 0:
             raise NetworkContextError(
                 "'%s' must either be created inside a ``with network:`` "
-                "block, or set add_to_container=False in the object's "
+                "block, or set add_to_network=False in the object's "
                 "constructor." % obj
             )
         network = Network.context[-1]
@@ -271,6 +270,26 @@ class Network:
 
         self._config.__exit__(dummy_exc_type, dummy_exc_value, dummy_tb)
 
+    def __getattr__(self, name):
+        """Called when default attribute access fails.
+
+        This is overridden, but without any custom behavior. This is done to
+        explicitly mark ``Network`` as an "incomplete object". An incomplete
+        object is expected to have new attributes added after instantiation
+        and does not raise "has no attribute" errors during type checking.
+        """
+        super().__getattr__(name)
+
+    def __setattr__(self, name, value):
+        """Called when setting a new attribute.
+
+        This is overridden, but without any custom behavior. This is done to
+        explicitly mark ``Network`` as an "incomplete object". An incomplete
+        object is expected to have new attributes added after instantiation
+        and does not raise "has no attribute" errors during type checking.
+        """
+        super().__setattr__(name, value)
+
     def __getstate__(self):
         state = self.__dict__.copy()
         state["label"] = self.label
@@ -298,14 +317,14 @@ class Network:
             "at 0x%x" % id(self),
         )
 
-    def copy(self, add_to_container=None):
+    def copy(self, add_to_network=None):
         with warnings.catch_warnings():
-            # We warn when copying since we can't change add_to_container.
+            # We warn when copying since we can't change add_to_network.
             # However, we deal with it here, so we ignore the warning.
             warnings.simplefilter("ignore", category=NotAddedToNetworkWarning)
             c = deepcopy(self)
-        if add_to_container is None:
-            add_to_container = len(Network.context) > 0
-        if add_to_container:
+        if add_to_network is None:
+            add_to_network = len(Network.context) > 0
+        if add_to_network:
             Network.add(c)
         return c

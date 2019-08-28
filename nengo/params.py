@@ -4,8 +4,7 @@ import inspect
 import numpy as np
 
 from nengo.exceptions import ConfigError, ObsoleteError, ReadonlyError, ValidationError
-from nengo.rc import rc
-from nengo.utils.numpy import (
+from nengo.npext import (
     array_hash,
     compare,
     is_array,
@@ -13,7 +12,8 @@ from nengo.utils.numpy import (
     is_integer,
     is_number,
 )
-from nengo.utils.stdlib import WeakKeyIDDictionary, checked_call
+from nengo.pyext import WeakKeyIDDictionary, checked_call
+from nengo.rc import rc
 
 
 class DefaultType:

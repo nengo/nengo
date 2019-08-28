@@ -5,6 +5,7 @@ import numpy as np
 from nengo.base import FrozenObject
 from nengo.dists import Distribution, DistOrArrayParam, Uniform
 from nengo.exceptions import ValidationError
+from nengo.npext import is_array_like, scipy_sparse
 from nengo.params import (
     BoolParam,
     EnumParam,
@@ -14,7 +15,6 @@ from nengo.params import (
     ShapeParam,
 )
 from nengo.rc import rc
-from nengo.utils.numpy import is_array_like, scipy_sparse
 
 
 class Transform(FrozenObject):

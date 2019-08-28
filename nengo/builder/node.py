@@ -2,9 +2,9 @@ from nengo.builder import Builder, Signal
 from nengo.builder.operator import Reset, SimPyFunc
 from nengo.exceptions import BuildError
 from nengo.node import Node
+from nengo.npext import is_array_like
 from nengo.processes import Process
 from nengo.rc import rc
-from nengo.utils.numpy import is_array_like
 
 
 @Builder.register(Node)

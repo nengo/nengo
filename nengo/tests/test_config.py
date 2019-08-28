@@ -125,7 +125,7 @@ def test_context_is_threadsafe():
 
 def test_defaults():
     """Test that settings defaults propagates appropriately."""
-    b = nengo.Ensemble(10, dimensions=1, radius=nengo.Default, add_to_container=False)
+    b = nengo.Ensemble(10, dimensions=1, radius=nengo.Default, add_to_network=False)
 
     assert b.radius == nengo.Ensemble.radius.default
 

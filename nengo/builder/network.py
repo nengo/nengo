@@ -3,7 +3,7 @@ import logging
 
 import numpy as np
 
-import nengo.utils.numpy as npext
+from nengo import npext
 from nengo.builder import Builder
 from nengo.connection import Connection
 from nengo.ensemble import Ensemble

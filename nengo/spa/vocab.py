@@ -3,10 +3,10 @@ import warnings
 import numpy as np
 
 from nengo.exceptions import ReadonlyError, SpaParseError, ValidationError
+from nengo.npext import is_iterable, is_number, is_integer
 from nengo.params import Parameter
 from nengo.rc import rc
 from nengo.spa import pointer
-from nengo.utils.numpy import is_iterable, is_number, is_integer
 
 
 class Vocabulary:
@@ -217,7 +217,7 @@ class Vocabulary:
             self.key_pairs = None
             self.vector_pairs = None
 
-    def parse(self, text):
+    def parse(self, text: str) -> pointer.SemanticPointer:
         """Evaluate a text string and return the corresponding SemanticPointer.
 
         This uses the Python ``eval()`` function, so any Python operators that

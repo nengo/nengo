@@ -113,8 +113,8 @@ def test_sparse(use_dist, use_scipy, Simulator, rng, seed, plt, monkeypatch, all
         scipy_sparse = pytest.importorskip("scipy.sparse")
     else:
         monkeypatch.setattr(nengo.transforms, "scipy_sparse", None)
-        monkeypatch.setattr(nengo.utils.numpy, "scipy_sparse", None)
-        monkeypatch.setattr(nengo.utils.numpy, "is_spmatrix", lambda obj: False)
+        monkeypatch.setattr(nengo.npext, "scipy_sparse", None)
+        monkeypatch.setattr(nengo.npext, "is_spmatrix", lambda obj: False)
 
     input_d = 4
     output_d = 2

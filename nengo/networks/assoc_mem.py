@@ -5,8 +5,8 @@ import numpy as np
 import nengo
 from nengo.dists import Choice, Exponential, Uniform
 from nengo.exceptions import ValidationError
+from nengo.npext import is_iterable
 from nengo.utils.network import with_self
-from nengo.utils.numpy import is_iterable
 from .ensemblearray import EnsembleArray
 
 
@@ -40,9 +40,10 @@ class AssociativeMemory(nengo.Network):
         A name for the ensemble. Used for debugging and visualization.
     seed : int, optional
         The seed used for random number generation.
-    add_to_container : bool, optional
-        Determines if the network will be added to the current container.
-        If None, will be true if currently within a Network.
+    add_to_network : bool, optional
+        Determines if this network will be added to the first network in
+        ``Network.context``. If None, will default to True if there is a
+        network in ``Network.context``.
     """
 
     exp_scale = 0.15  # Scaling factor for exponential distribution
@@ -58,9 +59,9 @@ class AssociativeMemory(nengo.Network):
         inhibitable=False,
         label=None,
         seed=None,
-        add_to_container=None,
+        add_to_network=None,
     ):
-        super().__init__(label, seed, add_to_container)
+        super().__init__(label, seed, add_to_network)
 
         # --- Put arguments in canonical form
         if output_vectors is None:

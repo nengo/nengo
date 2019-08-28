@@ -105,20 +105,20 @@ Network
    .. autoautosummary:: nengo.utils.network
       :nosignatures:
 
-Numpy
-=====
+Numpy extensions
+================
 
-.. automodule:: nengo.utils.numpy
+.. automodule:: nengo.npext
 
-   .. autoautosummary:: nengo.utils.numpy
+   .. autoautosummary:: nengo.npext
       :nosignatures:
 
 Paths
 =====
 
-.. automodule:: nengo.utils.paths
+.. automodule:: nengo.paths
 
-   .. autoautosummary:: nengo.utils.paths
+   .. autoautosummary:: nengo.paths
       :nosignatures:
 
 Progress bars
@@ -137,12 +137,12 @@ Simulator
    .. autoautosummary:: nengo.utils.simulator
       :nosignatures:
 
-stdlib
-======
+Python standard library extension
+=================================
 
-.. automodule:: nengo.utils.stdlib
+.. automodule:: nengo.pyext
 
-   .. autoautosummary:: nengo.utils.stdlib
+   .. autoautosummary:: nengo.pyext
       :nosignatures:
 
 Testing
@@ -151,12 +151,4 @@ Testing
 .. automodule:: nengo.utils.testing
 
    .. autoautosummary:: nengo.utils.testing
-      :nosignatures:
-
-Threading
-=========
-
-.. automodule:: nengo.utils.threading
-
-   .. autoautosummary:: nengo.utils.threading
       :nosignatures:

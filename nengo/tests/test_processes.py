@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 import nengo
-import nengo.utils.numpy as npext
+from nengo import npext
 from nengo.base import Process
 from nengo.dists import Distribution, Gaussian
 from nengo.exceptions import ValidationError

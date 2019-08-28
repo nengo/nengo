@@ -85,9 +85,9 @@ def test_context_errors():
     with pytest.raises(RuntimeError):
         add_something()
 
-    # Okay if add_to_container=False
-    nengo.Ensemble(1, dimensions=1, add_to_container=False)
-    nengo.Node(output=[0], add_to_container=False)
+    # Okay if add_to_network=False
+    nengo.Ensemble(1, dimensions=1, add_to_network=False)
+    nengo.Node(output=[0], add_to_network=False)
 
 
 def test_context_is_threadsafe():

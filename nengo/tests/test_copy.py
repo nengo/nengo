@@ -8,7 +8,7 @@ import nengo
 from nengo import spa
 from nengo.exceptions import NetworkContextError, NotAddedToNetworkWarning
 from nengo.params import IntParam, iter_params, NdarrayParam
-from nengo.utils.numpy import is_array_like
+from nengo.npext import is_array_like
 from nengo.utils.progress import TerminalProgressBar
 
 
@@ -97,14 +97,14 @@ def make_network():
 
 def test_neurons_reference_copy():
     original = make_ensemble()
-    cp = original.copy(add_to_container=False)
+    cp = original.copy(add_to_network=False)
     assert original.neurons.ensemble is original
     assert cp.neurons.ensemble is cp
 
 
 def test_learningrule_reference_copy():
     original = make_learning_connection()
-    cp = original.copy(add_to_container=False)
+    cp = original.copy(add_to_network=False)
     assert original.learning_rule.connection is original
     assert cp.learning_rule.connection is cp
 
@@ -249,7 +249,7 @@ class TestCopy:
         original = make_f()
 
         with nengo.Network() as model:
-            cp = original.copy(add_to_container=True)
+            cp = original.copy(add_to_network=True)
         assert cp in model.all_objects
 
         assert_f(cp, original)
@@ -258,7 +258,7 @@ class TestCopy:
         original = make_f()
 
         with nengo.Network() as model:
-            cp = original.copy(add_to_container=False)
+            cp = original.copy(add_to_network=False)
         assert cp not in model.all_objects
 
         assert_f(cp, original)
@@ -266,11 +266,11 @@ class TestCopy:
     def test_copy_outside_network(self, make_f, assert_f):
         original = make_f()
         with pytest.raises(NetworkContextError):
-            original.copy(add_to_container=True)
+            original.copy(add_to_network=True)
 
     def test_copy_outside_network_without_adding(self, make_f, assert_f):
         original = make_f()
-        cp = original.copy(add_to_container=False)
+        cp = original.copy(add_to_network=False)
         assert_f(cp, original)
 
     def test_python_copy_warns_abt_adding_to_network(self, make_f, assert_f):

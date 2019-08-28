@@ -4,7 +4,7 @@ import pytest
 import nengo
 from nengo.exceptions import ValidationError
 from nengo.networks.circularconvolution import circconv, transform_in, transform_out
-from nengo.utils.numpy import rms
+from nengo.npext import rms
 
 
 @pytest.mark.parametrize("invert_a", [True, False])

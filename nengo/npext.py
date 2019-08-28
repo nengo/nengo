@@ -1,6 +1,8 @@
 """
 Extra functions to extend the capabilities of Numpy.
 """
+from typing import Any
+
 from collections.abc import Iterable
 import logging
 
@@ -8,14 +10,14 @@ import warnings
 
 import numpy as np
 
-from ..exceptions import ValidationError
+from nengo.exceptions import ValidationError
 
 
 logger = logging.getLogger(__name__)
 try:
     import scipy.sparse as scipy_sparse
 
-    def is_spmatrix(obj):
+    def is_spmatrix(obj: Any) -> bool:
         """Check if ``obj`` is a sparse matrix."""
         return isinstance(obj, scipy_sparse.spmatrix)
 
@@ -24,7 +26,7 @@ except ImportError as e:
     logger.info("Could not import scipy.sparse:\n%s", str(e))
     scipy_sparse = None
 
-    def is_spmatrix(obj):
+    def is_spmatrix(obj: Any) -> bool:
         """Check if ``obj`` is a sparse matrix."""
         return False
 
@@ -33,12 +35,12 @@ maxseed = np.iinfo(np.uint32).max
 maxint = np.iinfo(np.int32).max
 
 
-def is_integer(obj):
+def is_integer(obj: Any) -> bool:
     """Check if ``obj`` is an integer type."""
     return isinstance(obj, (int, np.integer))
 
 
-def is_iterable(obj):
+def is_iterable(obj: Any) -> bool:
     """Check if ``obj`` is an iterable."""
     if isinstance(obj, np.ndarray):
         return obj.ndim > 0  # 0-d arrays give error if iterated over
@@ -46,19 +48,19 @@ def is_iterable(obj):
         return isinstance(obj, Iterable)
 
 
-def is_number(obj, check_complex=False):
+def is_number(obj: Any, check_complex: bool = False) -> bool:
     """Check if ``obj`` is a numeric type."""
     types = (float, complex, np.number) if check_complex else (float, np.floating)
     return is_integer(obj) or isinstance(obj, types)
 
 
-def is_array(obj):
+def is_array(obj: Any) -> bool:
     """Check if ``obj`` is a numpy array."""
     # np.generic allows us to return true for scalars as well as true arrays
     return isinstance(obj, (np.ndarray, np.generic))
 
 
-def is_array_like(obj):
+def is_array_like(obj: Any) -> bool:
     """Check if ``obj`` is an array like object."""
     # While it's possible that there are some iterables other than list/tuple
     # that can be made into arrays, it's very likely that those arrays

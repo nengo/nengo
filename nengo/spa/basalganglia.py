@@ -2,9 +2,9 @@ import numpy as np
 
 import nengo
 from nengo.exceptions import ValidationError
+from nengo.npext import is_number
 from nengo.spa.action_objects import DotProduct, Source
 from nengo.spa.module import Module
-from nengo.utils.numpy import is_number
 
 
 class BasalGanglia(nengo.networks.BasalGanglia, Module):
@@ -22,13 +22,13 @@ class BasalGanglia(nengo.networks.BasalGanglia, Module):
         A name for the ensemble. Used for debugging and visualization.
     seed : int, optional
         The seed used for random number generation.
-    add_to_container : bool, optional
+    add_to_network : bool, optional
         Determines if this Network will be added to the current container.
         If None, will be true if currently within a Network.
     """
 
     def __init__(
-        self, actions, input_synapse=0.002, label=None, seed=None, add_to_container=None
+        self, actions, input_synapse=0.002, label=None, seed=None, add_to_network=None
     ):
         self.actions = actions
         self.input_synapse = input_synapse
@@ -40,7 +40,7 @@ class BasalGanglia(nengo.networks.BasalGanglia, Module):
             dimensions=self.actions.count,
             label=label,
             seed=seed,
-            add_to_container=add_to_container,
+            add_to_network=add_to_network,
         )
 
     @property

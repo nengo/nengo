@@ -2,6 +2,7 @@ import warnings
 
 import numpy as np
 
+from nengo import npext
 from nengo.exceptions import ValidationError
 from nengo.params import (
     BoolParam,
@@ -12,7 +13,6 @@ from nengo.params import (
     Unconfigurable,
     FrozenObject,
 )
-import nengo.utils.numpy as npext
 
 
 class Distribution(FrozenObject):

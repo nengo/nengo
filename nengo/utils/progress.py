@@ -12,9 +12,9 @@ import warnings
 
 import numpy as np
 
-from .stdlib import get_terminal_size
 from .ipython import check_ipy_version, get_ipython
 from ..exceptions import ValidationError
+from ..pyext import get_terminal_size
 from ..rc import rc
 
 

@@ -3,7 +3,7 @@ import warnings
 
 import numpy as np
 
-import nengo.utils.numpy as npext
+from nengo import npext
 from nengo.builder import Builder, Signal
 from nengo.builder.operator import Copy, DotInc, Reset
 from nengo.dists import Distribution, get_samples

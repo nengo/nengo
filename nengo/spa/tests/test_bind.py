@@ -2,7 +2,7 @@ import numpy as np
 
 import nengo
 from nengo import spa
-from nengo.utils.numpy import rms
+from nengo.npext import rms
 
 
 def test_basic():

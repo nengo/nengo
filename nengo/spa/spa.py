@@ -79,8 +79,8 @@ class SPA(nengo.Network):
     .. deprecated:: 3.0.0
     """
 
-    def __init__(self, label=None, seed=None, add_to_container=None, vocabs=None):
-        super().__init__(label, seed, add_to_container)
+    def __init__(self, label=None, seed=None, add_to_network=None, vocabs=None):
+        super().__init__(label, seed, add_to_network)
 
         warnings.warn(
             DeprecationWarning(

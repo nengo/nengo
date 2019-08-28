@@ -10,7 +10,7 @@ from collections.abc import Mapping
 
 import numpy as np
 
-import nengo.utils.numpy as npext
+from nengo import npext
 from nengo.builder import Model
 from nengo.builder.optimizer import optimize as opmerge_optimize
 from nengo.builder.signal import SignalDict
@@ -148,7 +148,7 @@ class Simulator:
 
     def __init__(
         self, network, dt=0.001, seed=None, model=None, progress_bar=True, optimize=True
-    ):
+    ) -> None:
         self.closed = True  # Start closed in case constructor raises exception
         self.progress_bar = progress_bar
         self.optimize = optimize

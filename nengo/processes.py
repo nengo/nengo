@@ -5,9 +5,9 @@ import numpy as np
 from nengo.base import Process
 from nengo.dists import DistributionParam, Gaussian
 from nengo.exceptions import ValidationError
+from nengo.npext import array_hash, is_number, rfftfreq
 from nengo.params import BoolParam, DictParam, EnumParam, NdarrayParam, NumberParam
 from nengo.synapses import LinearFilter, Lowpass, SynapseParam
-from nengo.utils.numpy import array_hash, is_number, rfftfreq
 
 
 class WhiteNoise(Process):
@@ -236,7 +236,7 @@ class PresentInput(Process):
     inputs = NdarrayParam("inputs", shape=("...",))
     presentation_time = NumberParam("presentation_time", low=0, low_open=True)
 
-    def __init__(self, inputs, presentation_time, **kwargs):
+    def __init__(self, inputs, presentation_time, **kwargs) -> None:
         self.inputs = inputs
         self.presentation_time = presentation_time
         super().__init__(

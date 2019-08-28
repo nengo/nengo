@@ -4,9 +4,9 @@ import numpy as np
 
 from nengo.dists import Choice, Distribution, get_samples, Uniform
 from nengo.exceptions import SimulationError, ValidationError
+from nengo.npext import is_array_like
 from nengo.params import DictParam, FrozenObject, NumberParam, Parameter
 from nengo.rc import rc
-from nengo.utils.numpy import is_array_like
 
 
 def settled_firingrate(step, J, state, dt=0.001, settle_time=0.1, sim_time=1.0):

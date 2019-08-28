@@ -9,3 +9,8 @@ repos:
           (?x)(
               _vendor/*
           )
+-   repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v0.720
+    hooks:
+    - id: mypy
+      files: nengo/*

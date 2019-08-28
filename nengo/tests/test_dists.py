@@ -2,6 +2,7 @@ import numpy as np
 from numpy import array  # pylint: disable=unused-import
 import pytest
 
+from nengo import npext
 from nengo.dists import (
     Choice,
     CosineSimilarity,
@@ -14,7 +15,6 @@ from nengo.dists import (
     Uniform,
     UniformHypersphere,
 )
-import nengo.utils.numpy as npext
 from nengo.exceptions import ValidationError
 
 

@@ -19,7 +19,6 @@ from nengo.cache import (
 from nengo.exceptions import CacheIOWarning, FingerprintError
 import nengo.neurons
 from nengo.solvers import LstsqL2
-import nengo.utils.least_squares_solvers
 
 
 class Mock:
@@ -71,8 +70,8 @@ solver_types = [
 ]
 lstsq_solver_types = [
     obj
-    for obj in list_objects(nengo.utils.least_squares_solvers)
-    if isstrictsubclass(obj, nengo.utils.least_squares_solvers.LeastSquaresSolver)
+    for obj in list_objects(nengo.solvers)
+    if isstrictsubclass(obj, nengo.solvers.LeastSquaresSolver)
 ]
 
 
@@ -97,10 +96,10 @@ def get_solver_test_args(
     weights=False,
 ):
     conn = nengo.Connection(
-        nengo.Ensemble(n_neurons, dimensions, add_to_container=False),
-        nengo.Node(size_in=dimensions, add_to_container=False),
+        nengo.Ensemble(n_neurons, dimensions, add_to_network=False),
+        nengo.Node(size_in=dimensions, add_to_network=False),
         solver=solver,
-        add_to_container=False,
+        add_to_network=False,
     )
     defaults = {
         "conn": conn,

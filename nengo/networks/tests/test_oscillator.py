@@ -1,6 +1,6 @@
 import nengo
+from nengo.npext import rms
 from nengo.processes import Piecewise
-from nengo.utils.numpy import rms
 
 
 def test_oscillator(Simulator, plt, seed):

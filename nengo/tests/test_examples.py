@@ -3,8 +3,8 @@ import os
 import pytest
 import _pytest.capture
 
-from nengo.utils.paths import examples_dir
-from nengo.utils.stdlib import execfile
+from nengo.paths import examples_dir
+from nengo.pyext import execfile
 
 try:
     from nengo.utils.ipython import export_py, iter_cells, load_notebook

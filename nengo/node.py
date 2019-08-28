@@ -3,14 +3,14 @@ import warnings
 
 import numpy as np
 
-import nengo.utils.numpy as npext
+from nengo import npext
 from nengo.base import NengoObject, ObjView
 from nengo.exceptions import ValidationError
+from nengo.npext import is_array_like
 from nengo.params import Default, IntParam, Parameter
 from nengo.processes import Process
+from nengo.pyext import checked_call
 from nengo.rc import rc
-from nengo.utils.numpy import is_array_like
-from nengo.utils.stdlib import checked_call
 
 
 class OutputParam(Parameter):
@@ -193,10 +193,11 @@ class Node(NengoObject):
         size_out=Default,
         label=Default,
         seed=Default,
-    ):
+        add_to_network=None,
+    ) -> None:
         if not (seed is Default or seed is None):
             raise NotImplementedError("Changing the seed of a node has no effect")
-        super().__init__(label=label, seed=seed)
+        super().__init__(label=label, seed=seed, add_to_network=add_to_network)
 
         self.size_in = size_in
         self.size_out = size_out

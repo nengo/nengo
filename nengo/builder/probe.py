@@ -20,7 +20,7 @@ def conn_probe(model, probe):
         probe,
         synapse=probe.synapse,
         solver=probe.solver,
-        add_to_container=False,
+        add_to_network=False,
     )
 
     # Set connection's seed to probe's (which isn't used elsewhere)

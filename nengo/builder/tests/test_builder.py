@@ -123,7 +123,7 @@ def test_seed_override(seed, allclose):
 
 def test_build_twice():
     model = nengo.builder.Model()
-    ens = nengo.Ensemble(10, 1, add_to_container=False)
+    ens = nengo.Ensemble(10, 1, add_to_network=False)
     model.seeds[ens] = 0
     model.build(ens)
     built_ens = model.params[ens]

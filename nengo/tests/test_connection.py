@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 import nengo
-import nengo.utils.numpy as npext
+from nengo import npext
 from nengo.connection import ConnectionSolverParam
 from nengo.dists import Choice, UniformHypersphere
 from nengo.exceptions import BuildError, ValidationError

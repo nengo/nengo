@@ -1,11 +1,12 @@
 """Functions that extend the Python Standard Library."""
 
 from collections import namedtuple
-from collections.abc import Hashable, MutableMapping, MutableSet
+from collections.abc import Hashable, MutableMapping, MutableSet, Sequence
 import inspect
 import itertools
 import os
 import shutil
+import threading
 import time
 import weakref
 
@@ -275,7 +276,7 @@ class Timer:
     .. testcode::
 
        import time
-       from nengo.utils.stdlib import Timer
+       from nengo.pyext import Timer
 
        with Timer() as t:
           time.sleep(1)
@@ -295,3 +296,46 @@ class Timer:
     def __exit__(self, type, value, traceback):
         self.end = time.perf_counter()
         self.duration = self.end - self.start
+
+
+class ThreadLocalStack(threading.local, Sequence):
+    def __init__(self, maxsize=None):
+        super().__init__()
+        self.maxsize = maxsize
+        self._context = []
+
+    def __len__(self):
+        return len(self._context)
+
+    def __getitem__(self, i):
+        return self._context[i]
+
+    def append(self, item):
+        if self.maxsize is not None and len(self) >= self.maxsize:
+            raise RuntimeError("Stack limit exceeded.")
+        self._context.append(item)
+
+    def pop(self):
+        return self._context.pop()
+
+    def clear(self):
+        self._context[:] = []
+
+
+def function_name(func):
+    """Returns the name of a function.
+
+    Unlike accessing ``func.__name__``, this function is robust to the
+    different types of objects that can be considered a function in Nengo.
+
+    Parameters
+    ----------
+    func : callable or array_like
+        Object used as function argument.
+
+    Returns
+    -------
+    str
+        Name of function object.
+    """
+    return getattr(func, "__name__", func.__class__.__name__)

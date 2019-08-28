@@ -18,7 +18,7 @@ def test_nengoobjectparam():
         inst.nop = "a"
 
     # Can set it once
-    a = nengo.Ensemble(10, dimensions=2, add_to_container=False)
+    a = nengo.Ensemble(10, dimensions=2, add_to_network=False)
     inst.nop = a.neurons
     assert inst.nop == a.neurons
 

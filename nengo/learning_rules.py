@@ -2,6 +2,7 @@ import warnings
 
 from nengo.config import SupportDefaultsMixin
 from nengo.exceptions import ValidationError
+from nengo.npext import is_iterable
 from nengo.params import (
     Default,
     IntParam,
@@ -10,7 +11,6 @@ from nengo.params import (
     Parameter,
 )
 from nengo.synapses import Lowpass, SynapseParam
-from nengo.utils.numpy import is_iterable
 
 
 class LearningRuleTypeSizeInParam(IntParam):

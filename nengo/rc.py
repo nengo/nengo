@@ -64,7 +64,7 @@ import logging
 
 import numpy as np
 
-import nengo.utils.paths
+import nengo
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +76,7 @@ RC_DEFAULTS = {
         "enabled": True,
         "readonly": False,
         "size": "512 MB",
-        "path": nengo.utils.paths.decoder_cache_dir,
+        "path": nengo.paths.decoder_cache_dir,
     },
     "progress": {"progress_bar": "auto"},
     "exceptions": {"simplified": True},
@@ -85,9 +85,9 @@ RC_DEFAULTS = {
 
 # The RC files in the order in which they will be read.
 RC_FILES = [
-    nengo.utils.paths.nengorc["system"],
-    nengo.utils.paths.nengorc["user"],
-    nengo.utils.paths.nengorc["project"],
+    nengo.paths.nengorc["system"],
+    nengo.paths.nengorc["user"],
+    nengo.paths.nengorc["project"],
 ]
 
 

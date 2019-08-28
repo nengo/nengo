@@ -36,7 +36,10 @@ There are two options for getting Nengo working:
 del sys
 
 # Nengo namespace (API)
+from . import exceptions, npext, paths, pyext
 from .base import Process
+from .network import Network
+from .params import Default
 from .config import Config
 from .connection import Connection
 from .ensemble import Ensemble
@@ -56,15 +59,13 @@ from .neurons import (
     StochasticSpiking,
     Tanh,
 )
-from .network import Network
 from .learning_rules import PES, BCM, Oja, Voja
-from .params import Default
 from .probe import Probe
 from .rc import rc, RC_DEFAULTS
 from .simulator import Simulator
 from .synapses import Alpha, LinearFilter, Lowpass, Triangle
 from .transforms import Convolution, Dense, Sparse
-from . import dists, exceptions, networks, presets, processes, spa, utils
+from . import dists, networks, presets, processes, spa, types, utils
 
 logger = logging.getLogger(__name__)
 try:

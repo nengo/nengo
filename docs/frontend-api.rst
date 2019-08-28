@@ -79,14 +79,6 @@ Solvers
       :nosignatures:
       :exclude-members: SolverParam
 
-Solver methods
---------------
-
-.. automodule:: nengo.utils.least_squares_solvers
-
-   .. autoautosummary:: nengo.utils.least_squares_solvers
-      :nosignatures:
-
 Synapse models
 ==============
 

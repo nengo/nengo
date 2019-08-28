@@ -62,7 +62,7 @@ class Product(nengo.Network):
         Represents the second squared term. See `Gosmann, 2015`_ for details.
     """
 
-    def __init__(self, n_neurons, dimensions, input_magnitude=1.0, **kwargs):
+    def __init__(self, n_neurons, dimensions, input_magnitude=1.0, **kwargs) -> None:
         if "net" in kwargs:
             raise ObsoleteError("The 'net' argument is no longer supported.")
         kwargs.setdefault("label", "Product")

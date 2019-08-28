@@ -8,7 +8,4 @@ from . import ipython
 from . import magic
 from . import nco
 from . import network
-from . import numpy
-from . import paths
 from . import simulator
-from . import stdlib

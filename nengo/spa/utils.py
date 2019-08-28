@@ -3,7 +3,7 @@
 import numpy as np
 
 import nengo
-import nengo.utils.numpy as npext
+from nengo import npext
 from nengo.exceptions import ValidationError
 from nengo.spa.vocab import Vocabulary, VocabularyParam
 

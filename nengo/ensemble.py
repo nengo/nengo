@@ -156,8 +156,9 @@ class Ensemble(NengoObject):
         normalize_encoders=Default,
         label=Default,
         seed=Default,
-    ):
-        super().__init__(label=label, seed=seed)
+        add_to_network=None,
+    ) -> None:
+        super().__init__(label=label, seed=seed, add_to_network=add_to_network)
         self.n_neurons = n_neurons
         self.dimensions = dimensions
         self.radius = radius

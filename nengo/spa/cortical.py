@@ -22,7 +22,7 @@ class Cortical(Module):
         A name for the ensemble. Used for debugging and visualization.
     seed : int, optional
         The seed used for random number generation.
-    add_to_container : bool, optional
+    add_to_network : bool, optional
         Determines if this Network will be added to the current container.
         If None, will be true if currently within a Network.
     """
@@ -34,9 +34,9 @@ class Cortical(Module):
         neurons_cconv=200,
         label=None,
         seed=None,
-        add_to_container=None,
+        add_to_network=None,
     ):
-        super().__init__(label, seed, add_to_container)
+        super().__init__(label, seed, add_to_network)
         self.actions = actions
         self.synapse = synapse
         self.neurons_cconv = neurons_cconv

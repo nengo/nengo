@@ -10,9 +10,9 @@ import numpy as np
 from nengo.builder.neurons import SimNeurons
 from nengo.builder import operator as op
 from nengo.builder.signal import Signal
+from nengo.pyext import Timer, WeakKeyDefaultDict, WeakSet
 from nengo.rc import rc
 from nengo.utils.graphs import BidirectionalDAG, transitive_closure
-from nengo.utils.stdlib import Timer, WeakKeyDefaultDict, WeakSet
 
 logger = logging.getLogger(__name__)
 

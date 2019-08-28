@@ -9,14 +9,13 @@ from nengo.exceptions import ValidationError
 from nengo.learning_rules import LearningRuleType, LearningRuleTypeParam
 from nengo.neurons import Direct
 from nengo.node import Node
+from nengo.npext import is_array_like, is_iterable
 from nengo.params import BoolParam, Default, FunctionInfo, Parameter
+from nengo.pyext import checked_call, function_name
 from nengo.rc import rc
 from nengo.solvers import LstsqL2, SolverParam
 from nengo.synapses import Lowpass, SynapseParam
 from nengo.transforms import Dense, NoTransform
-from nengo.utils.functions import function_name
-from nengo.utils.numpy import is_array_like, is_iterable
-from nengo.utils.stdlib import checked_call
 
 
 class PrePostParam(NengoObjectParam):
@@ -503,8 +502,9 @@ class Connection(NengoObject):
         scale_eval_points=Default,
         label=Default,
         seed=Default,
-    ):
-        super().__init__(label=label, seed=seed)
+        add_to_network=None,
+    ) -> None:
+        super().__init__(label=label, seed=seed, add_to_network=add_to_network)
 
         self.pre = pre
         self.post = post

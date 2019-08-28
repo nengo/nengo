@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 import nengo
-from nengo.utils.stdlib import Timer
+from nengo.pyext import Timer
 
 
 def test_multirun(Simulator, rng, allclose):

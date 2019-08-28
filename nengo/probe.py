@@ -126,8 +126,9 @@ class Probe(NengoObject):
         solver=Default,
         label=Default,
         seed=Default,
-    ):
-        super().__init__(label=label, seed=seed)
+        add_to_network=None,
+    ) -> None:
+        super().__init__(label=label, seed=seed, add_to_network=add_to_network)
         self.target = target
         self.attr = attr if attr is not None else self.obj.probeable[0]
         self.sample_every = sample_every

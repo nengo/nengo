@@ -26,7 +26,7 @@ SOFTWARE.
 from __future__ import division
 
 import numpy as np
-from nengo.utils.numpy import array_offset
+from nengo.npext import array_offset
 
 
 def calc_pad(pad, in_siz, out_siz, stride, ksize):
@@ -37,9 +37,9 @@ def calc_pad(pad, in_siz, out_siz, stride, ksize):
     Returns:
         pad_: Actual padding width.
     """
-    if pad == 'SAME':
+    if pad == "SAME":
         return (out_siz - 1) * stride + ksize - in_siz
-    elif pad == 'VALID':
+    elif pad == "VALID":
         return 0
     else:
         return pad
@@ -56,9 +56,9 @@ def calc_size(h, kh, pad, sh):
         s: output size.
     """
 
-    if pad == 'VALID':
+    if pad == "VALID":
         return np.ceil((h - kh + 1) / sh)
-    elif pad == 'SAME':
+    elif pad == "SAME":
         return np.ceil(h / sh)
     else:
         return int(np.ceil((h - kh + pad + 1) / sh))
@@ -99,19 +99,21 @@ def extract_sliding_windows(x, ksize, pad, stride, floor_first=True):
     else:
         pph = (ph1, ph0)
         ppw = (pw1, pw0)
-    x = np.pad(
-        x, ((0, 0), pph, ppw, (0, 0)),
-        mode='constant',
-        constant_values=(0.0,))
+    x = np.pad(x, ((0, 0), pph, ppw, (0, 0)), mode="constant", constant_values=(0.0,))
 
     x_sn, x_sh, x_sw, x_sc = x.strides
-    y_strides = (x_sn, sh*x_sh, sw*x_sw, x_sh, x_sw, x_sc)
-    y = np.ndarray((n, h2, w2, kh, kw, c), dtype=x.dtype, buffer=x.data,
-                   offset=array_offset(x), strides=y_strides)
+    y_strides = (x_sn, sh * x_sh, sw * x_sw, x_sh, x_sw, x_sc)
+    y = np.ndarray(
+        (n, h2, w2, kh, kw, c),
+        dtype=x.dtype,
+        buffer=x.data,
+        offset=array_offset(x),
+        strides=y_strides,
+    )
     return y
 
 
-def conv2d(x, w, pad='SAME', stride=(1, 1)):
+def conv2d(x, w, pad="SAME", stride=(1, 1)):
     """2D convolution (technically speaking, correlation).
     Args:
         x: [N, H, W, C]

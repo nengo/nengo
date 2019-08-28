@@ -3,8 +3,8 @@ import pytest
 import matplotlib.tri as tri
 
 import nengo
+from nengo.npext import rms
 from nengo.utils.connection import eval_point_decoding
-from nengo.utils.numpy import rms
 
 
 @pytest.mark.parametrize("points_arg", [False, True])

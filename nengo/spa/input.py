@@ -41,13 +41,13 @@ class Input(Module):
         A name for the ensemble. Used for debugging and visualization.
     seed : int, optional
         The seed used for random number generation.
-    add_to_container : bool, optional
+    add_to_network : bool, optional
         Determines if this Network will be added to the current container.
         If None, will be true if currently within a Network.
     """
 
-    def __init__(self, label=None, seed=None, add_to_container=None, **kwargs):
-        super().__init__(label, seed, add_to_container)
+    def __init__(self, label=None, seed=None, add_to_network=None, **kwargs):
+        super().__init__(label, seed, add_to_network)
         self.kwargs = kwargs
         self.input_nodes = {}
 

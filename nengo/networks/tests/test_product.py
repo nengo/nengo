@@ -3,7 +3,7 @@ import pytest
 
 import nengo
 from nengo.networks.product import dot_product_transform
-from nengo.utils.numpy import rms
+from nengo.npext import rms
 
 
 def test_sine_waves(Simulator, plt, seed):

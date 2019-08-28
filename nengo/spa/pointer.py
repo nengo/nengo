@@ -1,8 +1,8 @@
 import numpy as np
 
 from nengo.exceptions import ValidationError
+from nengo.npext import is_integer, is_number
 from nengo.rc import rc
-from nengo.utils.numpy import is_integer, is_number
 
 
 class SemanticPointer:

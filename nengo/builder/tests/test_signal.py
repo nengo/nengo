@@ -7,7 +7,7 @@ import nengo
 from nengo.builder import Model
 from nengo.builder.signal import Signal, SignalDict
 from nengo.exceptions import SignalError
-from nengo.utils.numpy import scipy_sparse
+from nengo.npext import scipy_sparse
 
 
 def test_signaldict(allclose):

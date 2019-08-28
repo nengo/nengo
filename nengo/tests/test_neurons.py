@@ -24,11 +24,11 @@ from nengo.neurons import (
     StochasticSpiking,
     Tanh,
 )
+from nengo.npext import rms
 from nengo.processes import WhiteSignal
 from nengo.solvers import LstsqL2nz
 from nengo.utils.ensemble import tuning_curves
 from nengo.utils.matplotlib import implot, rasterplot
-from nengo.utils.numpy import rms
 
 
 # --- define a composite neuron type, used in `AnyNeuronType` (see `pytest_nengo.py`)

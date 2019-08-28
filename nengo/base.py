@@ -1,3 +1,5 @@
+from typing import Dict, Callable, Optional, Tuple
+
 from copy import copy
 import warnings
 
@@ -15,30 +17,10 @@ from nengo.params import (
     StringParam,
     Unconfigurable,
 )
-from nengo.utils.numpy import as_shape, maxint, maxseed, is_integer
+from nengo.npext import as_shape, maxint, maxseed, is_integer
 
 
-class NetworkMember(type):
-    """A metaclass used to add instances of derived classes to networks.
-
-    Inheriting from this class means that Network.add will be invoked after
-    initializing the object, unless add_to_container=False is passed to the
-    derived class constructor.
-    """
-
-    def __call__(cls, *args, **kwargs):
-        """Override default __call__ behavior so that Network.add is called."""
-        inst = cls.__new__(cls)
-        add_to_container = kwargs.pop("add_to_container", True)
-        # Do the __init__ before adding in case __init__ errors out
-        inst.__init__(*args, **kwargs)
-        if add_to_container:
-            nengo.Network.add(inst)
-        inst._initialized = True
-        return inst
-
-
-class NengoObject(SupportDefaultsMixin, metaclass=NetworkMember):
+class NengoObject(SupportDefaultsMixin):
     """A base class for Nengo objects.
 
     Parameters
@@ -47,6 +29,10 @@ class NengoObject(SupportDefaultsMixin, metaclass=NetworkMember):
         A descriptive label for the object.
     seed : int
         The seed used for random number generation.
+    add_to_network : bool, optional
+        Determines if this network will be added to the first network in
+        ``Network.context``. If None, will default to True if there is a
+        network in ``Network.context``.
 
     Attributes
     ----------
@@ -65,11 +51,16 @@ class NengoObject(SupportDefaultsMixin, metaclass=NetworkMember):
     label = StringParam("label", default=None, optional=True)
     seed = IntParam("seed", default=None, low=0, high=maxseed, optional=True)
 
-    def __init__(self, label, seed):
+    def __init__(self, label, seed, add_to_network=None):
         super().__init__()
         self._initialized = False
         self.label = label
         self.seed = seed
+
+        if add_to_network is None:
+            add_to_network = len(nengo.Network.context) > 0
+        if add_to_network:
+            nengo.Network.add(self)
 
     def __getstate__(self):
         state = self.__dict__.copy()
@@ -129,13 +120,21 @@ class NengoObject(SupportDefaultsMixin, metaclass=NetworkMember):
         """Returns a list of parameter names that can be set."""
         return list(iter_params(self))
 
-    def copy(self, add_to_container=True):
+    @property
+    def size_in(self):
+        raise NotImplementedError("Subclasses must implement 'size_in'")
+
+    @property
+    def size_out(self):
+        raise NotImplementedError("Subclasses must implement 'size_out'")
+
+    def copy(self, add_to_network=True):
         with warnings.catch_warnings():
-            # We warn when copying since we can't change add_to_container.
+            # We warn when copying since we can't change add_to_network.
             # However, we deal with it here, so we ignore the warning.
             warnings.simplefilter("ignore", category=NotAddedToNetworkWarning)
             c = copy(self)
-        if add_to_container:
+        if add_to_network:
             nengo.Network.add(c)
         return c
 
@@ -280,7 +279,7 @@ class Process(FrozenObject):
 
     def __init__(
         self, default_size_in=0, default_size_out=1, default_dt=0.001, seed=None
-    ):
+    ) -> None:
         super().__init__()
         self.default_size_in = default_size_in
         self.default_size_out = default_size_out
@@ -358,7 +357,14 @@ class Process(FrozenObject):
         """
         return {}  # Implement if the process has a state
 
-    def make_step(self, shape_in, shape_out, dt, rng, state):
+    def make_step(
+        self,
+        shape_in: Tuple[int, ...],
+        shape_out: Tuple[int, ...],
+        dt: float,
+        rng: Optional[np.random.RandomState],
+        state: Dict[str, np.ndarray],
+    ) -> Callable[[float, np.ndarray], Optional[np.ndarray]]:
         """Create function that advances the process forward one time step.
 
         This must be implemented by all custom processes. The parameters below

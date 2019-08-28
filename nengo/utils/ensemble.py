@@ -1,9 +1,17 @@
+from typing import Optional, Sequence, Tuple
+
 import numpy as np
 
-from . import numpy as npext
+from ..ensemble import Ensemble
+from ..npext import meshgrid_nd, norm
+from ..types import SimulatorProtocol
 
 
-def tuning_curves(ens, sim, inputs=None):
+def tuning_curves(
+    ens: Ensemble,
+    sim: SimulatorProtocol,
+    inputs: Optional[Sequence[np.ndarray]] = None,
+) -> Tuple[np.ndarray, np.ndarray]:
     """Calculates the tuning curves of an ensemble.
 
     That is the neuron responses in dependence of the vector represented by the
@@ -27,7 +35,7 @@ def tuning_curves(ens, sim, inputs=None):
 
     Returns
     -------
-    inputs : sequence of ndarray
+    inputs : ndarray
         The passed or auto-generated ``inputs``.
     activities : ndarray
         The activities of the individual neurons given the ``inputs``.
@@ -48,7 +56,7 @@ def tuning_curves(ens, sim, inputs=None):
     if inputs is None:
         inputs = np.linspace(-ens.radius, ens.radius)
         if ens.dimensions > 1:
-            inputs = npext.meshgrid_nd(*(ens.dimensions * [inputs]))
+            inputs = meshgrid_nd(*(ens.dimensions * [inputs]))
         else:
             inputs = [inputs]
         inputs = np.asarray(inputs).T
@@ -60,7 +68,11 @@ def tuning_curves(ens, sim, inputs=None):
     return inputs, activities.reshape(inputs.shape[:-1] + (-1,))
 
 
-def response_curves(ens, sim, inputs=None):
+def response_curves(
+    ens: Ensemble,
+    sim: SimulatorProtocol,
+    inputs: Optional[Sequence[np.ndarray]] = None,
+) -> Tuple[np.ndarray, np.ndarray]:
     """Calculates the response curves of an ensemble.
 
     That is the neuron responses in dependence of an already encoded value.
@@ -190,14 +202,14 @@ def sorted_neurons(ensemble, sim, iterations=100, seed=None):
 
     # Normalize all the encoders
     encoders = np.array(sim.data[ensemble].encoders)
-    encoders /= npext.norm(encoders, axis=1, keepdims=True)
+    encoders /= norm(encoders, axis=1, keepdims=True)
 
     # Make an array with the starting order of the neurons
     N = encoders.shape[0]
     indices = np.arange(N)
     rng = np.random.RandomState(seed)
 
-    for k in range(iterations):
+    for _ in range(iterations):
         target = rng.randint(0, N, N)  # pick random swap targets
         for i in range(N):
             j = target[i]

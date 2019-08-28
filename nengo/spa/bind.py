@@ -33,7 +33,7 @@ class Bind(Module):
         A name for the ensemble. Used for debugging and visualization.
     seed : int, optional
         The seed used for random number generation.
-    add_to_container : bool, optional
+    add_to_network : bool, optional
         Determines if this Network will be added to the current container.
         If None, will be true if currently within a Network.
     """
@@ -48,9 +48,9 @@ class Bind(Module):
         input_magnitude=1.0,
         label=None,
         seed=None,
-        add_to_container=None,
+        add_to_network=None,
     ):
-        super().__init__(label, seed, add_to_container)
+        super().__init__(label, seed, add_to_network)
         if vocab is None:
             # use the default vocab for this number of dimensions
             vocab = dimensions

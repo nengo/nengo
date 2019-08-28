@@ -1,8 +1,8 @@
 from collections import defaultdict
 import itertools
 
+from ..pyext import groupby
 from .graphs import add_edges
-from .stdlib import groupby
 
 
 def operator_dependency_graph(operators):  # noqa: C901

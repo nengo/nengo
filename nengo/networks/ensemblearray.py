@@ -4,8 +4,8 @@ import numpy as np
 
 import nengo
 from nengo.exceptions import ValidationError
+from nengo.npext import is_iterable
 from nengo.utils.network import with_self
-from nengo.utils.numpy import is_iterable
 
 
 class EnsembleArray(nengo.Network):
@@ -42,7 +42,7 @@ class EnsembleArray(nengo.Network):
         Used for visualization and debugging.
     seed : int, optional
         Random number seed that will be used in the build step.
-    add_to_container : bool, optional
+    add_to_network : bool, optional
         Determines if this network will be added to the current container.
         If None, this network will be added to the network at the top of the
         ``Network.context`` stack unless the stack is empty.
@@ -77,9 +77,9 @@ class EnsembleArray(nengo.Network):
         ens_dimensions=1,
         label=None,
         seed=None,
-        add_to_container=None,
+        add_to_network=None,
         **ens_kwargs
-    ):
+    ) -> None:
         if "dimensions" in ens_kwargs:
             raise ValidationError(
                 "'dimensions' is not a valid argument to EnsembleArray. "
@@ -89,7 +89,7 @@ class EnsembleArray(nengo.Network):
                 obj=self,
             )
 
-        super().__init__(label, seed, add_to_container)
+        super().__init__(label, seed, add_to_network)
 
         for param in ens_kwargs:
             if is_iterable(ens_kwargs[param]):

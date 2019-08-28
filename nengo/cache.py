@@ -49,6 +49,11 @@ from nengo.neurons import (
 )
 from nengo.rc import rc
 from nengo.solvers import (
+    BlockConjgrad,
+    Cholesky,
+    Conjgrad,
+    ConjgradScipy,
+    LSMRScipy,
     Lstsq,
     LstsqDrop,
     LstsqL1,
@@ -59,18 +64,11 @@ from nengo.solvers import (
     Nnls,
     NnlsL2,
     NnlsL2nz,
+    RandomizedSVD,
+    SVD,
 )
 from nengo.utils import nco
 from nengo.utils.cache import byte_align, bytes2human, human2bytes
-from nengo.utils.least_squares_solvers import (
-    Cholesky,
-    ConjgradScipy,
-    LSMRScipy,
-    Conjgrad,
-    BlockConjgrad,
-    SVD,
-    RandomizedSVD,
-)
 from nengo.utils.lock import FileLock
 
 logger = logging.getLogger(__name__)

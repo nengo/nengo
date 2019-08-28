@@ -15,9 +15,9 @@ import inspect
 import sys
 
 from nengo.exceptions import ConfigError, ValidationError
-from nengo.params import Default, is_param
+from nengo.params import Default, is_param, iter_params
+from nengo.pyext import ThreadLocalStack
 from nengo.rc import rc
-from nengo.utils.threading import ThreadLocalStack
 
 
 class ClassParams:

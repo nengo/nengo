@@ -1,7 +1,7 @@
 """Syntactic parsing of the subexpressions of all action expressions."""
 
 from nengo.exceptions import SpaParseError
-from nengo.utils.numpy import is_number
+from nengo.npext import is_number
 
 
 class Symbol:

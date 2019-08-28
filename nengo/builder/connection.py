@@ -12,9 +12,9 @@ from nengo.ensemble import Ensemble, Neurons
 from nengo.exceptions import BuildError
 from nengo.neurons import Direct
 from nengo.node import Node
+from nengo.npext import is_integer, is_iterable
 from nengo.rc import rc
 from nengo.solvers import NoSolver, Solver
-from nengo.utils.numpy import is_integer, is_iterable
 
 built_attrs = ["eval_points", "solver_info", "weights", "transform"]
 

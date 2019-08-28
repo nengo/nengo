@@ -49,7 +49,7 @@ class Thalamus(nengo.networks.Thalamus, Module):
         A name for the ensemble. Used for debugging and visualization.
     seed : int, optional
         The seed used for random number generation.
-    add_to_container : bool, optional
+    add_to_network : bool, optional
         Determines if this Network will be added to the current container.
         If None, will be true if currently within a Network.
     """
@@ -73,7 +73,7 @@ class Thalamus(nengo.networks.Thalamus, Module):
         synapse_to_gate=0.002,
         label=None,
         seed=None,
-        add_to_container=None,
+        add_to_network=None,
     ):
 
         self.bg = bg
@@ -105,7 +105,7 @@ class Thalamus(nengo.networks.Thalamus, Module):
             threshold=self.threshold_action,
             label=label,
             seed=seed,
-            add_to_container=add_to_container,
+            add_to_network=add_to_network,
         )
 
     def on_add(self, spa):
