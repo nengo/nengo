@@ -17,25 +17,22 @@ The pattern uses
 including wildcard characters ``?`` and ``*`` to match one or more characters.
 The pattern matches to the test name,
 which is the same as the pytest ``nodeid``
-seen when calling pytest with the ``-v`` argument,
-except that only one colon ``:`` is used between file path and function name
-rather than the two colons ``::`` used by ``nodeid``.
+seen when calling pytest with the ``-v`` argument.
 
 .. code-block:: ini
 
    nengo_test_unsupported =
-       nengo/tests/test_file_path.py:test_function_name
+       nengo/tests/test_file_path.py::test_function_name
            "This is a message giving the reason we skip this test"
-       nengo/tests/test_file_two.py:test_other_thing
+       nengo/tests/test_file_two.py::test_other_thing
            "This is a test with a multi-line reason for skipping.
            Make sure to use quotes around the whole string (and not inside)."
-       nengo/tests/test_file_two.py:test_parametrized_thing[param_value]
+       nengo/tests/test_file_two.py::test_parametrized_thing[param_value]
            "This skips a parametrized test with a specific parameter value."
 """
 
 from fnmatch import fnmatch
 import importlib
-import os
 import shlex
 import sys
 
@@ -69,20 +66,6 @@ def deselect_by_condition(condition, items, config):
     if deselected:
         config.hook.pytest_deselected(items=deselected)
         items[:] = remaining
-
-
-def get_item_name(item):
-    """Get a unique backend-independent name for an item (test function)."""
-    item_path, item_name = str(item.fspath), item.location[2]
-    nengo_path = os.path.abspath(os.path.dirname(__file__))
-    if item_path.startswith(nengo_path):
-        # if test is within the nengo directory, remove the nengo directory
-        # prefix (so that we can move the nengo directory without changing
-        # the name)
-        item_path = item_path[len(nengo_path) + 1 :]
-    item_path = os.path.join("nengo", item_path)
-    item_path = item_path.replace(os.sep, "/")
-    return "%s:%s" % (item_path, item_name)
 
 
 def load_class(fully_qualified_name):
@@ -211,8 +194,6 @@ def pytest_report_collectionfinish(config, startdir, items):
 
 
 def pytest_runtest_setup(item):
-    item_name = get_item_name(item)
-
     # join all the lines and then split (preserving quoted strings)
     unsupported = shlex.split(" ".join(item.config.getini("nengo_test_unsupported")))
     # group pairs (representing testname + reason)
@@ -227,7 +208,7 @@ def pytest_runtest_setup(item):
         # a '*' before the name of a test function.
         test = "*" + test
 
-        if is_nengo_test(item) and fnmatch(item_name, test):
+        if is_nengo_test(item) and fnmatch(item.nodeid, test):
             if item.config.getvalue("unsupported"):
                 item.add_marker(pytest.mark.xfail(reason=reason))
             else:

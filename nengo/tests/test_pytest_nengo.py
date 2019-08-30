@@ -43,10 +43,10 @@ def test_unsupported(xfail, testdir):
         pytest="""
         [pytest]
         nengo_test_unsupported =
-            test_file.py:test_unsupported[False]
+            test_file.py::test_unsupported[False]
                 "One unsupported param
                 with multiline comment"
-            test_file.py:test_unsupported_all*
+            test_file.py::test_unsupported_all*
                 "Two unsupported params with single-line comment"
 
         # avoid trying to load neurons from dummy nengo package

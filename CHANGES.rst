@@ -160,6 +160,9 @@ Release History
   by ``nengo_simulator`` and ``nengo_neurons`` entries in the pytest config file
   instead.
   (`#1566 <https://github.com/nengo/nengo/pull/1566>`__)
+- The ``nengo_test_unsupported`` option now uses pytest nodeids for the test names
+  (the main change is that this means a double ``::`` between file and function names).
+  (`#1566 <https://github.com/nengo/nengo/pull/1566>`__)
 
 **Deprecated**
 
