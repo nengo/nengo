@@ -171,7 +171,7 @@ def pytest_collection_modifyitems(session, config, items):
             if item.get_closest_marker("slow"):
                 item.add_marker(skip_slow)
     if not config.getvalue("spa"):
-        deselect_by_condition(lambda item: "/spa/tests" in item.nodeid, items, config)
+        deselect_by_condition(lambda item: "spa/tests" in item.nodeid, items, config)
 
 
 def pytest_report_collectionfinish(config, startdir, items):
