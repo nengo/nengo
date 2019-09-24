@@ -357,13 +357,15 @@ class TupleParam(Parameter):
 
     def coerce(self, instance, value):
         value = super().coerce(instance, value)
-        try:
-            value = tuple(value)
-        except TypeError:
-            raise ValidationError(
-                "Value must be castable to a tuple", attr=self.name, obj=instance
-            )
+
         if value is not None:
+            try:
+                value = tuple(value)
+            except TypeError:
+                raise ValidationError(
+                    "Value must be castable to a tuple", attr=self.name, obj=instance
+                )
+
             if self.length is not None and len(value) != self.length:
                 raise ValidationError(
                     "Must be %d items (got %d)" % (self.length, len(value)),
@@ -394,19 +396,21 @@ class ShapeParam(TupleParam):
 
     def coerce(self, instance, value):
         value = super().coerce(instance, value)
-        for i, v in enumerate(value):
-            if not is_integer(v):
-                raise ValidationError(
-                    "Element %d must be an int (got type %r)" % (i, type(v).__name__),
-                    attr=self.name,
-                    obj=instance,
-                )
-            if self.low is not None and v < self.low:
-                raise ValidationError(
-                    "Element %d must be >= %d (got %d)" % (i, self.low, v),
-                    attr=self.name,
-                    obj=instance,
-                )
+        if value is not None:
+            for i, v in enumerate(value):
+                if not is_integer(v):
+                    raise ValidationError(
+                        "Element %d must be an int (got type %r)"
+                        % (i, type(v).__name__),
+                        attr=self.name,
+                        obj=instance,
+                    )
+                if self.low is not None and v < self.low:
+                    raise ValidationError(
+                        "Element %d must be >= %d (got %d)" % (i, self.low, v),
+                        attr=self.name,
+                        obj=instance,
+                    )
 
         return value
 

@@ -198,12 +198,13 @@ def test_enumparam():
 
 def test_tupleparam():
     class Test:
-        tp = params.TupleParam("tp", default=(0, 0, 0))
+        tp = params.TupleParam("tp", default=(0, 0, 0), optional=True)
         tp3 = params.TupleParam("tp3", default=(0, 0, 0), length=3)
 
     inst = Test()
     inst.tp = (1, 2, 3)
     inst.tp = (1, 2, 3, 4)
+    inst.tp = None
     inst.tp3 = (1, 2, 3)
     inst.tp3 = [1.2, 2.3, 3.4]
     with pytest.raises(ValidationError):
@@ -217,13 +218,15 @@ def test_tupleparam():
 def test_shapeparam():
     class Test:
         sp2 = params.ShapeParam("sp2", default=(0, 0), length=2, low=None)
-        sp3 = params.ShapeParam("sp3", default=(0, 0, 0), length=3)
+        sp3 = params.ShapeParam("sp3", default=(0, 0, 0), length=3, optional=True)
 
     inst = Test()
     assert inst.sp2 == (0, 0)
     assert inst.sp3 == (0, 0, 0)
     inst.sp2 = (-1, 2)
     assert inst.sp2 == (-1, 2)
+    inst.sp3 = None
+    assert inst.sp3 is None
     inst.sp3 = (0, 2, 3)
     assert inst.sp3 == (0, 2, 3)
     with pytest.raises(ValidationError):

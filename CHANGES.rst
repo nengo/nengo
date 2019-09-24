@@ -248,6 +248,8 @@ Release History
   (`#1535 <https://github.com/nengo/nengo/pull/1535>`__)
 - Models using the ``SpikingRectifiedLinear`` neuron type now have their
   decoders cached. (`#1550 <https://github.com/nengo/nengo/pull/1550>`__)
+- Optional ``ShapeParam``/``TupleParam`` can now be set to ``None``.
+  (`#1569 <https://github.com/nengo/nengo/pull/1569>`__)
 
 2.8.0 (June 9, 2018)
 ====================
