@@ -431,7 +431,7 @@ class Piecewise(Process):
                 interpolation = "zero"
             else:
                 try:
-                    import scipy.interpolate
+                    import scipy.interpolate  # pylint: disable=import-outside-toplevel
 
                     self.sp_interpolate = scipy.interpolate
                 except ImportError:

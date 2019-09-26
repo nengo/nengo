@@ -52,7 +52,7 @@ class BasalGanglia(nengo.networks.BasalGanglia, Module):
         return self._bias
 
     def on_add(self, spa):
-        """Form the connections into the BG to compute the utilty values.
+        """Form the connections into the BG to compute the utility values.
 
         Each action's condition variable contains the set of computations
         needed for that action's utility value, which is the input to the

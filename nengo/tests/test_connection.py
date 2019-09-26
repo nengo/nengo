@@ -258,19 +258,19 @@ def test_function_and_transform(Simulator, plt, seed, allclose):
 
     with Simulator(model) as sim:
         sim.run(0.8)
-    x0, x1 = np.dot(sim.data[ap] ** 2, [[1.0, -1]]).T
-    y0, y1 = sim.data[bp].T
+    x = np.dot(sim.data[ap] ** 2, [[1.0, -1]]).T
+    y = sim.data[bp].T
 
     t = sim.trange()
-    plt.plot(t, x0, "b:", label="a**2")
-    plt.plot(t, x1, "g:", label="-a**2")
-    plt.plot(t, y0, "b", label="b[0]")
-    plt.plot(t, y1, "g", label="b[1]")
+    plt.plot(t, x[0], "b:", label="a**2")
+    plt.plot(t, x[1], "g:", label="-a**2")
+    plt.plot(t, y[0], "b", label="b[0]")
+    plt.plot(t, y[1], "g", label="b[1]")
     plt.legend(loc=0, prop={"size": 10})
     plt.xlim(right=t[-1])
 
-    assert allclose(x0, y0, atol=0.1, rtol=0.01)
-    assert allclose(x1, y1, atol=0.1, rtol=0.01)
+    assert allclose(x[0], y[0], atol=0.1, rtol=0.01)
+    assert allclose(x[1], y[1], atol=0.1, rtol=0.01)
 
 
 def test_dist_transform(Simulator, seed, allclose):

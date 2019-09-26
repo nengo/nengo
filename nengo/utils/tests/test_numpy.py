@@ -44,30 +44,23 @@ def test_array_hash_sparse(nnz, rng):
 
     if nnz == 7:
         shape = (5, 5)
-        rows_a = [0, 0, 1, 2, 3, 3, 4]
-        rows_b = [0, 1, 1, 2, 3, 3, 4]
-
-        cols_a = [0, 2, 3, 4, 2, 4, 0]
-        cols_b = [1, 2, 3, 4, 2, 4, 0]
+        idxs_a = ([0, 0, 1, 2, 3, 3, 4], [0, 2, 3, 4, 2, 4, 0])
+        idxs_b = ([0, 1, 1, 2, 3, 3, 4], [1, 2, 3, 4, 2, 4, 0])
 
         data_a = [1.0, 2.0, 1.5, 2.3, 1.2, 2.5, 1.8]
         data_b = [1.0, 1.0, 1.5, 2.3, 1.2, 2.5, 1.8]
     else:
         shape = (100, 100)
 
-        inds_a = rng.permutation(np.prod(shape))[:nnz]
-        inds_b = rng.permutation(np.prod(shape))[:nnz]
-        rows_a, cols_a = np.unravel_index(inds_a, shape)
-        rows_b, cols_b = np.unravel_index(inds_b, shape)
+        idxs_a = np.unravel_index(rng.permutation(np.prod(shape))[:nnz], shape)
+        idxs_b = np.unravel_index(rng.permutation(np.prod(shape))[:nnz], shape)
 
         data_a = rng.uniform(-1, 1, size=nnz)
         data_b = rng.uniform(-1, 1, size=nnz)
 
     matrices = [[] for _ in range(6)]
 
-    for (rows, cols), data in itertools.product(
-        ((rows_a, cols_a), (rows_b, cols_b)), (data_a, data_b)
-    ):
+    for (rows, cols), data in itertools.product((idxs_a, idxs_b), (data_a, data_b)):
 
         csr = scipy_sparse.csr_matrix((data, (rows, cols)), shape=shape)
         matrices[0].append(csr)

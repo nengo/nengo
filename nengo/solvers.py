@@ -270,7 +270,8 @@ class LstsqL1(Solver):
     l2 = NumberParam("l2", low=0)
 
     def __init__(self, weights=False, l1=1e-4, l2=1e-6, max_iter=1000):
-        import sklearn.linear_model  # noqa F401, import to check existence
+        # import to check existence
+        import sklearn.linear_model  # pylint: disable=import-outside-toplevel
 
         assert sklearn.linear_model
         super().__init__(weights=weights)
@@ -279,7 +280,7 @@ class LstsqL1(Solver):
         self.max_iter = max_iter
 
     def __call__(self, A, Y, rng=np.random):
-        import sklearn.linear_model
+        import sklearn.linear_model  # pylint: disable=import-outside-toplevel
 
         tstart = time.time()
         Y = np.array(Y)  # copy since 'fit' may modify Y
@@ -424,13 +425,14 @@ class Nnls(Solver):
     compositional = False
 
     def __init__(self, weights=False):
-        import scipy.optimize  # import here too to throw error early
+        # import here too to throw error early
+        import scipy.optimize  # pylint: disable=import-outside-toplevel
 
         assert scipy.optimize
         super().__init__(weights=weights)
 
     def __call__(self, A, Y, rng=np.random):
-        import scipy.optimize
+        import scipy.optimize  # pylint: disable=import-outside-toplevel
 
         tstart = time.time()
         Y, m, n, _, matrix_in = format_system(A, Y)
@@ -464,7 +466,7 @@ class NnlsL2(Nnls):
         self.reg = reg
 
     def _solve(self, A, Y, sigma=0.0):
-        import scipy.optimize
+        import scipy.optimize  # pylint: disable=import-outside-toplevel
 
         tstart = time.time()
         Y, m, n, _, matrix_in = format_system(A, Y)

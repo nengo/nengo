@@ -490,22 +490,32 @@ class Connection(NengoObject):
         self.modulatory = modulatory
 
     def __str__(self):
-        return "<Connection %s>" % self._str
+        return self._str(include_id=False)
 
     def __repr__(self):
-        return "<Connection at 0x%x %s>" % (id(self), self._str)
+        return self._str(include_id=True)
 
-    @property
-    def _str(self):
-        if self.label is not None:
-            return self.label
+    def _str(self, include_id):
+        desc = "<Connection "
+        if include_id:
+            desc += "at 0x%x " % id(self)
 
-        desc = (
-            ""
-            if self.function is None
-            else " computing '%s'" % (function_name(self.function))
-        )
-        return "from %s to %s%s" % (self.pre, self.post, desc)
+        if self.label is None:
+            desc += "from %s to %s%s" % (
+                self.pre,
+                self.post,
+                (
+                    ""
+                    if self.function is None
+                    else " computing '%s'" % (function_name(self.function))
+                ),
+            )
+        else:
+            desc += self.label
+
+        desc += ">"
+
+        return desc
 
     @property
     def function(self):

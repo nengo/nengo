@@ -31,7 +31,7 @@ assert get_ipython
 
 def check_ipy_version(min_version):
     try:
-        import IPython
+        import IPython  # pylint: disable=import-outside-toplevel
 
         return IPython.version_info >= min_version
     except ImportError:

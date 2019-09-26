@@ -54,8 +54,8 @@ def test_uniform(low, high, rng, allclose):
     else:
         assert np.all(samples <= low)
         assert np.all(samples > high)
-    hist, _ = np.histogram(samples, bins=5)
-    assert allclose(hist, np.mean(hist), atol=0.1 * n)
+    histogram, _ = np.histogram(samples, bins=5)
+    assert allclose(histogram, np.mean(histogram), atol=0.1 * n)
 
 
 @pytest.mark.parametrize("mean,std", [(0, 1), (0, 0), (10, 2)])
@@ -134,8 +134,8 @@ def test_choice(weights, rng, allclose):
 
     # check that frequency of choices matches weights
     inds = [tchoices.index(s) for s in tsample]
-    hist, bins = np.histogram(inds, bins=np.linspace(-0.5, N - 0.5, N + 1))
-    p_empirical = hist / float(hist.sum())
+    histogram, bins = np.histogram(inds, bins=np.linspace(-0.5, N - 0.5, N + 1))
+    p_empirical = histogram / float(histogram.sum())
     p = np.ones(N) / N if dist.p is None else dist.p
     sterr = 1.0 / np.sqrt(n)  # expected maximum standard error
     assert allclose(p, p_empirical, atol=2 * sterr)
@@ -182,9 +182,9 @@ def test_sqrt_beta(n, m, rng):
 
     dist = SqrtBeta(n, m)
     samples = dist.sample(num_samples, 1, rng=rng)
-    hist, _ = np.histogram(samples, bins=num_bins)
+    histogram, _ = np.histogram(samples, bins=num_bins)
 
-    assert np.all(np.abs(np.asfarray(hist - expectation) / num_samples) < 0.16)
+    assert np.all(np.abs(np.asfarray(histogram - expectation) / num_samples) < 0.16)
 
 
 @pytest.mark.parametrize("n,m", [(4, 1), (10, 5)])

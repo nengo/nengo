@@ -239,7 +239,7 @@ def groupby(objects, key, hashable=None, force_list=True):
     else:
         keygroupers = itertools.groupby(sorted(objects, key=key), key=key)
         if force_list:
-            return [(k, [v for v in g]) for k, g in keygroupers]
+            return [(k, list(g)) for k, g in keygroupers]
         else:
             return keygroupers
 

@@ -70,7 +70,7 @@ class Cholesky(LeastSquaresSolver):
         np.fill_diagonal(G, G.diagonal() + m * sigma ** 2)
 
         try:
-            import scipy.linalg
+            import scipy.linalg  # pylint: disable=import-outside-toplevel
 
             factor = scipy.linalg.cho_factor(G, overwrite_a=True)
             X = scipy.linalg.cho_solve(factor, b)
@@ -109,7 +109,7 @@ class ConjgradScipy(LeastSquaresSolver):
         self.atol = atol
 
     def __call__(self, A, Y, sigma, rng=None):
-        import scipy.sparse.linalg
+        import scipy.sparse.linalg  # pylint: disable=import-outside-toplevel
 
         Y, m, n, d, matrix_in = format_system(A, Y)
 
@@ -154,7 +154,7 @@ class LSMRScipy(LeastSquaresSolver):
         self.tol = tol
 
     def __call__(self, A, Y, sigma, rng=None):
-        import scipy.sparse.linalg
+        import scipy.sparse.linalg  # pylint: disable=import-outside-toplevel
 
         Y, m, n, d, matrix_in = format_system(A, Y)
 

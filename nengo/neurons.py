@@ -132,10 +132,11 @@ class NeuronType(FrozenObject):
                 J_threshold = J[np.where(rate <= 0)[0][-1]]
             if J_max is None and (rate >= max_rate).any():
                 J_max = J[np.where(rate >= max_rate)[0][0]]
+
             if J_threshold is not None and J_max is not None:
                 break
-            else:
-                Jr *= 2
+
+            Jr *= 2
         else:
             if J_threshold is None:
                 raise RuntimeError("Could not find firing threshold")
