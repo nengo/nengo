@@ -138,5 +138,6 @@ def test_build_twice():
     model.build(ens)
     built_ens = model.params[ens]
 
-    assert model.build(ens) is None
+    with pytest.warns(UserWarning, match="has already been built"):
+        assert model.build(ens) is None
     assert model.params[ens] is built_ens

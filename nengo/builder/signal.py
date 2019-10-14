@@ -61,7 +61,7 @@ class Signal:
         offset=0,
     ):
         if self.assert_named_signals:
-            assert name
+            assert name is not None
         self._name = name
 
         if initial_value is None:
