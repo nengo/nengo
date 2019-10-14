@@ -54,6 +54,14 @@ def test_encoders_no_dimensions(Simulator, seed, allclose):
         test_encoders(Simulator, 0, seed=seed, allclose=allclose)
 
 
+@pytest.mark.filterwarnings("ignore:invalid value encountered in true_divide")
+def test_encoder_all_zero(Simulator, seed, allclose):
+    with pytest.raises(BuildError, match="zero-length encoders"):
+        test_encoders(
+            Simulator, 1, seed=seed, allclose=allclose, encoders=np.zeros((10, 1))
+        )
+
+
 def test_constant_scalar(Simulator, nl, plt, seed, allclose):
     """A Network that represents a constant value."""
     N = 30

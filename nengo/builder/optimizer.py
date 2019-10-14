@@ -671,7 +671,9 @@ class DotIncMerger(Merger):
                 base=A,
                 offset=i * A.itemsize * np.prod(A.shape[1:]),
             )
-            assert np.all(s.initial_value == A_sigr[s].initial_value)
+            assert np.allclose(
+                s.initial_value, A_sigr[s].initial_value, atol=0, rtol=0, equal_nan=True
+            )
             assert s.shape == A_sigr[s].shape or (
                 s.shape == () and A_sigr[s].shape == (1, 1)
             )

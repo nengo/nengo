@@ -22,24 +22,22 @@ def test_sigmerger_check():
     assert not SigMerger.check([Signal(0), Signal(1)])
 
     # compatible along first axis
-    assert SigMerger.check([Signal(np.empty((1, 2))), Signal(np.empty((2, 2)))])
+    assert SigMerger.check([Signal(shape=(1, 2)), Signal(shape=(2, 2))])
 
     # compatible along second axis
-    assert SigMerger.check([Signal(np.empty((2, 1))), Signal(np.empty((2, 2)))], axis=1)
-    assert not SigMerger.check(
-        [Signal(np.empty((2, 1))), Signal(np.empty((2, 2)))], axis=0
-    )
+    assert SigMerger.check([Signal(shape=(2, 1)), Signal(shape=(2, 2))], axis=1)
+    assert not SigMerger.check([Signal(shape=(2, 1)), Signal(shape=(2, 2))], axis=0)
 
     # shape mismatch
-    assert not SigMerger.check([Signal(np.empty((2,))), Signal(np.empty((2, 2)))])
+    assert not SigMerger.check([Signal(shape=(2,)), Signal(shape=(2, 2))])
 
     # mixed dtype
     assert not SigMerger.check(
-        [Signal(np.empty(2, dtype=int)), Signal(np.empty(2, dtype=float))]
+        [Signal(np.zeros(2, dtype=int)), Signal(np.zeros(2, dtype=float))]
     )
 
-    s1 = Signal(np.empty(5))
-    s2 = Signal(np.empty(5))
+    s1 = Signal(shape=(5,))
+    s2 = Signal(shape=(5,))
 
     # mixed signal and view
     assert not SigMerger.check([s1, s1[:3]])
@@ -70,36 +68,32 @@ def test_sigmerger_check_signals():
         SigMerger.check_signals([Signal(0), Signal(1)])
 
     # compatible along first axis
-    SigMerger.check_signals([Signal(np.empty((1, 2))), Signal(np.empty((2, 2)))])
+    SigMerger.check_signals([Signal(shape=(1, 2)), Signal(shape=(2, 2))])
 
     # compatible along second axis
-    SigMerger.check_signals(
-        [Signal(np.empty((2, 1))), Signal(np.empty((2, 2)))], axis=1
-    )
+    SigMerger.check_signals([Signal(shape=(2, 1)), Signal(shape=(2, 2))], axis=1)
     with pytest.raises(ValueError):
-        SigMerger.check_signals(
-            [Signal(np.empty((2, 1))), Signal(np.empty((2, 2)))], axis=0
-        )
+        SigMerger.check_signals([Signal(shape=(2, 1)), Signal(shape=(2, 2))], axis=0)
 
     # shape mismatch
     with pytest.raises(ValueError):
-        SigMerger.check_signals([Signal(np.empty((2,))), Signal(np.empty((2, 2)))])
+        SigMerger.check_signals([Signal(shape=(2,)), Signal(shape=(2, 2))])
 
     # mixed dtype
     with pytest.raises(ValueError):
         SigMerger.check_signals(
-            [Signal(np.empty(2, dtype=int)), Signal(np.empty(2, dtype=float))]
+            [Signal(np.zeros(2, dtype=int)), Signal(np.zeros(2, dtype=float))]
         )
 
     # compatible views
-    s = Signal(np.empty(5))
+    s = Signal(shape=(5,))
     with pytest.raises(ValueError):
         SigMerger.check_signals([s[:2], s[2:]])
 
 
 def test_sigmerger_check_views():
-    s1 = Signal(np.empty((5, 5)))
-    s2 = Signal(np.empty((5, 5)))
+    s1 = Signal(shape=(5, 5))
+    s2 = Signal(shape=(5, 5))
 
     # compatible along first axis
     SigMerger.check_views([s1[:1], s1[1:]])

@@ -71,6 +71,11 @@ class Signal:
             assert initial_value.shape == shape
 
         self._initial_value = initial_value
+        if np.any(
+            np.isnan(self._initial_value.data if self.sparse else self._initial_value)
+        ):
+            raise SignalError("%r contains NaNs." % self)
+
         if self.sparse:
             assert initial_value.ndim == 2
             assert offset == 0

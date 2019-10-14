@@ -163,6 +163,11 @@ Release History
 - The ``nengo_test_unsupported`` option now uses pytest nodeids for the test names
   (the main change is that this means a double ``::`` between file and function names).
   (`#1566 <https://github.com/nengo/nengo/pull/1566>`__)
+- ``Signals`` will now raise an error if their initial value contains NaNs.
+  (`#1571 <https://github.com/nengo/nengo/pull/1571>`__)
+- The builder will now raise an error if any encoders are NaN,
+  which can occur if an encoder has length zero.
+  (`#1571 <https://github.com/nengo/nengo/pull/1571>`__)
 
 **Deprecated**
 

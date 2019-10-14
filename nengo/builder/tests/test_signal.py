@@ -376,3 +376,10 @@ def test_signal_shape():
     Signal(np.zeros(shape), shape=shape)
     with pytest.raises(AssertionError):
         Signal(np.zeros((2, 3)), shape=shape)
+
+
+def tests_signal_nan():
+    with_nan = np.ones(4)
+    with_nan[1] = np.nan
+    with pytest.raises(SignalError, match="contains NaNs"):
+        Signal(initial_value=with_nan)
