@@ -692,7 +692,7 @@ class BsrDotInc(DotInc):
     """
 
     def __init__(self, A, X, Y, indices, indptr, reshape=None, tag=None):
-        from scipy.sparse import bsr_matrix
+        from scipy.sparse import bsr_matrix  # pylint: disable=import-outside-toplevel
 
         self.bsr_matrix = bsr_matrix
 

@@ -329,7 +329,9 @@ class RandomizedSVD(LeastSquaresSolver):
     n_iter = IntParam("n_iter", low=0)
 
     def __init__(self, n_components=60, n_oversamples=10, n_iter=0):
-        from sklearn.utils.extmath import randomized_svd
+        from sklearn.utils.extmath import (  # pylint: disable=import-outside-toplevel
+            randomized_svd,
+        )
 
         assert randomized_svd
         super().__init__()
@@ -338,7 +340,9 @@ class RandomizedSVD(LeastSquaresSolver):
         self.n_iter = n_iter
 
     def __call__(self, A, Y, sigma, rng=np.random):
-        from sklearn.utils.extmath import randomized_svd
+        from sklearn.utils.extmath import (  # pylint: disable=import-outside-toplevel
+            randomized_svd,
+        )
 
         Y, m, n, _, matrix_in = format_system(A, Y)
         if min(m, n) <= self.n_components + self.n_oversamples:

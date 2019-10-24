@@ -5,7 +5,7 @@ import numpy as np
 import nengo
 import nengo.utils.numpy as npext
 from nengo.exceptions import ValidationError
-from nengo.spa.vocab import VocabularyParam
+from nengo.spa.vocab import Vocabulary, VocabularyParam
 
 
 def enable_spa_params(model):
@@ -40,7 +40,6 @@ def similarity(data, vocab, normalize=False):
     normalize : bool, optional
         Whether to normalize all vectors, to compute the cosine similarity.
     """
-    from nengo.spa.vocab import Vocabulary
 
     if isinstance(vocab, Vocabulary):
         vectors = vocab.vectors

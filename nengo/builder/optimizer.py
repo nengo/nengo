@@ -617,7 +617,9 @@ class DotIncMerger(Merger):
         try:
             # Not using check() for A, because A must not be a view.
             SigMerger.check_signals([op1.A, op2.A])
-            from scipy.sparse import bsr_matrix
+            from scipy.sparse import (  # pylint: disable=import-outside-toplevel
+                bsr_matrix,
+            )
 
             assert bsr_matrix
         except ImportError:

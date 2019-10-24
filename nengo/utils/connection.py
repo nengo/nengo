@@ -99,6 +99,8 @@ def eval_point_decoding(conn, sim, eval_points=None):
     decoded : ndarray (N, D)
         The decoded function value at each evaluation point.
     """
+    # pylint: disable=import-outside-toplevel
+    # note: these are imported here to avoid circular imports
     from nengo.builder.ensemble import get_activities
     from nengo.builder.connection import get_targets
 

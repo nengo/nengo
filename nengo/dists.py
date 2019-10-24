@@ -423,7 +423,7 @@ class SqrtBeta(Distribution):
         cdf : array_like
             Probability that ``X <= x``.
         """
-        from scipy.special import betainc
+        from scipy.special import betainc  # pylint: disable=import-outside-toplevel
 
         sq_x = x * x
         return np.where(
@@ -445,7 +445,7 @@ class SqrtBeta(Distribution):
         pdf : array_like
             Probability density at ``x``.
         """
-        from scipy.special import beta
+        from scipy.special import beta  # pylint: disable=import-outside-toplevel
 
         return (
             2
@@ -469,7 +469,7 @@ class SqrtBeta(Distribution):
         ppf : array_like
             Evaluation points ``x`` in [0, 1] such that ``P(X <= x) = y``.
         """
-        from scipy.special import betaincinv
+        from scipy.special import betaincinv  # pylint: disable=import-outside-toplevel
 
         sq_x = betaincinv(self.m / 2.0, self.n / 2.0, y)
         return np.sqrt(sq_x)

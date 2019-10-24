@@ -40,7 +40,10 @@ def tuning_curves(ens, sim, inputs=None):
     --------
     response_curves
     """
-    from nengo.builder.ensemble import get_activities
+    # note: imported here to avoid circular imports
+    from nengo.builder.ensemble import (  # pylint: disable=import-outside-toplevel
+        get_activities,
+    )
 
     if inputs is None:
         inputs = np.linspace(-ens.radius, ens.radius)
