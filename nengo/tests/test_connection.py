@@ -279,10 +279,11 @@ def test_dist_transform(Simulator, seed, allclose):
 
     with nengo.Network(seed=seed) as net:
         net.config[nengo.Connection].transform = nengo.dists.Gaussian(0.5, 1)
-        a = nengo.Node(output=[0] * 200)
-        b = nengo.Node(size_in=201)
-        c = nengo.Ensemble(202, 10)
-        d = nengo.Ensemble(203, 11)
+        n = 300
+        a = nengo.Node(output=[0] * n)
+        b = nengo.Node(size_in=n + 1)
+        c = nengo.Ensemble(n + 2, 10)
+        d = nengo.Ensemble(n + 3, 11)
 
         # make a couple different types of connections to make sure that a
         # correctly sized transform is being generated
@@ -300,18 +301,18 @@ def test_dist_transform(Simulator, seed, allclose):
     w = sim.data[conn1].weights
     assert allclose(np.mean(w), 0.5, atol=0.01)
     assert allclose(np.std(w), 1, atol=0.01)
-    assert w.shape == (201, 200)
+    assert w.shape == (n + 1, n)
 
-    assert sim.data[conn2].weights.shape == (10, 201)
-    assert sim.data[conn3].weights.shape == (202, 201)
+    assert sim.data[conn2].weights.shape == (10, n + 1)
+    assert sim.data[conn3].weights.shape == (n + 2, n + 1)
     assert sim.data[conn4].weights.shape == (1, 2)
-    assert sim.data[conn5].weights.shape == (203, 202)
+    assert sim.data[conn5].weights.shape == (n + 3, n + 2)
 
     # make sure the seed works (gives us the same transform)
     with nengo.Network(seed=seed) as net:
         net.config[nengo.Connection].transform = nengo.dists.Gaussian(0.5, 1)
-        a = nengo.Node(output=[0] * 200)
-        b = nengo.Node(size_in=201)
+        a = nengo.Node(output=[0] * n)
+        b = nengo.Node(size_in=n + 1)
         conn = nengo.Connection(a, b)
 
     with Simulator(net) as sim:
