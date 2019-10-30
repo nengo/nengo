@@ -23,6 +23,8 @@ class SimPES(Operator):
     * :math:`e_j` is the error for the jth output dimension, and
     * :math:`a_i` is the activity of a presynaptic neuron.
 
+    .. versionadded:: 3.0.0
+
     Parameters
     ----------
     pre_filtered : Signal

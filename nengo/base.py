@@ -335,6 +335,8 @@ class Process(FrozenObject):
         The builder uses this to allocate memory for the process state, so
         that the state can be represented as part of the whole simulator state.
 
+        .. versionadded:: 3.0.0
+
         Parameters
         ----------
         shape_in : tuple
@@ -376,6 +378,8 @@ class Process(FrozenObject):
             A dictionary mapping keys to signals, where the signals fully
             represent the state of the process. The signals are initialized
             by `.Process.make_state`.
+
+            .. versionadded:: 3.0.0
         """
         raise NotImplementedError("Process must implement `make_step` method.")
 

@@ -105,6 +105,8 @@ def build_convolution(
 class ConvInc(Operator):
     """Apply convolutional weights to input signal.
 
+    .. versionadded:: 3.0.0
+
     Parameters
     ----------
     W : Signal

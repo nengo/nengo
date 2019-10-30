@@ -30,6 +30,9 @@ class SimulationData(Mapping):
     This is like a view on the raw simulation data manipulated by the Simulator,
     which allows the raw simulation data to be optimized for speed while this
     provides a more user-friendly interface.
+
+    .. versionchanged:: 3.0.0
+        Renamed from ProbeDict to SimulationData
     """
 
     def __init__(self, raw):
@@ -266,7 +269,10 @@ class Simulator:
         return self._time
 
     def clear_probes(self):
-        """Clear all probe histories."""
+        """Clear all probe histories.
+
+        .. versionadded:: 3.0.0
+        """
         for probe in self.model.probes:
             self._sim_data[probe] = []
         self.data.reset()  # clear probe cache
@@ -421,6 +427,9 @@ class Simulator:
         sample_every : float, optional
             The sampling period of the probe to create a range for.
             If None, a time value for every ``dt`` will be produced.
+
+            .. versionchanged:: 3.0.0
+                Renamed from dt to sample_every
         """
         if dt is not None:
             if sample_every is not None:

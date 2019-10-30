@@ -114,6 +114,8 @@ def seed_network(network, seeds, seeded, base_rng=np.random):
 
     This includes all subnetworks.
 
+    .. versionadded:: 3.0.0
+
     Parameters
     ----------
     network : Network

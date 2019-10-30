@@ -138,6 +138,11 @@ class LinearFilter(Synapse):
         Whether the synapse coefficients are analog (i.e. continuous-time),
         or discrete. Analog coefficients will be converted to discrete for
         simulation using the simulator ``dt``.
+    method : string
+        The method to use for discretization (if ``analog`` is True). See
+        `scipy.signal.cont2discrete` for information about the options.
+
+        .. versionadded:: 3.0.0
 
     Attributes
     ----------

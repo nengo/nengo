@@ -75,6 +75,8 @@ class SPA(nengo.Network):
 
                 self.bg = spa.BasalGanglia(actions=actions)
                 self.thal = spa.Thalamus(self.bg)
+
+    .. deprecated:: 3.0.0
     """
 
     def __init__(self, label=None, seed=None, add_to_container=None, vocabs=None):

@@ -62,7 +62,10 @@ class ObsoleteError(NengoException):
 
 
 class MovedError(NengoException):
-    """A feature that has been moved elsewhere."""
+    """A feature that has been moved elsewhere.
+
+    .. versionadded:: 3.0.0
+    """
 
     def __init__(self, location=None):
         self.location = location

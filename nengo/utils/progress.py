@@ -274,6 +274,8 @@ class VdomProgressBar(ProgressBar):  # pragma: no cover
     """A progress bar using a virtual DOM representation.
 
     This HTML representation can be used in Jupyter lab (>=0.32) environments.
+
+    .. versionadded: 3.0.0
     """
 
     def __init__(self):
@@ -548,6 +550,8 @@ class VdomOrHtmlProgressBar(ProgressBar):  # pragma: no cover
     bundle and it is up to the Jupyter client to pick the preferred version.
     Usually this will be the VDOM if supported, and the HMTL version where VDOM
     is not supported.
+
+    .. versionadded: 3.0.0
     """
 
     def __init__(self):

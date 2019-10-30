@@ -628,7 +628,10 @@ class DotInc(Operator):
 
 
 class SparseDotInc(DotInc):
-    """Like `.DotInc` but ``A`` is a sparse matrix."""
+    """Like `.DotInc` but ``A`` is a sparse matrix.
+
+    .. versionadded:: 3.0.0
+    """
 
     def __init__(self, A, X, Y, tag=None):
         if not A.sparse:

@@ -19,7 +19,10 @@ from nengo.utils.numpy import is_array_like, scipy_sparse
 
 
 class Transform(FrozenObject):
-    """A base class for connection transforms."""
+    """A base class for connection transforms.
+
+    .. versionadded:: 3.0.0
+    """
 
     def sample(self, rng=np.random):
         """Returns concrete weights to implement the specified transform.
@@ -48,7 +51,10 @@ class Transform(FrozenObject):
 
 
 class ChannelShapeParam(ShapeParam):
-    """A parameter where the value must be a shape with channels."""
+    """A parameter where the value must be a shape with channels.
+
+    .. versionadded:: 3.0.0
+    """
 
     def coerce(self, transform, shape):
         if isinstance(shape, ChannelShape):
@@ -68,6 +74,8 @@ class ChannelShapeParam(ShapeParam):
 
 class Dense(Transform):
     """A dense matrix transformation between an input and output signal.
+
+    .. versionadded:: 3.0.0
 
     Parameters
     ----------
@@ -152,6 +160,8 @@ class SparseInitParam(Parameter):
 
 class SparseMatrix(FrozenObject):
     """Represents a sparse matrix.
+
+    .. versionadded:: 3.0.0
 
     Parameters
     ----------
@@ -273,6 +283,8 @@ class SparseMatrix(FrozenObject):
 class Sparse(Transform):
     """A sparse matrix transformation between an input and output signal.
 
+    .. versionadded:: 3.0.0
+
     Parameters
     ----------
     shape : tuple of int
@@ -331,6 +343,8 @@ class Convolution(Transform):
     """An N-dimensional convolutional transform.
 
     The dimensionality of the convolution is determined by the input shape.
+
+    .. versionadded:: 3.0.0
 
     Parameters
     ----------
@@ -485,6 +499,8 @@ class Convolution(Transform):
 
 class ChannelShape:
     """Represents shape information with variable channel position.
+
+    .. versionadded:: 3.0.0
 
     Parameters
     ----------
