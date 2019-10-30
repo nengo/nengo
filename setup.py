@@ -29,7 +29,9 @@ def read(*filenames, **kwargs):
 root = os.path.dirname(os.path.realpath(__file__))
 version = runpy.run_path(os.path.join(root, "nengo", "version.py"))["version"]
 
-install_req = ["numpy>=1.11"]
+install_req = [
+    "numpy>=1.11",
+]
 docs_req = [
     "sphinx>=1.8",
     "jupyter",
@@ -38,7 +40,10 @@ docs_req = [
     "numpydoc>=0.6",
     "nengo_sphinx_theme>=0.12.0",
 ]
-optional_req = ["scipy>=0.13", "scikit-learn"]
+optional_req = [
+    "scipy>=0.13",
+    "scikit-learn",
+]
 tests_req = [
     "jupyter",
     "matplotlib>=1.4",
@@ -68,11 +73,11 @@ setup(
         "tests": tests_req,
     },
     python_requires=">=3.5",
-    package_data={"nengo": ["nengo-data/nengorc"]},
-    py_modules=["pytest_nengo"],
+    package_data={"nengo": ["nengo-data/nengorc",],},
+    py_modules=["pytest_nengo",],
     entry_points={
-        "nengo.backends": ["reference = nengo:Simulator"],
-        "pytest11": ["nengo = pytest_nengo"],
+        "nengo.backends": ["reference = nengo:Simulator",],
+        "pytest11": ["nengo = pytest_nengo",],
     },
     classifiers=[
         "Development Status :: 5 - Production/Stable",

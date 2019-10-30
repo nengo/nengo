@@ -620,7 +620,7 @@ def test_slicing_function(Simulator, plt, seed, allclose):
     """Test using a pre-slice and a function"""
     N = 300
     f_in = lambda t: [np.cos(3 * t), np.sin(3 * t)]
-    f_x = lambda x: [x, -x ** 2]
+    f_x = lambda x: [x, -(x ** 2)]
 
     with nengo.Network(seed=seed) as model:
         u = nengo.Node(output=f_in)

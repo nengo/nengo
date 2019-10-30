@@ -65,8 +65,11 @@ jobs:
     python: 3.7
 
 before_install:
-  # export travis_terminate for use in scripts
+  # export travis_terminate for use in scripts, from here:
+  # https://github.com/travis-ci/travis-build/blob/master/lib/travis/build/bash/travis_terminate.bash
   - export -f travis_terminate
+    _travis_terminate_agent
+    _travis_terminate_freebsd
     _travis_terminate_linux
     _travis_terminate_osx
     _travis_terminate_unix
@@ -87,9 +90,6 @@ before_install:
 install:
   - .ci/$SCRIPT.sh install
   - pip freeze
-
-after_install:
-  - .ci/$SCRIPT.sh after_install
 
 before_script:
   - .ci/$SCRIPT.sh before_script
