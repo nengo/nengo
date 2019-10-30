@@ -82,15 +82,15 @@ def test_trange_with_probes(Simulator):
         assert len(sim.trange(sample_every=p)) == len(sim.data[probes[i]])
 
 
-def test_probedict():
-    """Tests simulator.ProbeDict's implementation."""
+def test_simulation_data():
+    """Tests simulator.SimulationData's implementation."""
     raw = {"scalar": 5, "list": [2, 4, 6]}
-    probedict = nengo.simulator.ProbeDict(raw)
-    assert np.all(probedict["scalar"] == np.asarray(raw["scalar"]))
-    assert np.all(probedict.get("list") == np.asarray(raw.get("list")))
+    data = nengo.simulator.SimulationData(raw)
+    assert np.all(data["scalar"] == np.asarray(raw["scalar"]))
+    assert np.all(data.get("list") == np.asarray(raw.get("list")))
 
 
-def test_probedict_with_repeated_simulator_runs(Simulator):
+def test_simulation_data_with_repeated_simulator_runs(Simulator):
     with nengo.Network() as model:
         ens = nengo.Ensemble(10, 1)
         p = nengo.Probe(ens)

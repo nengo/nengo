@@ -22,7 +22,7 @@ create and close a `nengo.Simulator` instance.
 
 .. autoclass:: nengo.Simulator
 
-.. autoclass:: nengo.simulator.ProbeDict
+.. autoclass:: nengo.simulator.SimulationData
 
 .. autoclass:: nengo.simulator.SignalDict
 

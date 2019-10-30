@@ -19,13 +19,17 @@ from nengo.utils.simulator import operator_dependency_graph
 logger = logging.getLogger(__name__)
 
 
-class ProbeDict(Mapping):
-    """Map from Probe -> ndarray.
+class SimulationData(Mapping):
+    """Data structure used to access simulation data from the model.
 
-    This is more like a view on the dict that the simulator manipulates.
-    However, for speed reasons, the simulator uses Python lists,
-    and we want to return NumPy arrays. Additionally, this mapping
-    is readonly, which is more appropriate for its purpose.
+    The main use case for this is to access Probe data; for example,
+    ``probe_data = sim.data[my_probe]``. However, it is also used to access the
+    parameters of objects in the model; for example, encoder values for an ensemble
+    can be accessed via ``encoders = sim.data[my_ens].encoders``.
+
+    This is like a view on the raw simulation data manipulated by the Simulator,
+    which allows the raw simulation data to be optimized for speed while this
+    provides a more user-friendly interface.
     """
 
     def __init__(self, raw):
@@ -34,6 +38,11 @@ class ProbeDict(Mapping):
         self._cache = {}
 
     def __getitem__(self, key):
+        """Return simulation data for ``key`` object.
+
+        For speed reasons, the simulator uses Python lists for Probe data
+        and we want to return NumPy arrays.
+        """
         if key not in self._cache or len(self._cache[key]) != len(self.raw[key]):
             rval = self.raw[key]
             if isinstance(rval, list):
@@ -56,6 +65,15 @@ class ProbeDict(Mapping):
 
     def reset(self):
         self._cache.clear()
+
+
+class ProbeDict(SimulationData):
+    def __init__(self, *args, **kwargs):
+        warnings.warn(
+            "ProbeDict has been renamed to SimulationData. This alias "
+            "will be removed in Nengo 3.1."
+        )
+        super().__init__(*args, **kwargs)
 
 
 class Simulator:
@@ -112,8 +130,8 @@ class Simulator:
     closed : bool
         Whether the simulator has been closed.
         Once closed, it cannot be reopened.
-    data : ProbeDict
-        The `.ProbeDict` mapping from Nengo objects to the data associated
+    data : SimulationData
+        The `.SimulationData` mapping from Nengo objects to the data associated
         with those objects. In particular, each `.Probe` maps to the data
         probed while running the simulation.
     dg : dict
@@ -163,11 +181,11 @@ class Simulator:
         for op in self.model.operators:
             op.init_signals(self.signals)
 
-        # Add built states to the probe dictionary
-        self._probe_outputs = self.model.params
+        # Add built states to the raw simulation data dictionary
+        self._sim_data = self.model.params
 
-        # Provide a nicer interface to probe outputs
-        self.data = ProbeDict(self._probe_outputs)
+        # Provide a nicer interface to simulation data
+        self.data = SimulationData(self._sim_data)
 
         if seed is None:
             if network is not None and network.seed is not None:
@@ -200,9 +218,7 @@ class Simulator:
             if self.signals is not None
             else {}
         )
-        probe_outputs = {
-            probe: self._probe_outputs[probe] for probe in self.model.probes
-        }
+        probe_outputs = {probe: self._sim_data[probe] for probe in self.model.probes}
         return dict(
             model=self.model,
             signals=signals,
@@ -226,7 +242,7 @@ class Simulator:
         for key, value in state["signals"].items():
             self.signals[key] = value
         for key, value in state["probe_outputs"].items():
-            self._probe_outputs[key].extend(value)
+            self._sim_data[key].extend(value)
         if state["closed"]:
             self.close()
 
@@ -252,7 +268,7 @@ class Simulator:
     def clear_probes(self):
         """Clear all probe histories."""
         for probe in self.model.probes:
-            self._probe_outputs[probe] = []
+            self._sim_data[probe] = []
         self.data.reset()  # clear probe cache
 
     def close(self):
@@ -273,7 +289,7 @@ class Simulator:
             period = 1 if probe.sample_every is None else probe.sample_every / self.dt
             if self.n_steps % period < 1:
                 tmp = self.signals[self.model.sig[probe]["in"]].copy()
-                self._probe_outputs[probe].append(tmp)
+                self._sim_data[probe].append(tmp)
 
     def _probe_step_time(self):
         self._n_steps = self.signals[self.model.step].item()

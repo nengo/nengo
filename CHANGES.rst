@@ -168,6 +168,8 @@ Release History
 - The builder will now raise an error if any encoders are NaN,
   which can occur if an encoder has length zero.
   (`#1571 <https://github.com/nengo/nengo/pull/1571>`__)
+- Renamed ``simulator.ProbeDict`` to ``simulator.SimulationData``.
+  (`#1574 <https://github.com/nengo/nengo/pull/1574>`__)
 
 **Deprecated**
 

@@ -241,7 +241,7 @@ class SPA(nengo.Network):
 
         Parameters
         ----------
-        data: ProbeDict
+        data: SimulationData
             Collection of simulation data returned by sim.run() function call.
         probe: Probe
             Probe with desired data.
