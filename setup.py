@@ -30,7 +30,7 @@ root = os.path.dirname(os.path.realpath(__file__))
 version = runpy.run_path(os.path.join(root, "nengo", "version.py"))["version"]
 
 install_req = [
-    "numpy>=1.11",
+    "numpy>=1.13",
 ]
 docs_req = [
     "sphinx>=1.8",

@@ -25,7 +25,6 @@ jobs:
   -
     env:
       SCRIPT="static"
-    stage: basic
   -
     env:
       SCRIPT="test-coverage-scipy"
@@ -43,23 +42,27 @@ jobs:
         packages:
           - graphviz
           - pandoc
-    stage: advanced
-  -
-    env:
-      NUMPY="numpy==1.11"
-    cache: False
-  -
-    env:
-      NUMPY="numpy==1.12"
   -
     env:
       NUMPY="numpy==1.13"
+    if: branch =~ ^release-candidate-*
+    cache: False
   -
     env:
       NUMPY="numpy==1.14"
+    if: branch =~ ^release-candidate-*
   -
     env:
       NUMPY="numpy==1.15"
+    if: branch =~ ^release-candidate-*
+  -
+    env:
+      NUMPY="numpy==1.16"
+    if: branch =~ ^release-candidate-*
+  -
+    env:
+      NUMPY="numpy==1.17"
+    if: branch =~ ^release-candidate-*
   -
     dist: xenial
     python: 3.7

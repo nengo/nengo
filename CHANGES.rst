@@ -170,6 +170,8 @@ Release History
   (`#1571 <https://github.com/nengo/nengo/pull/1571>`__)
 - Renamed ``simulator.ProbeDict`` to ``simulator.SimulationData``.
   (`#1574 <https://github.com/nengo/nengo/pull/1574>`__)
+- Increased minimum numpy version to 1.13.
+  (`#1577 <https://github.com/nengo/nengo/pull/1577>`__)
 
 **Deprecated**
 
