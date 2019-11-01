@@ -6,8 +6,6 @@ Once you start creating larger models, Nengo might become a little bit slow.
 This section walks you through different things that might help you to get the
 best performance out of Nengo.
 
-.. default-role:: obj
-
 In a nutshell
 =============
 

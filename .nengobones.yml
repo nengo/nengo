@@ -140,6 +140,7 @@ docs_conf_py:
     sklearn: 'https://scikit-learn.org/dev'
   analytics_id: UA-41658423-2
   extensions:
+    - nengo_sphinx_theme.ext.autoautosummary
     - nengo_sphinx_theme.ext.resolvedefaults
     - sphinx.ext.inheritance_diagram
 

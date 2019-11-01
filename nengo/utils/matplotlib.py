@@ -14,6 +14,7 @@ if has_prop_cycle:
 
 
 def get_color_cycle():
+    """Get matplotlib colour cycle."""
     if has_prop_cycle:
         cycle = matplotlib.rcParams["axes.prop_cycle"]
         # Apparently the 'color' key may not exist, so have to fail gracefully
@@ -25,6 +26,7 @@ def get_color_cycle():
 
 
 def set_color_cycle(colors, ax=None):
+    """Set matplotlib colour cycle."""
     if has_prop_cycle:
         if ax is None:
             plt.rc("axes", prop_cycle=cycler("color", colors))
@@ -41,8 +43,7 @@ def axis_size(ax=None):
     """Get axis width and height in pixels.
 
     Based on a StackOverflow response:
-    https://stackoverflow.com/questions/19306510/
-        determine-matplotlib-axis-size-in-pixels
+    https://stackoverflow.com/questions/19306510/determine-matplotlib-axis-size-in-pixels
 
     Parameters
     ----------
@@ -68,7 +69,7 @@ def implot(plt, x, y, Z, ax=None, colorbar=True, **kwargs):
     Parameters
     ----------
     plt : plot object
-        Plot object, typically `matplotlib.pyplot`.
+        Plot object, typically ``matplotlib.pyplot``.
     x : (M,) array_like
         Vector of x-axis points, must be linear (equally spaced).
     y : (N,) array_like
@@ -76,11 +77,11 @@ def implot(plt, x, y, Z, ax=None, colorbar=True, **kwargs):
     Z : (M, N) array_like
         Matrix of data to be displayed, the value at each (x, y) point.
     ax : axis object (optional)
-        A specific axis to plot on (defaults to `plt.gca()`).
+        A specific axis to plot on (defaults to ``plt.gca()``).
     colorbar: boolean (optional)
         Whether to plot a colorbar.
     **kwargs
-        Additional arguments for `ax.imshow`.
+        Additional arguments for ``ax.imshow``.
     """
     ax = plt.gca() if ax is None else ax
 
@@ -106,7 +107,7 @@ def rasterplot(time, spikes, ax=None, use_eventplot=False, **kwargs):  # noqa
     ax : matplotlib.axes.Axes, optional
         The figure axes to plot into. If None, we will use current axes.
     use_eventplot : boolean, optional
-        Whether to use the new Matplotlib `eventplot` routine. It is slower
+        Whether to use the new Matplotlib ``eventplot`` routine. It is slower
         and makes larger image files, so we do not use it by default.
 
     Returns

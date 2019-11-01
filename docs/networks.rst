@@ -2,8 +2,6 @@
 Reusable networks
 *****************
 
-.. default-role:: obj
-
 Networks are an abstraction of a grouping of Nengo objects
 (i.e., `.Node`, `.Ensemble`, `.Connection`, and `.Network` instances,
 though usually not `.Probe` instances.)
@@ -25,6 +23,13 @@ help you build your own reusable networks:
 
 You may also find the :doc:`config system documentation <config>` useful.
 
+Built-in networks
+=================
+
+.. Note: we don't use autoautosummary here because we want the canonical
+   reference to these objects to be ``nengo.networks.Class`` even though they
+   actually live in ``nengo.networks.module.Class``.
+
 .. autosummary::
    :nosignatures:
 
@@ -40,18 +45,18 @@ You may also find the :doc:`config system documentation <config>` useful.
 
 .. autoclass:: nengo.networks.EnsembleArray
 
-.. autofunction:: nengo.networks.BasalGanglia
+.. autoclass:: nengo.networks.BasalGanglia
 
-.. autofunction:: nengo.networks.Thalamus
+.. autoclass:: nengo.networks.Thalamus
 
 .. autoclass:: nengo.networks.AssociativeMemory
 
-.. autofunction:: nengo.networks.CircularConvolution
+.. autoclass:: nengo.networks.CircularConvolution
 
-.. autofunction:: nengo.networks.Integrator
+.. autoclass:: nengo.networks.Integrator
 
-.. autofunction:: nengo.networks.Oscillator
+.. autoclass:: nengo.networks.Oscillator
 
-.. autofunction:: nengo.networks.Product
+.. autoclass:: nengo.networks.Product
 
-.. autofunction:: nengo.networks.InputGatedMemory
+.. autoclass:: nengo.networks.InputGatedMemory

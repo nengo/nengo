@@ -462,7 +462,7 @@ class Config:
 
 
 class SupportDefaultsMixin:
-    """Mixin to support assigning `.Default` to parameters.
+    """Mixin to support assigning ``Default`` to parameters.
 
     Implements ``__setattr__`` to do so. If the inheriting class overrides
     this method, it has to call the mixin's ``__setattr__``.

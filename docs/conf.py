@@ -18,6 +18,7 @@ extensions = [
     "nbsphinx",
     "nengo_sphinx_theme",
     "numpydoc",
+    "nengo_sphinx_theme.ext.autoautosummary",
     "nengo_sphinx_theme.ext.resolvedefaults",
     "sphinx.ext.inheritance_diagram",
 ]

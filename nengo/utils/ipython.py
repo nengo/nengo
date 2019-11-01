@@ -30,6 +30,7 @@ assert get_ipython
 
 
 def check_ipy_version(min_version):
+    """Check that ipython version is >= ``min_version``."""
     try:
         import IPython  # pylint: disable=import-outside-toplevel
 
@@ -117,6 +118,7 @@ def hide_input():
 
 
 def load_notebook(nb_path):
+    """Load notebook from file."""
     with io.open(nb_path, "r", encoding="utf-8") as f:
         nb = nbformat.read(f, as_version=4)
     return nb
@@ -143,4 +145,5 @@ def export_py(nb, dest_path=None):
 
 
 def iter_cells(nb, cell_type="code"):
+    """Iterate over cells of a notebok."""
     return (cell for cell in nb.cells if cell.cell_type == cell_type)

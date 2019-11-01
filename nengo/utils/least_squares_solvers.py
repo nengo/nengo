@@ -21,6 +21,8 @@ from nengo.params import (
 
 
 def format_system(A, Y):
+    """Extract data from A/Y matrices."""
+
     assert Y.ndim > 0
     m, n = A.shape
     matrix_in = Y.ndim > 1

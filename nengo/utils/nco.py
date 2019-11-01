@@ -24,7 +24,7 @@ Files will be written with padding to have both the Python object data and the
 array data an alignment of 16 bytes.
 
 The Numpy NPY format is documented here:
-https://github.com/numpy/numpy/blob/master/doc/neps/npy-format.rst
+https://numpy.org/devdocs/reference/generated/numpy.lib.format.html
 
 As of legacy version 1 of the cache, multiple NCO files will be concatenated
 into one file. The start and end of each subfile will be stored in a cache

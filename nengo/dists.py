@@ -50,6 +50,43 @@ class Distribution(FrozenObject):
         raise NotImplementedError("Distributions should implement sample.")
 
 
+def get_samples(dist_or_samples, n, d=None, rng=np.random):
+    """Convenience function to sample a distribution or return samples.
+
+    Use this function in situations where you accept an argument that could
+    be a distribution, or could be an ``array_like`` of samples.
+
+    Examples
+    --------
+    >>> def mean(values, n=100):
+    ...     samples = get_samples(values, n=n)
+    ...     return np.mean(samples)
+    >>> mean([1, 2, 3, 4])
+    2.5
+    >>> mean(nengo.dists.Gaussian(0, 1))
+    0.057277898442269548
+
+    Parameters
+    ----------
+    dist_or_samples : `.Distribution` or (n, d) array_like
+        Source of the samples to be returned.
+    n : int
+        Number samples to take.
+    d : int or None, optional
+        The number of dimensions to return.
+    rng : RandomState, optional
+        Random number generator.
+
+    Returns
+    -------
+    samples : (n, d) array_like
+
+    """
+    if isinstance(dist_or_samples, Distribution):
+        return dist_or_samples.sample(n, d=d, rng=rng)
+    return np.array(dist_or_samples)
+
+
 class PDF(Distribution):
     """An arbitrary distribution from a PDF.
 
@@ -167,8 +204,7 @@ class Exponential(Distribution):
     If ``high`` is left to its default value of infinity, this is a standard
     exponential distribution. If ``high`` is set, then any sampled values at
     or above ``high`` will be clipped so they are slightly below ``high``.
-    This is useful for thresholding and, by extension,
-    `.networks.AssociativeMemory`.
+    This is useful for thresholding.
 
     The probability distribution function (PDF) is given by::
 
@@ -178,7 +214,7 @@ class Exponential(Distribution):
                |  0                                 if x >= high
 
     where ``n`` is such that the PDF integrates to one, and ``eps`` is an
-    infintesimally small number such that samples of ``x`` are strictly less
+    infinitesimally small number such that samples of ``x`` are strictly less
     than ``high`` (in practice, ``eps`` depends on floating point precision).
 
     Parameters
@@ -594,40 +630,3 @@ class DistOrArrayParam(NdarrayParam):
         if isinstance(distorarray, Distribution):
             return Parameter.coerce(self, instance, distorarray)
         return super().coerce(instance, distorarray)
-
-
-def get_samples(dist_or_samples, n, d=None, rng=np.random):
-    """Convenience function to sample a distribution or return samples.
-
-    Use this function in situations where you accept an argument that could
-    be a distribution, or could be an ``array_like`` of samples.
-
-    Examples
-    --------
-    >>> def mean(values, n=100):
-    ...     samples = get_samples(values, n=n)
-    ...     return np.mean(samples)
-    >>> mean([1, 2, 3, 4])
-    2.5
-    >>> mean(nengo.dists.Gaussian(0, 1))
-    0.057277898442269548
-
-    Parameters
-    ----------
-    dist_or_samples : `.Distribution` or (n, d) array_like
-        Source of the samples to be returned.
-    n : int
-        Number samples to take.
-    d : int or None, optional
-        The number of dimensions to return.
-    rng : RandomState, optional
-        Random number generator.
-
-    Returns
-    -------
-    samples : (n, d) array_like
-
-    """
-    if isinstance(dist_or_samples, Distribution):
-        return dist_or_samples.sample(n, d=d, rng=rng)
-    return np.array(dist_or_samples)

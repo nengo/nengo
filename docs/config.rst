@@ -2,8 +2,6 @@
 Setting parameters with Configs
 *******************************
 
-.. default-role:: obj
-
 Building models with the :doc:`Nengo frontend API <frontend_api>`
 involves constructing many objects,
 each with many parameters that can be set.
@@ -30,11 +28,10 @@ can be found below:
 ``config`` system API
 ---------------------
 
-.. autoclass:: nengo.Config
+.. automodule:: nengo.config
 
-.. autoclass:: nengo.config.ClassParams
-
-.. autoclass:: nengo.config.InstanceParams
+   .. autoautosummary:: nengo.config
+      :nosignatures:
 
 Preset configs
 ==============
@@ -42,7 +39,10 @@ Preset configs
 Nengo includes preset configurations that can be
 dropped into your model to enable specific neural circuits.
 
-.. autofunction:: nengo.presets.ThresholdingEnsembles
+.. automodule:: nengo.presets
+
+   .. autoautosummary:: nengo.presets
+      :nosignatures:
 
 Quirks
 ======
@@ -60,28 +60,18 @@ which are also used by the config system.
 Most users will not need to know about
 `.Parameter` objects.
 
-.. autoclass:: nengo.params.Parameter
+.. automodule:: nengo.params
 
-.. autoclass:: nengo.params.ObsoleteParam
+   .. autoautosummary:: nengo.params
+      :nosignatures:
 
-.. autoclass:: nengo.params.BoolParam
-
-.. autoclass:: nengo.params.NumberParam
-
-.. autoclass:: nengo.params.IntParam
-
-.. autoclass:: nengo.params.StringParam
-
-.. autoclass:: nengo.params.EnumParam
-
-.. autoclass:: nengo.params.TupleParam
-
-.. autoclass:: nengo.params.ShapeParam
-
-.. autoclass:: nengo.params.DictParam
-
-.. autoclass:: nengo.params.NdarrayParam
-
-.. autoclass:: nengo.params.FunctionParam
-
-.. autoclass:: nengo.exceptions.ValidationError
+      nengo.dists.DistributionParam
+      nengo.dists.DistOrArrayParam
+      nengo.learning_rules.LearningRuleTypeParam
+      nengo.learning_rules.LearningRuleTypeSizeInParam
+      nengo.neurons.NeuronTypeParam
+      nengo.processes.PiecewiseDataParam
+      nengo.solvers.SolverParam
+      nengo.synapses.SynapseParam
+      nengo.transforms.ChannelShapeParam
+      nengo.transforms.SparseInitParam

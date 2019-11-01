@@ -1,4 +1,8 @@
-"""Reference simulator for nengo models."""
+"""Reference simulator for nengo models.
+
+This backend is relatively fast, and works on general purpose computers.
+Other Nengo backends provide more specialized Simulators for custom platforms.
+"""
 
 import logging
 import warnings
@@ -17,66 +21,6 @@ from nengo.utils.progress import Progress, ProgressTracker
 from nengo.utils.simulator import operator_dependency_graph
 
 logger = logging.getLogger(__name__)
-
-
-class SimulationData(Mapping):
-    """Data structure used to access simulation data from the model.
-
-    The main use case for this is to access Probe data; for example,
-    ``probe_data = sim.data[my_probe]``. However, it is also used to access the
-    parameters of objects in the model; for example, encoder values for an ensemble
-    can be accessed via ``encoders = sim.data[my_ens].encoders``.
-
-    This is like a view on the raw simulation data manipulated by the Simulator,
-    which allows the raw simulation data to be optimized for speed while this
-    provides a more user-friendly interface.
-
-    .. versionchanged:: 3.0.0
-        Renamed from ProbeDict to SimulationData
-    """
-
-    def __init__(self, raw):
-        super().__init__()
-        self.raw = raw
-        self._cache = {}
-
-    def __getitem__(self, key):
-        """Return simulation data for ``key`` object.
-
-        For speed reasons, the simulator uses Python lists for Probe data
-        and we want to return NumPy arrays.
-        """
-        if key not in self._cache or len(self._cache[key]) != len(self.raw[key]):
-            rval = self.raw[key]
-            if isinstance(rval, list):
-                rval = np.asarray(rval)
-                rval.setflags(write=False)
-            self._cache[key] = rval
-        return self._cache[key]
-
-    def __iter__(self):
-        return iter(self.raw)
-
-    def __len__(self):
-        return len(self.raw)
-
-    def __repr__(self):
-        return repr(self.raw)
-
-    def __str__(self):
-        return str(self.raw)
-
-    def reset(self):
-        self._cache.clear()
-
-
-class ProbeDict(SimulationData):
-    def __init__(self, *args, **kwargs):
-        warnings.warn(
-            "ProbeDict has been renamed to SimulationData. This alias "
-            "will be removed in Nengo 3.1."
-        )
-        super().__init__(*args, **kwargs)
 
 
 class Simulator:
@@ -429,7 +373,7 @@ class Simulator:
             If None, a time value for every ``dt`` will be produced.
 
             .. versionchanged:: 3.0.0
-                Renamed from dt to sample_every
+               Renamed from dt to sample_every
         """
         if dt is not None:
             if sample_every is not None:
@@ -446,3 +390,63 @@ class Simulator:
         period = 1 if sample_every is None else sample_every / self.dt
         steps = np.arange(1, self.n_steps + 1)
         return self.dt * steps[steps % period < 1]
+
+
+class SimulationData(Mapping):
+    """Data structure used to access simulation data from the model.
+
+    The main use case for this is to access Probe data; for example,
+    ``probe_data = sim.data[my_probe]``. However, it is also used to access the
+    parameters of objects in the model; for example, encoder values for an ensemble
+    can be accessed via ``encoders = sim.data[my_ens].encoders``.
+
+    This is like a view on the raw simulation data manipulated by the Simulator,
+    which allows the raw simulation data to be optimized for speed while this
+    provides a more user-friendly interface.
+
+    .. versionchanged:: 3.0.0
+       Renamed from ProbeDict to SimulationData
+    """
+
+    def __init__(self, raw):
+        super().__init__()
+        self.raw = raw
+        self._cache = {}
+
+    def __getitem__(self, key):
+        """Return simulation data for ``key`` object.
+
+        For speed reasons, the simulator uses Python lists for Probe data
+        and we want to return NumPy arrays.
+        """
+        if key not in self._cache or len(self._cache[key]) != len(self.raw[key]):
+            rval = self.raw[key]
+            if isinstance(rval, list):
+                rval = np.asarray(rval)
+                rval.setflags(write=False)
+            self._cache[key] = rval
+        return self._cache[key]
+
+    def __iter__(self):
+        return iter(self.raw)
+
+    def __len__(self):
+        return len(self.raw)
+
+    def __repr__(self):
+        return repr(self.raw)
+
+    def __str__(self):
+        return str(self.raw)
+
+    def reset(self):
+        self._cache.clear()
+
+
+class ProbeDict(SimulationData):
+    def __init__(self, *args, **kwargs):
+        warnings.warn(
+            "ProbeDict has been renamed to SimulationData. This alias "
+            "will be removed in Nengo 3.1."
+        )
+        super().__init__(*args, **kwargs)

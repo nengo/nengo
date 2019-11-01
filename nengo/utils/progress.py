@@ -30,6 +30,8 @@ warnings.filterwarnings("once", category=MemoryLeakWarning)
 
 
 def timestamp2timedelta(timestamp):
+    """Convert timestamp to timedelta."""
+
     if timestamp == -1:
         return "Unknown"
     return timedelta(seconds=np.ceil(timestamp))

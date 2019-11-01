@@ -61,6 +61,8 @@ Release History
   takes a pytest ``request`` and returns a callable to be used
   as ``Simulator`` in the Nengo test suite.
   (`#1566 <https://github.com/nengo/nengo/pull/1566>`__)
+- Added more content to the API reference documentation.
+  (`#1578 <https://github.com/nengo/nengo/pull/1578>`__)
 
 **Changed**
 
@@ -257,6 +259,8 @@ Release History
   (`#1577 <https://github.com/nengo/nengo/pull/1577>`__)
 - Removed ``utils.functions.piecewise``. Use ``nengo.processes.Piecewise`` instead.
   (`#1577 <https://github.com/nengo/nengo/pull/1577>`__)
+- Removed ``utils.testing.Mock``.
+  (`#1578 <https://github.com/nengo/nengo/pull/1578>`__)
 
 **Fixed**
 

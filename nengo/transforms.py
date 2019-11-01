@@ -2,9 +2,8 @@ import warnings
 
 import numpy as np
 
-import nengo
 from nengo.base import FrozenObject
-from nengo.dists import Distribution, DistOrArrayParam
+from nengo.dists import Distribution, DistOrArrayParam, Uniform
 from nengo.exceptions import ValidationError
 from nengo.params import (
     BoolParam,
@@ -254,7 +253,7 @@ class SparseMatrix(FrozenObject):
         Returns
         -------
         matrix : `.SparseMatrix`
-            A new `SparseMatrix` instance with `Distribution` converted to
+            A new `.SparseMatrix` instance with `.Distribution` converted to
             array if ``self.data`` is a `.Distribution`, otherwise simply
             returns ``self``.
         """
@@ -400,7 +399,7 @@ class Convolution(Transform):
         strides=(1, 1),
         padding="valid",
         channels_last=True,
-        init=nengo.dists.Uniform(-1, 1),
+        init=Uniform(-1, 1),
     ):
         super().__init__()
 

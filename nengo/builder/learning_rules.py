@@ -458,10 +458,12 @@ class SimVoja(Operator):
 
 
 def get_pre_ens(conn):
+    """Get the input `.Ensemble` for connection."""
     return conn.pre_obj if isinstance(conn.pre_obj, Ensemble) else conn.pre_obj.ensemble
 
 
 def get_post_ens(conn):
+    """Get the output `.Ensemble` for connection."""
     return (
         conn.post_obj
         if isinstance(conn.post_obj, (Ensemble, Node))

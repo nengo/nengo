@@ -17,6 +17,8 @@ from nengo.utils.stdlib import WeakKeyIDDictionary, checked_call
 
 
 class DefaultType:
+    """Placeholder object used to represent default values for a parameter."""
+
     def __init__(self, name):
         self.name = name
 
@@ -30,6 +32,7 @@ Unconfigurable = DefaultType("Unconfigurable")
 
 
 def is_param(obj):
+    """Check if ``obj`` is a Parameter."""
     return isinstance(obj, Parameter)
 
 
@@ -45,6 +48,7 @@ def iter_params(obj):
 
 
 def equal(a, b):
+    """Check if two (possibly array-like) objects are equal."""
     if is_array_like(a) or is_array_like(b):
         return np.array_equal(a, b)
     else:

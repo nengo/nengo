@@ -6,11 +6,11 @@ User guide
    :maxdepth: 2
 
    frontend_api
+   backend_api
    config
    networks
    spa
    advanced
-   backend_api
    changelog
    history
    converting

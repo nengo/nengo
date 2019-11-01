@@ -154,7 +154,7 @@ CheckedCall = collections.namedtuple("CheckedCall", ("value", "invoked"))
 
 
 def checked_call(func, *args, **kwargs):
-    """Calls func(*args, **kwargs) and checks that invocation was successful.
+    """Calls ``func`` and checks that invocation was successful.
 
     The namedtuple ``(value=func(*args, **kwargs), invoked=True)`` is returned
     if the call is successful. If an exception occurs inside of ``func``, then
@@ -206,23 +206,23 @@ def groupby(objects, key, hashable=None, force_list=True):
         The objects to be grouped.
     key : callable
         The key function by which to group the objects. If
-        `key(obj1) == key(obj2)` then `obj1` and `obj2` are in the same group,
+        ``key(obj1) == key(obj2)`` then ``obj1`` and ``obj2`` are in the same group,
         otherwise they are not.
     hashable : boolean (optional)
         Whether to use the key's hash to determine equality. By default, this
-        will be determined by calling `key` on the first item in `objects`, and
+        will be determined by calling ``key`` on the first item in ``objects``, and
         if it is hashable, the hash will be used. Using a hash is faster, but
         not possible for all keys.
     force_list : boolean (optional)
-        Whether to force the returned `key_groups` iterator, as well as the
-        `group` iterator in each `(key, group)` pair, to be lists.
+        Whether to force the returned ``key_groups`` iterator, as well as the
+        ``group`` iterator in each ``(key, group)`` pair, to be lists.
 
     Returns
     -------
     keygroups : iterable
-        An iterable of `(key, group)` pairs, where `key` is the key used for
-        grouping, and `group` is an iterable of the items in the group. The
-        nature of the iterables depends on the value of `force_list`.
+        An iterable of ``(key, group)`` pairs, where ``key`` is the key used for
+        grouping, and ``group`` is an iterable of the items in the group. The
+        nature of the iterables depends on the value of ``force_list``.
     """
     if hashable is None:
         # get first item without advancing iterator, and see if key is hashable
@@ -245,6 +245,8 @@ def groupby(objects, key, hashable=None, force_list=True):
 
 
 def get_terminal_size(fallback=(80, 24)):
+    """Look up character width of terminal."""
+
     try:
         return shutil.get_terminal_size(fallback)
     except Exception:  # pragma: no cover
@@ -264,8 +266,8 @@ class Timer:
     end : float
         The time at which the timer ended (in seconds).
 
-    Example
-    -------
+    Examples
+    --------
     >>> import time
     >>> with Timer() as t:
     ...    time.sleep(1)

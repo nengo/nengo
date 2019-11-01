@@ -21,7 +21,7 @@ modification, are permitted provided that the following conditions are met:
   documentation and/or other materials provided with the distribution.
 * Neither the name of Theano nor the names of its contributors may be
   used to endorse or promote products derived from this software without
- specific prior written permission.
+  specific prior written permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
 EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -41,6 +41,7 @@ from ..exceptions import BuildError
 
 
 def graph(edges=None):
+    """Construct graph from edges."""
     g = defaultdict(set)
     if edges is not None:
         g.update(edges)
@@ -114,8 +115,8 @@ def toposort(edges):
     -------
     An ordered list of nodes that satisfy the dependencies of ``edges``
 
-    Example
-    -------
+    Examples
+    --------
     >>> toposort({1: {2, 3}, 2: {3}, 3: set()})
     [1, 2, 3]
 
@@ -167,7 +168,7 @@ def transitive_closure(edges, topo_sorted=None):
 
     Returns
     -------
-    The transitive closure using the same data structure as `edges`: a dict
+    The transitive closure using the same data structure as ``edges``: a dict
     of the form ``{a: {b, c}}`` where ``b`` and ``c`` are nodes that either
     directly or indirectly depend on ``a``.
     """
@@ -203,8 +204,8 @@ def reverse_edges(edges):
     -------
     Dict of the form {a: set(), b: {a}, c: {a}} where b and c depend on a.
 
-    Example
-    -------
+    Examples
+    --------
 
     >>> d = {0: {1, 2}, 1: {2, 3}, 2: set(), 3: set()}
     >>> reverse_edges(d)
@@ -224,5 +225,6 @@ def reverse_edges(edges):
 
 
 def add_edges(edges, new_edge_iter):
+    """Add new edges to graph."""
     for src, dst in new_edge_iter:
         edges[src].add(dst)

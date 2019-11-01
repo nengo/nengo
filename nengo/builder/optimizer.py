@@ -16,8 +16,6 @@ from nengo.utils.stdlib import Timer, WeakKeyDefaultDict, WeakSet
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["optimize"]
-
 
 def optimize(model, dg):
     """Optimizes the operator graph by merging operators.
@@ -114,6 +112,8 @@ def optimize(model, dg):
 
 
 class OpMergePass:
+    """Manages a single optimization pass."""
+
     def __init__(self, dg):
         self.dg = BidirectionalDAG(dg)
         self.might_merge = set(dg)
@@ -216,7 +216,7 @@ class OpMergePass:
         subset : list
             Subset of operators. These need to have the same view base (can be
             None if it is None for all) for their first signal in
-            `all_signals`.
+            ``all_signals``.
         """
 
         # Sort to have sequential memory.
@@ -437,6 +437,8 @@ class OpsToMerge:
 
 
 class OpMerger:
+    """Manages the op merge classes known to the optimizer."""
+
     mergers = {}
 
     @classmethod
@@ -482,6 +484,8 @@ class OpMerger:
 
 
 class Merger:
+    """Base class for all op merge classes."""
+
     @staticmethod
     def check_signals(op, tomerge):
         return len(tomerge.all_signals.intersection(op.all_signals)) == 0
@@ -509,6 +513,8 @@ class Merger:
 
 @OpMerger.register(op.Reset)
 class ResetMerger(Merger):
+    """Merge `.Reset` ops."""
+
     @staticmethod
     def is_mergeable(op1, op2):
         return SigMerger.check([op1.dst, op2.dst]) and op1.value == op2.value
@@ -521,6 +527,8 @@ class ResetMerger(Merger):
 
 @OpMerger.register(op.Copy)
 class CopyMerger(Merger):
+    """Merge `.Copy` ops."""
+
     @staticmethod
     def is_mergeable(op1, op2):
         return (
@@ -565,6 +573,8 @@ class CopyMerger(Merger):
 
 @OpMerger.register(op.ElementwiseInc)
 class ElementwiseIncMerger(Merger):
+    """Merge `.ElementwiseInc` ops."""
+
     @staticmethod
     def is_mergeable(op1, op2):
         scalar_mult = op1.A.shape == (1,) and op2.A.shape == (1,)
@@ -595,6 +605,8 @@ class ElementwiseIncMerger(Merger):
 
 @OpMerger.register(op.DotInc)
 class DotIncMerger(Merger):
+    """Merge `.DotInc` ops."""
+
     @staticmethod
     def check_signals(op, tomerge):
         none_shared = Merger.check_signals(op, tomerge) and (
@@ -694,6 +706,8 @@ class DotIncMerger(Merger):
 
 @OpMerger.register(SimNeurons)
 class SimNeuronsMerger(Merger):
+    """Merge `.SimNeurons` ops."""
+
     @staticmethod
     def is_mergeable(op1, op2):
         return op1.neurons == op2.neurons and all(
@@ -720,6 +734,8 @@ class SimNeuronsMerger(Merger):
 
 
 class SigMerger:
+    """Merge signals."""
+
     @staticmethod
     def check(signals, axis=0):
         """Checks that all signals can be concatenated along a given axis.

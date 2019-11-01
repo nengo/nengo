@@ -4,7 +4,6 @@ import collections
 
 import numpy as np
 
-import nengo
 from nengo.exceptions import MovedError, Unconvertible, ValidationError
 
 
@@ -24,8 +23,10 @@ def full_transform(conn, slice_pre=True, slice_post=True, allow_scalars=True):
         not using slicing, since these work fine in the reference builder.
         If false, these scalars will be turned into scaled identity matrices.
     """
+    # imported here to avoid circular imports
+    from nengo import Dense  # pylint: disable=import-outside-toplevel
 
-    if not isinstance(conn.transform, nengo.Dense):
+    if not isinstance(conn.transform, Dense):
         raise ValidationError(
             "full_transform can only be applied to Dense transforms",
             attr="transform",
@@ -95,11 +96,11 @@ def default_n_eval_points(n_neurons, dimensions):
     n_neurons : int
         The number of neurons in the ensemble that will be sampled.
         For a connection, this would be the number of neurons in the
-        `pre` ensemble.
+        ``pre`` ensemble.
     dimensions : int
         The number of dimensions in the ensemble that will be sampled.
         For a connection, this would be the number of dimensions in the
-        `pre` ensemble.
+        ``pre`` ensemble.
     """
     return max(np.clip(500 * dimensions, 750, 2500), 2 * n_neurons)
 
@@ -110,11 +111,15 @@ def objs_and_connections(network):
 
 
 def generate_graphviz(*args, **kwargs):
+    """Moved to nengo_extras.graphviz."""
     raise MovedError(location="nengo_extras.graphviz")
 
 
 def _create_replacement_connection(c_in, c_out):
     """Generate a new Connection to replace two through a passthrough Node."""
+    # imported here to avoid circular imports
+    from nengo import Connection  # pylint: disable=import-outside-toplevel
+
     assert c_in.post_obj is c_out.pre_obj
     assert c_in.post_obj.output is None
 
@@ -141,7 +146,7 @@ def _create_replacement_connection(c_in, c_out):
     if np.all(transform == 0):
         return None
 
-    c = nengo.Connection(
+    c = Connection(
         c_in.pre_obj,
         c_out.post_obj,
         synapse=synapse,
@@ -182,6 +187,9 @@ def remove_passthrough_nodes(  # noqa: C901
     will be replaced with equivalent Connections that don't interact with those
     Nodes.
     """
+    # imported here to avoid circular imports
+    from nengo import Node  # pylint: disable=import-outside-toplevel
+
     if create_connection_fn is None:
         create_connection_fn = _create_replacement_connection
 
@@ -191,7 +199,7 @@ def remove_passthrough_nodes(  # noqa: C901
 
     # look for passthrough Nodes to remove
     for obj in objs:
-        if isinstance(obj, nengo.Node) and obj.output is None:
+        if isinstance(obj, Node) and obj.output is None:
             result_objs.remove(obj)
 
             # get rid of the connections to and from this Node

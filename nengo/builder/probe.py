@@ -8,9 +8,12 @@ from nengo.probe import Probe
 
 
 def conn_probe(model, probe):
-    # Connection probes create a connection from the target, and probe
-    # the resulting signal (used when you want to probe the default
-    # output of an object, which may not have a predefined signal)
+    """Build a "connection" probe type.
+
+    Connection probes create a connection from the target, and probe
+    the resulting signal (used when you want to probe the default
+    output of an object, which may not have a predefined signal).
+    """
 
     conn = Connection(
         probe.target,
@@ -33,7 +36,10 @@ def conn_probe(model, probe):
 
 
 def signal_probe(model, key, probe):
-    # Signal probes directly probe a target signal
+    """Build a "signal" probe type.
+
+    Signal probes directly probe a target signal.
+    """
 
     try:
         sig = model.sig[probe.obj][key]

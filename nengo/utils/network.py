@@ -1,4 +1,3 @@
-import nengo
 from .magic import decorator
 
 
@@ -42,21 +41,26 @@ def activate_direct_mode(network):
     network : Network
         Network to activate direct mode for.
     """
+    # pylint: disable=import-outside-toplevel
+    # imported here to avoid circular imports
+    from nengo.ensemble import Neurons
+    from nengo.neurons import Direct
+
     requires_neurons = set()
 
     for c in network.all_connections:
-        if isinstance(c.pre_obj, nengo.ensemble.Neurons):
+        if isinstance(c.pre_obj, Neurons):
             requires_neurons.add(c.pre_obj.ensemble)
-        if isinstance(c.post_obj, nengo.ensemble.Neurons):
+        if isinstance(c.post_obj, Neurons):
             requires_neurons.add(c.post_obj.ensemble)
         if c.learning_rule_type is not None:
             requires_neurons.add(c.pre_obj)
             requires_neurons.add(c.post_obj)
 
     for p in network.all_probes:
-        if isinstance(p.obj, nengo.ensemble.Neurons):
+        if isinstance(p.obj, Neurons):
             requires_neurons.add(p.obj.ensemble)
 
     for e in network.all_ensembles:
         if e not in requires_neurons:
-            e.neuron_type = nengo.Direct()
+            e.neuron_type = Direct()

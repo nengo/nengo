@@ -83,7 +83,7 @@ def tf2zpk(b, a):
 
     Notes
     -----
-    If some values of `b` are too close to 0, they are removed. In that case,
+    If some values of ``b`` are too close to 0, they are removed. In that case,
     a BadCoefficients warning is emitted.
 
     """
@@ -136,7 +136,7 @@ def zpk2tf(z, p, k):
 def normalize(b, a):
     """Normalize polynomial representation of a transfer function.
 
-    If values of `b` are too close to 0, they are removed. In that case, a
+    If values of ``b`` are too close to 0, they are removed. In that case, a
     BadCoefficients warning is emitted.
 
     """
@@ -309,11 +309,11 @@ def ss2tf(A, B, C, D, input=0):
     Returns
     -------
     num : 2-D ndarray
-        Numerator(s) of the resulting transfer function(s).  `num` has one row
+        Numerator(s) of the resulting transfer function(s). ``num`` has one row
         for each of the system's outputs. Each row is a sequence representation
         of the numerator polynomial.
     den : 1-D ndarray
-        Denominator of the resulting transfer function(s).  `den` is a sequence
+        Denominator of the resulting transfer function(s). ``den`` is a sequence
         representation of the denominator polynomial.
 
     """
@@ -444,17 +444,13 @@ def cont2discrete(sys, dt, method="zoh", alpha=None):  # noqa: C901
 
     References
     ----------
-    .. [1] https://en.wikipedia.org/wiki/
-               Discretization#Discretization_of_linear_state_space_models
+    .. [1] https://en.wikipedia.org/wiki/Discretization
+           #Discretization_of_linear_state_space_models
 
-    .. [2] http://techteach.no/publications/
-               discretetime_signals_systems/discrete.pdf
+    .. [2] http://techteach.no/publications/discretetime_signals_systems/discrete.pdf
 
     .. [3] G. Zhang, X. Chen, and T. Chen, Digital redesign via the generalized
-        bilinear transformation, Int. J. Control, vol. 82, no. 4, pp. 741-754,
-        2009.
-        (http://www.ece.ualberta.ca/~gfzhang/research/ZCC07_preprint.pdf)
-
+           bilinear transformation, Int. J. Control, vol. 82, no. 4, pp. 741-754, 2009.
     """
     if len(sys) == 2:
         sysd = cont2discrete(tf2ss(sys[0], sys[1]), dt, method=method, alpha=alpha)

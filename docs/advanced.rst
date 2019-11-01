@@ -8,3 +8,4 @@ Advanced topics
    connections
    nengorc
    improving_performance
+   utils

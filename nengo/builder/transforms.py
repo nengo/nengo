@@ -24,6 +24,8 @@ def multiply(x, y):
 
 @Builder.register(Dense)
 def build_dense(model, transform, sig_in, decoders=None, encoders=None, rng=np.random):
+    """Build a `.Dense` transform object."""
+
     weights = transform.sample(rng=rng).astype(rc.float_dtype)
 
     if decoders is not None:
@@ -47,6 +49,8 @@ def build_dense(model, transform, sig_in, decoders=None, encoders=None, rng=np.r
 
 @Builder.register(Sparse)
 def build_sparse(model, transform, sig_in, decoders=None, encoders=None, rng=np.random):
+    """Build a `.Sparse` transform object."""
+
     if decoders is not None:
         raise BuildError(
             "Applying a sparse transform to a decoded connection is not supported"
@@ -77,6 +81,8 @@ def build_sparse(model, transform, sig_in, decoders=None, encoders=None, rng=np.
 def build_convolution(
     model, transform, sig_in, decoders=None, encoders=None, rng=np.random
 ):
+    """Build a `.Convolution` transform object."""
+
     if decoders is not None:
         raise BuildError(
             "Applying a convolution transform to a decoded "

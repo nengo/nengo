@@ -2,8 +2,6 @@
 Nengo frontend API
 ******************
 
-.. default-role:: obj
-
 Nengo Objects
 =============
 
@@ -35,81 +33,33 @@ Nengo Objects
 Distributions
 =============
 
-.. autosummary::
-   :nosignatures:
+.. automodule:: nengo.dists
 
-   nengo.dists.Distribution
-   nengo.dists.get_samples
-   nengo.dists.Uniform
-   nengo.dists.Gaussian
-   nengo.dists.Exponential
-   nengo.dists.UniformHypersphere
-   nengo.dists.Choice
-   nengo.dists.Samples
-   nengo.dists.PDF
-   nengo.dists.SqrtBeta
-   nengo.dists.SubvectorLength
-   nengo.dists.CosineSimilarity
+   .. autoautosummary:: nengo.dists
+      :nosignatures:
+      :exclude-members: DistributionParam, DistOrArrayParam
 
-.. autoclass:: nengo.dists.Distribution
-   :exclude-members: sample
+Learning rule types
+===================
 
-   .. automethod:: nengo.dists.Distribution.sample(n, d=None, rng=np.random)
+.. automodule:: nengo.learning_rules
 
-.. autofunction:: nengo.dists.get_samples(dist_or_samples, n, d=None, rng=np.random)
-
-.. autoclass:: nengo.dists.Uniform
-
-.. autoclass:: nengo.dists.Gaussian
-
-.. autoclass:: nengo.dists.Exponential
-
-.. autoclass:: nengo.dists.UniformHypersphere
-
-.. autoclass:: nengo.dists.Choice
-
-.. autoclass:: nengo.dists.Samples
-
-.. autoclass:: nengo.dists.PDF
-
-.. autoclass:: nengo.dists.SqrtBeta
-
-.. autoclass:: nengo.dists.SubvectorLength
-
-.. autoclass:: nengo.dists.CosineSimilarity
-
-Transforms
-==========
-
-.. autosummary::
-   :nosignatures:
-
-   nengo.transforms.Transform
-   nengo.transforms.Dense
-   nengo.transforms.Sparse
-   nengo.transforms.Convolution
-   nengo.transforms.ChannelShape
-
-.. autoclass:: nengo.transforms.Transform
-   :exclude-members: sample
-
-   .. automethod:: nengo.transforms.Transform.sample(rng=np.random)
-
-.. autoclass:: nengo.transforms.Dense
-
-.. autoclass:: nengo.transforms.Sparse
-
-.. autoclass:: nengo.transforms.Convolution
-
-.. autoclass:: nengo.transforms.ChannelShape
+   .. autoautosummary:: nengo.learning_rules
+      :nosignatures:
+      :exclude-members: LearningRuleTypeParam, LearningRuleTypeSizeInParam
 
 Neuron types
 ============
+
+.. Note: we don't use automodule/autoautosummary here because we want the
+   canonical reference to these objects to be ``nengo.Class`` even though
+   they actually live in ``nengo.neurons.Class``.
 
 .. autosummary::
    :nosignatures:
 
    nengo.neurons.NeuronType
+   nengo.neurons.settled_firingrate
    nengo.Direct
    nengo.RectifiedLinear
    nengo.SpikingRectifiedLinear
@@ -121,6 +71,8 @@ Neuron types
    nengo.Izhikevich
 
 .. autoclass:: nengo.neurons.NeuronType
+
+.. autofunction:: nengo.neurons.settled_firingrate
 
 .. autoclass:: nengo.Direct
 
@@ -140,58 +92,44 @@ Neuron types
 
 .. autoclass:: nengo.Izhikevich
 
-Learning rule types
-===================
-
-.. autosummary::
-   :nosignatures:
-
-   nengo.learning_rules.LearningRuleType
-   nengo.PES
-   nengo.BCM
-   nengo.Oja
-   nengo.Voja
-
-.. autoclass:: nengo.learning_rules.LearningRuleType
-
-.. autoclass:: nengo.PES
-
-.. autoclass:: nengo.BCM
-
-.. autoclass:: nengo.Oja
-
-.. autoclass:: nengo.Voja
+.. autoclass:: nengo.neurons.NeuronTypeParam
 
 Processes
 =========
 
-.. autosummary::
-   :nosignatures:
+.. automodule:: nengo.processes
 
-   nengo.Process
-   nengo.processes.PresentInput
-   nengo.processes.FilteredNoise
-   nengo.processes.BrownNoise
-   nengo.processes.WhiteNoise
-   nengo.processes.WhiteSignal
-   nengo.processes.Piecewise
+   .. autoautosummary:: nengo.processes
+      :nosignatures:
+      :exclude-members: PiecewiseDataParam
+
+      nengo.Process
 
 .. autoclass:: nengo.Process
 
-.. autoclass:: nengo.processes.PresentInput
+Solvers
+=======
 
-.. autoclass:: nengo.processes.FilteredNoise
+.. automodule:: nengo.solvers
 
-.. autoclass:: nengo.processes.BrownNoise
+   .. autoautosummary:: nengo.solvers
+      :nosignatures:
+      :exclude-members: SolverParam
 
-.. autoclass:: nengo.processes.WhiteNoise
+Solver methods
+--------------
 
-.. autoclass:: nengo.processes.WhiteSignal
+.. automodule:: nengo.utils.least_squares_solvers
 
-.. autoclass:: nengo.processes.Piecewise
+   .. autoautosummary:: nengo.utils.least_squares_solvers
+      :nosignatures:
 
 Synapse models
 ==============
+
+.. Note: we don't use automodule/autoautosummary here because we want the
+   canonical reference to these objects to be ``nengo.Class`` even though
+   they actually live in ``nengo.synapses.Class``.
 
 .. autosummary::
    :nosignatures:
@@ -212,76 +150,37 @@ Synapse models
 
 .. autoclass:: nengo.synapses.Triangle
 
-Decoder and connection weight solvers
-=====================================
+.. autoclass:: nengo.synapses.SynapseParam
+
+Transforms
+==========
+
+.. Note: we don't use automodule/autoautosummary here because we want the
+   canonical reference to these objects to be ``nengo.Class`` even though
+   they actually live in ``nengo.synapses.Class``.
 
 .. autosummary::
    :nosignatures:
 
-   nengo.solvers.Solver
-   nengo.solvers.SolverParam
-   nengo.solvers.Lstsq
-   nengo.solvers.LstsqNoise
-   nengo.solvers.LstsqMultNoise
-   nengo.solvers.LstsqL2
-   nengo.solvers.LstsqL2nz
-   nengo.solvers.LstsqL1
-   nengo.solvers.LstsqDrop
-   nengo.solvers.Nnls
-   nengo.solvers.NnlsL2
-   nengo.solvers.NnlsL2nz
-   nengo.solvers.NoSolver
-   nengo.utils.least_squares_solvers.LeastSquaresSolver
-   nengo.utils.least_squares_solvers.Cholesky
-   nengo.utils.least_squares_solvers.ConjgradScipy
-   nengo.utils.least_squares_solvers.LSMRScipy
-   nengo.utils.least_squares_solvers.Conjgrad
-   nengo.utils.least_squares_solvers.BlockConjgrad
-   nengo.utils.least_squares_solvers.SVD
-   nengo.utils.least_squares_solvers.RandomizedSVD
+   nengo.transforms.Transform
+   nengo.Dense
+   nengo.Sparse
+   nengo.transforms.SparseMatrix
+   nengo.Convolution
+   nengo.transforms.ChannelShape
 
-.. automodule:: nengo.solvers
-   :no-members:
+.. autoclass:: nengo.transforms.Transform
 
-.. autoclass:: nengo.solvers.Solver
-   :special-members: __call__
+.. autoclass:: nengo.Dense
 
-.. autoclass:: nengo.solvers.SolverParam
+.. autoclass:: nengo.Sparse
 
-.. autoclass:: nengo.solvers.Lstsq
+.. autoclass:: nengo.transforms.SparseMatrix
 
-.. autoclass:: nengo.solvers.LstsqNoise
+.. autoclass:: nengo.transforms.SparseInitParam
 
-.. autoclass:: nengo.solvers.LstsqMultNoise
+.. autoclass:: nengo.Convolution
 
-.. autoclass:: nengo.solvers.LstsqL2
+.. autoclass:: nengo.transforms.ChannelShape
 
-.. autoclass:: nengo.solvers.LstsqL2nz
-
-.. autoclass:: nengo.solvers.LstsqL1
-
-.. autoclass:: nengo.solvers.LstsqDrop
-
-.. autoclass:: nengo.solvers.Nnls
-
-.. autoclass:: nengo.solvers.NnlsL2
-
-.. autoclass:: nengo.solvers.NnlsL2nz
-
-.. autoclass:: nengo.solvers.NoSolver
-
-.. autoclass:: nengo.utils.least_squares_solvers.LeastSquaresSolver
-
-.. autoclass:: nengo.utils.least_squares_solvers.Cholesky
-
-.. autoclass:: nengo.utils.least_squares_solvers.ConjgradScipy
-
-.. autoclass:: nengo.utils.least_squares_solvers.LSMRScipy
-
-.. autoclass:: nengo.utils.least_squares_solvers.Conjgrad
-
-.. autoclass:: nengo.utils.least_squares_solvers.BlockConjgrad
-
-.. autoclass:: nengo.utils.least_squares_solvers.SVD
-
-.. autoclass:: nengo.utils.least_squares_solvers.RandomizedSVD
+.. autoclass:: nengo.transforms.ChannelShapeParam

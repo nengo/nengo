@@ -65,6 +65,7 @@ if sys.version_info < (3, 3, 0):
 
 
 def get_fragment_size(path):
+    """Get fragment size in cross-compatible way."""
     try:
         return os.statvfs(path).f_frsize
     except AttributeError:  # no statvfs on Windows
@@ -89,6 +90,7 @@ def safe_remove(path):
 
 
 def safe_makedirs(path):
+    """Try to make directories, but continue on error."""
     if not os.path.exists(path):
         try:
             os.makedirs(path)
@@ -97,14 +99,17 @@ def safe_makedirs(path):
 
 
 def check_dtype(ndarray):
+    """Check that array is a standard dtype."""
     return ndarray.dtype.isbuiltin == 1 and not ndarray.dtype.hasobject
 
 
 def check_seq(tpl):
+    """Check that all objects in list are fingerprintable."""
     return all(Fingerprint.supports(x) for x in tpl)
 
 
 def check_attrs(obj):
+    """Check that all attributes of ``obj`` are fingerprintable."""
     attrs = [getattr(obj, x) for x in dir(obj) if not x.startswith("_")]
     return all(Fingerprint.supports(x) for x in attrs if not callable(x))
 
@@ -749,6 +754,7 @@ class NoDecoderCache:
 
 
 def get_default_decoder_cache():
+    """Get default decoder implementation based on config settings."""
     if rc.getboolean("decoder_cache", "enabled"):
         decoder_cache = DecoderCache(rc.getboolean("decoder_cache", "readonly"))
     else:

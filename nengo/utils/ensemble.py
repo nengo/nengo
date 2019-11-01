@@ -10,7 +10,7 @@ def tuning_curves(ens, sim, inputs=None):
     ensemble.
 
     For 1-dimensional ensembles, the unpacked return value of this function
-    can be passed directly to :func:`matplotlib.pyplot.plot`.
+    can be passed directly to ``matplotlib.pyplot.plot``.
 
     Parameters
     ----------
@@ -21,20 +21,20 @@ def tuning_curves(ens, sim, inputs=None):
         ensemble does not have tuning curves assigned to it.)
     inputs : sequence of ndarray, optional
         The inputs at which the tuning curves will be evaluated. For each of
-        the `D` ensemble dimensions one array of dimensionality `D` is needed.
+        the ``D`` ensemble dimensions one array of dimensionality ``D`` is needed.
         The output of :func:`numpy.meshgrid` with ``indexing='ij'`` is in the
         right format.
 
     Returns
     -------
     inputs : sequence of ndarray
-        The passed or auto-generated `inputs`.
+        The passed or auto-generated ``inputs``.
     activities : ndarray
-        The activities of the individual neurons given the `inputs`.
-        For ensembles with 1 dimension, the rows correspond to the `inputs`
+        The activities of the individual neurons given the ``inputs``.
+        For ensembles with 1 dimension, the rows correspond to the ``inputs``
         and the columns to individual neurons.
         For ensembles with > 1 dimension, the last dimension enumerates the
-        neurons, the remaining dimensions map to `inputs`.
+        neurons, the remaining dimensions map to ``inputs``.
 
     See Also
     --------
@@ -82,10 +82,10 @@ def response_curves(ens, sim, inputs=None):
     Returns
     -------
     inputs : 1d array
-        The passed or auto-generated `inputs`.
+        The passed or auto-generated ``inputs``.
     activities : 2d array
-        The activities of the individual neurons given the `inputs`. The rows
-        map to `inputs` and the colmuns to the neurons in the ensemble.
+        The activities of the individual neurons given the ``inputs``. The rows
+        map to ``inputs`` and the columns to the neurons in the ensemble.
 
     See Also
     --------
@@ -160,16 +160,16 @@ def sorted_neurons(ensemble, sim, iterations=100, seed=None):
     >>> plt.figure()
     >>> rasterplot(sim.data['My neurons.spikes'][:,indices])
 
-    Algorithm
-    ---------
+    Notes
+    -----
     The algorithm is for each encoder in the initial set, randomly
     pick another encoder and check to see if swapping those two
     encoders would reduce the average difference between the
     encoders and their neighbours.  Difference is measured as the
     dot product.  Each encoder has four neighbours (N, S, E, W),
     except for the ones on the edges which have fewer (no wrapping).
-    This algorithm is repeated `iterations` times, so a total of
-    `iterations*N` swaps are considered.
+    This algorithm is repeated ``iterations`` times, so a total of
+    ``iterations*N`` swaps are considered.
     """
 
     # Normalize all the encoders

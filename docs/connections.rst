@@ -2,8 +2,6 @@
 Connections in depth
 ********************
 
-.. default-role:: obj
-
 The `.Connection` object encapsulates different behaviors
 depending on the attributes of the connection.
 It can be helpful in debugging network behavior

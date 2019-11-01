@@ -9,6 +9,7 @@ import nengo.utils.numpy as npext
 
 
 def is_sparse(obj):
+    """Check if ``obj`` is a sparse matrix."""
     return isinstance(obj, SparseMatrix) or npext.is_spmatrix(obj)
 
 

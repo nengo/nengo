@@ -3,6 +3,8 @@ from nengo._vendor import portalocker
 
 
 class FileLock:
+    """Lock access to a file (for multithreading)."""
+
     def __init__(self, filename, timeout=10.0, poll=0.1):
         self.filename = filename
         self.timeout = timeout

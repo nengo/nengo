@@ -5,34 +5,6 @@ import threading
 import numpy as np
 
 
-class Mock:
-    def __init__(self, *args, **kwargs):
-        pass
-
-    def __call__(self, *args, **kwargs):
-        return Mock()
-
-    def __getitem__(self, key):
-        return Mock()
-
-    def __iter__(self):
-        return iter([])
-
-    def __mul__(self, other):
-        return 1.0
-
-    @classmethod
-    def __getattr__(cls, name):
-        if name in ("__file__", "__path__"):
-            return "/dev/null"
-        elif name[0] == name[0].upper():
-            mockType = type(name, (), {})
-            mockType.__module__ = __name__
-            return mockType
-        else:
-            return Mock()
-
-
 def signals_allclose(  # noqa: C901
     t,
     targets,
@@ -54,7 +26,7 @@ def signals_allclose(  # noqa: C901
     Parameters
     ----------
     t : array_like (T,)
-        Simulation time for the points in `target` and `signals`.
+        Simulation time for the points in ``target`` and ``signals``.
     targets : array_like (T, 1) or (T, N)
         Reference signal or signals for error comparison.
     signals : array_like (T, N)
@@ -72,7 +44,7 @@ def signals_allclose(  # noqa: C901
     labels : list of string, length N
         Labels of each signal to use when plotting.
     individual_results : bool
-        If True, returns a separate `allclose` result for each signal.
+        If True, returns a separate ``allclose`` result for each signal.
     allclose : callable
         Function to compare two arrays for similarity.
     """

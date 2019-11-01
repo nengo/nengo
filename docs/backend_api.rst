@@ -2,8 +2,6 @@
 Nengo backend API
 *****************
 
-.. default-role:: obj
-
 Nengo is designed so that models created with the
 :doc:`Nengo frontend API <frontend_api>`
 work on a variety of different simulators, or "backends."
@@ -14,22 +12,15 @@ For example, backends have been created to take advantage of
 Reference backend
 =================
 
-Nengo comes with a backend that is relatively fast,
-and works on general purpose computers.
-For most users, the only thing that you need to know
-about this "reference" backend is how to
-create and close a `nengo.Simulator` instance.
+.. automodule:: nengo.simulator
+   :exclude-members: ProbeDict
 
-.. autoclass:: nengo.Simulator
-
-.. autoclass:: nengo.simulator.SimulationData
-
-.. autoclass:: nengo.simulator.SignalDict
-
-.. autoclass:: nengo.exceptions.SimulatorClosed
+   .. autoautosummary:: nengo.simulator
+      :nosignatures:
+      :exclude-members: ProbeDict
 
 The build process
------------------
+=================
 
 The build process translates a Nengo model
 to a set of data buffers (`.Signal` instances)
@@ -48,100 +39,130 @@ of the build process.
 For lower-level details
 and reference documentation, read on.
 
-.. autoclass:: nengo.builder.Signal
+.. autosummary::
+   :nosignatures:
 
-.. autoclass:: nengo.builder.Operator
-
-Operators
-^^^^^^^^^
-
-.. autoclass:: nengo.builder.operator.Reset
-
-.. autoclass:: nengo.builder.operator.Copy
-
-.. autoclass:: nengo.builder.operator.ElementwiseInc
-
-.. autoclass:: nengo.builder.operator.DotInc
-
-.. autoclass:: nengo.builder.operator.SparseDotInc
-
-.. autoclass:: nengo.builder.operator.BsrDotInc
-
-.. autoclass:: nengo.builder.operator.TimeUpdate
-
-.. autoclass:: nengo.builder.operator.SimPyFunc
-
-.. autoclass:: nengo.builder.neurons.SimNeurons
-
-.. autoclass:: nengo.builder.learning_rules.SimPES
-
-.. autoclass:: nengo.builder.learning_rules.SimBCM
-
-.. autoclass:: nengo.builder.learning_rules.SimOja
-
-.. autoclass:: nengo.builder.learning_rules.SimVoja
-
-.. autoclass:: nengo.builder.processes.SimProcess
-
-.. autoclass:: nengo.builder.transforms.ConvInc
-
-Build functions
-^^^^^^^^^^^^^^^
-
-.. autoclass:: nengo.builder.Builder
+   nengo.builder.Model
+   nengo.builder.Builder
 
 .. autoclass:: nengo.builder.Model
 
-.. autofunction:: nengo.builder.network.build_network
+.. autoclass:: nengo.builder.Builder
 
-.. autofunction:: nengo.builder.ensemble.build_ensemble
+Basic operators
+---------------
 
-.. autoclass:: nengo.builder.ensemble.BuiltEnsemble
+.. TODO: nengo.builder.operator.Operator should be nengo.builder.Operator
 
-.. autofunction:: nengo.builder.node.build_node
+.. automodule:: nengo.builder.operator
 
-.. autofunction:: nengo.builder.connection.build_connection
+   .. autoautosummary:: nengo.builder.operator
+      :nosignatures:
 
-.. autoclass:: nengo.builder.connection.BuiltConnection
+Signals
+-------
 
-.. autofunction:: nengo.builder.probe.build_probe
+.. TODO: nengo.builder.signal.Signal should be nengo.builder.Signal
 
-.. autofunction:: nengo.builder.neurons.build_neurons
+.. automodule:: nengo.builder.signal
 
-.. autofunction:: nengo.builder.neurons.build_lif
+   .. autoautosummary:: nengo.builder.signal
+      :nosignatures:
 
-.. autofunction:: nengo.builder.neurons.build_alifrate
+Network builder
+---------------
 
-.. autofunction:: nengo.builder.neurons.build_alif
+.. automodule:: nengo.builder.network
+   :exclude-members: nullcontext
 
-.. autofunction:: nengo.builder.neurons.build_izhikevich
+   .. autoautosummary:: nengo.builder.network
+      :nosignatures:
+      :exclude-members: nullcontext
 
-.. autofunction:: nengo.builder.learning_rules.build_learning_rule
+Connection builder
+------------------
 
-.. autofunction:: nengo.builder.learning_rules.build_bcm
+.. automodule:: nengo.builder.connection
 
-.. autofunction:: nengo.builder.learning_rules.build_oja
+   .. autoautosummary:: nengo.builder.connection
+      :nosignatures:
 
-.. autofunction:: nengo.builder.learning_rules.build_voja
+Ensemble builder
+----------------
 
-.. autofunction:: nengo.builder.learning_rules.build_pes
+.. automodule:: nengo.builder.ensemble
 
-.. autofunction:: nengo.builder.processes.build_process
+   .. autoautosummary:: nengo.builder.ensemble
+      :nosignatures:
+
+Learning rule builders
+----------------------
+
+.. automodule:: nengo.builder.learning_rules
+
+   .. autoautosummary:: nengo.builder.learning_rules
+      :nosignatures:
+
+Neuron builders
+---------------
+
+.. automodule:: nengo.builder.neurons
+
+   .. autoautosummary:: nengo.builder.neurons
+      :nosignatures:
+
+Node builder
+------------
+
+.. automodule:: nengo.builder.node
+
+   .. autoautosummary:: nengo.builder.node
+      :nosignatures:
+
+Probe builder
+-------------
+
+.. automodule:: nengo.builder.probe
+
+   .. autoautosummary:: nengo.builder.probe
+      :nosignatures:
+
+Process builder
+---------------
+
+.. automodule:: nengo.builder.processes
+
+   .. autoautosummary:: nengo.builder.processes
+      :nosignatures:
+
+Transform builders
+------------------
+
+.. automodule:: nengo.builder.transforms
+
+   .. autoautosummary:: nengo.builder.transforms
+      :nosignatures:
 
 Decoder cache
-^^^^^^^^^^^^^
+-------------
 
-.. autoclass:: nengo.cache.NoDecoderCache
+.. automodule:: nengo.cache
 
-.. autoclass:: nengo.cache.DecoderCache
-
-.. autoclass:: nengo.cache.Fingerprint
-
-.. autoclass:: nengo.cache.CacheIndex
-
-.. autoclass:: nengo.cache.WriteableCacheIndex
+   .. autoautosummary:: nengo.cache
+      :nosignatures:
 
 Optimizer
-^^^^^^^^^
+---------
 
-.. autofunction:: nengo.builder.optimizer.optimize
+.. automodule:: nengo.builder.optimizer
+
+   .. autoautosummary:: nengo.builder.optimizer
+      :nosignatures:
+
+Exceptions
+==========
+
+.. automodule:: nengo.exceptions
+
+   .. autoautosummary:: nengo.exceptions
+      :nosignatures:

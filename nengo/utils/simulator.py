@@ -6,6 +6,8 @@ from .stdlib import groupby
 
 
 def operator_dependency_graph(operators):  # noqa: C901
+    """Sort operators in a directed graph based on read/write dependencies."""
+
     # -- all views of a base object in a particular dictionary
     by_base_sets = defaultdict(set)
     by_base_writes = defaultdict(set)
@@ -75,6 +77,8 @@ def operator_dependency_graph(operators):  # noqa: C901
 
 
 def validate_ops(sets, ups, incs):
+    """Validate operator reads/writes."""
+
     # -- assert that only one op sets any particular view
     for sig in sets:
         sig_sets = sets[sig] + (sets.get(sig.base, []) if sig.is_view else [])

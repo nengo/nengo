@@ -50,6 +50,8 @@ class BuiltConnection(collections.namedtuple("BuiltConnection", built_attrs)):
 
 
 def get_eval_points(model, conn, rng):
+    """Get evaluation points for connection."""
+
     if conn.eval_points is None:
         view = model.params[conn.pre_obj].eval_points.view()
         view.setflags(write=False)
@@ -66,6 +68,8 @@ def get_eval_points(model, conn, rng):
 
 
 def get_targets(conn, eval_points, dtype=None):
+    """Get target points for connection with given evaluation points."""
+
     dtype = rc.float_dtype if dtype is None else dtype
     if conn.function is None:
         targets = eval_points[:, conn.pre_slice].astype(dtype)
@@ -86,6 +90,7 @@ def get_targets(conn, eval_points, dtype=None):
 
 
 def build_linear_system(model, conn, rng):
+    """Get all arrays needed to compute decoders."""
     eval_points = get_eval_points(model, conn, rng)
     ens = conn.pre_obj
     activities = get_activities(model.params[ens], ens, eval_points)
@@ -101,6 +106,8 @@ def build_linear_system(model, conn, rng):
 
 
 def build_decoders(model, conn, rng):
+    """Compute decoders for connection."""
+
     encoders = model.params[conn.pre_obj].encoders
     gain = model.params[conn.pre_obj].gain
     bias = model.params[conn.pre_obj].bias
@@ -134,6 +141,11 @@ def build_decoders(model, conn, rng):
 
 
 def solve_for_decoders(conn, gain, bias, x, targets, rng):
+    """Solver for decoders.
+
+    Factored out from `.build_decoders` for use with the cache system.
+    """
+
     activities = conn.pre_obj.neuron_type.rates(x, gain, bias)
     if np.count_nonzero(activities) == 0:
         raise BuildError(
@@ -147,6 +159,7 @@ def solve_for_decoders(conn, gain, bias, x, targets, rng):
 
 
 def slice_signal(model, signal, sl):
+    """Apply a slice operation to given signal."""
     assert signal.ndim == 1
     if isinstance(sl, slice) and (sl.step is None or sl.step == 1):
         return signal[sl]
@@ -159,11 +172,13 @@ def slice_signal(model, signal, sl):
 
 @Builder.register(Solver)
 def build_solver(model, solver, conn, rng):
+    """Apply decoder solver to connection."""
     return build_decoders(model, conn, rng)
 
 
 @Builder.register(NoSolver)
 def build_no_solver(model, solver, conn, rng):
+    """Special builder for NoSolver to skip unnecessary steps."""
     activities = np.zeros((1, conn.pre_obj.n_neurons), dtype=rc.float_dtype)
     targets = np.zeros((1, conn.size_mid), dtype=rc.float_dtype)
     # No need to invoke the cache for NoSolver

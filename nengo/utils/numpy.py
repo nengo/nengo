@@ -16,6 +16,7 @@ try:
     import scipy.sparse as scipy_sparse
 
     def is_spmatrix(obj):
+        """Check if ``obj`` is a sparse matrix."""
         return isinstance(obj, scipy_sparse.spmatrix)
 
 
@@ -24,6 +25,7 @@ except ImportError as e:
     scipy_sparse = None
 
     def is_spmatrix(obj):
+        """Check if ``obj`` is a sparse matrix."""
         return False
 
 
@@ -32,10 +34,12 @@ maxint = np.iinfo(np.int32).max
 
 
 def is_integer(obj):
+    """Check if ``obj`` is an integer type."""
     return isinstance(obj, (int, np.integer))
 
 
 def is_iterable(obj):
+    """Check if ``obj`` is an iterable."""
     if isinstance(obj, np.ndarray):
         return obj.ndim > 0  # 0-d arrays give error if iterated over
     else:
@@ -43,16 +47,19 @@ def is_iterable(obj):
 
 
 def is_number(obj, check_complex=False):
+    """Check if ``obj`` is a numeric type."""
     types = (float, complex, np.number) if check_complex else (float, np.floating)
     return is_integer(obj) or isinstance(obj, types)
 
 
 def is_array(obj):
+    """Check if ``obj`` is a numpy array."""
     # np.generic allows us to return true for scalars as well as true arrays
     return isinstance(obj, (np.ndarray, np.generic))
 
 
 def is_array_like(obj):
+    """Check if ``obj`` is an array like object."""
     # While it's possible that there are some iterables other than list/tuple
     # that can be made into arrays, it's very likely that those arrays
     # will have dtype=object, which is likely to cause unexpected issues.
@@ -60,6 +67,8 @@ def is_array_like(obj):
 
 
 def compare(a, b):
+    """Return -1/0/1 if a is less/equal/greater than b."""
+
     return 0 if a == b else 1 if a > b else -1 if a < b else None
 
 
@@ -88,6 +97,8 @@ def broadcast_shape(shape, length):
 
 
 def array(x, dims=None, min_dims=0, readonly=False, **kwargs):
+    """Create numpy array with some extra validation."""
+
     y = np.array(x, **kwargs)
     dims = max(min_dims, y.ndim) if dims is None else dims
 
@@ -179,9 +190,9 @@ def norm(x, axis=None, keepdims=False):
     x : array_like
         Array to compute the norm over.
     axis : None or int or tuple of ints, optional
-        Axis or axes to sum across. `None` sums all axes. See `np.sum`.
+        Axis or axes to sum across. ``None`` sums all axes. See ``np.sum``.
     keepdims : bool, optional
-        If True, the reduced axes are left in the result. See `np.sum` in
+        If True, the reduced axes are left in the result. See ``np.sum`` in
         newer versions of Numpy (>= 1.7).
     """
     x = np.asarray(x)
@@ -189,6 +200,7 @@ def norm(x, axis=None, keepdims=False):
 
 
 def meshgrid_nd(*args):
+    """Multidimensional meshgrid."""
     args = [np.asarray(a) for a in args]
     s = len(args) * (1,)
     return np.broadcast_arrays(
@@ -204,9 +216,9 @@ def rms(x, axis=None, keepdims=False):
     x : array_like
         Array to compute RMS amplitude over.
     axis : None or int or tuple of ints, optional
-        Axis or axes to sum across. `None` sums all axes. See `np.sum`.
+        Axis or axes to sum across. ``None`` sums all axes. See ``np.sum``.
     keepdims : bool, optional
-        If True, the reduced axes are left in the result. See `np.sum` in
+        If True, the reduced axes are left in the result. See ``np.sum`` in
         newer versions of Numpy (>= 1.7).
     """
     x = np.asarray(x)
@@ -223,14 +235,14 @@ def rmse(x, y, axis=None, keepdims=False):  # pragma: no cover
     x, y : array_like
         Arrays to compute RMS amplitude over.
     axis : None or int or tuple of ints, optional
-        Axis or axes to sum across. `None` sums all axes. See `np.sum`.
+        Axis or axes to sum across. ``None`` sums all axes. See ``np.sum``.
     keepdims : bool, optional
-        If True, the reduced axes are left in the result. See `np.sum` in
+        If True, the reduced axes are left in the result. See ``np.sum`` in
         newer versions of Numpy (>= 1.7).
     """
     warnings.warn(
         "The 'rmse' function is deprecated and will be removed in a future "
-        "version. Please use `rms(x - y)` instead.",
+        "version. Please use ``rms(x - y)`` instead.",
         DeprecationWarning,
     )
     x, y = np.asarray(x), np.asarray(y)

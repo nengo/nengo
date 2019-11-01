@@ -65,6 +65,8 @@ class BuiltEnsemble(collections.namedtuple("BuiltEnsemble", built_attrs)):
 
 
 def gen_eval_points(ens, eval_points, rng, scale_eval_points=True, dtype=None):
+    """Generate evaluation points for ensemble."""
+
     dtype = rc.float_dtype if dtype is None else dtype
     if isinstance(eval_points, Distribution):
         n_points = ens.n_eval_points
@@ -87,11 +89,15 @@ def gen_eval_points(ens, eval_points, rng, scale_eval_points=True, dtype=None):
 
 
 def get_activities(built_ens, ens, eval_points):
+    """Get output of ensemble neurons for given evaluation points."""
+
     x = np.dot(eval_points, built_ens.encoders.T / ens.radius)
     return ens.neuron_type.rates(x, built_ens.gain, built_ens.bias)
 
 
 def get_gain_bias(ens, rng=np.random, dtype=None):
+    """Compute concrete gain and bias for ensemble."""
+
     dtype = rc.float_dtype if dtype is None else dtype
     if ens.gain is not None and ens.bias is not None:
         gain = get_samples(ens.gain, ens.n_neurons, rng=rng)
