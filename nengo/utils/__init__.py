@@ -1,6 +1,5 @@
 from . import builder
 from . import cache
-from . import compat
 from . import connection
 from . import ensemble
 from . import filter_design

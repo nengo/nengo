@@ -647,27 +647,6 @@ def test_custom_type(Simulator, allclose):
     assert allclose(sim.data[p][:, :, 3:], 0)
 
 
-@pytest.mark.parametrize("LearningRule", (nengo.PES, nengo.BCM, nengo.Voja, nengo.Oja))
-def test_tau_deprecation(LearningRule):
-    params = [
-        ("pre_tau", "pre_synapse"),
-        ("post_tau", "post_synapse"),
-        ("theta_tau", "theta_synapse"),
-    ]
-    kwargs = {}
-    for i, (p0, p1) in enumerate(params):
-        if hasattr(LearningRule, p0):
-            kwargs[p0] = i
-
-    with pytest.warns(DeprecationWarning):
-        l_rule = LearningRule(learning_rate=0, **kwargs)
-
-    for i, (p0, p1) in enumerate(params):
-        if hasattr(LearningRule, p0):
-            assert getattr(l_rule, p0) == i
-            assert getattr(l_rule, p1) == Lowpass(i)
-
-
 def test_slicing(Simulator, seed, allclose):
     with nengo.Network(seed=seed) as model:
         a = nengo.Ensemble(50, 1)

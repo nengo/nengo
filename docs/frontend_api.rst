@@ -197,18 +197,12 @@ Synapse models
    :nosignatures:
 
    nengo.synapses.Synapse
-   nengo.synapses.filt
-   nengo.synapses.filtfilt
    nengo.LinearFilter
    nengo.Lowpass
    nengo.Alpha
    nengo.synapses.Triangle
 
 .. autoclass:: nengo.synapses.Synapse
-
-.. autofunction:: nengo.synapses.filt
-
-.. autofunction:: nengo.synapses.filtfilt
 
 .. autoclass:: nengo.LinearFilter
 

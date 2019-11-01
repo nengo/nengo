@@ -4,7 +4,6 @@ import numpy as np
 import pytest
 
 import nengo
-from nengo.exceptions import ObsoleteError
 from nengo.utils.stdlib import Timer
 
 
@@ -238,17 +237,6 @@ def test_ensemble_encoders(Simulator, allclose):
     from_data = ens_data.encoders
     assert allclose(from_probe, from_data)
     assert allclose(sim.data[p_enc], ens_data.scaled_encoders)
-
-
-def test_obsolete_probes():
-    with nengo.Network():
-        pre = nengo.Ensemble(10, 1)
-        post = nengo.Ensemble(10, 1)
-        conn = nengo.Connection(pre, post)
-        with pytest.raises(ObsoleteError):
-            nengo.Probe(conn, "decoders")
-        with pytest.raises(ObsoleteError):
-            nengo.Probe(conn, "transform")
 
 
 def test_update_timing(Simulator, allclose):

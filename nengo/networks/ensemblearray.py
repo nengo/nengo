@@ -33,17 +33,8 @@ class EnsembleArray(nengo.Network):
         The number of neurons in each sub-ensemble.
     n_ensembles : int
         The number of sub-ensembles to create.
-
     ens_dimensions : int, optional
         The dimensionality of each sub-ensemble.
-    neuron_nodes : bool, optional
-        Whether to create a node that provides access to each individual
-        neuron, typically for the purpose of inhibiting the entire
-        EnsembleArray.
-
-        .. note:: Deprecated in Nengo 2.1.0.
-                  Call `~.EnsembleArray.add_neuron_input` or
-                  `~.EnsembleArray.add_neuron_output` instead.
     label : str, optional
         A name to assign this EnsembleArray.
         Used for visualization and debugging.
@@ -82,13 +73,10 @@ class EnsembleArray(nengo.Network):
         n_neurons,
         n_ensembles,
         ens_dimensions=1,
-        neuron_nodes=False,
         label=None,
         seed=None,
         add_to_container=None,
-        # fmt: off
         **ens_kwargs
-        # fmt: on
     ):
         if "dimensions" in ens_kwargs:
             raise ValidationError(
@@ -133,15 +121,6 @@ class EnsembleArray(nengo.Network):
                     synapse=None,
                 )
                 self.ea_ensembles.append(e)
-
-        if neuron_nodes:
-            self.add_neuron_input()
-            self.add_neuron_output()
-            warnings.warn(
-                "'neuron_nodes' argument will be removed in Nengo 2.2. Use "
-                "'add_neuron_input' and 'add_neuron_output' methods instead.",
-                DeprecationWarning,
-            )
 
         self.add_output("output", function=None)
 

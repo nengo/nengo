@@ -9,7 +9,7 @@ from nengo.builder.operator import Copy, ElementwiseInc
 from nengo.connection import Connection
 from nengo.transforms import Dense
 from nengo.ensemble import Ensemble, Neurons
-from nengo.exceptions import BuildError, ObsoleteError
+from nengo.exceptions import BuildError
 from nengo.neurons import Direct
 from nengo.node import Node
 from nengo.rc import rc
@@ -27,9 +27,6 @@ class BuiltConnection(collections.namedtuple("BuiltConnection", built_attrs)):
     of a BuiltConnection are the full NumPy arrays used in the simulation.
 
     See the `.Connection` documentation for more details on each parameter.
-
-    .. note:: The ``decoders`` attribute is obsolete as of Nengo 2.1.0.
-              Use the ``weights`` attribute instead.
 
     Parameters
     ----------
@@ -50,14 +47,6 @@ class BuiltConnection(collections.namedtuple("BuiltConnection", built_attrs)):
     def __new__(cls, eval_points, solver_info, weights, transform):
         # Overridden to suppress the default __new__ docstring
         return tuple.__new__(cls, (eval_points, solver_info, weights, transform))
-
-    @property
-    def decoders(self):
-        raise ObsoleteError(
-            "decoders are now part of 'weights'. "
-            "Access BuiltConnection.weights instead.",
-            since="v2.1.0",
-        )
 
 
 def get_eval_points(model, conn, rng):

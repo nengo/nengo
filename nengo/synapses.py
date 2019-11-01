@@ -1,5 +1,3 @@
-import warnings
-
 import numpy as np
 
 from nengo.base import Process
@@ -521,26 +519,6 @@ class Triangle(Synapse):
             return Y
 
         return step_triangle
-
-
-def filt(signal, synapse, dt, axis=0, x0=None, copy=True):
-    """Filter ``signal`` with ``synapse``.
-
-    .. note:: Deprecated in Nengo 2.1.0.
-              Use `.Synapse.filt` method instead.
-    """
-    warnings.warn("Use ``synapse.filt`` instead", DeprecationWarning)
-    return synapse.filt(signal, dt=dt, axis=axis, y0=x0, copy=copy)
-
-
-def filtfilt(signal, synapse, dt, axis=0, x0=None, copy=True):
-    """Zero-phase filtering of ``signal`` using the ``synapse`` filter.
-
-    .. note:: Deprecated in Nengo 2.1.0.
-              Use `.Synapse.filtfilt` method instead.
-    """
-    warnings.warn("Use ``synapse.filtfilt`` instead", DeprecationWarning)
-    return synapse.filtfilt(signal, dt=dt, axis=axis, y0=x0, copy=copy)
 
 
 class SynapseParam(Parameter):

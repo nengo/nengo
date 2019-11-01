@@ -231,6 +231,30 @@ Release History
   (`#1566 <https://github.com/nengo/nengo/pull/1566>`__)
 - Removed ``nengo.conftest``. Use pytest configuration options instead.
   (`#1566 <https://github.com/nengo/nengo/pull/1566>`__)
+- Removed support for legacy cache files.
+  (`#1577 <https://github.com/nengo/nengo/pull/1577>`__)
+- Removed the nengo ipynb progress bar extension. This is no longer needed in more
+  recent ipynb versions.
+  (`#1577 <https://github.com/nengo/nengo/pull/1577>`__)
+- Removed the deprecated ``*_tau`` (e.g. ``pre_tau``) parameters from learning rules.
+  Use ``*_synapse`` instead.
+  (`#1577 <https://github.com/nengo/nengo/pull/1577>`__)
+- Removed the deprecated ``neuron_nodes`` argument from ``networks.EnsembleArray``.
+  Use ``EnsembleArray.add_neuron_input/add_neuron_output`` instead.
+  (`#1577 <https://github.com/nengo/nengo/pull/1577>`__)
+- Removed the deprecated ``progress.updater`` config option.
+  Use ``progress.progress_bar`` instead.
+  (`#1577 <https://github.com/nengo/nengo/pull/1577>`__)
+- Removed the deprecated ``nengo.synapses.filt/filtfilt`` functions.
+  Use the ``Synapse.filt/filtfilt`` methods instead.
+  (`#1577 <https://github.com/nengo/nengo/pull/1577>`__)
+- Removed the Python 2 compatibility code from ``utils.compat``.
+  (`#1577 <https://github.com/nengo/nengo/pull/1577>`__)
+- Removed ``utils.connection.target_function``. Target points can be passed
+  directly to the ``Connection.function`` argument instead.
+  (`#1577 <https://github.com/nengo/nengo/pull/1577>`__)
+- Removed ``utils.functions.piecewise``. Use ``nengo.processes.Piecewise`` instead.
+  (`#1577 <https://github.com/nengo/nengo/pull/1577>`__)
 
 **Fixed**
 

@@ -253,11 +253,6 @@ class CacheIndex:
         Path where the cache is stored.
     index_path : str
         Path to the cache index file.
-    legacy_path : str
-        Path to a potentially existing legacy file. This file was previously
-        used to track version information, but is now obsolete. It will still
-        be used to retrieve version information in case of an old cache index
-        that does not store version information itself.
     version : tuple
         Version code of the loaded cache index. The first element gives the
         format of the cache and the second element gives the pickle protocol
@@ -271,13 +266,9 @@ class CacheIndex:
     Under the hood, the cache index is stored as a pickle file. The pickle file
     contains two objects which are read sequentially: the ``version`` tuple,
     and the ``index`` dictionary mapping keys to (filename, start, end) tuples.
-    Previously, these two objects were stored separately, with the ``version``
-    tuple stored in a ``legacy.txt`` file. These two objects were consolidated
-    in the pickle file in Nengo 2.3.0.
     """
 
     _INDEX = "index"
-    _LEGACY = "legacy.txt"
     VERSION = 2
 
     def __init__(self, cache_dir):
@@ -288,10 +279,6 @@ class CacheIndex:
     @property
     def index_path(self):
         return os.path.join(self.cache_dir, self._INDEX)
-
-    @property
-    def legacy_path(self):
-        return os.path.join(self.cache_dir, self._LEGACY)
 
     def __contains__(self, key):
         return key in self._index
@@ -315,27 +302,14 @@ class CacheIndex:
     def _load_index_file(self):
         with open(self.index_path, "rb") as f:
             self.version = pickle.load(f)
-            if isinstance(self.version, tuple):
-                if (
-                    self.version[0] > self.VERSION
-                    or self.version[1] > pickle.HIGHEST_PROTOCOL
-                ):
-                    raise CacheIOError("Unsupported cache index file format.")
-                self._index = pickle.load(f)
-            else:
-                self._index = self.version
-                self.version = self._get_legacy_version()
+            if (
+                self.version[0] > self.VERSION
+                or self.version[1] > pickle.HIGHEST_PROTOCOL
+            ):
+                raise CacheIOError("Unsupported cache index file format.")
+            self._index = pickle.load(f)
         assert isinstance(self.version, tuple)
         assert isinstance(self._index, dict)
-
-    def _get_legacy_version(self):
-        try:
-            with open(self.legacy_path, "r") as lf:
-                text = lf.read()
-            return tuple(int(x.strip()) for x in text.split("."))
-        except Exception:
-            logger.exception("Decoder cache version information could not be read.")
-            return (-1, -1)
 
 
 class WriteableCacheIndex(CacheIndex):
@@ -445,9 +419,6 @@ class WriteableCacheIndex(CacheIndex):
                 "2. Disable the cache.\n".format(cache_dir=self.cache_dir),
                 category=CacheIOWarning,
             )
-
-        if os.path.exists(self.legacy_path):
-            os.remove(self.legacy_path)
 
     def sync(self):
         """Write changes to the cache index back to disk.

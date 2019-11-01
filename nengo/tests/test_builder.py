@@ -5,7 +5,6 @@ import pytest
 import nengo
 from nengo.builder import Model
 from nengo.builder.ensemble import BuiltEnsemble
-from nengo.exceptions import ObsoleteError
 
 
 def test_seeding(Simulator, allclose):
@@ -119,16 +118,6 @@ def test_seed_override(seed, allclose):
     assert not model.seeded[net]
     assert not model.seeded[a]
     assert allclose(model.params[a].gain, model.params[b].gain)
-
-
-def test_obsolete_params(Simulator):
-    with nengo.Network() as net:
-        e = nengo.Ensemble(10, 1)
-        c = nengo.Connection(e, e)
-    with Simulator(net) as sim:
-        pass
-    with pytest.raises(ObsoleteError):
-        sim.data[c].decoders
 
 
 def test_build_twice():

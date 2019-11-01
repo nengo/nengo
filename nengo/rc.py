@@ -78,7 +78,7 @@ RC_DEFAULTS = {
         "size": "512 MB",
         "path": nengo.utils.paths.decoder_cache_dir,
     },
-    "progress": {"updater": "auto", "progress_bar": "auto"},  # Deprecated
+    "progress": {"progress_bar": "auto"},
     "exceptions": {"simplified": True},
     "nengo.Simulator": {"fail_fast": False},
 }

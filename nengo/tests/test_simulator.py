@@ -10,7 +10,7 @@ from nengo.builder import Model
 from nengo.builder.ensemble import BuiltEnsemble
 from nengo.builder.operator import DotInc
 from nengo.builder.signal import Signal
-from nengo.exceptions import ObsoleteError, SimulatorClosed, ValidationError
+from nengo.exceptions import SimulatorClosed, ValidationError
 from nengo.rc import rc
 from nengo.utils.progress import ProgressBar
 
@@ -281,16 +281,6 @@ def test_hierarchical_seeding():
         assert same1seeds[same1obj] == same2seeds[same2obj]
 
 
-def test_obsolete_params(Simulator):
-    with nengo.Network() as net:
-        e = nengo.Ensemble(10, 1)
-        c = nengo.Connection(e, e)
-    with Simulator(net) as sim:
-        pass
-    with pytest.raises(ObsoleteError):
-        sim.data[c].decoders
-
-
 def test_probe_cache(Simulator, allclose):
     with nengo.Network() as model:
         u = nengo.Node(nengo.processes.WhiteNoise())
@@ -374,6 +364,6 @@ def test_sample_every_trange(Simulator, sample_every, allclose):
 
     with pytest.raises(ValidationError):
         sim.trange(dt=sample_every, sample_every=sample_every)
-    with pytest.warns(UserWarning):
+    with pytest.warns(DeprecationWarning):
         assert allclose(sim.trange(dt=sample_every), np.squeeze(sim.data[p]))
     assert allclose(sim.trange(sample_every=sample_every), np.squeeze(sim.data[p]))

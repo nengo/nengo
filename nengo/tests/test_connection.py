@@ -7,7 +7,7 @@ import nengo
 import nengo.utils.numpy as npext
 from nengo.connection import ConnectionSolverParam
 from nengo.dists import Choice, UniformHypersphere
-from nengo.exceptions import BuildError, ObsoleteError, ValidationError
+from nengo.exceptions import BuildError, ValidationError
 from nengo.solvers import LstsqL2
 from nengo.processes import Piecewise
 from nengo.transforms import Dense
@@ -930,14 +930,6 @@ def test_transform_probe(Simulator):
 
     with Simulator(net) as sim:
         assert sim
-
-
-def test_nomodulatory():
-    """Make sure you cannot set modulatory=True on connections."""
-    with nengo.Network():
-        a = nengo.Ensemble(10, 1)
-        with pytest.raises(ObsoleteError):
-            nengo.Connection(a, a, modulatory=True)
 
 
 def test_connectionlearningruletypeparam():

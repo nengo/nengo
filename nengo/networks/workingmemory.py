@@ -57,9 +57,7 @@ class InputGatedMemory(nengo.Network):
         difference_gain=1.0,
         recurrent_synapse=0.1,
         difference_synapse=None,
-        # fmt: off
         **kwargs
-        # fmt: on
     ):
 
         if "net" in kwargs:

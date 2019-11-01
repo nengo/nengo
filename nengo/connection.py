@@ -11,9 +11,7 @@ from nengo.params import (
     BoolParam,
     Default,
     FunctionInfo,
-    ObsoleteParam,
     Parameter,
-    Unconfigurable,
 )
 from nengo.rc import rc
 from nengo.solvers import LstsqL2, SolverParam
@@ -443,13 +441,6 @@ class Connection(NengoObject):
         "eval_points", default=None, optional=True, sample_shape=("*", "size_in")
     )
     scale_eval_points = BoolParam("scale_eval_points", default=True)
-    modulatory = ObsoleteParam(
-        "modulatory",
-        "Modulatory connections have been removed. "
-        "Connect to a learning rule instead.",
-        since="v2.1.0",
-        url="https://github.com/nengo/nengo/issues/632#issuecomment-71663849",
-    )
 
     _param_init_order = [
         "pre",
@@ -475,7 +466,6 @@ class Connection(NengoObject):
         scale_eval_points=Default,
         label=Default,
         seed=Default,
-        modulatory=Unconfigurable,
     ):
         super().__init__(label=label, seed=seed)
 
@@ -489,7 +479,6 @@ class Connection(NengoObject):
         self.transform = transform  # Must be set after function
         self.solver = solver  # Must be set before learning rule
         self.learning_rule_type = learning_rule_type  # set after transform
-        self.modulatory = modulatory
 
     def __str__(self):
         return self._str(include_id=False)

@@ -154,9 +154,7 @@ class BasalGanglia(nengo.Network):
         input_bias=0.0,
         ampa_config=None,
         gaba_config=None,
-        # fmt: off
         **kwargs
-        # fmt: on
     ):
         if "net" in kwargs:
             raise ObsoleteError("The 'net' argument is no longer supported.")
@@ -320,9 +318,7 @@ class Thalamus(nengo.Network):
         n_neurons_per_ensemble=50,
         mutual_inhib=1.0,
         threshold=0.0,
-        # fmt: off
         **kwargs
-        # fmt: on
     ):
         if "net" in kwargs:
             raise ObsoleteError("The 'net' argument is no longer supported.")

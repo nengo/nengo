@@ -87,9 +87,7 @@ class FilteredNoise(Process):
         synapse=Lowpass(tau=0.005),
         dist=Gaussian(mean=0, std=1),
         scale=True,
-        # fmt: off
         **kwargs
-        # fmt: on
     ):
         super().__init__(default_size_in=0, **kwargs)
         self.synapse = synapse

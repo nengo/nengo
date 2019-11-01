@@ -1,7 +1,7 @@
 from nengo.base import NengoObject, NengoObjectParam, ObjView
 from nengo.config import Config
 from nengo.connection import Connection, LearningRule
-from nengo.exceptions import ObsoleteError, ValidationError
+from nengo.exceptions import ValidationError
 from nengo.params import Default, ConnectionDefault, NumberParam, Parameter, StringParam
 from nengo.solvers import SolverParam
 from nengo.synapses import SynapseParam
@@ -30,12 +30,6 @@ class AttributeParam(StringParam):
 
     def coerce(self, probe, attr):
         value = super().coerce(probe, attr)
-        if attr in ("decoders", "transform"):
-            raise ObsoleteError(
-                "'decoders' and 'transform' are now combined "
-                "into 'weights'. Probe 'weights' instead.",
-                since="v2.1.0",
-            )
         if attr not in probe.obj.probeable:
             raise ValidationError(
                 "Attribute %r is not probeable on %s.\n"

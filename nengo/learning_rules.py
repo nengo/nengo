@@ -8,7 +8,6 @@ from nengo.params import (
     FrozenObject,
     NumberParam,
     Parameter,
-    Unconfigurable,
 )
 from nengo.synapses import Lowpass, SynapseParam
 from nengo.utils.numpy import is_iterable
@@ -102,27 +101,6 @@ class LearningRuleType(FrozenObject, SupportDefaultsMixin):
         return (("learning_rate", LearningRuleType.learning_rate.default),)
 
 
-def _deprecated_tau(old_attr, new_attr):
-    def get_tau(self):
-        return None if getattr(self, new_attr) is None else getattr(self, new_attr).tau
-
-    def set_tau(self, val):
-        if val is Unconfigurable:
-            return
-
-        since = "v2.8.0"
-        url = "https://github.com/nengo/nengo/pull/1095"
-        msg = (
-            "%s has been deprecated, use %s instead (since %s).\n"
-            "For more information, please visit %s" % (old_attr, new_attr, since, url)
-        )
-        warnings.warn(msg, DeprecationWarning)
-
-        setattr(self, new_attr, None if val is None else Lowpass(val))
-
-    return property(get_tau, set_tau)
-
-
 class PES(LearningRuleType):
     """Prescribed Error Sensitivity learning rule.
 
@@ -150,11 +128,7 @@ class PES(LearningRuleType):
     learning_rate = NumberParam("learning_rate", low=0, readonly=True, default=1e-4)
     pre_synapse = SynapseParam("pre_synapse", default=Lowpass(tau=0.005), readonly=True)
 
-    pre_tau = _deprecated_tau("pre_tau", "pre_synapse")
-
-    def __init__(
-        self, learning_rate=Default, pre_synapse=Default, pre_tau=Unconfigurable
-    ):
+    def __init__(self, learning_rate=Default, pre_synapse=Default):
         super().__init__(learning_rate, size_in="post_state")
         if learning_rate is not Default and learning_rate >= 1.0:
             warnings.warn(
@@ -162,10 +136,7 @@ class PES(LearningRuleType):
                 "in floating point errors from too much current."
             )
 
-        if pre_tau is Unconfigurable:
-            self.pre_synapse = pre_synapse
-        else:
-            self.pre_tau = pre_tau
+        self.pre_synapse = pre_synapse
 
     @property
     def _argdefaults(self):
@@ -226,38 +197,20 @@ class BCM(LearningRuleType):
         "theta_synapse", default=Lowpass(tau=1.0), readonly=True
     )
 
-    pre_tau = _deprecated_tau("pre_tau", "pre_synapse")
-    post_tau = _deprecated_tau("post_tau", "post_synapse")
-    theta_tau = _deprecated_tau("theta_tau", "theta_synapse")
-
     def __init__(
         self,
         learning_rate=Default,
         pre_synapse=Default,
         post_synapse=Default,
         theta_synapse=Default,
-        pre_tau=Unconfigurable,
-        post_tau=Unconfigurable,
-        theta_tau=Unconfigurable,
     ):
         super().__init__(learning_rate, size_in=0)
 
-        if pre_tau is Unconfigurable:
-            self.pre_synapse = pre_synapse
-        else:
-            self.pre_tau = pre_tau
-
-        if post_tau is Unconfigurable:
-            self.post_synapse = (
-                self.pre_synapse if post_synapse is Default else post_synapse
-            )
-        else:
-            self.post_tau = post_tau
-
-        if theta_tau is Unconfigurable:
-            self.theta_synapse = theta_synapse
-        else:
-            self.theta_tau = theta_tau
+        self.pre_synapse = pre_synapse
+        self.post_synapse = (
+            self.pre_synapse if post_synapse is Default else post_synapse
+        )
+        self.theta_synapse = theta_synapse
 
     @property
     def _argdefaults(self):
@@ -319,33 +272,20 @@ class Oja(LearningRuleType):
     post_synapse = SynapseParam("post_synapse", default=None, readonly=True)
     beta = NumberParam("beta", low=0, readonly=True, default=1.0)
 
-    pre_tau = _deprecated_tau("pre_tau", "pre_synapse")
-    post_tau = _deprecated_tau("post_tau", "post_synapse")
-
     def __init__(
         self,
         learning_rate=Default,
         pre_synapse=Default,
         post_synapse=Default,
         beta=Default,
-        pre_tau=Unconfigurable,
-        post_tau=Unconfigurable,
     ):
         super().__init__(learning_rate, size_in=0)
 
         self.beta = beta
-
-        if pre_tau is Unconfigurable:
-            self.pre_synapse = pre_synapse
-        else:
-            self.pre_tau = pre_tau
-
-        if post_tau is Unconfigurable:
-            self.post_synapse = (
-                self.pre_synapse if post_synapse is Default else post_synapse
-            )
-        else:
-            self.post_tau = post_tau
+        self.pre_synapse = pre_synapse
+        self.post_synapse = (
+            self.pre_synapse if post_synapse is Default else post_synapse
+        )
 
     @property
     def _argdefaults(self):
@@ -391,17 +331,10 @@ class Voja(LearningRuleType):
         "post_synapse", default=Lowpass(tau=0.005), readonly=True
     )
 
-    post_tau = _deprecated_tau("post_tau", "post_synapse")
-
-    def __init__(
-        self, learning_rate=Default, post_synapse=Default, post_tau=Unconfigurable
-    ):
+    def __init__(self, learning_rate=Default, post_synapse=Default):
         super().__init__(learning_rate, size_in=1)
 
-        if post_tau is Unconfigurable:
-            self.post_synapse = post_synapse
-        else:
-            self.post_tau = post_tau
+        self.post_synapse = post_synapse
 
     @property
     def _argdefaults(self):
