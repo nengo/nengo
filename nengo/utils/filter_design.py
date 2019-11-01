@@ -144,7 +144,7 @@ def normalize(b, a):
     if len(a.shape) != 1:
         raise ValueError("Denominator polynomial must be rank-1 array.")
     if len(b.shape) > 2:
-        raise ValueError("Numerator polynomial must be rank-1 or" " rank-2 array.")
+        raise ValueError("Numerator polynomial must be rank-1 or rank-2 array.")
     if len(b.shape) == 1:
         b = asarray([b], b.dtype.char)
     while a[0] == 0.0 and len(a) > 1:

@@ -95,7 +95,7 @@ def piecewise(data):
     """
 
     warnings.warn(
-        "The `piecewise` function is deprecated. Use the Piecewise " "process instead.",
+        "The `piecewise` function is deprecated. Use the Piecewise process instead.",
         DeprecationWarning,
     )
 

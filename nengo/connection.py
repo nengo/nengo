@@ -229,7 +229,7 @@ class ConnectionFunctionParam(Parameter):
         value, invoked = checked_call(function, *args)
         if not invoked:
             raise ValidationError(
-                "function '%s' must accept a single " "np.array argument" % function,
+                "function '%s' must accept a single np.array argument" % function,
                 attr=self.name,
                 obj=instance,
             )

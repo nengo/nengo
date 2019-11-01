@@ -97,7 +97,7 @@ def array(x, dims=None, min_dims=0, readonly=False, **kwargs):
         y.shape = shape
     elif y.ndim > dims:
         raise ValidationError(
-            "Input cannot be cast to array with " "%d dimensions" % dims, attr="dims"
+            "Input cannot be cast to array with %d dimensions" % dims, attr="dims"
         )
 
     if readonly:

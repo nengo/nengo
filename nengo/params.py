@@ -178,7 +178,7 @@ class Parameter:
     def coerce(self, instance, value):
         if isinstance(value, DefaultType):
             raise ValidationError(
-                "Default is not a valid value. To reset a " "parameter, use 'del'.",
+                "Default is not a valid value. To reset a parameter, use 'del'.",
                 attr=self.name,
                 obj=instance,
             )
@@ -186,7 +186,7 @@ class Parameter:
             raise ReadonlyError(attr=self.name, obj=instance)
         if not self.optional and value is None:
             raise ValidationError(
-                "Parameter is not optional; cannot set to " "None",
+                "Parameter is not optional; cannot set to None",
                 attr=self.name,
                 obj=instance,
             )
@@ -550,7 +550,7 @@ class FunctionParam(Parameter):
         value, invoked = checked_call(function, *args)
         if not invoked:
             raise ValidationError(
-                "function '%s' must accept a single " "np.array argument" % function,
+                "function '%s' must accept a single np.array argument" % function,
                 attr=self.name,
                 obj=instance,
             )

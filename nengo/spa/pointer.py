@@ -16,9 +16,7 @@ class SemanticPointer:
         if is_integer(data):
             if data < 1:
                 raise ValidationError(
-                    "Number of dimensions must be a " "positive int",
-                    attr="data",
-                    obj=self,
+                    "Number of dimensions must be a positive int", attr="data", obj=self
                 )
 
             self.randomize(data, rng=rng)

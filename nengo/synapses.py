@@ -262,7 +262,7 @@ class LinearFilter(Synapse):
                 X[:] = IAB.dot(u0)
             else:
                 raise ValidationError(
-                    "Cannot solve for state if DC gain is " "zero. Please set `y0=0`.",
+                    "Cannot solve for state if DC gain is zero. Please set `y0=0`.",
                     "y0",
                     obj=self,
                 )

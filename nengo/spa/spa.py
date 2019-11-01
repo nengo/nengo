@@ -152,7 +152,7 @@ class SPA(nengo.Network):
             # and what hasn't, we have to ask the network
             if isinstance(net, Module) and (net not in module_list):
                 raise SpaModuleError(
-                    "%s must be set as an attribute of " "a SPA network" % (net)
+                    "%s must be set as an attribute of a SPA network" % (net)
                 )
 
     def get_module(self, name):

@@ -20,7 +20,7 @@ class OutputParam(Parameter):
 
     def _fn_args_validation_error(self, output, attr, node):
         n_args = 2 if node.size_in > 0 else 1
-        msg = "output function '%s' is expected to accept exactly " "%d argument" % (
+        msg = "output function '%s' is expected to accept exactly %d argument" % (
             output,
             n_args,
         )
@@ -34,7 +34,7 @@ class OutputParam(Parameter):
     def check_ndarray(self, node, output):
         if len(output.shape) > 1:
             raise ValidationError(
-                "Node output must be a vector (got shape " "%s)" % (output.shape,),
+                "Node output must be a vector (got shape %s)" % (output.shape,),
                 attr=self.name,
                 obj=node,
             )
@@ -103,7 +103,7 @@ class OutputParam(Parameter):
             result = np.asarray(result)
             if len(result.shape) > 1:
                 raise ValidationError(
-                    "Node output must be a vector " "(got shape %s)" % (result.shape,),
+                    "Node output must be a vector (got shape %s)" % (result.shape,),
                     attr=self.name,
                     obj=node,
                 )

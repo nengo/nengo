@@ -49,7 +49,7 @@ def build_dense(model, transform, sig_in, decoders=None, encoders=None, rng=np.r
 def build_sparse(model, transform, sig_in, decoders=None, encoders=None, rng=np.random):
     if decoders is not None:
         raise BuildError(
-            "Applying a sparse transform to a decoded " "connection is not supported"
+            "Applying a sparse transform to a decoded connection is not supported"
         )
 
     # Shouldn't be possible for encoders to be non-None, since that only

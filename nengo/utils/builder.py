@@ -27,7 +27,7 @@ def full_transform(conn, slice_pre=True, slice_post=True, allow_scalars=True):
 
     if not isinstance(conn.transform, nengo.Dense):
         raise ValidationError(
-            "full_transform can only be applied to Dense " "transforms",
+            "full_transform can only be applied to Dense transforms",
             attr="transform",
             obj=conn,
         )

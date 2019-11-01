@@ -470,7 +470,7 @@ class Piecewise(Process):
 
             if self.interpolation == "cubic" and 0 not in tp:
                 warnings.warn(
-                    "'cubic' interpolation may fail if data not " "specified for t=0.0"
+                    "'cubic' interpolation may fail if data not specified for t=0.0"
                 )
 
             f = self.sp_interpolate.interp1d(

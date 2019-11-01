@@ -774,7 +774,7 @@ class SigMerger:
                 or s.shape[axis + 1 :] != signals[0].shape[axis + 1 :]
             ):
                 raise ValueError(
-                    "Signals must have same shape except on concatenation " "axis."
+                    "Signals must have same shape except on concatenation axis."
                 )
             if s.dtype is not signals[0].dtype:
                 raise ValueError("Signals must have the same dtype.")
@@ -806,7 +806,7 @@ class SigMerger:
                 or s.shape[axis + 1 :] != signals[0].shape[axis + 1 :]
             ):
                 raise ValueError(
-                    "Signals must have same shape except on concatenation " "axis."
+                    "Signals must have same shape except on concatenation axis."
                 )
             if s.offset != start:
                 raise ValueError("Views are not sequential.")

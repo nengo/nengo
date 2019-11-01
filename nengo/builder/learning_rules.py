@@ -510,7 +510,7 @@ def build_learning_rule(model, rule):
     if rule.modifies == "encoders":
         if not conn.is_decoded:
             ValueError(
-                "The connection must be decoded in order to use " "encoder learning."
+                "The connection must be decoded in order to use encoder learning."
             )
         post = get_post_ens(conn)
         target = model.sig[post]["encoders"]

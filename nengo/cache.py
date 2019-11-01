@@ -680,9 +680,7 @@ class DecoderCache:
             conn, gain, bias, x, targets, rng=np.random, **uncached_kwargs
         ):
             if not self._in_context:
-                warnings.warn(
-                    "Cannot use cached solver outside of " "`with cache` block."
-                )
+                warnings.warn("Cannot use cached solver outside of `with cache` block.")
                 return solver_fn(
                     conn, gain, bias, x, targets, rng=rng, **uncached_kwargs
                 )

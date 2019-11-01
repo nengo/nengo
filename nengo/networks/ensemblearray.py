@@ -283,7 +283,7 @@ class EnsembleArray(nengo.Network):
             function = [None] * self.n_ensembles
         else:
             raise ValidationError(
-                "'function' must be a callable, list of " "callables, or None",
+                "'function' must be a callable, list of callables, or None",
                 attr="function",
             )
 
