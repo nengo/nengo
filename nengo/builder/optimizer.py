@@ -795,8 +795,6 @@ class SigMerger:
         for s in signals:
             if s.base is not signals[0].base:
                 raise ValueError("Signals must share the same base.")
-            if s.dtype is not signals[0].dtype:
-                raise ValueError("Signals must have same dtype.")
             if s.ndim != signals[0].ndim:
                 raise ValueError("Signals must have the same number of dimensions.")
             if s.strides != signals[0].strides:
@@ -841,7 +839,7 @@ class SigMerger:
         elif not any(are_views):
             return SigMerger.merge_signals(signals, axis=axis)
         else:
-            raise ValueError("Cannot merged mixed views and non-views.")
+            raise ValueError("Cannot merge mixed views and non-views.")
 
     @staticmethod
     def merge_signals(signals, axis=0):

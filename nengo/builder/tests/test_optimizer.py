@@ -100,16 +100,30 @@ def test_sigmerger_check_views():
 
     # compatible along second axis
     SigMerger.check_views([s1[:1, :1], s1[:1, 1:]], axis=1)
-    with pytest.raises(ValueError):
-        SigMerger.check_views([s1[:1, :1], s1[:1, 1:]], axis=0)
 
-    # shape mismatch
-    with pytest.raises(ValueError):
-        SigMerger.check_views([s1[:1], s1[1:, 0]])
+    # non-views
+    with pytest.raises(ValueError, match="Cannot merge non-views"):
+        SigMerger.check_views([s1, s2])
 
     # different bases
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="must share the same base"):
         SigMerger.check_views([s1[:2], s2[2:]])
+
+    # different ndims
+    with pytest.raises(ValueError, match="must have the same number of dimensions"):
+        SigMerger.check_views([s1[:1], s1[1:, 0]])
+
+    # different strides
+    with pytest.raises(ValueError, match="must have equal strides"):
+        SigMerger.check_views([s1[::2], s1[::3]])
+
+    # shape mismatch
+    with pytest.raises(ValueError, match="must have same shape except on"):
+        SigMerger.check_views([s1[:1, :1], s1[:1, 1:]], axis=0)
+
+    # non-sequential
+    with pytest.raises(ValueError, match="Views are not sequential"):
+        SigMerger.check_views([s1[1:], s1[1:-1]])
 
 
 def test_sigmerger_merge(allclose):
@@ -120,6 +134,9 @@ def test_sigmerger_merge(allclose):
     assert allclose(sig.initial_value, np.array([[0, 1], [2, 3], [4, 5]]))
     assert allclose(replacements[s1].initial_value, s1.initial_value)
     assert allclose(replacements[s2].initial_value, s2.initial_value)
+
+    with pytest.raises(ValueError, match="Cannot merge mixed views and non-views"):
+        SigMerger.merge([s1[0], s2])
 
 
 def test_sigmerger_merge_views(allclose):
