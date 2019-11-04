@@ -268,10 +268,16 @@ class Timer:
 
     Examples
     --------
-    >>> import time
-    >>> with Timer() as t:
-    ...    time.sleep(1)
-    >>> assert t.duration >= 1
+
+    .. testcode::
+
+       import time
+       from nengo.utils.stdlib import Timer
+
+       with Timer() as t:
+          time.sleep(1)
+       assert t.duration >= 1
+
     """
 
     TIMER = time.clock if sys.platform == "win32" else time.time

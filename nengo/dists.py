@@ -58,13 +58,24 @@ def get_samples(dist_or_samples, n, d=None, rng=np.random):
 
     Examples
     --------
-    >>> def mean(values, n=100):
-    ...     samples = get_samples(values, n=n)
-    ...     return np.mean(samples)
-    >>> mean([1, 2, 3, 4])
-    2.5
-    >>> mean(nengo.dists.Gaussian(0, 1))
-    0.057277898442269548
+
+    .. testcode::
+
+       from nengo.dists import get_samples
+
+       rng = np.random.RandomState(seed=0)
+
+       def mean(values, n=100):
+           samples = get_samples(values, n=n, rng=rng)
+           print("%.4f" % np.mean(samples))
+
+       mean([1, 2, 3, 4])
+       mean(nengo.dists.Gaussian(0, 1))
+
+    .. testoutput::
+
+       2.5000
+       0.0598
 
     Parameters
     ----------

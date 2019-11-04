@@ -139,15 +139,20 @@ class CircularConvolution(nengo.Network):
     --------
 
     A basic example computing the circular convolution of two 10-dimensional
-    vectors represented by ensemble arrays::
+    vectors represented by ensemble arrays:
 
-        A = EnsembleArray(50, n_ensembles=10)
-        B = EnsembleArray(50, n_ensembles=10)
-        C = EnsembleArray(50, n_ensembles=10)
-        cconv = nengo.networks.CircularConvolution(50, dimensions=10)
-        nengo.Connection(A.output, cconv.input_a)
-        nengo.Connection(B.output, cconv.input_b)
-        nengo.Connection(cconv.output, C.input)
+    .. testcode::
+
+       from nengo.networks import CircularConvolution, EnsembleArray
+
+       with nengo.Network():
+           A = EnsembleArray(50, n_ensembles=10)
+           B = EnsembleArray(50, n_ensembles=10)
+           C = EnsembleArray(50, n_ensembles=10)
+           cconv = CircularConvolution(50, dimensions=10)
+           nengo.Connection(A.output, cconv.input_a)
+           nengo.Connection(B.output, cconv.input_b)
+           nengo.Connection(cconv.output, C.input)
 
     Notes
     -----

@@ -28,19 +28,21 @@ Decoded connections
 
 Decoded connections are any connection
 **from an ensemble to any other object**.
-The following are all examples of decoded connections::
+The following are all examples of decoded connections:
 
-  with nengo.Network() as net:
-      ens1 = nengo.Ensemble(10, dimensions=2)
-      node = nengo.Node(size_in=1)
-      ens2 = nengo.Ensemble(4, dimensions=2)
+.. testcode::
 
-      # Ensemble to ensemble
-      nengo.Connection(ens1, ens2)
-      # Ensemble slice to node
-      nengo.Connection(ens1[0], node)
-      # Ensemble to neurons slice
-      nengo.Connection(ens1, ens2.neurons[:2])
+   with nengo.Network() as net:
+       ens1 = nengo.Ensemble(10, dimensions=2)
+       node = nengo.Node(size_in=1)
+       ens2 = nengo.Ensemble(4, dimensions=2)
+
+       # Ensemble to ensemble
+       nengo.Connection(ens1, ens2)
+       # Ensemble slice to node
+       nengo.Connection(ens1[0], node)
+       # Ensemble to neurons slice
+       nengo.Connection(ens1, ens2.neurons[:2])
 
 The important thing about decoded connections
 is that they do not directly compute the
@@ -146,15 +148,17 @@ These connections are the types of connections
 you see in most neural simulators,
 and can be used to reproduce networks
 written in other simulators like
-`Brian <http://briansimulator.org/>`_::
+`Brian <http://briansimulator.org/>`_:
 
-  with nengo.Network() as net:
-      ens1 = nengo.Ensemble(10, dimensions=1)
-      ens2 = nengo.Ensemble(20, dimensions=2)
+.. testcode::
 
-      # Neuron to neuron
-      weights = np.random.normal(size=(ens2.n_neurons, ens1.n_neurons))
-      nengo.Connection(ens1.neurons, ens2.neurons, transform=weights)
+   with nengo.Network() as net:
+       ens1 = nengo.Ensemble(10, dimensions=1)
+       ens2 = nengo.Ensemble(20, dimensions=2)
+
+       # Neuron to neuron
+       weights = np.random.normal(size=(ens2.n_neurons, ens1.n_neurons))
+       nengo.Connection(ens1.neurons, ens2.neurons, transform=weights)
 
 Note that it does not matter that the dimensionality of ``ens1``
 does not match the dimensionality of ``ens2``.
@@ -180,17 +184,19 @@ This is in direct contrast to decoded connections,
 in which the function is executed
 during the build process and *not* during the simulation.
 
-Examples::
+Examples:
 
-  with nengo.Network() as net:
-      node = nengo.Node(output=[1])
-      ens1 = nengo.Ensemble(1, dimensions=2, neuron_type=nengo.Direct())
-      ens2 = nengo.Ensemble(10, dimensions=1)
+.. testcode::
 
-      # Node to LIF ensemble
-      nengo.Connection(node, ens2, function=lambda x: x**2)
-      # Direct ensemble to LIF ensemble
-      nengo.Connection(ens1, ens2, function=lambda x: x[0] * x[1])
+   with nengo.Network() as net:
+       node = nengo.Node(output=[1])
+       ens1 = nengo.Ensemble(1, dimensions=2, neuron_type=nengo.Direct())
+       ens2 = nengo.Ensemble(10, dimensions=1)
+
+       # Node to LIF ensemble
+       nengo.Connection(node, ens2, function=lambda x: x**2)
+       # Direct ensemble to LIF ensemble
+       nengo.Connection(ens1, ens2, function=lambda x: x[0] * x[1])
 
 Passthrough nodes
 -----------------
@@ -223,14 +229,24 @@ the function in the case of networks
 using passthrough nodes.
 
 As an example,
-consider using an `.EnsembleArray` to compute a product::
+consider using an `.EnsembleArray` to compute a product:
 
-  with nengo.Network() as net:
-      ea = nengo.networks.EnsembleArray(40, 2)
-      product = nengo.Ensemble(30, dimensions=1)
+.. testcode::
 
-      # Passthrough node to ensemble -- raises error
-      nengo.Connection(ea.output, product, function=lambda x: x[0] * x[1])
+   with nengo.Network() as net:
+       ea = nengo.networks.EnsembleArray(40, 2)
+       product = nengo.Ensemble(30, dimensions=1)
+
+       # Passthrough node to ensemble -- raises error
+       nengo.Connection(ea.output, product, function=lambda x: x[0] * x[1])
+
+.. testoutput::
+   :hide:
+
+   Traceback (most recent call last):
+   ...
+   nengo.exceptions.ValidationError: Connection.function: Cannot apply functions \
+   to passthrough nodes
 
 If this example did not raise an error,
 the product would be computed nearly perfectly,
@@ -253,16 +269,18 @@ will not be approximated but directly computed,
 and you desire this behavior,
 you can enable it by modifying the node so that it is
 no longer a passthrough node,
-but instead computes the identity function::
+but instead computes the identity function:
 
-  with nengo.Network() as net:
-      ea = nengo.networks.EnsembleArray(40, 2)
-      product = nengo.Ensemble(30, dimensions=1)
+.. testcode::
 
-      # Make the node non-passthrough
-      ea.output.output = lambda t, x: x
-      # Node to ensemble -- no error
-      nengo.Connection(ea.output, product, function=lambda x: x[0] * x[1])
+   with nengo.Network() as net:
+       ea = nengo.networks.EnsembleArray(40, 2)
+       product = nengo.Ensemble(30, dimensions=1)
+
+       # Make the node non-passthrough
+       ea.output.output = lambda t, x: x
+       # Node to ensemble -- no error
+       nengo.Connection(ea.output, product, function=lambda x: x[0] * x[1])
 
 If you're designing networks
 that may have arbitrary function
@@ -289,35 +307,49 @@ from the neurons of an ensemble to another object.
 In the example below,
 we make two equivalent connections,
 one using a decoded connection
-and one using a direct connection::
+and one using a direct connection:
 
-  with nengo.Network() as net:
-      ens1 = nengo.Ensemble(20, dimensions=1, seed=0)
-      ens2 = nengo.Ensemble(15, dimensions=1)
+.. testcode::
 
-      # Decoded ensemble to ensemble connection
-      conn1 = nengo.Connection(ens1, ens2, function=lambda x: x + 0.5)
+   with nengo.Network() as net:
+       ens1 = nengo.Ensemble(20, dimensions=1, seed=0)
+       ens2 = nengo.Ensemble(15, dimensions=1)
 
-  with nengo.Simulator(net) as sim:
-      decoders = sim.data[conn1].weights
+       # Decoded ensemble to ensemble connection
+       conn1 = nengo.Connection(ens1, ens2, function=lambda x: x + 0.5)
 
-  with net:
-      # Direct neurons to ensemble connection
-      conn2 = nengo.Connection(ens1.neurons, ens2, transform=decoders)
+   with nengo.Simulator(net) as sim:
+       decoders = sim.data[conn1].weights
+
+   with net:
+       # Direct neurons to ensemble connection
+       conn2 = nengo.Connection(ens1.neurons, ens2, transform=decoders)
+
+.. testoutput::
+   :hide:
+
+   ...
 
 In the above example, the shape of ``decoders`` is ``(1, 20)``.
 If you run this example and probe the output of ``conn1``
 and ``conn2``, you will see that their output is the same
-(as long as a seed is set on ``ens1``)::
+(as long as a seed is set on ``ens1``):
 
-  with net:
-      probe1 = nengo.Probe(conn1, "output", synapse=0.01)
-      probe2 = nengo.Probe(conn2, "output", synapse=0.01)
+.. testcode::
 
-  with nengo.Simulator(net) as sim:
-      sim.run(0.1)
+   with net:
+       probe1 = nengo.Probe(conn1, "output", synapse=0.01)
+       probe2 = nengo.Probe(conn2, "output", synapse=0.01)
 
-  assert np.allclose(sim.data[probe1], sim.data[probe2])
+   with nengo.Simulator(net) as sim:
+       sim.run(0.1)
+
+   assert np.allclose(sim.data[probe1], sim.data[probe2])
+
+.. testoutput::
+   :hide:
+
+   ...
 
 Both ``conn1`` and ``conn2`` can have learning rules applied,
 so this type of direct connection can be useful

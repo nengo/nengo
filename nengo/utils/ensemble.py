@@ -156,9 +156,25 @@ def sorted_neurons(ensemble, sim, iterations=100, seed=None):
     You can use this to generate an array of sorted indices for plotting. This
     can be done after collecting the data. E.g.
 
-    >>> indices = sorted_neurons(simulator, 'My neurons')
-    >>> plt.figure()
-    >>> rasterplot(sim.data['My neurons.spikes'][:,indices])
+    .. testcode::
+
+       from nengo.utils.ensemble import sorted_neurons
+       from nengo.utils.matplotlib import rasterplot
+
+       with nengo.Network() as net:
+           ens = nengo.Ensemble(10, 1)
+           ens_p = nengo.Probe(ens.neurons)
+
+       with nengo.Simulator(net) as sim:
+           sim.run(0.1)
+
+           indices = sorted_neurons(ens, sim)
+           rasterplot(sim.trange(), sim.data[ens_p][:, indices])
+
+    .. testoutput::
+       :hide:
+
+       ...
 
     Notes
     -----

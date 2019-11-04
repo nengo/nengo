@@ -20,9 +20,11 @@ class EnsembleArray(nengo.Network):
 
     Note that in addition to the parameters below, parameters affecting
     all of the sub-ensembles can be passed to the ensemble array.
-    For example::
+    For example:
 
-        ea = nengo.networks.EnsembleArray(20, 2, radius=1.5)
+    .. testcode::
+
+       ea = nengo.networks.EnsembleArray(20, 2, radius=1.5)
 
     creates an ensemble array with 2 sub-ensembles, each with 20 neurons,
     and a radius of 1.5.
@@ -217,9 +219,11 @@ class EnsembleArray(nengo.Network):
 
         Note that in addition to the parameters below, parameters affecting
         all of the connections from the sub-ensembles to the new node
-        can be passed to this function. For example::
+        can be passed to this function. For example:
 
-            ea.add_output('output', None, solver=nengo.solers.Lstsq())
+        .. testcode::
+
+           ea.add_output('output', None, solver=nengo.solvers.Lstsq())
 
         creates a new output with the decoders of each connection solved for
         with the `.Lstsq` solver.

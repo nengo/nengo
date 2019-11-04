@@ -228,26 +228,32 @@ def decorator(wrapper):
     Examples
     --------
 
-    Decorating a normal function (i.e., instance will always be None)::
+    Decorating a normal function (i.e., instance will always be None):
 
-        @decorator
-        def my_decorator(wrapped, instance, args, kwargs):
-            return wrapped(*args, **kwargs)
+    .. testcode::
 
-        @my_decorator
-        def f():
-            return 1
+       from nengo.utils.magic import decorator
 
-    Decorating a bound function::
+       @decorator
+       def my_decorator(wrapped, instance, args, kwargs):
+           return wrapped(*args, **kwargs)
 
-        @decorator
-        def my_decorator(wrapped, instance, args, kwargs):
-            return wrapped(*args, **kwargs)
+       @my_decorator
+       def f():
+           return 1
 
-        class MyClass:
-            @my_decorator
-            def f(self):
-                return self.num + 1
+    Decorating a bound function:
+
+    .. testcode::
+
+       @decorator
+       def my_decorator(wrapped, instance, args, kwargs):
+           return wrapped(*args, **kwargs)
+
+       class MyClass:
+           @my_decorator
+           def f(self):
+               return self.num + 1
     """
 
     def _wrapper(wrapped, instance, args, kwargs):

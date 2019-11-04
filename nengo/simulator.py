@@ -34,11 +34,22 @@ class Simulator:
     Building and running the simulation may allocate resources like files
     and sockets. To properly free these resources, call the `.Simulator.close`
     method. Alternatively, `.Simulator.close` will automatically be called
-    if you use the ``with`` syntax::
+    if you use the ``with`` syntax:
 
-        with nengo.Simulator(my_network) as sim:
-            sim.run(0.1)
-        print(sim.data[my_probe])
+    .. testcode::
+
+       with nengo.Network() as my_network:
+           my_ensemble = nengo.Ensemble(10, 1)
+           my_probe = nengo.Probe(my_ensemble)
+
+       with nengo.Simulator(my_network) as sim:
+           sim.run(0.1)
+       print(sim.data[my_probe])
+
+    .. testoutput::
+       :hide:
+
+       ...
 
     Note that the ``data`` attribute is still accessible even when a simulator
     has been closed. Running the simulator, however, will raise an error.

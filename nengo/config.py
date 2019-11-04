@@ -293,34 +293,43 @@ class Config:
 
     Examples
     --------
-    To configure defaults on a network::
+    To configure defaults on a network:
 
-        net = nengo.Network()
-        net.config[nengo.Ensemble].radius = 1.5
-        with net:
-            ens = nengo.Ensemble(10, 1)
-        ens.radius == 1.5  # True
+    .. testcode::
 
-    To add a new parameter to a Nengo object::
+       net = nengo.Network()
+       net.config[nengo.Ensemble].radius = 1.5
+       with net:
+           ens = nengo.Ensemble(10, 1)
+       ens.radius == 1.5  # True
 
-        net.config[nengo.Ensemble].set_param(
-            'location', nengo.params.Parameter('location'))
-        net.config[ens].location = 'cortex'
+    To add a new parameter to a Nengo object:
 
-    To group together a set of parameters::
+    .. testcode::
 
-        gaba = nengo.Config(nengo.Connection)
-        gaba[nengo.Connection].synapse = nengo.Lowpass(0.008)
-        with net, gaba:
-            conn = nengo.Connection(ens, ens)
-        conn.synapse == nengo.Lowpass(0.008)  # True
+       net.config[nengo.Ensemble].set_param(
+           'location', nengo.params.Parameter('location')
+       )
+       net.config[ens].location = 'cortex'
 
-    To configure a new type of object::
+    To group together a set of parameters:
 
-        class SynapseInfo:
-            label = nengo.params.StringParam('label')
-        gaba.configures(SynapseInfo)
-        gaba[SynapseInfo].label = "GABA"  # Set default label
+    .. testcode::
+
+       gaba = nengo.Config(nengo.Connection)
+       gaba[nengo.Connection].synapse = nengo.Lowpass(0.008)
+       with net, gaba:
+           conn = nengo.Connection(ens, ens)
+       conn.synapse == nengo.Lowpass(0.008)  # True
+
+    To configure a new type of object:
+
+    .. testcode::
+
+       class SynapseInfo:
+           label = nengo.params.StringParam('label', default=None)
+       gaba.configures(SynapseInfo)
+       gaba[SynapseInfo].label = "GABA"  # Set default label
 
     """
 

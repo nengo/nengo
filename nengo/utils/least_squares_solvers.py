@@ -1,8 +1,16 @@
 """These solvers are to be passed as arguments to `~.Solver` objects.
 
-For example::
+For example:
 
-    nengo.Connection(ens_a, ens_b, solver=LstsqL2(solver=RandomizedSVD()))
+.. testcode::
+
+   from nengo.solvers import LstsqL2
+   from nengo.utils.least_squares_solvers import SVD
+
+   with nengo.Network():
+       ens_a = nengo.Ensemble(10, 1)
+       ens_b = nengo.Ensemble(10, 1)
+       nengo.Connection(ens_a, ens_b, solver=LstsqL2(solver=SVD()))
 
 """
 

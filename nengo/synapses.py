@@ -202,15 +202,19 @@ class LinearFilter(Synapse):
 
         Examples
         --------
-        Using the ``evaluate`` function to make a Bode plot::
+        Using the ``evaluate`` function to make a Bode plot:
 
-            synapse = nengo.synapses.LinearFilter([1], [0.02, 1])
-            f = numpy.logspace(-1, 3, 100)
-            y = synapse.evaluate(f)
-            plt.subplot(211); plt.semilogx(f, 20*np.log10(np.abs(y)))
-            plt.xlabel('frequency [Hz]'); plt.ylabel('magnitude [dB]')
-            plt.subplot(212); plt.semilogx(f, np.angle(y))
-            plt.xlabel('frequency [Hz]'); plt.ylabel('phase [radians]')
+        .. testcode::
+
+           import matplotlib.pyplot as plt
+
+           synapse = nengo.synapses.LinearFilter([1], [0.02, 1])
+           f = np.logspace(-1, 3, 100)
+           y = synapse.evaluate(f)
+           plt.subplot(211); plt.semilogx(f, 20*np.log10(np.abs(y)))
+           plt.xlabel('frequency [Hz]'); plt.ylabel('magnitude [dB]')
+           plt.subplot(212); plt.semilogx(f, np.angle(y))
+           plt.xlabel('frequency [Hz]'); plt.ylabel('phase [radians]')
         """
         frequencies = 2.0j * np.pi * frequencies
         w = frequencies if self.analog else np.exp(frequencies)

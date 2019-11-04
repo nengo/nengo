@@ -7,12 +7,7 @@ from nengo.exceptions import ValidationError
 from nengo.learning_rules import LearningRuleType, LearningRuleTypeParam
 from nengo.neurons import Direct
 from nengo.node import Node
-from nengo.params import (
-    BoolParam,
-    Default,
-    FunctionInfo,
-    Parameter,
-)
+from nengo.params import BoolParam, Default, FunctionInfo, Parameter
 from nengo.rc import rc
 from nengo.solvers import LstsqL2, SolverParam
 from nengo.synapses import Lowpass, SynapseParam
@@ -318,14 +313,36 @@ class Connection(NengoObject):
     dimensions of the pre or post object.
 
     For example, if ``node`` has ``size_out=2`` and ``ensemble`` has
-    ``size_in=1``, we could not create the following connection::
+    ``size_in=1``:
 
-        nengo.Connection(node, ensemble)
+    .. testcode::
 
-    But, we could create either of these two connections::
+       with nengo.Network() as net:
+           node = nengo.Node(np.zeros(2))
+           ensemble = nengo.Ensemble(10, 1)
 
-        nengo.Connection(node[0], ensemble)
-        nengo.Connection(node[1], ensemble)
+    We could not create the following connection:
+
+    .. testcode::
+
+       with net:
+           nengo.Connection(node, ensemble)
+
+    .. testoutput::
+       :hide:
+
+       Traceback (most recent call last):
+       ...
+       nengo.exceptions.ValidationError: init: Shape of initial value () does not \
+       match expected shape (1, 2)
+
+    But, we could create either of these two connections:
+
+    .. testcode::
+
+       with net:
+           nengo.Connection(node[0], ensemble)
+           nengo.Connection(node[1], ensemble)
 
     Parameters
     ----------

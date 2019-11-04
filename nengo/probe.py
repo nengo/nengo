@@ -68,10 +68,15 @@ class Probe(NengoObject):
     To see what is probeable for each object, print its
     ``probeable`` attribute.
 
-    >>> with nengo.Network():
-    ...     ens = nengo.Ensemble(10, 1)
-    >>> print(ens.probeable)
-    ['decoded_output', 'input']
+    .. testcode::
+
+       with nengo.Network():
+           ens = nengo.Ensemble(10, 1)
+       print(ens.probeable)
+
+    .. testoutput::
+
+       ('decoded_output', 'input', 'scaled_encoders')
 
     Parameters
     ----------

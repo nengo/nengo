@@ -112,10 +112,12 @@ Usage
 =====
 
 Everything in a Nengo model is contained within a
-:class:`nengo.Network`. To create a new ``Network``::
+`nengo.Network`. To create a new ``Network``:
 
-  import nengo
-  model = nengo.Network()
+.. testcode::
+
+   import nengo
+   net = nengo.Network()
 
 Creating Nengo objects
 ----------------------
@@ -126,13 +128,13 @@ block in order to inform Nengo which network your object
 should be placed in.
 
 There are two objects that make up a basic Nengo model.
-A :class:`nengo.Ensemble` is a group of neurons that represents
+A `nengo.Ensemble` is a group of neurons that represents
 information in the form of real valued numbers.
 
-::
+.. testcode::
 
-  with model:
-      my_ensemble = nengo.Ensemble(n_neurons=40, dimensions=1)
+   with net:
+       my_ensemble = nengo.Ensemble(n_neurons=40, dimensions=1)
 
 In this case, ``my_ensemble`` is made up of
 40 neurons (by default, Nengo uses leaky integrate-and-fire neurons)
@@ -141,24 +143,23 @@ In other words, this ensemble represents a single number.
 
 In order to provide input to this ensemble
 (to emulate some signal that exists in nature, for example)
-we create a :class:`nengo.Node`.
+we create a `nengo.Node`.
 
-::
+.. testcode::
 
-  with model:
-      my_node = nengo.Node(output=0.5)
+   with net:
+       my_node = nengo.Node(output=0.5)
 
 In this case, ``my_node`` emits the number 0.5.
 
 In most cases, however, we want more dynamic information.
-We can make a :class:`nengo.Node` using a function as output
+We can make a `nengo.Node` using a function as output
 instead of a number.
 
-::
+.. testcode::
 
-  import numpy as np
-  with model:
-      sin_node = nengo.Node(output=np.sin)
+   with net:
+       sin_node = nengo.Node(output=np.sin)
 
 This node will represent a sine wave.
 
@@ -169,10 +170,10 @@ We can connect nodes to ensembles
 in order to represent that information
 in the activity a group of neurons.
 
-::
+.. testcode::
 
-  with model:
-      nengo.Connection(my_node, my_ensemble)
+   with net:
+       nengo.Connection(my_node, my_ensemble)
 
 This connects ``my_node`` to ``my_ensemble``,
 meaning that ``my_ensemble`` will now represent
@@ -183,12 +184,14 @@ When the dimensionality of the objects being
 connectd are different, we can use Python's
 slice syntax to route information from
 one node or ensemble to another.
-For example::
+For example:
 
-  with model:
-      two_d_ensemble = nengo.Ensemble(n_neurons=80, dimensions=2)
-      nengo.Connection(sin_node, two_d_ensemble[0])
-      nengo.Connection(my_ensemble, two_d_ensemble[1])
+.. testcode::
+
+   with net:
+       two_d_ensemble = nengo.Ensemble(n_neurons=80, dimensions=2)
+       nengo.Connection(sin_node, two_d_ensemble[0])
+       nengo.Connection(my_ensemble, two_d_ensemble[1])
 
 This creates a new ensemble that represents
 two real-valued signals.
@@ -202,22 +205,22 @@ we can specify a function that
 will be computed across the connection.
 
 
-::
+.. testcode::
 
-  with model:
-      square = nengo.Ensemble(n_neurons=40, dimensions=1)
-      nengo.Connection(my_ensemble, square, function=np.square)
+   with net:
+       square = nengo.Ensemble(n_neurons=40, dimensions=1)
+       nengo.Connection(my_ensemble, square, function=np.square)
 
 Functions can be computed over multiple dimensions, as well.
 
-::
+.. testcode::
 
-  def product(x):
-      return x[0] * x[1]
+   def product(x):
+       return x[0] * x[1]
 
-  with model:
-      product_ensemble = nengo.Ensemble(n_neurons=40, dimensions=1)
-      nengo.Connection(two_d_ensemble, product_ensemble, function=product)
+   with net:
+       product_ensemble = nengo.Ensemble(n_neurons=40, dimensions=1)
+       nengo.Connection(two_d_ensemble, product_ensemble, function=product)
 
 Probing Nengo objects
 ---------------------
@@ -228,11 +231,13 @@ you can decide what data you want to collect
 by probing those objects.
 
 If we wanted to collect data from
-our 2D Ensemble and the Product of those two dimensions::
+our 2D Ensemble and the Product of those two dimensions:
 
-  with model:
-      two_d_probe = nengo.Probe(two_d_ensemble, synapse=0.01)
-      product_probe = nengo.Probe(product_ensemble, synapse=0.01)
+.. testcode::
+
+   with net:
+       two_d_probe = nengo.Probe(two_d_ensemble, synapse=0.01)
+       product_probe = nengo.Probe(product_ensemble, synapse=0.01)
 
 The argument ``synapse`` defines the time constant
 on a causal low-pass filter,
@@ -249,23 +254,44 @@ certain objects, we can run it to collect data.
 To run a model, we must first build a simulator
 based on the model we've defined.
 
-::
+.. testcode::
 
-  sim = nengo.Simulator(model)
+   sim = nengo.Simulator(net)
+
+.. testoutput::
+   :hide:
+
+   ...
 
 We can then run that simulator.
-For example, to run our model for five seconds::
+For example, to run our model for five seconds:
 
-  sim.run(5.0)
+.. testcode::
+
+   sim.run(5.0)
+
+.. testoutput::
+   :hide:
+
+   ...
 
 Once a simulation has been run at least once
 (it can be run for additional time if desired)
 the data collected can be accessed
 for analysis or visualization.
 
-::
+.. testcode::
 
-  print(sim.data[product_probe][-10:])
+   print(sim.data[product_probe][-10:])
+
+.. testoutput::
+   :hide:
+
+   ...
+
+.. testcleanup::
+
+   sim.close()
 
 For more details on these objects,
 see :doc:`the API documentation <frontend_api>`.

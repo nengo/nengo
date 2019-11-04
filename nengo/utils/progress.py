@@ -80,11 +80,15 @@ class Progress:
     Examples
     --------
 
-    >>> max_steps = 10
-    >>> with Progress(max_steps=max_steps) as progress:
-    ...     for i in range(max_steps):
-    ...         # do something
-    ...         progress.step()
+    .. testcode::
+
+       from nengo.utils.progress import Progress
+
+       max_steps = 10
+       with Progress(max_steps=max_steps) as progress:
+           for i in range(max_steps):
+               # do something
+               progress.step()
 
     """
 

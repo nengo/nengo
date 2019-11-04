@@ -159,11 +159,17 @@ class Builder:
 
     Consists of two class methods to encapsulate the build function registry.
     All build functions should use the `.Builder.register` method as a
-    decorator. For example::
+    decorator. For example:
 
-        @nengo.builder.Builder.register(MyRule)
-        def build_my_rule(model, my_rule, rule):
-            ...
+    .. testcode::
+
+       class MyRule(nengo.learning_rules.LearningRuleType):
+           modifies = "decoders"
+           ...
+
+       @nengo.builder.Builder.register(MyRule)
+       def build_my_rule(model, my_rule, rule):
+           ...
 
     registers a build function for ``MyRule`` objects.
 
@@ -171,9 +177,18 @@ class Builder:
     the `.Model.build` method. `.Model.build` uses the `.Builder.build` method
     to ensure that the correct build function is called based on the type of
     the object passed to it.
-    For example, to build the learning rule type ``my_rule`` from above, do::
+    For example, to build the learning rule type ``my_rule`` from above, do:
 
-        model.build(my_rule, connection.learning_rule)
+    .. testcode::
+
+       with nengo.Network() as net:
+           ens_a = nengo.Ensemble(10, 1)
+           ens_b = nengo.Ensemble(10, 1)
+           my_rule = MyRule()
+           connection = nengo.Connection(ens_a, ens_b, learning_rule_type=my_rule)
+
+       model = nengo.builder.Model()
+       model.build(my_rule, connection.learning_rule)
 
     This will call the ``build_my_rule`` function from above with the arguments
     ``model, my_rule, connection.learning_rule``.

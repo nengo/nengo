@@ -12,10 +12,19 @@ def bytes2human(n, fmt="%(value).1f %(symbol)s"):
 
     Examples
     --------
-    >>> bytes2human(10000)
-    '9 KB'
-    >>> bytes2human(100001221)
-    '95 MB'
+
+    .. testcode::
+
+       from nengo.utils.cache import bytes2human
+
+       print(bytes2human(10000))
+       print(bytes2human(100001221))
+
+    .. testoutput::
+
+       9.8 KB
+       95.4 MB
+
     """
     symbols = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
     prefix = {}
@@ -33,10 +42,19 @@ def human2bytes(s):
 
     Examples
     --------
-    >>> human2bytes('1 MB')
-    1048576
-    >>> human2bytes('1 GB')
-    1073741824
+
+    .. testcode::
+
+       from nengo.utils.cache import human2bytes
+
+       print(human2bytes('1 MB'))
+       print(human2bytes('1 GB'))
+
+    .. testoutput::
+
+       1048576
+       1073741824
+
     """
     symbols = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
 

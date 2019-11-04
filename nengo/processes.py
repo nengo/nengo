@@ -345,23 +345,29 @@ class Piecewise(Process):
     Interpolation on the data points using `scipy.interpolate` is also
     supported. The default interpolation is 'zero', which creates a
     piecewise function whose values change at the specified time points.
-    So the above example would be shortcut for::
+    So the above example would be shortcut for:
 
-        def function(t):
-            if t < 0.5:
-                return 0
-            elif t < 0.75
-                return -1
-            elif t < 1:
-                return 0.5
-            else:
-                return 0
+    .. testcode::
+
+       def function(t):
+           if t < 0.5:
+               return 0
+           elif t < 0.75:
+               return -1
+           elif t < 1:
+               return 0.5
+           else:
+               return 0
 
     For times before the first specified time, an array of zeros (of
     the correct length) will be emitted.
-    This means that the above can be simplified to::
+    This means that the above can be simplified to:
 
-        Piecewise({0.5: -1, 0.75: 0.5, 1: 0})
+    .. testcode::
+
+       from nengo.processes import Piecewise
+
+       Piecewise({0.5: -1, 0.75: 0.5, 1: 0})
 
     Parameters
     ----------
@@ -393,19 +399,26 @@ class Piecewise(Process):
 
     Examples
     --------
-    >>> from nengo.processes import Piecewise
-    >>> process = Piecewise({0.5: 1, 0.75: -1, 1: 0})
-    >>> with nengo.Network() as model:
-    ...     u = nengo.Node(process, size_out=process.default_size_out)
-    ...     up = nengo.Probe(u)
-    >>> with nengo.Simulator(model) as sim:
-    ...     sim.run(1.5)
-    >>> f = sim.data[up]
-    >>> t = sim.trange()
-    >>> f[t == 0.2]
-    array([[ 0.]])
-    >>> f[t == 0.58]
-    array([[ 1.]])
+
+    .. testcode::
+
+       from nengo.processes import Piecewise
+       process = Piecewise({0.5: 1, 0.75: -1, 1: 0})
+       with nengo.Network() as model:
+           u = nengo.Node(process, size_out=process.default_size_out)
+           up = nengo.Probe(u)
+       with nengo.Simulator(model, progress_bar=False) as sim:
+           sim.run(1.5)
+       f = sim.data[up]
+       t = sim.trange()
+       print(f[t == 0.2])
+       print(f[t == 0.58])
+
+    .. testoutput::
+
+       [[ 0.]]
+       [[ 1.]]
+
     """
 
     data = PiecewiseDataParam("data", readonly=True)

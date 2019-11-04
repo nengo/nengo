@@ -117,13 +117,25 @@ def rasterplot(time, spikes, ax=None, use_eventplot=False, **kwargs):  # noqa
 
     Examples
     --------
-    >>> import nengo
-    >>> with nengo.Network() as net:
-    ...     a = nengo.Ensemble(20, 1)
-    ...     p = nengo.Probe(a.neurons)
-    >>> with nengo.Simulator(net) as sim:
-    ...     sim.run(1)
-    >>> rasterplot(sim.trange(), sim.data[p])
+
+    .. testcode::
+
+       from nengo.utils.matplotlib import rasterplot
+
+       with nengo.Network() as net:
+           a = nengo.Ensemble(20, 1)
+           p = nengo.Probe(a.neurons)
+
+       with nengo.Simulator(net) as sim:
+           sim.run(1)
+
+       rasterplot(sim.trange(), sim.data[p])
+
+    .. testoutput::
+       :hide:
+
+       ...
+
     """
     n_times, n_neurons = spikes.shape
 

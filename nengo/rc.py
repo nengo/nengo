@@ -95,22 +95,28 @@ class _RC(configparser.SafeConfigParser):
     """Allows reading from and writing to Nengo RC settings.
 
     This object is a :class:`configparser.ConfigParser`, which means that
-    values can be accessed and manipulated with ``get`` and ``set``::
+    values can be accessed and manipulated with ``get`` and ``set``:
 
-        oldsize = nengo.rc.get("decoder_cache", "size")
-        nengo.rc.set("decoder_cache", "size", "2 GB")
+    .. testcode::
+
+       oldsize = nengo.rc.get("decoder_cache", "size")
+       nengo.rc.set("decoder_cache", "size", "2 GB")
 
     ``get`` and ``set`` return and expect strings. There are also special
-    getter methods for booleans, ints, and floats::
+    getter methods for booleans, ints, and floats:
 
-        simple = nengo.rc.getboolean("exceptions", "simplified")
+    .. testcode::
+
+       simple = nengo.rc.getboolean("exceptions", "simplified")
 
     In addition to the normal :class:`configparser.ConfigParser` methods,
     this object also has a ``reload_rc`` method to reset ``nengo.rc``
-    to default settings::
+    to default settings:
 
-        nengo.rc.reload_rc()  # Reads defaults from configuration files
-        nengo.rc.reload_rc(filenames=[])  # Ignores configuration files
+    .. testcode::
+
+       nengo.rc.reload_rc()  # Reads defaults from configuration files
+       nengo.rc.reload_rc(filenames=[])  # Ignores configuration files
 
     """
 

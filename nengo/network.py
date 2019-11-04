@@ -26,29 +26,33 @@ class Network:
 
     To group together related objects that you do not need to reuse,
     you can create a new ``Network`` and add objects in a ``with`` block.
-    For example::
+    For example:
 
-        network = nengo.Network()
-        with network:
-            with nengo.Network(label="Vision"):
-                v1 = nengo.Ensemble(nengo.LIF(100), dimensions=2)
-            with nengo.Network(label="Motor"):
-                sma = nengo.Ensemble(nengo.LIF(100), dimensions=2)
-            nengo.Connection(v1, sma)
+    .. testcode::
+
+       network = nengo.Network()
+       with network:
+           with nengo.Network(label="Vision"):
+               v1 = nengo.Ensemble(n_neurons=100, dimensions=2)
+           with nengo.Network(label="Motor"):
+               sma = nengo.Ensemble(n_neurons=100, dimensions=2)
+           nengo.Connection(v1, sma)
 
     To reuse a group of related objects, you can create a new subclass
     of ``Network``, and add objects in the ``__init__`` method.
-    For example::
+    For example:
 
-        class OcularDominance(nengo.Network):
-            def __init__(self):
-                self.column = nengo.Ensemble(nengo.LIF(100), dimensions=2)
+    .. testcode::
 
-        network = nengo.Network()
-        with network:
-            left_eye = OcularDominance()
-            right_eye = OcularDominance()
-            nengo.Connection(left_eye.column, right_eye.column)
+       class OcularDominance(nengo.Network):
+           def __init__(self):
+               self.column = nengo.Ensemble(n_neurons=100, dimensions=2)
+
+       network = nengo.Network()
+       with network:
+           left_eye = OcularDominance()
+           right_eye = OcularDominance()
+           nengo.Connection(left_eye.column, right_eye.column)
 
     Parameters
     ----------

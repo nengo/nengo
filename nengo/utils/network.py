@@ -11,16 +11,20 @@ def with_self(method, network, args, kwargs):
 
     Examples
     --------
-    The two methods in the following class do the same thing::
+    The two methods in the following class do the same thing:
 
-        class MyNetwork(nengo.Network):
-            def add_one_1(self):
-                with self:
-                    node = nengo.Node(output=1)
+    .. testcode::
 
-            @with_self
-            def add_one_2(self):
-                node = nengo.Node(output=1)
+       from nengo.utils.network import with_self
+
+       class MyNetwork(nengo.Network):
+           def add_one_1(self):
+               with self:
+                   node = nengo.Node(output=1)
+
+           @with_self
+           def add_one_2(self):
+               node = nengo.Node(output=1)
     """
     with network:
         return method(*args, **kwargs)

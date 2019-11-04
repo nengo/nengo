@@ -117,8 +117,16 @@ def toposort(edges):
 
     Examples
     --------
-    >>> toposort({1: {2, 3}, 2: {3}, 3: set()})
-    [1, 2, 3]
+
+    .. testcode::
+
+       from nengo.utils.graphs import toposort
+
+       print(toposort({1: {2, 3}, 2: {3}, 3: set()}))
+
+    .. testoutput::
+
+       [1, 2, 3]
 
     Notes
     -----
@@ -207,15 +215,23 @@ def reverse_edges(edges):
     Examples
     --------
 
-    >>> d = {0: {1, 2}, 1: {2, 3}, 2: set(), 3: set()}
-    >>> reverse_edges(d)
-    {0: set(), 1: {0}, 2: {0, 1}, 3: {1}}
+    .. testcode::
 
-    :note: dict order are not deterministic. As we iterate on the
-        input dict, it make the output of this function depend on the
-        dict order. So this function output order should be considered
-        as undeterministic.
+       from nengo.utils.graphs import reverse_edges
 
+       d = {0: {1, 2}, 1: {2, 3}, 2: set(), 3: set()}
+       print(reverse_edges(d))
+
+    .. testoutput::
+
+       {0: set(), 1: {0}, 2: {0, 1}, 3: {1}}
+
+    Notes
+    -----
+    dict order are not deterministic. As we iterate on the
+    input dict, it make the output of this function depend on the
+    dict order. So this function output order should be considered
+    as undeterministic.
     """
     result = {k: set() for k in edges}
     for key in edges:

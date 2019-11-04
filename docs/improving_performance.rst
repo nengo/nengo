@@ -12,14 +12,23 @@ In a nutshell
 To improve build time
 ---------------------
 
-1. Set a seed on the top level model to enable decoder caching::
+1. Set a seed on the top level model to enable decoder caching:
 
-    nengo.Network(seed=1)
+.. testcode::
 
-2. Disable the operator graph optimizer::
+   net = nengo.Network(seed=1)
 
-    with nengo.Simulator(model, optimize=False) as sim:
-        sim.run(...)
+2. Disable the operator graph optimizer:
+
+.. testcode::
+
+   with nengo.Simulator(net, optimize=False) as sim:
+       ...
+
+.. testoutput::
+   :hide:
+
+   ...
 
 3. Reduce the number of neurons in very large ensembles, or consider using the
    `.RandomizedSVD` solver.
@@ -28,10 +37,17 @@ To improve run time
 -------------------
 
 1. Enable the operator graph optimizer
-   (and install `SciPy <https://www.scipy.org/scipylib/download.html>`_)::
+   (and install `SciPy <https://www.scipy.org/scipylib/download.html>`_):
 
-    with nengo.Simulator(model, optimize=True) as sim:
-        sim.run(...)
+.. testcode::
+
+   with nengo.Simulator(net, optimize=True) as sim:
+       ...
+
+.. testoutput::
+   :hide:
+
+   ...
 
 2. Consider switching to the `nengo_ocl <https://github.com/nengo/nengo-ocl>`_
    backend if you have a powerful GPU.
@@ -39,10 +55,17 @@ To improve run time
 To lower peak memory consumption
 --------------------------------
 
-1. Disable the operator graph optimizer::
+1. Disable the operator graph optimizer:
 
-    with nengo.Simulator(model, optimize=False) as sim:
-        sim.run(...)
+.. testcode::
+
+   with nengo.Simulator(net, optimize=False) as sim:
+       ...
+
+.. testoutput::
+   :hide:
+
+   ...
 
 2. Reduce the number of neurons in very large ensembles.
    Consider replacing them with
@@ -58,7 +81,7 @@ The two main determiners of how long your model takes to run are the
 build time and the run time. Build time is the time required to
 translate the model description into the actual neural network that gets
 simulated. A build happens when you create the simulator with
-``nengo.Simulator(model)``. Run time is how long it takes to simulate this
+``nengo.Simulator(net)``. Run time is how long it takes to simulate this
 network for the desired amount of simulation time. A run happens when you
 call ``sim.run``.
 
@@ -82,9 +105,12 @@ build of a model will still take about the same time (technically a bit longer
 because the computed decoders will be stored), but all subsequent builds of the
 same model can load the stored decoders and will be faster.
 
-To enable the decoder caching, set a seed on the network like so::
+To enable the decoder caching, set a seed on the network like so:
 
-    with nengo.Networks(seed=1) as model:
+.. testcode::
+
+   with nengo.Network(seed=1) as net:
+       ...
 
 There are :doc:`a few configuration options <nengorc>` for more
 advanced control of the cache. The most important might be the possibility to
@@ -102,10 +128,17 @@ However, this can increase build time significantly
 and in some cases it can be better to turn this
 optimization off to speed up the build at the cost of slowing the run.
 To turn the optimizer off,
-set the simulator's ``optimize`` argument to ``False``::
+set the simulator's ``optimize`` argument to ``False``:
 
-    with nengo.Simulator(model, optimize=False) as sim:
-        sim.run(...)
+.. testcode::
+
+   with nengo.Simulator(net, optimize=False) as sim:
+       ...
+
+.. testoutput::
+   :hide:
+
+   ...
 
 Another situation where it is helpful to disable the optimizer is when the peak
 memory usage is too high. The optimizer can use up to three times as much

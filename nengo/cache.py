@@ -242,10 +242,31 @@ class CacheIndex:
 
     Examples
     --------
-    >>> cache_dir = "./my_cache"
-    >>> to_cache = ("gotta cache 'em all", 151)
-    >>> with CacheIndex(cache_dir) as index:
-    ...     filename, start, end = index[hash(to_cache)]
+
+    .. testsetup::
+
+       import tempfile
+
+       tmpdir = tempfile.TemporaryDirectory()
+       cache_dir = tmpdir.name
+
+    .. testcode::
+
+       from nengo.cache import CacheIndex, WriteableCacheIndex
+
+       to_cache = ("gotta cache 'em all", 151)
+
+       # create index file
+       with WriteableCacheIndex(cache_dir) as index:
+           index[hash(to_cache)] = ("file1", 0, 1)  # set an item
+
+       # read from index
+       with CacheIndex(cache_dir) as index:
+           filename, start, end = index[hash(to_cache)]
+
+    .. testcleanup::
+
+       tmpdir.cleanup()
 
     Parameters
     ----------
@@ -329,13 +350,28 @@ class WriteableCacheIndex(CacheIndex):
 
     Examples
     --------
-    >>> cache_dir = "./my_cache"
-    >>> to_cache = ("gotta cache 'em all", 151)
-    >>> key = hash(to_cache)
-    >>> with WriteableCacheIndex(cache_dir) as index:
-    ...     index[key] = ("file1", 0, 1)  # set an item
-    ...     del index[key]  # remove an item by key
-    ...     index.remove_file_entry("file1")  # remove an item by filename
+
+    .. testsetup::
+
+       import tempfile
+
+       tmpdir = tempfile.TemporaryDirectory()
+       cache_dir = tmpdir.name
+
+    .. testcode::
+
+       from nengo.cache import WriteableCacheIndex
+
+       to_cache = ("gotta cache 'em all", 151)
+       key = hash(to_cache)
+       with WriteableCacheIndex(cache_dir) as index:
+           index[key] = ("file1", 0, 1)  # set an item
+           del index[key]  # remove an item by key
+           index.remove_file_entry("file1")  # remove an item by filename
+
+    .. testcleanup::
+
+       tmpdir.cleanup()
 
     Parameters
     ----------
