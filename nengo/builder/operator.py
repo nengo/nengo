@@ -742,6 +742,8 @@ class SimPyFunc(Operator):
         If None, an input signal will not be passed to ``fn``.
     tag : str, optional
         A label associated with the operator, for debugging purposes.
+    check_output : bool
+        Whether to perform checking for non-finite values on the output.
 
     Attributes
     ----------
@@ -766,11 +768,13 @@ class SimPyFunc(Operator):
     4. updates ``[]``
     """
 
-    def __init__(self, output, fn, t, x, tag=None):
+    def __init__(self, output, fn, t, x, tag=None, check_output=True):
         super().__init__(tag=tag)
         self.fn = fn
         self.t_passed = t is not None
         self.x_passed = x is not None
+        self.check_output = check_output
+        assert not (t is None and x is None), "Python function cannot have no inputs"
 
         self.sets = [] if output is None else [output]
         self.incs = []
@@ -800,11 +804,39 @@ class SimPyFunc(Operator):
         t = signals[self.t] if self.t is not None else None
         x = signals[self.x] if self.x is not None else None
 
-        def step_simpyfunc():
-            args = (np.copy(x),) if x is not None else ()
-            y = fn(t.item(), *args) if t is not None else fn(*args)
+        if x is not None:
+            # make read-only view so users cannot modify internal signals
+            x = x.view()
+            x.setflags(write=False)
+            if t is not None:
 
-            if output is not None:
+                def fn_call():
+                    return fn(t.item(), x)
+
+            else:
+
+                def fn_call():
+                    return fn(x)
+
+        elif t is not None:
+
+            def fn_call():
+                return fn(t.item())
+
+        if output is None:
+
+            def step_simpyfunc():
+                fn_call()
+
+        elif not self.check_output:
+
+            def step_simpyfunc():
+                output[...] = fn_call()
+
+        else:
+
+            def step_simpyfunc():
+                y = fn_call()
                 try:
                     # required since Numpy turns None into NaN
                     if y is None or not np.all(np.isfinite(y)):

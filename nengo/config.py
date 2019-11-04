@@ -14,8 +14,9 @@ https://nbviewer.ipython.org/urls/gist.github.com/ChrisBeaumont/5758381/raw/desc
 import inspect
 import sys
 
+import nengo
 from nengo.exceptions import ConfigError, ValidationError
-from nengo.params import Default, is_param, iter_params
+from nengo.params import BoolParam, Default, is_param, iter_params, Parameter
 from nengo.rc import rc
 from nengo.utils.threading import ThreadLocalStack
 
@@ -42,6 +43,7 @@ class ClassParams:
             for attr in dir(self._configures)
             if is_param(getattr(self._configures, attr))
         )
+        _add_extra_class_params(self)
 
     def __contains__(self, key):
         return self in self.get_param(key)
@@ -492,3 +494,29 @@ class SupportDefaultsMixin:
                 raise exc_info[1].with_traceback(None)
         else:
             super().__setattr__(name, val)
+
+
+def add_extra_class_param(class_params, name, Parameter=Parameter, **param_kwargs):
+    """Add an extra parameter to a ``ClassParams`` object.
+
+    Parameters
+    ----------
+    class_params : `.ClassParams`
+        The object to add the parameter to (make sure it configures the target class).
+    name : string
+        The name of the parameter to add.
+    Parameter : `.Parameter`, optional
+        A `.Parameter` subclass to use as the type for this parameter.
+    param_kwargs :
+        Additional arguments to pass to the newly created parameter.
+    """
+
+    if name not in class_params._extra_params:
+        class_params.set_param(name, Parameter(name, **param_kwargs))
+
+
+def _add_extra_class_params(class_params):
+    """Add extra params available to all Nengo models"""
+
+    if issubclass(class_params._configures, nengo.Node):
+        add_extra_class_param(class_params, "check_output", BoolParam, default=True)

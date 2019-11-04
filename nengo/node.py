@@ -6,7 +6,7 @@ import numpy as np
 import nengo.utils.numpy as npext
 from nengo.base import NengoObject, ObjView
 from nengo.exceptions import ValidationError
-from nengo.params import Default, IntParam, Parameter
+from nengo.params import BoolParam, Default, IntParam, Parameter
 from nengo.processes import Process
 from nengo.rc import rc
 from nengo.utils.numpy import is_array_like
