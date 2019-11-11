@@ -9,6 +9,7 @@ import nengo
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
+    "sphinx.ext.doctest",
     "sphinx.ext.githubpages",
     "sphinx.ext.intersphinx",
     "sphinx.ext.mathjax",
@@ -25,6 +26,11 @@ extensions = [
 autoclass_content = "both"  # class and __init__ docstrings are concatenated
 autodoc_default_options = {"members": None}
 autodoc_member_order = "bysource"  # default is alphabetical
+
+# -- sphinx.ext.doctest
+doctest_global_setup = """
+import nengo
+"""
 
 # -- sphinx.ext.intersphinx
 intersphinx_mapping = {
