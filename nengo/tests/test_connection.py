@@ -1086,3 +1086,18 @@ def test_connection_none_error():
         b = nengo.Node(size_in=1)
         with pytest.raises(ValidationError):
             nengo.Connection(a, b, transform=None)
+
+
+@pytest.mark.filterwarnings("ignore:divide by zero")
+def test_neuron_advanced_indexing(Simulator):
+    with nengo.Network() as net:
+        node = nengo.Node([1, 1, 1])
+        ens = nengo.Ensemble(
+            5, 1, bias=nengo.dists.Choice([0]), gain=nengo.dists.Choice([1])
+        )
+        nengo.Connection(node, ens.neurons[[0, 0, 2]], synapse=None)
+        p = nengo.Probe(ens.neurons, "input")
+
+    with Simulator(net) as sim:
+        sim.run(0.001)
+        assert np.allclose(sim.data[p], [2, 0, 1, 0, 0])

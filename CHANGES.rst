@@ -287,6 +287,10 @@ Release History
   decoders cached. (`#1550 <https://github.com/nengo/nengo/pull/1550>`__)
 - Optional ``ShapeParam``/``TupleParam`` can now be set to ``None``.
   (`#1569 <https://github.com/nengo/nengo/pull/1569>`__)
+- Fixed error when using advanced indexing to connect to an ``Ensemble.neurons``
+  object.
+  (`#1582 <https://github.com/nengo/nengo/issues/1582>`__,
+  `#1583 <https://github.com/nengo/nengo/pull/1583>`__)
 
 2.8.0 (June 9, 2018)
 ====================

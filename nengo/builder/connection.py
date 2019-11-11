@@ -5,7 +5,7 @@ import numpy as np
 from nengo.builder import Builder, Signal
 from nengo.builder.ensemble import gen_eval_points, get_activities
 from nengo.builder.node import SimPyFunc
-from nengo.builder.operator import Copy, ElementwiseInc
+from nengo.builder.operator import Copy, ElementwiseInc, Reset
 from nengo.connection import Connection
 from nengo.transforms import Dense
 from nengo.ensemble import Ensemble, Neurons
@@ -14,7 +14,7 @@ from nengo.neurons import Direct
 from nengo.node import Node
 from nengo.rc import rc
 from nengo.solvers import NoSolver, Solver
-from nengo.utils.numpy import is_iterable
+from nengo.utils.numpy import is_integer, is_iterable
 
 built_attrs = ["eval_points", "solver_info", "weights", "transform"]
 
@@ -309,12 +309,21 @@ def build_connection(model, conn):
             model.params[conn.post_obj.ensemble].gain[post_slice],
             name="%s.gains" % conn,
         )
+
+        if is_integer(post_slice) or isinstance(post_slice, slice):
+            sliced_out = model.sig[conn]["out"][post_slice]
+        else:
+            # advanced indexing not supported on Signals, so we need to set up an
+            # intermediate signal and use a Copy op to perform the indexing
+            sliced_out = Signal(shape=gains.shape, name="%s.sliced_out" % conn)
+            model.add_op(Reset(sliced_out))
+            model.add_op(
+                Copy(sliced_out, model.sig[conn]["out"], dst_slice=post_slice, inc=True)
+            )
+
         model.add_op(
             ElementwiseInc(
-                gains,
-                weighted,
-                model.sig[conn]["out"][post_slice],
-                tag="%s.gains_elementwiseinc" % conn,
+                gains, weighted, sliced_out, tag="%s.gains_elementwiseinc" % conn,
             )
         )
     else:
