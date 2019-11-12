@@ -348,7 +348,7 @@ class Connection(NengoObject):
     ----------
     pre : Ensemble or Neurons or Node
         The source Nengo object for the connection.
-    post : Ensemble or Neurons or Node or Probe
+    post : Ensemble or Neurons or Node or LearningRule
         The destination object for the connection.
     synapse : Synapse or None, optional
         Synapse model to use for filtering (see `~nengo.synapses.Synapse`).
@@ -432,6 +432,8 @@ class Connection(NengoObject):
 
     Properties
     ----------
+    learning_rule : LearningRule or iterable of LearningRule
+        Connectable learning rule object(s) associated with this connection.
     size_in : int
         The number of output dimensions of the pre object.
         Also the input size of the function, if one is specified.
