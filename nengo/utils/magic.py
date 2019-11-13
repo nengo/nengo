@@ -13,7 +13,7 @@ This makes decorators easy to write, while avoiding the issues above.
 ----
 
 Some of the code in this file is a modified subset of the wrapt package,
-available at https://pypi.python.org/pypi/wrapt.
+available at https://pypi.org/project/wrapt/.
 For more details on the implementations herein, see the code comments
 in the wrapt source at https://github.com/GrahamDumpleton/wrapt.
 The code is included here under the terms of wrapt's BSD license:

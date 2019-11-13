@@ -29,9 +29,23 @@ can be found below:
 ---------------------
 
 .. automodule:: nengo.config
+   :no-members:
 
-   .. autoautosummary:: nengo.config
-      :nosignatures:
+.. autosummary::
+   :nosignatures:
+
+   nengo.Config
+   nengo.config.ClassParams
+   nengo.config.InstanceParams
+   nengo.config.SupportDefaultsMixin
+
+.. autoclass:: nengo.Config
+
+.. autoclass:: nengo.config.ClassParams
+
+.. autoclass:: nengo.config.InstanceParams
+
+.. autoclass:: nengo.config.SupportDefaultsMixin
 
 Preset configs
 ==============

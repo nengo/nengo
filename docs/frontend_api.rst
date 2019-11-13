@@ -42,11 +42,32 @@ Distributions
 Learning rule types
 ===================
 
-.. automodule:: nengo.learning_rules
+.. Note: we don't use automodule/autoautosummary here because we want the
+   canonical reference to these objects to be ``nengo.Class`` even though
+   they actually live in ``nengo.learning_rules.Class``.
 
-   .. autoautosummary:: nengo.learning_rules
-      :nosignatures:
-      :exclude-members: LearningRuleTypeParam, LearningRuleTypeSizeInParam
+.. autosummary::
+   :nosignatures:
+
+   nengo.learning_rules.LearningRuleType
+   nengo.PES
+   nengo.BCM
+   nengo.Oja
+   nengo.Voja
+
+.. autoclass:: nengo.learning_rules.LearningRuleType
+
+.. autoclass:: nengo.PES
+
+.. autoclass:: nengo.BCM
+
+.. autoclass:: nengo.Oja
+
+.. autoclass:: nengo.Voja
+
+.. autoclass:: nengo.learning_rules.LearningRuleTypeParam
+
+.. autoclass:: nengo.learning_rules.LearningRuleTypeSizeInParam
 
 Neuron types
 ============

@@ -121,7 +121,7 @@ class ConvInc(Operator):
         The input signal.
     Y : Signal
         Output signal to be incremented.
-    conv : `~nengo.transforms.Convolution`
+    conv : `~nengo.Convolution`
         The Convolution object being applied.
     tag : str, optional
         A label associated with the operator, for debugging purposes.
@@ -134,7 +134,7 @@ class ConvInc(Operator):
         The input signal.
     Y : Signal
         Output signal to be incremented.
-    conv : `~nengo.transforms.Convolution`
+    conv : `~nengo.Convolution`
         The Convolution object being applied.
     tag : str, optional
         A label associated with the operator, for debugging purposes.
