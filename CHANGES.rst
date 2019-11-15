@@ -174,6 +174,9 @@ Release History
   (`#1574 <https://github.com/nengo/nengo/pull/1574>`__)
 - Increased minimum numpy version to 1.13.
   (`#1577 <https://github.com/nengo/nengo/pull/1577>`__)
+- Documentation pages that had underscores in their filenames have been
+  renamed to have hyphens instead.
+  (`#1585 <https://github.com/nengo/nengo/pull/1585>`__)
 
 **Deprecated**
 

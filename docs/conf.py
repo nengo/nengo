@@ -17,6 +17,7 @@ extensions = [
     "sphinx.ext.viewcode",
     "nbsphinx",
     "nengo_sphinx_theme",
+    "nengo_sphinx_theme.ext.redirects",
     "numpydoc",
     "nengo_sphinx_theme.ext.autoautosummary",
     "nengo_sphinx_theme.ext.resolvedefaults",
@@ -89,3 +90,76 @@ html_theme_options = {
     "nengo_logo_color": "#a8acaf",
     "analytics_id": "UA-41658423-2",
 }
+html_redirects = [
+    ("backend_api.html", "backend-api.html"),
+    (
+        "examples/advanced/functions_and_tuning_curves.html",
+        "examples/advanced/functions-and-tuning-curves.html",
+    ),
+    (
+        "examples/advanced/inhibitory_gating.html",
+        "examples/advanced/inhibitory-gating.html",
+    ),
+    (
+        "examples/advanced/matrix_multiplication.html",
+        "examples/advanced/matrix-multiplication.html",
+    ),
+    ("examples/advanced/nef_algorithm.html", "examples/advanced/nef-algorithm.html"),
+    ("examples/advanced/nef_summary.html", "examples/advanced/nef-summary.html"),
+    ("examples/basic/2d_representation.html", "examples/basic/2d-representation.html"),
+    (
+        "examples/basic/communication_channel.html",
+        "examples/basic/communication-channel.html",
+    ),
+    ("examples/basic/many_neurons.html", "examples/basic/many-neurons.html"),
+    ("examples/basic/single_neuron.html", "examples/basic/single-neuron.html"),
+    ("examples/basic/two_neurons.html", "examples/basic/two-neurons.html"),
+    (
+        "examples/dynamics/controlled_integrator.html",
+        "examples/dynamics/controlled-integrator.html",
+    ),
+    (
+        "examples/dynamics/controlled_integrator2.html",
+        "examples/dynamics/controlled-integrator2.html",
+    ),
+    (
+        "examples/dynamics/controlled_oscillator.html",
+        "examples/dynamics/controlled-oscillator.html",
+    ),
+    (
+        "examples/dynamics/lorenz_attractor.html",
+        "examples/dynamics/lorenz-attractor.html",
+    ),
+    (
+        "examples/learning/learn_associations.html",
+        "examples/learning/learn-associations.html",
+    ),
+    (
+        "examples/learning/learn_communication_channel.html",
+        "examples/learning/learn-communication-channel.html",
+    ),
+    ("examples/learning/learn_product.html", "examples/learning/learn-product.html"),
+    ("examples/learning/learn_square.html", "examples/learning/learn-square.html"),
+    (
+        "examples/learning/learn_unsupervised.html",
+        "examples/learning/learn-unsupervised.html",
+    ),
+    ("examples/networks/basal_ganglia.html", "examples/networks/basal-ganglia.html"),
+    ("examples/networks/ensemble_array.html", "examples/networks/ensemble-array.html"),
+    (
+        "examples/networks/integrator_network.html",
+        "examples/networks/integrator-network.html",
+    ),
+    ("examples/usage/delay_node.html", "examples/usage/delay-node.html"),
+    (
+        "examples/usage/network_design_advanced.html",
+        "examples/usage/network-design-advanced.html",
+    ),
+    ("examples/usage/network_design.html", "examples/usage/network-design.html"),
+    ("examples/usage/rectified_linear.html", "examples/usage/rectified-linear.html"),
+    ("examples/usage/tuning_curves.html", "examples/usage/tuning-curves.html"),
+    ("frontend_api.html", "frontend-api.html"),
+    ("getting_started.html", "getting-started.html"),
+    ("improving_performance.html", "improving-performance.html"),
+    ("user_guide.html", "user-guide.html"),
+]

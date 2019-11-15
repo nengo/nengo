@@ -7,5 +7,5 @@ Advanced topics
 
    connections
    nengorc
-   improving_performance
+   improving-performance
    utils

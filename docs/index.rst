@@ -45,8 +45,8 @@ or neuromorphic hardware.
 .. toctree::
    :maxdepth: 2
 
-   getting_started
-   user_guide
+   getting-started
+   user-guide
    examples
    contributing
    license

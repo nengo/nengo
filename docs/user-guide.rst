@@ -5,8 +5,8 @@ User guide
 .. toctree::
    :maxdepth: 2
 
-   frontend_api
-   backend_api
+   frontend-api
+   backend-api
    config
    networks
    spa
