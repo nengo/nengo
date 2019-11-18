@@ -37,5 +37,6 @@ global-exclude *.pyc *.pyo *.pyd
 
 # Repo-specific files
 graft nengo-data
+recursive-include nengo *.md
 recursive-include nengo *.rst
 recursive-include nengo *.txt

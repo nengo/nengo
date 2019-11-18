@@ -66,6 +66,27 @@ jobs:
   -
     dist: xenial
     python: 3.7
+  - stage: deploy
+    if: branch =~ ^release-candidate-* OR tag =~ ^v[0-9]*
+    env: SCRIPT="deploy"
+    cache: false
+    deploy:
+      - provider: pypi
+        server: https://test.pypi.org/legacy/
+        user: tbekolay
+        password: $PYPI_TOKEN
+        distributions: "sdist bdist_wheel "
+        on:
+          all_branches: true
+          condition: $TRAVIS_BRANCH =~ ^release-candidate-*
+          condition: $TRAVIS_TAG = ""
+      - provider: pypi
+        user: tbekolay
+        password: $PYPI_TOKEN
+        distributions: "sdist bdist_wheel "
+        on:
+          all_branches: true
+          condition: $TRAVIS_TAG =~ ^v[0-9]*
 
 before_install:
   # export travis_terminate for use in scripts, from here:

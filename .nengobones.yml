@@ -15,6 +15,7 @@ manifest_in:
   graft:
     - nengo-data
   recursive-include:
+    - nengo *.md
     - nengo *.rst
     - nengo *.txt
 
@@ -227,6 +228,10 @@ travis_yml:
       if: "branch =~ ^release-candidate-*"
     - dist: xenial
       python: 3.7
+  pypi_user: tbekolay
+  deploy_dists:
+    - sdist
+    - bdist_wheel
 
 ci_scripts:
   - template: static
@@ -250,6 +255,7 @@ ci_scripts:
       - $NUMPY
       - scipy
       - matplotlib
+  - template: deploy
 
 codecov_yml: {}
 
