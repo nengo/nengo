@@ -96,7 +96,7 @@ Release History
   (`#1481 <https://github.com/nengo/nengo/pull/1481>`__)
 - Increased minimum NumPy version to 1.11.0. See our
   `instructions for installing NumPy
-  <https://www.nengo.ai/nengo/getting_started.html#installing-numpy>`__
+  <https://www.nengo.ai/nengo/getting-started.html#installing-numpy>`__
   if you need to upgrade.
   (`#1481 <https://github.com/nengo/nengo/pull/1481>`__)
 - Solvers are now explicitly marked as compositional or non-compositional
@@ -471,7 +471,7 @@ Release History
   use ``EnsembleArray.n_neurons_per_ensemble``.
   (`#1186 <https://github.com/nengo/nengo/pull/1186>`_)
 - The `Nengo modelling API document
-  <https://www.nengo.ai/nengo/frontend_api.html>`_
+  <https://www.nengo.ai/nengo/frontend-api.html>`_
   now has summaries to help navigate the page.
   (`#1304 <https://github.com/nengo/nengo/pull/1304>`_)
 - The error raised when a ``Connection`` function returns ``None``
@@ -614,7 +614,7 @@ Release History
 - Added ``nengo.dists.get_samples`` function for convenience
   when working with distributions or samples.
   (`#1181 <https://github.com/nengo/nengo/pull/1181>`_,
-  `docs <https://www.nengo.ai/nengo/frontend_api.html#nengo.dists.get_samples>`_)
+  `docs <https://www.nengo.ai/nengo/frontend-api.html#nengo.dists.get_samples>`_)
 
 **Changed**
 

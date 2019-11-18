@@ -294,7 +294,7 @@ for analysis or visualization.
    sim.close()
 
 For more details on these objects,
-see :doc:`the API documentation <frontend_api>`.
+see :doc:`the API documentation <frontend-api>`.
 
 Next steps
 ==========

@@ -334,7 +334,7 @@ class SimOja(Operator):
 class SimVoja(Operator):
     r"""Simulates a simplified version of Oja's rule in the vector space.
 
-    See :doc:`examples/learning/learn_associations` for details.
+    See :doc:`examples/learning/learn-associations` for details.
 
     Parameters
     ----------

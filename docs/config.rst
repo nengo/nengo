@@ -2,7 +2,7 @@
 Setting parameters with Configs
 *******************************
 
-Building models with the :doc:`Nengo frontend API <frontend_api>`
+Building models with the :doc:`Nengo frontend API <frontend-api>`
 involves constructing many objects,
 each with many parameters that can be set.
 To make setting all of these parameters easier,

@@ -3,7 +3,7 @@ Nengo backend API
 *****************
 
 Nengo is designed so that models created with the
-:doc:`Nengo frontend API <frontend_api>`
+:doc:`Nengo frontend API <frontend-api>`
 work on a variety of different simulators, or "backends."
 For example, backends have been created to take advantage of
 `GPUs <https://github.com/nengo/nengo-ocl/>`_ and
@@ -29,7 +29,7 @@ The build process translates a Nengo model
 to a set of data buffers (`.Signal` instances)
 and computational operations (`.Operator` instances)
 which implement the Nengo model
-defined with the :doc:`frontend API <frontend_api>`.
+defined with the :doc:`frontend API <frontend-api>`.
 The build process is central to
 how the reference simulator works,
 and details how Nengo can be extended to include
