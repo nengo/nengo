@@ -60,7 +60,7 @@ Release History
   (`#1563 <https://github.com/nengo/nengo/pull/1563>`__)
 - Nengo tests now use the ``rng`` and ``seed`` fixtures from ``pytest-rng``.
   (`#1566 <https://github.com/nengo/nengo/pull/1566>`__)
-- Nengo tests now use the ``plt``fixture from ``pytest-plt``.
+- Nengo tests now use the ``plt`` fixture from ``pytest-plt``.
   (`#1566 <https://github.com/nengo/nengo/pull/1566>`__)
 - Added a ``nengo_simloader`` pytest option for specifying a callable that
   takes a pytest ``request`` and returns a callable to be used
