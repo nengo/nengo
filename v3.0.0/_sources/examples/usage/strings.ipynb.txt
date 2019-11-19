@@ -1,0 +1,358 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# String representations\n",
+    "\n",
+    "This should be an exhaustive list\n",
+    "of the objects that can be created with Nengo,\n",
+    "and their string representations."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import difflib\n",
+    "\n",
+    "import numpy as np\n",
+    "\n",
+    "import nengo"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Core objects"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "with nengo.Network() as net1:\n",
+    "\n",
+    "    a = nengo.Ensemble(100, 2)\n",
+    "    with nengo.Network(label=\"net2\") as net2:\n",
+    "        b = nengo.Ensemble(100, 2, label=\"b\")\n",
+    "\n",
+    "    ap = nengo.Probe(a)\n",
+    "    bp = nengo.Probe(b)\n",
+    "\n",
+    "    c1 = nengo.Connection(a, b)\n",
+    "    c2 = nengo.Connection(a, b, function=np.square)\n",
+    "\n",
+    "    n1 = nengo.Node(output=np.sin)\n",
+    "    n2 = nengo.Node(output=np.cos, label=\"n2\")\n",
+    "\n",
+    "print(\"  str(obj)\")\n",
+    "print(\"============\")\n",
+    "print(\"--- Network\")\n",
+    "print(\"    %s\" % net1)\n",
+    "print(\"    %s\" % net2)\n",
+    "print(\"--- Ensemble\")\n",
+    "print(\"    %s\" % a)\n",
+    "print(\"    %s\" % b)\n",
+    "print(\"--- Probe\")\n",
+    "print(\"    %s\" % ap)\n",
+    "print(\"    %s\" % bp)\n",
+    "print(\"--- Connection\")\n",
+    "print(\"    %s\" % c1)\n",
+    "print(\"    %s\" % c2)\n",
+    "print(\"--- Node\")\n",
+    "print(\"    %s\" % n1)\n",
+    "print(\"    %s\" % n2)\n",
+    "print(\"--- Neurons\")\n",
+    "print(\"    %s\" % a.neurons)\n",
+    "print(\"--- ObjView\")\n",
+    "print(\"    %s\" % b[:1])\n",
+    "print(\"\")\n",
+    "\n",
+    "print(\"  repr(obj)  \")\n",
+    "print(\"=============\")\n",
+    "print(\"--- Network\")\n",
+    "print(\"    %r\" % net1)\n",
+    "print(\"    %r\" % net2)\n",
+    "print(\"--- Ensemble\")\n",
+    "print(\"    %r\" % a)\n",
+    "print(\"    %r\" % b)\n",
+    "print(\"--- Probe\")\n",
+    "print(\"    %r\" % ap)\n",
+    "print(\"    %r\" % bp)\n",
+    "print(\"--- Connection\")\n",
+    "print(\"    %r\" % c1)\n",
+    "print(\"    %r\" % c2)\n",
+    "print(\"--- Node\")\n",
+    "print(\"    %r\" % n1)\n",
+    "print(\"    %r\" % n2)\n",
+    "print(\"--- Neurons\")\n",
+    "print(\"    %r\" % a.neurons)\n",
+    "print(\"--- ObjView\")\n",
+    "print(\"    %r\" % b[:1])"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Neuron types"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print(nengo.Direct())\n",
+    "print(nengo.RectifiedLinear())\n",
+    "print(nengo.Sigmoid())\n",
+    "print(nengo.Sigmoid(tau_ref=0.001))\n",
+    "print(nengo.LIFRate())\n",
+    "print(nengo.LIFRate(tau_rc=0.01, tau_ref=0))\n",
+    "print(nengo.LIF())\n",
+    "print(nengo.LIF(tau_rc=0.01, tau_ref=0))\n",
+    "print(nengo.AdaptiveLIFRate())\n",
+    "print(nengo.AdaptiveLIFRate(tau_rc=0.01, tau_n=0.5, inc_n=0.02))\n",
+    "print(nengo.AdaptiveLIF())\n",
+    "print(nengo.AdaptiveLIF(tau_rc=0.01, tau_n=0.5, inc_n=0.02))\n",
+    "print(nengo.Izhikevich())\n",
+    "print(nengo.Izhikevich(\n",
+    "    tau_recovery=0.01, coupling=0.5, reset_voltage=-60, reset_recovery=6))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Learning rules"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print(nengo.PES())\n",
+    "print(nengo.PES(learning_rate=1e-6, pre_synapse=0.01))\n",
+    "print(nengo.BCM())\n",
+    "print(nengo.BCM(learning_rate=1e-8,\n",
+    "                pre_synapse=0.01,\n",
+    "                post_synapse=0.005,\n",
+    "                theta_synapse=10.0))\n",
+    "print(nengo.Oja())\n",
+    "print(nengo.Oja(\n",
+    "    learning_rate=1e-5, pre_synapse=0.01, post_synapse=0.005, beta=0.5))\n",
+    "print(nengo.Voja())\n",
+    "print(nengo.Voja(learning_rate=1e-5, post_synapse=None))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Distributions"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print(nengo.dists.PDF([1, 2], [0.4, 0.6]))\n",
+    "print(nengo.dists.Uniform(0, 1))\n",
+    "print(nengo.dists.Uniform(0, 5, integer=True))\n",
+    "print(nengo.dists.Gaussian(1, 0.1))\n",
+    "print(nengo.dists.UniformHypersphere())\n",
+    "print(nengo.dists.UniformHypersphere(surface=True))\n",
+    "print(nengo.dists.Choice([1, 2, 3]))\n",
+    "print(nengo.dists.Choice([1, 2, 3], weights=[0.1, 0.5, 0.4]))\n",
+    "print(nengo.dists.SqrtBeta(3))\n",
+    "print(nengo.dists.SqrtBeta(3, 2))\n",
+    "print(nengo.dists.SubvectorLength(3))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Synapses"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print(nengo.synapses.Lowpass(0.01))\n",
+    "print(nengo.synapses.Alpha(0.02))\n",
+    "print(nengo.synapses.Triangle(0.03))\n",
+    "print(nengo.synapses.LinearFilter([1], [0.03, 1]))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Processes"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "gaussian = nengo.dists.Gaussian(1, 2)\n",
+    "print(nengo.processes.WhiteNoise(gaussian, scale=False))\n",
+    "print(nengo.processes.FilteredNoise(nengo.synapses.Alpha(0.2), gaussian))\n",
+    "print(nengo.processes.BrownNoise(gaussian))\n",
+    "print(nengo.processes.WhiteSignal(0.2, 10, rms=0.3))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Signals"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print(nengo.builder.signal.Signal(np.array([0.])))\n",
+    "print(nengo.builder.signal.Signal(np.array([1., 1.]), name=\"one\"))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Operators"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "sig = nengo.builder.signal.Signal(np.array([0.]), name=\"sig\")\n",
+    "print(nengo.builder.operator.TimeUpdate(sig, sig))\n",
+    "print(nengo.builder.operator.TimeUpdate(sig, sig, tag=\"tag\"))\n",
+    "print(nengo.builder.operator.Reset(sig))\n",
+    "print(nengo.builder.operator.Reset(sig, tag=\"tag\"))\n",
+    "print(nengo.builder.operator.Copy(sig, sig))\n",
+    "print(nengo.builder.operator.Copy(sig, sig, tag=\"tag\"))\n",
+    "print(nengo.builder.operator.Copy(sig, sig, [0], slice(0, 1)))\n",
+    "print(nengo.builder.operator.Copy(sig, sig, [0], slice(0, 1), tag=\"tag\"))\n",
+    "print(nengo.builder.operator.ElementwiseInc(sig, sig, sig))\n",
+    "print(nengo.builder.operator.ElementwiseInc(sig, sig, sig, tag=\"tag\"))\n",
+    "print(nengo.builder.operator.DotInc(sig, sig, sig))\n",
+    "print(nengo.builder.operator.DotInc(sig, sig, sig, tag=\"tag\"))\n",
+    "print(nengo.builder.operator.SimPyFunc(sig, lambda x: 0.0, True, sig))\n",
+    "print(nengo.builder.operator.SimPyFunc(\n",
+    "    sig, lambda x: 0.0, True, sig, tag=\"tag\"))\n",
+    "print(nengo.builder.learning_rules.SimPES(sig, sig, sig, sig, 0.1))\n",
+    "print(nengo.builder.learning_rules.SimPES(sig, sig, sig, sig, 0.1, tag=\"tag\"))\n",
+    "print(nengo.builder.learning_rules.SimBCM(sig, sig, sig, sig, 0.1))\n",
+    "print(nengo.builder.learning_rules.SimBCM(sig, sig, sig, sig, 0.1, tag=\"tag\"))\n",
+    "print(nengo.builder.learning_rules.SimOja(sig, sig, sig, sig, 0.1, 1.0))\n",
+    "print(nengo.builder.learning_rules.SimOja(\n",
+    "    sig, sig, sig, sig, 0.1, 1.0, tag=\"tag\"))\n",
+    "print(nengo.builder.neurons.SimNeurons(nengo.LIF(), sig, sig, [sig]))\n",
+    "print(nengo.builder.neurons.SimNeurons(\n",
+    "    nengo.LIF(), sig, sig, [sig], tag=\"tag\"))\n",
+    "print(nengo.builder.processes.SimProcess(\n",
+    "    nengo.processes.WhiteNoise(), sig, sig, sig))\n",
+    "print(nengo.builder.processes.SimProcess(\n",
+    "    nengo.processes.WhiteNoise(), sig, sig, sig, tag=\"tag\"))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Simulator\n",
+    "\n",
+    "The representation of the `Simulator`\n",
+    "is not particularly illuminating,\n",
+    "but you can get a detailed account of the `Simulator`\n",
+    "by printing its sorted list of `Operator`s."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "with nengo.Simulator(net1) as sim:\n",
+    "    print('\\n'.join(\"  * %s\" % op for op in sim._step_order))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "The diff of two simulators' sorted ops tells us how two built models differ.\n",
+    "We can use the `difflib` library (included with Python)\n",
+    "to do a diff directly in Python."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Setting labels on all of the Nengo objects ensures the strings\n",
+    "# stay the same across simulator instances.\n",
+    "a.label = 'a'\n",
+    "n1.label = 'n1'\n",
+    "\n",
+    "with nengo.Simulator(net1) as sim1:\n",
+    "    sim1_str = sorted(str(op) for op in sim1._step_order)\n",
+    "\n",
+    "diff = difflib.unified_diff(\n",
+    "    a=sorted([str(op) for op in sim._step_order]), b=sim1_str)\n",
+    "print('\\n'.join(diff))\n",
+    "# Several differences here because labels weren't set on sim"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "with nengo.Simulator(net1) as sim2:\n",
+    "    sim2_str = sorted(str(op) for op in sim2._step_order)\n",
+    "diff = difflib.unified_diff(a=sim1_str, b=sim2_str)\n",
+    "print('\\n'.join(diff))\n",
+    "# No more differences because labels keep representations stable"
+   ]
+  }
+ ],
+ "metadata": {
+  "language_info": {
+   "name": "python",
+   "pygments_lexer": "ipython3"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2
+}
