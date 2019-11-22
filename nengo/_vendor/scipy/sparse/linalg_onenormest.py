@@ -38,6 +38,8 @@ from __future__ import absolute_import, division
 
 import numpy as np
 
+from nengo._vendor.scipy.sparse.linalg_interface import aslinearoperator
+
 
 def onenormest(A, t=2, itmax=5, compute_v=False, compute_w=False):
     """
