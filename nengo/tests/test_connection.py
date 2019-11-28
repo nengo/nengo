@@ -1101,3 +1101,17 @@ def test_neuron_advanced_indexing(Simulator):
     with Simulator(net) as sim:
         sim.run(0.001)
         assert np.allclose(sim.data[p], [2, 0, 1, 0, 0])
+
+
+def test_learning_rule_equality():
+    with nengo.Network():
+        ens = nengo.Ensemble(10, 1)
+        lr = nengo.PES()
+        conn0 = nengo.Connection(ens, ens, learning_rule_type=lr)
+        assert conn0.learning_rule == conn0.learning_rule
+        assert conn0.learning_rule != lr
+
+        conn1 = nengo.Connection(ens, ens, learning_rule_type=[lr, nengo.PES()])
+        assert conn0.learning_rule[0] != conn1.learning_rule
+        assert conn1.learning_rule_type[0] == conn0.learning_rule_type
+        assert conn1.learning_rule[0] == conn1.learning_rule[1]

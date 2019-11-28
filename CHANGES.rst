@@ -27,6 +27,12 @@ Release history
 - Added a new example notebook for Legendre Memory Units.
   (`#1589 <https://github.com/nengo/nengo/pull/1589>`__)
 
+**Fixed**
+
+- Fixed a bug when comparing equality with ``Ensemble.neurons`` or
+  ``Connection.learning_rule`` objects.
+  (`#1588 <https://github.com/nengo/nengo/pull/1588>`__)
+
 3.0.0 (November 18, 2019)
 =========================
 

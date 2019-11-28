@@ -229,7 +229,7 @@ class Neurons:
         return "<Neurons of %s>" % self.ensemble
 
     def __eq__(self, other):
-        return self.ensemble is other.ensemble
+        return type(self) == type(other) and self.ensemble is other.ensemble
 
     def __hash__(self):
         return hash(self.ensemble) + 1  # +1 to avoid collision with ensemble

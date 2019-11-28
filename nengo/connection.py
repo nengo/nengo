@@ -653,7 +653,8 @@ class LearningRule:
 
     def __eq__(self, other):
         return (
-            self._connection is other._connection
+            type(self) == type(other)
+            and self._connection is other._connection
             and self.learning_rule_type == other.learning_rule_type
         )
 

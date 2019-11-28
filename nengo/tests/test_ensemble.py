@@ -445,3 +445,23 @@ def test_raises_exception_for_invalid_intercepts(Simulator, intercept):
     with pytest.raises(BuildError):
         with Simulator(model):
             pass
+
+
+def test_neurons_equality():
+    with nengo.Network():
+        neuron_type = nengo.LIF()
+        ens0 = nengo.Ensemble(10, 1, neuron_type=neuron_type)
+        assert ens0.neurons == ens0.neurons
+        assert ens0.neurons != neuron_type
+
+        ens1 = nengo.Ensemble(10, 1, neuron_type=neuron_type)
+        assert ens0.neurons != ens1.neurons
+        assert ens0.neuron_type == ens1.neuron_type
+
+        # this is the only way you could ever have two neurons objects that are
+        # equal but have different type
+        old_neurons = ens1.neurons
+        old_neuron_type = ens1.neuron_type
+        ens1.neuron_type = nengo.RectifiedLinear()
+        assert ens1.neurons == old_neurons
+        assert ens1.neuron_type != old_neuron_type
