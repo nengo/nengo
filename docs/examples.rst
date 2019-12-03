@@ -94,6 +94,7 @@ Learning
    examples/learning/learn-product
    examples/learning/learn-unsupervised
    examples/learning/learn-associations
+   examples/learning/lmu
 
 Networks
 --------

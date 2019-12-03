@@ -22,7 +22,10 @@ Release History
 3.0.1 (unreleased)
 ==================
 
+**Added**
 
+- Added a new example notebook for Legendre Memory Units.
+  (`#1589 <https://github.com/nengo/nengo/pull/1589>`__)
 
 3.0.0 (November 18, 2019)
 =========================
