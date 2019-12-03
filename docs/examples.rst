@@ -2,22 +2,14 @@
 Examples
 ********
 
-Nengo creates these models using the principles of the
-`Neural Engineering Framework <http://compneuro.uwaterloo.ca/research/nef.html>`_.
-The first set of examples explains these three principles:
-*representation*, *transformation*, and *dynamics*.
+Introductory tutorials
+======================
 
-For a summary of these principles, see the following example:
+These are tutorial-style examples that focus on
+introducing the basic principles of Nengo.
 
-.. toctree::
-   :maxdepth: 1
-
-   examples/advanced/nef-summary
-
-The following examples give a more detailed presentation:
-
-Principle 1: Representation
-===========================
+Representing values
+-------------------
 
 .. toctree::
    :maxdepth: 1
@@ -29,8 +21,8 @@ Principle 1: Representation
    examples/basic/combining
    examples/basic/addition
 
-Principle 2: Transformation
-===========================
+Computing functions
+-------------------
 
 .. toctree::
    :maxdepth: 1
@@ -39,8 +31,8 @@ Principle 2: Transformation
    examples/basic/squaring
    examples/basic/multiplication
 
-Principle 3: Dynamics
-=====================
+Building dynamical systems
+--------------------------
 
 .. toctree::
    :maxdepth: 1
@@ -52,14 +44,13 @@ Principle 3: Dynamics
    examples/dynamics/controlled-oscillator
    examples/dynamics/lorenz-attractor
 
-Putting these three principles together allows us to scale
-these examples up to larger networks that do more complex functions.
-Below are some of these complex functions,
-as well as other examples that we hope will be helpful
-as reference when building your own Nengo models.
+Advanced examples
+=================
+
+These examples illustrate some of the more advanced uses of Nengo.
 
 Nodes
-=====
+-----
 
 .. toctree::
    :maxdepth: 1
@@ -67,7 +58,7 @@ Nodes
    examples/usage/delay-node
 
 Processes
-=========
+---------
 
 .. toctree::
    :maxdepth: 1
@@ -75,7 +66,7 @@ Processes
    examples/advanced/processes
 
 Ensembles
-=========
+---------
 
 .. toctree::
    :maxdepth: 1
@@ -84,7 +75,7 @@ Ensembles
    examples/advanced/izhikevich
 
 Connections
-===========
+-----------
 
 .. toctree::
    :maxdepth: 1
@@ -93,7 +84,7 @@ Connections
    examples/advanced/functions-and-tuning-curves
 
 Learning
-========
+--------
 
 .. toctree::
    :maxdepth: 1
@@ -105,7 +96,7 @@ Learning
    examples/learning/learn-associations
 
 Networks
-========
+--------
 
 .. toctree::
    :maxdepth: 1
@@ -116,16 +107,17 @@ Networks
    examples/networks/integrator-network
 
 Under the hood
-==============
+--------------
 
 .. toctree::
    :maxdepth: 1
 
    examples/usage/rectified-linear
+   examples/advanced/nef-summary
    examples/advanced/nef-algorithm
 
 Reference
-=========
+---------
 
 .. toctree::
    :maxdepth: 1
