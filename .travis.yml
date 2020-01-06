@@ -8,15 +8,12 @@ notifications:
     on_failure: change
 cache: pip
 
-dist: trusty
+dist: xenial
 
 env:
   global:
     - SCRIPT="test"
     - TEST_ARGS=""
-    - COV_CORE_SOURCE=nengo  # early start pytest-cov engine
-    - COV_CORE_CONFIG=.coveragerc
-    - COV_CORE_DATAFILE=.coverage.eager
     - BRANCH_NAME="${TRAVIS_PULL_REQUEST_BRANCH:-$TRAVIS_BRANCH}"
     - NUMPY="numpy"
 
@@ -64,7 +61,7 @@ jobs:
       NUMPY="numpy==1.17"
     if: branch =~ ^release-candidate-*
   -
-    dist: xenial
+    dist: bionic
     python: 3.7
   - stage: deploy
     if: branch =~ ^release-candidate-* OR tag =~ ^v[0-9]*

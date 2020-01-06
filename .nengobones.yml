@@ -226,7 +226,7 @@ travis_yml:
     - env:
         NUMPY: numpy==1.17
       if: "branch =~ ^release-candidate-*"
-    - dist: xenial
+    - dist: bionic
       python: 3.7
   pypi_user: tbekolay
   deploy_dists:
