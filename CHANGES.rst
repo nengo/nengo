@@ -19,13 +19,24 @@ Release History
    - Removed
    - Fixed
 
-3.0.1 (unreleased)
+3.1.0 (unreleased)
 ==================
 
 **Added**
 
 - Added a new example notebook for Legendre Memory Units.
   (`#1589 <https://github.com/nengo/nengo/pull/1589>`__)
+
+**Changed**
+
+- The default Connection transform is now ``None`` (meaning that there will be
+  no transform applied). This will make no difference in most cases, except in
+  models where learning was being applied to a neuron-neuron connection with
+  the default transform (so a single scalar weight being learned). In that situation
+  there are now no weights to apply learning
+  to, so this will generate an error. The old behaviour can be obtained by setting
+  ``transform=1``.
+  (`#1591 <https://github.com/nengo/nengo/pull/1591>`__)
 
 3.0.0 (November 18, 2019)
 =========================

@@ -5,6 +5,7 @@ import pytest
 
 import nengo
 from nengo.exceptions import MovedError, Unconvertible
+from nengo.transforms import NoTransform
 from nengo.utils.builder import (
     full_transform,
     generate_graphviz,
@@ -27,7 +28,7 @@ def test_full_transform():
 
         # Pre slice with default transform -> 1x3 transform
         conn = nengo.Connection(node3[2], ens1)
-        assert np.all(conn.transform.init == np.array(1))
+        assert isinstance(conn.transform, NoTransform)
         assert np.all(full_transform(conn) == np.array([[0, 0, 1]]))
 
         # Post slice with 1x1 transform -> 1x2 transform
