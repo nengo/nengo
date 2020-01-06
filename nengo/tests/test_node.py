@@ -352,15 +352,12 @@ def test_delay(Simulator, plt):
 
 def test_args(Simulator):
     class Fn:
-        def __init__(self):
-            self.last_x = None
-
         def __call__(self, t, x):
             assert isinstance(t, float)
             assert isinstance(x, np.ndarray)
-            assert self.last_x is not x  # x should be a new copy on each call
-            self.last_x = x
             assert x[0] == t
+            with pytest.raises(ValueError, match="destination is read-only"):
+                x[:] = 0
 
     with nengo.Network() as model:
         u = nengo.Node(lambda t: t)
