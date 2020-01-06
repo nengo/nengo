@@ -4,7 +4,7 @@
 Nengo license
 *************
 
-Copyright (c) 2013-2019 Applied Brain Research
+Copyright (c) 2013-2020 Applied Brain Research
 
 Nengo is made available under a proprietary license
 that permits using, copying, sharing, and making derivative works from
