@@ -7,7 +7,7 @@ from nengo.builder.ensemble import gen_eval_points, get_activities
 from nengo.builder.node import SimPyFunc
 from nengo.builder.operator import Copy, ElementwiseInc, Reset
 from nengo.connection import Connection
-from nengo.transforms import Dense
+from nengo.transforms import Dense, NoTransform
 from nengo.ensemble import Ensemble, Neurons
 from nengo.exceptions import BuildError
 from nengo.neurons import Direct
@@ -341,10 +341,10 @@ def build_connection(model, conn):
     # Build learning rules
     if conn.learning_rule is not None:
         # TODO: provide a general way for transforms to expose learnable params
-        if not isinstance(conn.transform, Dense):
+        if not isinstance(conn.transform, (Dense, NoTransform)):
             raise NotImplementedError(
                 "Learning on connections with %s transforms is not supported"
-                % (type(conn.transform).__name__)
+                % (type(conn.transform).__name__,)
             )
 
         rule = conn.learning_rule
@@ -368,5 +368,5 @@ def build_connection(model, conn):
         eval_points=eval_points,
         solver_info=solver_info,
         transform=conn.transform,
-        weights=weights.initial_value,
+        weights=getattr(weights, "initial_value", None),
     )

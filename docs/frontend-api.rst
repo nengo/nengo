@@ -178,7 +178,7 @@ Transforms
 
 .. Note: we don't use automodule/autoautosummary here because we want the
    canonical reference to these objects to be ``nengo.Class`` even though
-   they actually live in ``nengo.synapses.Class``.
+   they actually live in ``nengo.transforms.Class``.
 
 .. autosummary::
    :nosignatures:
@@ -189,6 +189,7 @@ Transforms
    nengo.transforms.SparseMatrix
    nengo.Convolution
    nengo.transforms.ChannelShape
+   nengo.transforms.NoTransform
 
 .. autoclass:: nengo.transforms.Transform
 
@@ -205,3 +206,5 @@ Transforms
 .. autoclass:: nengo.transforms.ChannelShape
 
 .. autoclass:: nengo.transforms.ChannelShapeParam
+
+.. autoclass:: nengo.transforms.NoTransform

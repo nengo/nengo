@@ -1,7 +1,7 @@
 import numpy as np
 
 from nengo.base import NengoObject, NengoObjectParam, ObjView
-from nengo.dists import DistOrArrayParam
+from nengo.dists import DistOrArrayParam, Distribution
 from nengo.ensemble import Ensemble, Neurons
 from nengo.exceptions import ValidationError
 from nengo.learning_rules import LearningRuleType, LearningRuleTypeParam
@@ -11,7 +11,7 @@ from nengo.params import BoolParam, Default, FunctionInfo, Parameter
 from nengo.rc import rc
 from nengo.solvers import LstsqL2, SolverParam
 from nengo.synapses import Lowpass, SynapseParam
-from nengo.transforms import Dense, Transform
+from nengo.transforms import Dense, NoTransform
 from nengo.utils.functions import function_name
 from nengo.utils.numpy import is_array_like, is_iterable
 from nengo.utils.stdlib import checked_call
@@ -34,10 +34,7 @@ class ConnectionLearningRuleTypeParam(LearningRuleTypeParam):
 
     coerce_defaults = False
 
-    def check_rule(self, conn, rule):
-        super().check_rule(conn, rule)
-
-        # --- Check pre object
+    def check_pre(self, conn, rule):
         pre = conn.pre_obj
         if rule.modifies in ("decoders", "weights"):
             # pre object must be neural
@@ -56,12 +53,12 @@ class ConnectionLearningRuleTypeParam(LearningRuleTypeParam):
                     obj=conn,
                 )
 
-        # --- Check post object
+    def check_post(self, conn, rule):
         if rule.modifies == "encoders":
             if not isinstance(conn.post_obj, Ensemble):
                 raise ValidationError(
                     "'post' must be of type 'Ensemble' (got %r) "
-                    "for learning rule '%s'" % (type(pre).__name__, rule),
+                    "for learning rule '%s'" % (type(conn.pre_obj).__name__, rule),
                     attr=self.name,
                     obj=conn,
                 )
@@ -75,6 +72,21 @@ class ConnectionLearningRuleTypeParam(LearningRuleTypeParam):
                     obj=conn,
                 )
 
+    def check_rule(self, conn, rule):
+        super().check_rule(conn, rule)
+        self.check_pre(conn, rule)
+        self.check_post(conn, rule)
+        self.check_transform(conn, rule)
+
+    def check_transform(self, conn, rule):
+        if not conn.has_weights and rule.modifies in ("weights", "decoders"):
+            raise ValidationError(
+                "Learning rule '%s' cannot be applied to a connection that does not "
+                "have weights (transform=None)" % rule,
+                attr=self.name,
+                obj=conn,
+            )
+
         if rule.modifies == "weights":
             # If the rule modifies 'weights', then it must have full weights
             if conn.is_decoded:
@@ -87,6 +99,7 @@ class ConnectionLearningRuleTypeParam(LearningRuleTypeParam):
                 )
 
             # transform matrix must be 2D
+            pre = conn.pre_obj
             pre_size = pre.n_neurons if isinstance(pre, Ensemble) else conn.pre.size_out
             post_size = conn.post.size_in
             if not conn.solver.weights and conn.transform.shape != (
@@ -243,7 +256,9 @@ class ConnectionTransformParam(Parameter):
     coerce_defaults = False
 
     def coerce(self, conn, transform):
-        if not isinstance(transform, Transform):
+        if transform is None:
+            transform = NoTransform(conn.size_mid)
+        elif is_array_like(transform) or isinstance(transform, Distribution):
             transform = Dense((conn.size_out, conn.size_mid), transform)
 
         if transform.size_in != conn.size_mid:
@@ -451,7 +466,7 @@ class Connection(NengoObject):
     post = PrePostParam("post", nonzero_size_in=True)
     synapse = SynapseParam("synapse", default=Lowpass(tau=0.005))
     function_info = ConnectionFunctionParam("function", default=None, optional=True)
-    transform = ConnectionTransformParam("transform", default=1.0)
+    transform = ConnectionTransformParam("transform", default=None, optional=True)
     solver = ConnectionSolverParam("solver", default=LstsqL2())
     learning_rule_type = ConnectionLearningRuleTypeParam(
         "learning_rule_type", default=None, optional=True
@@ -534,6 +549,13 @@ class Connection(NengoObject):
     @function.setter
     def function(self, function):
         self.function_info = function
+
+    @property
+    def has_weights(self):
+        return not isinstance(self.transform, NoTransform) or (
+            isinstance(self.pre_obj, Ensemble)
+            and not isinstance(self.pre_obj.neuron_type, Direct)
+        )
 
     @property
     def is_decoded(self):

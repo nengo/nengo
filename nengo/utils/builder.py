@@ -7,7 +7,9 @@ import numpy as np
 from nengo.exceptions import MovedError, Unconvertible, ValidationError
 
 
-def full_transform(conn, slice_pre=True, slice_post=True, allow_scalars=True):
+def full_transform(  # noqa: C901
+    conn, slice_pre=True, slice_post=True, allow_scalars=True
+):
     """Compute the full transform matrix for a Dense connection transform.
 
     Parameters
@@ -24,16 +26,21 @@ def full_transform(conn, slice_pre=True, slice_post=True, allow_scalars=True):
         If false, these scalars will be turned into scaled identity matrices.
     """
     # imported here to avoid circular imports
-    from nengo import Dense  # pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
+    from nengo import Dense
+    from nengo.transforms import NoTransform
 
-    if not isinstance(conn.transform, Dense):
+    if isinstance(conn.transform, NoTransform):
+        transform = np.array(1.0)
+    elif not isinstance(conn.transform, Dense):
         raise ValidationError(
             "full_transform can only be applied to Dense transforms",
             attr="transform",
             obj=conn,
         )
+    else:
+        transform = conn.transform.init
 
-    transform = conn.transform.init
     pre_slice = conn.pre_slice if slice_pre and conn.function is None else slice(None)
     post_slice = conn.post_slice if slice_post else slice(None)
 

@@ -462,7 +462,7 @@ def test_learningrule_attr(seed):
         T = np.ones((10, 10))
 
         r1 = PES()
-        c1 = nengo.Connection(a.neurons, b.neurons, learning_rule_type=r1)
+        c1 = nengo.Connection(a.neurons, b.neurons, learning_rule_type=r1, transform=1)
         check_rule(c1.learning_rule, c1, r1)
 
         r2 = [PES(), BCM()]
@@ -672,3 +672,37 @@ def test_slicing(Simulator, seed, allclose):
     t = sim.trange() > 0.8
     assert allclose(sim.data[p][t, 0], 0.75, atol=0.15)
     assert allclose(sim.data[p][t, 1], -0.5, atol=0.15)
+
+
+def test_null_error(Simulator):
+    with nengo.Network():
+        a = nengo.Ensemble(1, 1)
+        b = nengo.Ensemble(1, 1)
+
+        # works with a decoded connection (since we'll be generating weights as
+        # part of the decoding process)
+        nengo.Connection(a, b, learning_rule_type=nengo.PES(), transform=None)
+
+        # error on neuron connection for decoder learning rule
+        with pytest.raises(ValidationError, match="does not have weights"):
+            nengo.Connection(
+                a.neurons, b, learning_rule_type=nengo.PES(), transform=None
+            )
+
+        # works for decoded connection with solver.weights=True
+        nengo.Connection(
+            a,
+            b,
+            solver=nengo.solvers.LstsqL2(weights=True),
+            learning_rule_type=nengo.BCM(),
+            transform=None,
+        )
+
+        # error on neuron connection for weights learning rule
+        with pytest.raises(ValidationError, match="does not have weights"):
+            nengo.Connection(
+                a.neurons, b.neurons, learning_rule_type=nengo.BCM(), transform=None
+            )
+
+        # works with encoder learning rules (since they don't require a transform)
+        nengo.Connection(a.neurons, b, learning_rule_type=Voja(), transform=None)

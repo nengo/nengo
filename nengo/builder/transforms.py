@@ -4,7 +4,7 @@ from nengo.builder import Builder, Operator, Signal
 from nengo.builder.operator import DotInc, ElementwiseInc, Reset, SparseDotInc
 from nengo.exceptions import BuildError
 from nengo.rc import rc
-from nengo.transforms import Convolution, Dense, Sparse
+from nengo.transforms import Convolution, Dense, NoTransform, Sparse
 from nengo._vendor.npconv2d import conv2d
 
 
@@ -205,3 +205,22 @@ class ConvInc(Operator):
             Y[...] += conv2d.conv2d(X, W, pad=pad, stride=stride)[0]
 
         return step_conv
+
+
+@Builder.register(NoTransform)
+def build_no_transform(
+    model, transform, sig_in, decoders=None, encoders=None, rng=np.random
+):
+    """Build a `.NoTransform` transform object."""
+
+    if decoders is not None or encoders is not None:
+        return build_dense(
+            model,
+            Dense(shape=(transform.size_out, transform.size_in), init=1.0),
+            sig_in,
+            decoders=decoders,
+            encoders=encoders,
+            rng=rng,
+        )
+
+    return sig_in, None

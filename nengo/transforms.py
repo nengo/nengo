@@ -551,3 +551,50 @@ class ChannelShape:
     def dimensions(self):
         """The spatial dimensionality of the represented signal."""
         return len(self.shape) - 1
+
+
+class NoTransform(Transform):
+    """Directly pass the signal through without any transform operations.
+
+    .. versionadded:: 3.1.0
+
+    Parameters
+    ----------
+    size_in : int
+        Dimensionality of transform input and output.
+    """
+
+    def __init__(self, size_in):
+        super().__init__()
+
+        self._size_in = size_in
+
+    def sample(self, rng=np.random):
+        """Returns concrete weights to implement the specified transform.
+
+        Parameters
+        ----------
+        rng : `numpy.random.mtrand.RandomState`, optional
+            Random number generator state.
+
+        Raises
+        ------
+        TypeError
+            There is nothing to sample for NoTransform, so it is an error
+            if this is called.
+        """
+        raise TypeError("Cannot sample a NoTransform")
+
+    @property
+    def _argreprs(self):
+        return ["size_in=%d" % self.size_in]
+
+    @property
+    def size_in(self):
+        """Expected size of input to transform."""
+        return self._size_in
+
+    @property
+    def size_out(self):
+        """Expected size of output from transform."""
+        return self._size_in

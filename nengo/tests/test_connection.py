@@ -10,7 +10,7 @@ from nengo.dists import Choice, UniformHypersphere
 from nengo.exceptions import BuildError, ValidationError
 from nengo.solvers import LstsqL2
 from nengo.processes import Piecewise
-from nengo.transforms import Dense
+from nengo.transforms import Dense, NoTransform
 from nengo.utils.testing import signals_allclose
 
 
@@ -402,9 +402,13 @@ def test_dimensionality_errors(nl_nodirect, seed, rng):
         nengo.Connection(e2, e2, transform=np.ones(2))
 
         # these should not work
-        with pytest.raises(ValidationError, match="Shape of initial value"):
+        with pytest.raises(
+            ValidationError, match="not equal to connection output size"
+        ):
             nengo.Connection(n02, e1)
-        with pytest.raises(ValidationError, match="Shape of initial value"):
+        with pytest.raises(
+            ValidationError, match="not equal to connection output size"
+        ):
             nengo.Connection(e1, e2)
         with pytest.raises(ValidationError, match="Transform input size"):
             nengo.Connection(
@@ -737,7 +741,9 @@ def test_set_learning_rule():
         nengo.Connection(
             a, b, learning_rule_type=nengo.PES(), solver=LstsqL2(weights=True)
         )
-        nengo.Connection(a.neurons, b.neurons, learning_rule_type=nengo.PES())
+        nengo.Connection(
+            a.neurons, b.neurons, learning_rule_type=nengo.PES(), transform=1
+        )
         nengo.Connection(
             a.neurons,
             b.neurons,
@@ -912,24 +918,39 @@ def test_decoder_probe(Simulator):
         assert sim
 
 
-def test_transform_probe(Simulator):
+def test_transform_probe(Simulator, allclose):
     """Ensures we can always probe transform in connections."""
     with nengo.Network() as net:
         pre = nengo.Ensemble(10, 10)
         post = nengo.Ensemble(10, 10)
 
-        c_ens = nengo.Connection(pre, post)
-        c_ens_neurons = nengo.Connection(pre, post.neurons)
-        c_neurons_ens = nengo.Connection(pre.neurons, post)
-        c_neurons = nengo.Connection(pre.neurons, post.neurons)
+        c_ens = nengo.Connection(
+            pre, post, solver=nengo.solvers.NoSolver(np.ones((10, 10)))
+        )
+        c_ens_neurons = nengo.Connection(
+            pre, post.neurons, solver=nengo.solvers.NoSolver(np.ones((10, 10)))
+        )
+        c_neurons_ens = nengo.Connection(pre.neurons, post, transform=1)
+        c_neurons = nengo.Connection(pre.neurons, post.neurons, transform=1)
 
-        nengo.Probe(c_neurons_ens, "weights")
-        nengo.Probe(c_neurons, "weights")
-        nengo.Probe(c_ens, "weights")
-        nengo.Probe(c_ens_neurons, "weights")
+        p_neurons_ens = nengo.Probe(c_neurons_ens, "weights")
+        p_neurons = nengo.Probe(c_neurons, "weights")
+        p_ens = nengo.Probe(c_ens, "weights")
+        p_ens_neurons = nengo.Probe(c_ens_neurons, "weights")
 
     with Simulator(net) as sim:
-        assert sim
+        sim.step()
+        assert allclose(sim.data[p_neurons_ens], 1)
+        assert allclose(sim.data[p_neurons], 1)
+        assert allclose(sim.data[p_ens], 1)
+        assert allclose(sim.data[p_ens_neurons], 1)
+
+    with net:
+        c_neurons_ens_none = nengo.Connection(pre.neurons, post, transform=None)
+        nengo.Probe(c_neurons_ens_none, "weights")
+
+    with pytest.raises(BuildError, match="cannot be probed"):
+        Simulator(net)
 
 
 def test_connectionlearningruletypeparam():
@@ -1080,12 +1101,12 @@ def test_function_returns_none_error(Simulator):
             pass
 
 
-def test_connection_none_error():
+def test_transform_none():
     with nengo.Network():
         a = nengo.Node([0])
         b = nengo.Node(size_in=1)
-        with pytest.raises(ValidationError):
-            nengo.Connection(a, b, transform=None)
+        conn = nengo.Connection(a, b, transform=None)
+        assert isinstance(conn.transform, NoTransform)
 
 
 @pytest.mark.filterwarnings("ignore:divide by zero")

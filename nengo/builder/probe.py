@@ -46,6 +46,11 @@ def signal_probe(model, key, probe):
     except IndexError:
         raise BuildError("Attribute %r is not probeable on %s." % (key, probe.obj))
 
+    if sig is None:
+        raise BuildError(
+            "Attribute %r on %s is None, cannot be probed" % (key, probe.obj)
+        )
+
     if probe.slice is not None:
         sig = sig[probe.slice]
 
