@@ -72,7 +72,7 @@ pygments_style = "sphinx"
 
 project = "Nengo"
 authors = "Applied Brain Research"
-copyright = "2013-2019 Applied Brain Research"
+copyright = "2013-2020 Applied Brain Research"
 version = ".".join(nengo.__version__.split(".")[:2])  # Short X.Y version
 release = nengo.__version__  # Full version, with tags
 
