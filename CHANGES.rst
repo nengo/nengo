@@ -1,5 +1,5 @@
 ***************
-Release History
+Release history
 ***************
 
 .. Changelog entries should follow this format:

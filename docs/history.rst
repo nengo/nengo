@@ -53,6 +53,10 @@ And, even though NESim is open source software,
 Matlab itself is not, meaning that NESim
 was not accessible to everyone.
 
+.. [Eliasmith2003] Eliasmith, Chris, and Charles H. Anderson. Neural engineering:
+   Computation, representation, and dynamics in neurobiological systems.
+   MIT Press, 2003.
+
 Generation 2
 ============
 
@@ -183,8 +187,3 @@ those models much more quickly than before.
 Further, by making this API available,
 we hope to be able to interact even further with
 the rest of the neuroscience packages written in Python.
-
-Citations
-=========
-
-.. [Eliasmith2003] Eliasmith, Chris, and Charles H. Anderson. Neural engineering: Computation, representation, and dynamics in neurobiological systems. MIT Press, 2004.

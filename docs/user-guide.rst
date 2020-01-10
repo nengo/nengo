@@ -11,6 +11,3 @@ User guide
    networks
    spa
    advanced
-   changelog
-   history
-   converting

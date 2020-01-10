@@ -49,6 +49,6 @@ or neuromorphic hardware.
    user-guide
    examples
    contributing
-   license
+   project
 
 * :ref:`genindex`
