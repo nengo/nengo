@@ -45,8 +45,8 @@ class SimNeurons(Operator):
 
     Notes
     -----
-    1. sets ``[output] + states``
-    2. incs ``[]``
+    1. sets ``[output]``
+    2. incs ``states``
     3. reads ``[J]``
     4. updates ``[]``
     """
@@ -55,8 +55,8 @@ class SimNeurons(Operator):
         super().__init__(tag=tag)
         self.neurons = neurons
 
-        self.sets = [output] + ([] if states is None else states)
-        self.incs = []
+        self.sets = [output]
+        self.incs = [] if states is None else states
         self.reads = [J]
         self.updates = []
 
@@ -70,7 +70,7 @@ class SimNeurons(Operator):
 
     @property
     def states(self):
-        return self.sets[1:]
+        return self.incs
 
     def _descstr(self):
         return "%s, %s, %s" % (self.neurons, self.J, self.output)

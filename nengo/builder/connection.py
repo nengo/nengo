@@ -166,7 +166,7 @@ def slice_signal(model, signal, sl):
     else:
         size = np.arange(signal.size, dtype=rc.float_dtype)[sl].size
         sliced_signal = Signal(shape=size, name="%s.sliced" % signal.name)
-        model.add_op(Copy(signal, sliced_signal, src_slice=sl))
+        model.add_op(Copy(signal, sliced_signal, src_slice=sl, tag="%s.pre_slice"))
         return sliced_signal
 
 
@@ -318,7 +318,13 @@ def build_connection(model, conn):
             sliced_out = Signal(shape=gains.shape, name="%s.sliced_out" % conn)
             model.add_op(Reset(sliced_out))
             model.add_op(
-                Copy(sliced_out, model.sig[conn]["out"], dst_slice=post_slice, inc=True)
+                Copy(
+                    sliced_out,
+                    model.sig[conn]["out"],
+                    dst_slice=post_slice,
+                    inc=True,
+                    tag="%s.slice" % conn,
+                )
             )
 
         model.add_op(

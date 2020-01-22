@@ -213,26 +213,26 @@ class TimeUpdate(Operator):
 
     Notes
     -----
-    1. sets ``[step, time]``
-    2. incs ``[]``
+    1. sets ``[time]``
+    2. incs ``[step]``
     3. reads ``[]``
     4. updates ``[]``
     """
 
     def __init__(self, step, time, tag=None):
         super().__init__(tag=tag)
-        self.sets = [step, time]
-        self.incs = []
+        self.sets = [time]
+        self.incs = [step]
         self.reads = []
         self.updates = []
 
     @property
     def step(self):
-        return self.sets[0]
+        return self.incs[0]
 
     @property
     def time(self):
-        return self.sets[1]
+        return self.sets[0]
 
     def make_step(self, signals, dt, rng):
         step = signals[self.step]
