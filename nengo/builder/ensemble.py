@@ -221,7 +221,13 @@ def build_ensemble(model, ens):
         model.sig[ens.neurons]["bias"] = Signal(
             bias, name="%s.bias" % ens, readonly=True
         )
-        model.add_op(Copy(model.sig[ens.neurons]["bias"], model.sig[ens.neurons]["in"]))
+        model.add_op(
+            Copy(
+                model.sig[ens.neurons]["bias"],
+                model.sig[ens.neurons]["in"],
+                tag="%s.bias" % ens.neurons,
+            )
+        )
         # This adds the neuron's operator and sets other signals
         model.build(ens.neuron_type, ens.neurons)
 
