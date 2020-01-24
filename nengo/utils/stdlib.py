@@ -280,7 +280,7 @@ class Timer:
 
     """
 
-    TIMER = time.clock if sys.platform == "win32" else time.time
+    TIMER = time.perf_counter if sys.platform == "win32" else time.time
 
     def __init__(self):
         self.start = None
