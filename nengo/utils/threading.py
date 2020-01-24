@@ -2,7 +2,7 @@ import collections
 import threading
 
 
-class ThreadLocalStack(threading.local, collections.Sequence):
+class ThreadLocalStack(threading.local, collections.abc.Sequence):
     def __init__(self, maxsize=None):
         super().__init__()
         self.maxsize = maxsize

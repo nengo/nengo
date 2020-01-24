@@ -6,7 +6,7 @@ Other Nengo backends provide more specialized Simulators for custom platforms.
 
 import logging
 import warnings
-from collections import Mapping
+from collections.abc import Mapping
 
 import numpy as np
 
