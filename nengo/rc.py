@@ -91,7 +91,7 @@ RC_FILES = [
 ]
 
 
-class _RC(configparser.SafeConfigParser):
+class _RC(configparser.ConfigParser):
     """Allows reading from and writing to Nengo RC settings.
 
     This object is a :class:`configparser.ConfigParser`, which means that
@@ -122,7 +122,7 @@ class _RC(configparser.SafeConfigParser):
 
     def __init__(self):
         # configparser uses old-style classes without 'super' support
-        configparser.SafeConfigParser.__init__(self)
+        configparser.ConfigParser.__init__(self)
         self.reload_rc()
 
     @property
@@ -154,14 +154,14 @@ class _RC(configparser.SafeConfigParser):
                 filename = "<???>"
         logger.debug("Reading configuration from {}".format(filename))
         try:
-            return configparser.SafeConfigParser.read_file(self, fp, filename)
+            return configparser.ConfigParser.read_file(self, fp, filename)
         except AttributeError:
             # pylint: disable=deprecated-method
-            return configparser.SafeConfigParser.readfp(self, fp, filename)
+            return configparser.ConfigParser.readfp(self, fp, filename)
 
     def read(self, filenames):
         logger.debug("Reading configuration files {}".format(filenames))
-        return configparser.SafeConfigParser.read(self, filenames)
+        return configparser.ConfigParser.read(self, filenames)
 
     def reload_rc(self, filenames=None):
         """Resets the currently loaded RC settings and loads new RC files.
