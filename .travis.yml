@@ -103,7 +103,7 @@ before_install:
   - if [[ "$TRAVIS_PYTHON_VERSION" < "3.6" ]]; then
         echo "Skipping bones-check because Python $TRAVIS_PYTHON_VERSION < 3.6";
     else
-        bones-check;
+        bones-check --verbose;
     fi
   # display environment info
   - pip freeze
