@@ -1,3 +1,5 @@
+import pickle
+
 import numpy as np
 import pytest
 
@@ -465,3 +467,17 @@ def test_neurons_equality():
         ens1.neuron_type = nengo.RectifiedLinear()
         assert ens1.neurons == old_neurons
         assert ens1.neuron_type != old_neuron_type
+
+
+def test_pickle(Simulator, tmpdir):
+    with nengo.Network() as net:
+        nengo.Ensemble(10, 1, gain=np.ones(10), bias=np.zeros(10))
+
+    with open(str(tmpdir.join("tmp.pkl")), "wb") as f:
+        pickle.dump(net, f)
+
+    with open(str(tmpdir.join("tmp.pkl")), "rb") as f:
+        net = pickle.load(f)
+
+    with Simulator(net) as sim:
+        sim.step()

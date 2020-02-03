@@ -105,8 +105,8 @@ def get_gain_bias(ens, rng=np.random, dtype=None):
         max_rates, intercepts = ens.neuron_type.max_rates_intercepts(gain, bias)
 
         if (
-            ens.max_rates is not Ensemble.max_rates.default
-            or ens.intercepts is not Ensemble.intercepts.default
+            ens.max_rates != Ensemble.max_rates.default
+            or ens.intercepts != Ensemble.intercepts.default
         ):
             warnings.warn(
                 NengoWarning(

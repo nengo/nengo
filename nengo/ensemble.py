@@ -101,6 +101,8 @@ class Ensemble(NengoObject):
         The seed used for random number generation.
     """
 
+    _param_init_order = ["n_neurons", "dimensions"]
+
     probeable = ("decoded_output", "input", "scaled_encoders")
 
     n_neurons = IntParam("n_neurons", low=1)
