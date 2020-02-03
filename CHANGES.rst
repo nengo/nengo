@@ -32,6 +32,10 @@ Release history
 - Fixed a bug when comparing equality with ``Ensemble.neurons`` or
   ``Connection.learning_rule`` objects.
   (`#1588 <https://github.com/nengo/nengo/pull/1588>`__)
+- Fixed a bug preventing unpickling an ``Ensemble``.
+  (`#1598 <https://github.com/nengo/nengo/pull/1598>`__)
+- Fixed a bug in which unpickling a ``Simulator`` would rerun the optimizer.
+  (`#1598 <https://github.com/nengo/nengo/pull/1598>`__)
 
 3.0.0 (November 18, 2019)
 =========================

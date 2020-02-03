@@ -137,6 +137,8 @@ class Ensemble(NengoObject):
     noise = ProcessParam("noise", default=None, optional=True)
     normalize_encoders = BoolParam("normalize_encoders", default=True, optional=True)
 
+    _param_init_order = ["n_neurons", "dimensions"]
+
     def __init__(
         self,
         n_neurons,

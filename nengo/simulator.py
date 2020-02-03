@@ -195,12 +195,14 @@ class Simulator:
             dt=state["dt"],
             seed=state["seed"],
             progress_bar=state["progress_bar"],
-            optimize=state["optimize"],
+            optimize=False,  # The pickled Sim will have already been optimized
         )
         for key, value in state["signals"].items():
             self.signals[key] = value
         for key, value in state["probe_outputs"].items():
             self._sim_data[key].extend(value)
+        # Set whether it had originally been optimized
+        self.optimize = state["optimize"]
         if state["closed"]:
             self.close()
 

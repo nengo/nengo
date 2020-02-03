@@ -1,4 +1,5 @@
 import logging
+import pickle
 import pkg_resources
 
 import numpy as np
@@ -367,3 +368,39 @@ def test_sample_every_trange(Simulator, sample_every, allclose):
     with pytest.warns(DeprecationWarning):
         assert allclose(sim.trange(dt=sample_every), np.squeeze(sim.data[p]))
     assert allclose(sim.trange(sample_every=sample_every), np.squeeze(sim.data[p]))
+
+
+def test_pickle_optimize(caplog, seed):
+    caplog.set_level(logging.DEBUG)
+    with nengo.Network(seed=seed) as net:
+        stim = nengo.Node(np.zeros(10))
+        ea = nengo.networks.EnsembleArray(20, stim.size_out)
+        nengo.Connection(stim, ea.input)
+        net.probe = nengo.Probe(ea.output)
+
+    with nengo.Simulator(net, optimize=True) as sim:
+        pickled = pickle.dumps(sim)
+        sim.run(0.01)
+        assert not sim.closed
+        assert sim.optimize
+
+    before = sim.data[net.probe]
+    del net, sim
+
+    # Check that original sim was optimized
+    assert any(record.msg == "Optimizing model..." for record in caplog.records)
+    caplog.clear()
+
+    unpickled = pickle.loads(pickled)
+    net = unpickled.model.toplevel
+    assert not unpickled.closed
+    assert unpickled.optimize
+
+    # Check that unpickling doesn't re-do optimization
+    assert not any(record.msg == "Optimizing model..." for record in caplog.records)
+
+    unpickled.run(0.01)
+    after = unpickled.data[net.probe]
+    unpickled.close()
+
+    assert np.all(before == after)
