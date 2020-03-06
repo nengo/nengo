@@ -167,6 +167,17 @@ def test_close_steps(Simulator):
         sim.step()
 
 
+def test_sim_reopen(Simulator):
+    with Simulator(nengo.Network()) as sim:
+        assert not sim.closed
+
+    assert sim.closed
+
+    with pytest.raises(SimulatorClosed, match="simulator is closed"):
+        with sim:
+            pass
+
+
 def test_warn_on_opensim_del(Simulator):
     with nengo.Network() as net:
         nengo.Ensemble(10, 1)

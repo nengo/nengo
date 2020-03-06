@@ -125,6 +125,7 @@ Release history
   overwrite an existing attribute. (`#1611`_)
 - The ``encoders`` and ``eval_points`` of ``Ensemble`` are now sampled from
   ``ScatteredHypersphere`` by default. (`#1611`_)
+- Trying to re-open a closed Simulator will now raise an error. (`#1599`_)
 
 **Deprecated**
 
@@ -158,6 +159,7 @@ Release history
 - Fixed a shape error when applying PES learning with a slice on the pre-synaptic
   object. (`#1640`_)
 
+.. _#1599: https://github.com/nengo/nengo/pull/1599
 .. _#1609: https://github.com/nengo/nengo/pull/1609
 .. _#1611: https://github.com/nengo/nengo/pull/1611
 .. _#1627: https://github.com/nengo/nengo/pull/1627
