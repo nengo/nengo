@@ -55,60 +55,18 @@ and reference documentation, read on.
 Basic operators
 ---------------
 
-.. TODO: nengo.builder.operator.Operator should be nengo.builder.Operator
-
 .. automodule:: nengo.builder.operator
-   :no-members:
 
-.. autosummary::
-   :nosignatures:
-
-   nengo.builder.Operator
-   nengo.builder.operator.TimeUpdate
-   nengo.builder.operator.Reset
-   nengo.builder.operator.Copy
-   nengo.builder.operator.ElementwiseInc
-   nengo.builder.operator.reshape_dot
-   nengo.builder.operator.DotInc
-   nengo.builder.operator.SparseDotInc
-   nengo.builder.operator.BsrDotInc
-   nengo.builder.operator.SimPyFunc
-
-.. autoclass:: nengo.builder.Operator
-
-.. autoclass:: nengo.builder.operator.TimeUpdate
-
-.. autoclass:: nengo.builder.operator.Reset
-
-.. autoclass:: nengo.builder.operator.Copy
-
-.. autoclass:: nengo.builder.operator.ElementwiseInc
-
-.. autofunction:: nengo.builder.operator.reshape_dot
-
-.. autoclass:: nengo.builder.operator.DotInc
-
-.. autoclass:: nengo.builder.operator.SparseDotInc
-
-.. autoclass:: nengo.builder.operator.BsrDotInc
-
-.. autoclass:: nengo.builder.operator.SimPyFunc
+   .. autoautosummary:: nengo.builder.operator
+      :nosignatures:
 
 Signals
 -------
 
-.. autosummary::
-   :nosignatures:
+.. automodule:: nengo.builder.signal
 
-   nengo.builder.Signal
-   nengo.builder.signal.is_sparse
-   nengo.builder.signal.SignalDict
-
-.. autoclass:: nengo.builder.Signal
-
-.. autofunction:: nengo.builder.signal.is_sparse
-
-.. autoclass:: nengo.builder.signal.SignalDict
+   .. autoautosummary:: nengo.builder.signal
+      :nosignatures:
 
 Network builder
 ---------------

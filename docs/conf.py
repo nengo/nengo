@@ -56,6 +56,36 @@ numpydoc_show_class_members = False
 # -- nbsphinx
 nbsphinx_timeout = -1
 
+# -- nengo_sphinx_theme.ext.autoautosummary
+autoautosummary_change_modules = {
+    "nengo": [
+        "nengo.learning_rules.PES",
+        "nengo.learning_rules.BCM",
+        "nengo.learning_rules.Oja",
+        "nengo.learning_rules.Voja",
+        "nengo.neurons.Direct",
+        "nengo.neurons.RectifiedLinear",
+        "nengo.neurons.SpikingRectifiedLinear",
+        "nengo.neurons.Sigmoid",
+        "nengo.neurons.LIF",
+        "nengo.neurons.LIFRate",
+        "nengo.neurons.AdaptiveLIF",
+        "nengo.neurons.AdaptiveLIFRate",
+        "nengo.neurons.Izhikevich",
+        "nengo.synapses.LinearFilter",
+        "nengo.synapses.Lowpass",
+        "nengo.synapses.Alpha",
+        "nengo.transforms.Dense",
+        "nengo.transforms.Sparse",
+        "nengo.transforms.Convolution",
+        "nengo.config.Config",
+    ],
+    "nengo.builder": [
+        "nengo.builder.operator.Operator",
+        "nengo.builder.signal.Signal",
+    ],
+}
+
 # -- sphinx
 nitpicky = True
 exclude_patterns = [

@@ -42,78 +42,20 @@ Distributions
 Learning rule types
 ===================
 
-.. Note: we don't use automodule/autoautosummary here because we want the
-   canonical reference to these objects to be ``nengo.Class`` even though
-   they actually live in ``nengo.learning_rules.Class``.
+.. automodule:: nengo.learning_rules
 
-.. autosummary::
-   :nosignatures:
-
-   nengo.learning_rules.LearningRuleType
-   nengo.PES
-   nengo.BCM
-   nengo.Oja
-   nengo.Voja
-
-.. autoclass:: nengo.learning_rules.LearningRuleType
-
-.. autoclass:: nengo.PES
-
-.. autoclass:: nengo.BCM
-
-.. autoclass:: nengo.Oja
-
-.. autoclass:: nengo.Voja
-
-.. autoclass:: nengo.learning_rules.LearningRuleTypeParam
-
-.. autoclass:: nengo.learning_rules.LearningRuleTypeSizeInParam
+   .. autoautosummary:: nengo.learning_rules
+      :nosignatures:
+      :exclude-members: LearningRuleTypeParam, LearningRuleTypeSizeInParam
 
 Neuron types
 ============
 
-.. Note: we don't use automodule/autoautosummary here because we want the
-   canonical reference to these objects to be ``nengo.Class`` even though
-   they actually live in ``nengo.neurons.Class``.
+.. automodule:: nengo.neurons
 
-.. autosummary::
-   :nosignatures:
-
-   nengo.neurons.NeuronType
-   nengo.neurons.settled_firingrate
-   nengo.Direct
-   nengo.RectifiedLinear
-   nengo.SpikingRectifiedLinear
-   nengo.Sigmoid
-   nengo.LIF
-   nengo.LIFRate
-   nengo.AdaptiveLIF
-   nengo.AdaptiveLIFRate
-   nengo.Izhikevich
-
-.. autoclass:: nengo.neurons.NeuronType
-
-.. autofunction:: nengo.neurons.settled_firingrate
-
-.. autoclass:: nengo.Direct
-
-.. autoclass:: nengo.RectifiedLinear
-
-.. autoclass:: nengo.SpikingRectifiedLinear
-
-.. autoclass:: nengo.Sigmoid
-
-.. autoclass:: nengo.LIF
-
-.. autoclass:: nengo.LIFRate
-
-.. autoclass:: nengo.AdaptiveLIF
-
-.. autoclass:: nengo.AdaptiveLIFRate
-
-.. autoclass:: nengo.Izhikevich
-
-.. autoclass:: nengo.neurons.NeuronTypeParam
+   .. autoautosummary:: nengo.neurons
+      :nosignatures:
+      :exclude-members: NeuronTypeParam
 
 Processes
 =========
@@ -148,63 +90,17 @@ Solver methods
 Synapse models
 ==============
 
-.. Note: we don't use automodule/autoautosummary here because we want the
-   canonical reference to these objects to be ``nengo.Class`` even though
-   they actually live in ``nengo.synapses.Class``.
+.. automodule:: nengo.synapses
 
-.. autosummary::
-   :nosignatures:
-
-   nengo.synapses.Synapse
-   nengo.LinearFilter
-   nengo.Lowpass
-   nengo.Alpha
-   nengo.synapses.Triangle
-
-.. autoclass:: nengo.synapses.Synapse
-
-.. autoclass:: nengo.LinearFilter
-
-.. autoclass:: nengo.Lowpass
-
-.. autoclass:: nengo.Alpha
-
-.. autoclass:: nengo.synapses.Triangle
-
-.. autoclass:: nengo.synapses.SynapseParam
+   .. autoautosummary:: nengo.synapses
+      :nosignatures:
+      :exclude-members: SynapseParam
 
 Transforms
 ==========
 
-.. Note: we don't use automodule/autoautosummary here because we want the
-   canonical reference to these objects to be ``nengo.Class`` even though
-   they actually live in ``nengo.transforms.Class``.
+.. automodule:: nengo.transforms
 
-.. autosummary::
-   :nosignatures:
-
-   nengo.transforms.Transform
-   nengo.Dense
-   nengo.Sparse
-   nengo.transforms.SparseMatrix
-   nengo.Convolution
-   nengo.transforms.ChannelShape
-   nengo.transforms.NoTransform
-
-.. autoclass:: nengo.transforms.Transform
-
-.. autoclass:: nengo.Dense
-
-.. autoclass:: nengo.Sparse
-
-.. autoclass:: nengo.transforms.SparseMatrix
-
-.. autoclass:: nengo.transforms.SparseInitParam
-
-.. autoclass:: nengo.Convolution
-
-.. autoclass:: nengo.transforms.ChannelShape
-
-.. autoclass:: nengo.transforms.ChannelShapeParam
-
-.. autoclass:: nengo.transforms.NoTransform
+   .. autoautosummary:: nengo.transforms
+      :nosignatures:
+      :exclude-members: SparseInitParam, ChannelShapeParam
