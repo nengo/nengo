@@ -75,14 +75,15 @@ jobs:
         distributions: "sdist bdist_wheel "
         on:
           all_branches: true
+          tags: false
           condition: $TRAVIS_BRANCH =~ ^release-candidate-*
-          condition: $TRAVIS_TAG = ""
       - provider: pypi
         user: tbekolay
         password: $PYPI_TOKEN
         distributions: "sdist bdist_wheel "
         on:
           all_branches: true
+          tags: true
           condition: $TRAVIS_TAG =~ ^v[0-9]*
 
 before_install:
