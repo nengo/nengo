@@ -87,10 +87,7 @@ Lock
 Magic
 =====
 
-.. automodule:: nengo.utils.magic
-
-   .. autoautosummary:: nengo.utils.magic
-      :nosignatures:
+.. autofunction:: nengo.utils.magic.decorator
 
 Matplotlib
 ==========
