@@ -99,7 +99,7 @@ before_install:
   # upgrade pip
   - pip install pip --upgrade
   # install/run nengo-bones
-  - pip install nengo-bones
+  - pip install git+https://github.com/nengo/nengo-bones#egg=nengo-bones
   - bones-generate --output-dir .ci ci-scripts
   - if [[ "$TRAVIS_PYTHON_VERSION" < "3.6" ]]; then
         echo "Skipping bones-check because Python $TRAVIS_PYTHON_VERSION < 3.6";
