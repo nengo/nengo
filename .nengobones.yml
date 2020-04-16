@@ -84,11 +84,6 @@ setup_cfg:
       - "ignore:Object <BasalGanglia \"bg\"> has already been built"
       - "ignore:Object <Thalamus \"thalamus\"> has already been built"
       - "ignore:IPython.core.inputsplitter is deprecated"
-    markers:
-      example:
-        Mark a test as an example.
-      slow:
-        Mark a test as slow to skip it per default.
     plt_filename_drop:
       - ^nengo\.
       - tests\.

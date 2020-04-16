@@ -78,6 +78,11 @@ def pytest_configure(config):
     if config.getoption("memory") and resource is None:  # pragma: no cover
         raise ValueError("'--memory' option not supported on this platform")
 
+    config.addinivalue_line("markers", "example: Mark a test as an example.")
+    config.addinivalue_line(
+        "markers", "slow: Mark a test as slow to skip it per default."
+    )
+
 
 def pytest_addoption(parser):
     parser.addoption(
