@@ -6,6 +6,13 @@ notifications:
   email:
     on_success: change
     on_failure: change
+  slack:
+    if: branch = master
+    on_pull_requests: false
+    on_success: change
+    on_failure: always
+    rooms:
+      - secure: "bWVmSjW3kLZEEmJxpEmcrxlOFMVK24pYbgTZ2pjra0KMmwA2OJ11BsjdDW0fDEVd4JJGkxV3vOghsufRTrKE10reLHSM0Jtum8PYvlYk7riE8yUish0VCwxa8gYZpsH41Q7IlJQB04y5XxwYMqSnDepOAmB8C5babwYJkzfF5Dw="
 cache: pip
 
 dist: xenial
