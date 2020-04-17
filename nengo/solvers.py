@@ -386,13 +386,16 @@ class LstsqDrop(Solver):
         X[np.abs(X) < threshold] = 0
 
         # retrain nonzero weights
+        info1s = []
         for i in range(X.shape[1]):
+            info1 = None
             nonzero = X[:, i] != 0
             if nonzero.sum() > 0:
                 X[nonzero, i], info1 = self.solver2(A[:, nonzero], Y[:, i], rng=rng)
+            info1s.append(info1)
 
         t = time.time() - tstart
-        info = {"rmses": rmses(A, X, Y), "info0": info0, "info1": info1, "time": t}
+        info = {"rmses": rmses(A, X, Y), "info0": info0, "info1s": info1s, "time": t}
         return X if matrix_in or X.shape[1] > 1 else X.ravel(), info
 
 

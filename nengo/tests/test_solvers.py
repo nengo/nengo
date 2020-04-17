@@ -677,3 +677,16 @@ def test_non_compositional_solver_transform_error(Simulator):
     with pytest.raises(BuildError, match="Non-compositional solvers"):
         with Simulator(net):
             pass
+
+
+def test_lstsqdrop_zero_weights():
+    with nengo.Network() as model:
+        conn = nengo.Connection(
+            nengo.Ensemble(100, 1),
+            nengo.Ensemble(50, 1),
+            function=lambda x: 0,
+            solver=nengo.solvers.LstsqDrop(),
+        )
+
+    with nengo.Simulator(model) as sim:
+        assert isinstance(sim.data[conn].solver_info["info1s"], list)

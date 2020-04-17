@@ -49,6 +49,9 @@ Release history
   (`#1598 <https://github.com/nengo/nengo/pull/1598>`__)
 - Fixed a bug in which unpickling a ``Simulator`` would rerun the optimizer.
   (`#1598 <https://github.com/nengo/nengo/pull/1598>`__)
+- Fixed a bug where the ``LstsqDrop`` solver errored when solving for zero weights.
+  (`#1541 <https://github.com/nengo/nengo/issues/1541>`__,
+  `#1607 <https://github.com/nengo/nengo/pull/1607>`__)
 
 3.0.0 (November 18, 2019)
 =========================
