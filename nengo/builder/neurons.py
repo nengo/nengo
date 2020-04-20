@@ -84,7 +84,7 @@ class SimNeurons(Operator):
         output = signals[self.output]
         states = [signals[state] for state in self.states]
 
-        argspec = inspect.getargspec(self.neurons.step_math)
+        argspec = inspect.getfullargspec(self.neurons.step_math)
         if "rng" in argspec.args:
 
             def step_simneurons_withrng():
@@ -357,11 +357,12 @@ def build_regular_spiking(model, reg, neurons):
     op = model.operators[-1]
     op.neurons = reg
 
-    model.sig[neurons]["state"] = Signal(
-        np.zeros(neurons.size_in), name="%s.state" % neurons
+    # set voltage to 0.5 to be between positive and negative spike thresholds of 1 and 0
+    model.sig[neurons]["voltage"] = Signal(
+        0.5 * np.ones(neurons.size_in), name="%s.voltage" % neurons
     )
-    op.states.insert(0, model.sig[neurons]["state"])
-    op.sets.insert(0, model.sig[neurons]["state"])
+    # insert right after `output` so that this is the first state
+    op.sets.insert(1, model.sig[neurons]["voltage"])
 
 
 @Builder.register(PoissonSpiking)
