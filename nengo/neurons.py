@@ -369,6 +369,12 @@ class Sigmoid(NeuronType):
     Since the tuning curves are strictly positive, the ``intercepts``
     correspond to the inflection point of each sigmoid. That is,
     ``f(intercept) = 0.5`` where ``f`` is the pure sigmoid function.
+
+    Parameters
+    ----------
+    tau_ref : float
+        The neuron refractory period, in seconds. The maximum firing rate of the neurons
+        is ``1 / tau_ref``. Must be positive (i.e. ``tau_ref > 0``).
     """
 
     probeable = ("rates",)
@@ -400,6 +406,54 @@ class Sigmoid(NeuronType):
     def step_math(self, dt, J, output):
         """Implement the sigmoid nonlinearity."""
         output[...] = (1.0 / self.tau_ref) / (1.0 + np.exp(-J))
+
+
+class Tanh(NeuronType):
+    """A non-spiking neuron model whose response curve is a hyperbolic tangent (tanh).
+
+    Parameters
+    ----------
+    tau_ref : float
+        The neuron refractory period, in seconds. The maximum firing rate of the neurons
+        is ``1 / tau_ref``. Must be positive (i.e. ``tau_ref > 0``).
+    """
+
+    probeable = ("rates",)
+
+    tau_ref = NumberParam("tau_ref", low=0, low_open=True)
+
+    def __init__(self, tau_ref=0.0025):
+        super().__init__()
+        self.tau_ref = tau_ref
+
+    def gain_bias(self, max_rates, intercepts):
+        """Analytically determine gain, bias."""
+        max_rates = np.array(max_rates, dtype=float, copy=False, ndmin=1)
+        intercepts = np.array(intercepts, dtype=float, copy=False, ndmin=1)
+
+        inv_tau_ref = 1.0 / self.tau_ref
+        if not np.all(max_rates < inv_tau_ref):
+            raise ValidationError(
+                "Max rates must be below the inverse "
+                "refractory period (%0.3f)" % inv_tau_ref,
+                attr="max_rates",
+                obj=self,
+            )
+
+        inverse = np.arctanh(max_rates * self.tau_ref)
+        gain = inverse / (1.0 - intercepts)
+        bias = -gain * intercepts
+        return gain, bias
+
+    def max_rates_intercepts(self, gain, bias):
+        """Compute the inverse of gain_bias."""
+        intercepts = -bias / gain
+        max_rates = (1.0 / self.tau_ref) * np.tanh(gain + bias)
+        return max_rates, intercepts
+
+    def step_math(self, dt, J, output):
+        """Implement the tanh nonlinearity."""
+        output[...] = (1.0 / self.tau_ref) * np.tanh(J)
 
 
 class LIFRate(NeuronType):
