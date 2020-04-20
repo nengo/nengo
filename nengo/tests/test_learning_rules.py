@@ -479,7 +479,7 @@ def test_learningrule_attr(seed):
             check_rule(c3.learning_rule[key], c3, r3[key])
 
 
-def test_voja_encoders(Simulator, nl_nodirect, rng, seed, allclose):
+def test_voja_encoders(Simulator, nl_positive, rng, seed, allclose):
     """Tests that voja changes active encoders to the input."""
     n = 200
     learned_vector = np.asarray([0.3, -0.4, 0.6])
@@ -496,7 +496,7 @@ def test_voja_encoders(Simulator, nl_nodirect, rng, seed, allclose):
 
     m = nengo.Network(seed=seed)
     with m:
-        m.config[nengo.Ensemble].neuron_type = nl_nodirect()
+        m.config[nengo.Ensemble].neuron_type = nl_positive()
         u = nengo.Node(output=learned_vector)
         x = nengo.Ensemble(
             n,
