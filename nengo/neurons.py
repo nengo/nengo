@@ -307,11 +307,13 @@ class RectifiedLinear(NeuronType):
     probeable = ("rates",)
 
     amplitude = NumberParam("amplitude", low=0, low_open=True)
+    negative_slope = NumberParam("negative_slope")
 
-    def __init__(self, amplitude=1):
+    def __init__(self, amplitude=1, negative_slope=0):
         super().__init__()
 
         self.amplitude = amplitude
+        self.negative_slope = negative_slope
 
     def gain_bias(self, max_rates, intercepts):
         """Determine gain and bias by shifting and scaling the lines."""
@@ -329,8 +331,13 @@ class RectifiedLinear(NeuronType):
 
     def step_math(self, dt, J, output):
         """Implement the rectification nonlinearity."""
-        output[...] = self.amplitude * np.maximum(0.0, J)
+        if negative_slope != 0:
+            output[...] = J
+            output[output < 0] *= self.negative_slope
+        else:
+            output[...] = np.maximum(0.0, J)
 
+        output *= self.amplitude
 
 class SpikingRectifiedLinear(RectifiedLinear):
     """A rectified integrate and fire neuron model.
