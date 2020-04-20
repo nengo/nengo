@@ -35,6 +35,7 @@ Release history
   a neuron type is spiking or non-spiking. (`#1609`_)
 - Added the ``negative`` attribute to ``NeuronType``, which indicates whether
   the neuron type can have negative outputs. (`#1609`_)
+- Added the ``Tanh`` neuron type to simulate hyperbolic tangent neurons. (`#1609`_)
 
 **Changed**
 

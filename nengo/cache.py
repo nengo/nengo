@@ -42,6 +42,7 @@ from nengo.neurons import (
     RectifiedLinear,
     Sigmoid,
     SpikingRectifiedLinear,
+    Tanh,
 )
 from nengo.rc import rc
 from nengo.solvers import (
@@ -199,6 +200,7 @@ class Fingerprint:
         RectifiedLinear,
         Sigmoid,
         SpikingRectifiedLinear,
+        Tanh,
     )
     DISTRIBUTIONS = (
         Choice,

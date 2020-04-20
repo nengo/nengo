@@ -67,6 +67,7 @@ autoautosummary_change_modules = {
         "nengo.neurons.RectifiedLinear",
         "nengo.neurons.SpikingRectifiedLinear",
         "nengo.neurons.Sigmoid",
+        "nengo.neurons.Tanh",
         "nengo.neurons.LIF",
         "nengo.neurons.LIFRate",
         "nengo.neurons.AdaptiveLIF",

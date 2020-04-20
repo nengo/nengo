@@ -24,6 +24,7 @@ from nengo import (
     Sigmoid,
     Sparse,
     SpikingRectifiedLinear,
+    Tanh,
     Voja,
 )
 from nengo.builder.learning_rules import SimBCM, SimOja, SimPES
@@ -275,6 +276,11 @@ def test_neuron_types():
         == "Izhikevich(tau_recovery=0.01, coupling=0.5, reset_voltage=-60, "
         "reset_recovery=6)"
     )
+
+    check_init_args(Tanh, ["tau_ref", "initial_state"])
+    check_repr(Tanh())
+    check_repr(Tanh(tau_ref=0.1))
+    check_repr(Tanh(initial_state={"rates": Choice([1])}))
 
 
 def test_learning_rule_types():

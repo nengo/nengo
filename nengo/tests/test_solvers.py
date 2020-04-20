@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 
 import nengo
-from nengo.dists import UniformHypersphere
+from nengo.dists import Choice, Uniform, UniformHypersphere
 from nengo.exceptions import BuildError, ValidationError
 from nengo.utils.numpy import rms, norm
 from nengo.utils.stdlib import Timer
@@ -139,6 +139,46 @@ def test_decoder_solver(Solver, plt, rng, allclose):
     )
     assert allclose(test, est, atol=atol, rtol=1e-3)
     assert rel_rmse < 0.02
+
+
+@pytest.mark.parametrize(
+    "Solver", [Lstsq, LstsqNoise, LstsqL2, LstsqL2nz, LstsqDrop, LstsqMultNoise]
+)
+def test_all_negative_activities(allclose, plt, seed, Simulator, Solver):
+    class CheckActivitiesSolver(Solver):
+        def __call__(self, A, Y, rng=np.random):
+            assert np.all(A < 0)
+            return super().__call__(A, Y, rng=rng)
+
+    val = -0.5
+
+    with nengo.Network(seed=seed) as net:
+        input = nengo.Node(output=val, label="input")
+        ens = nengo.Ensemble(
+            30,
+            1,
+            neuron_type=nengo.Tanh(),
+            encoders=Choice([[1]]),
+            intercepts=Uniform(0, 0.95),
+            eval_points=Uniform(-1, -0.1),
+        )
+        nengo.Connection(input, ens)
+        in_p = nengo.Probe(input, "output")
+        ens_p = nengo.Probe(
+            ens, "decoded_output", synapse=0.05, solver=CheckActivitiesSolver()
+        )
+
+    with Simulator(net) as sim:
+        sim.run(0.3)
+
+    t = sim.trange()
+    plt.plot(t, sim.data[in_p], label="Input")
+    plt.plot(t, sim.data[ens_p], label="Neuron approximation, pstc=0.05")
+    plt.xlim(right=t[-1])
+    plt.legend(loc=0)
+
+    assert allclose(sim.data[in_p], val, atol=0.1, rtol=0.01)
+    assert allclose(sim.data[ens_p][-10:], val, atol=0.1, rtol=0.01)
 
 
 @pytest.mark.parametrize("Solver", [LstsqNoise, LstsqL2, LstsqL2nz])

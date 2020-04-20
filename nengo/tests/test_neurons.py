@@ -17,6 +17,7 @@ from nengo.neurons import (
     RectifiedLinear,
     Sigmoid,
     SpikingRectifiedLinear,
+    Tanh,
 )
 from nengo.processes import WhiteSignal
 from nengo.solvers import LstsqL2nz
@@ -319,6 +320,12 @@ def test_sigmoid_response_curves(Simulator, max_rate, intercept, allclose):
     assert allclose(np.max(y), max_rate)
     assert np.all(y > 0.0)
     assert np.all(np.diff(y) > 0.0)  # monotonically increasing
+
+
+def test_tanh_invalid():
+    tanh = Tanh(tau_ref=0.5)
+    with pytest.raises(ValidationError, match="Max rates must be below"):
+        tanh.gain_bias(max_rates=np.array([100]), intercepts=np.array([0]))
 
 
 @pytest.mark.filterwarnings("ignore:divide by zero")
