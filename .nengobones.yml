@@ -205,6 +205,9 @@ docs_conf_py:
       - nengo.neurons.AdaptiveLIF
       - nengo.neurons.AdaptiveLIFRate
       - nengo.neurons.Izhikevich
+      - nengo.neurons.RegularSpiking
+      - nengo.neurons.PoissonSpiking
+      - nengo.neurons.StochasticSpiking
       - nengo.synapses.LinearFilter
       - nengo.synapses.Lowpass
       - nengo.synapses.Alpha

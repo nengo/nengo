@@ -27,9 +27,12 @@ from nengo.neurons import (
     Izhikevich,
     LIF,
     LIFRate,
+    PoissonSpiking,
     RectifiedLinear,
+    RegularSpiking,
     Sigmoid,
     SpikingRectifiedLinear,
+    StochasticSpiking,
     Tanh,
 )
 from nengo.rc import rc
@@ -177,9 +180,12 @@ class Fingerprint:
         Izhikevich,
         LIF,
         LIFRate,
+        PoissonSpiking,
         RectifiedLinear,
+        RegularSpiking,
         Sigmoid,
         SpikingRectifiedLinear,
+        StochasticSpiking,
         Tanh,
     )
 

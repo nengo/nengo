@@ -77,7 +77,7 @@ class SimNeurons(Operator):
         output = signals[self.output]
         states = {name: signals[sig] for name, sig in self.states.items()}
 
-        argspec = inspect.getargspec(self.neurons.step_math)
+        argspec = inspect.getfullargspec(self.neurons.step_math)
         if "rng" in argspec.args:
 
             def step_simneurons_withrng():
