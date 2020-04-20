@@ -73,6 +73,8 @@ autoautosummary_change_modules = {
         "nengo.neurons.AdaptiveLIF",
         "nengo.neurons.AdaptiveLIFRate",
         "nengo.neurons.Izhikevich",
+        "nengo.neurons.RegularSpiking",
+        "nengo.neurons.PoissonSpiking",
         "nengo.synapses.LinearFilter",
         "nengo.synapses.Lowpass",
         "nengo.synapses.Alpha",
