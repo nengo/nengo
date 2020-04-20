@@ -18,6 +18,7 @@ from nengo.neurons import (
     RectifiedLinear,
     Sigmoid,
     SpikingRectifiedLinear,
+    Tanh,
 )
 from nengo.processes import WhiteSignal
 from nengo.solvers import LstsqL2nz
@@ -630,6 +631,10 @@ def test_argreprs():
     check_init_args(Sigmoid, ["tau_ref"])
     check_repr(Sigmoid())
     check_repr(Sigmoid(tau_ref=0.1))
+
+    check_init_args(Tanh, ["tau_ref"])
+    check_repr(Tanh())
+    check_repr(Tanh(tau_ref=0.1))
 
     check_init_args(LIFRate, ["tau_rc", "tau_ref", "amplitude"])
     check_repr(LIFRate())
