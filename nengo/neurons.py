@@ -44,10 +44,13 @@ class NeuronType(FrozenObject):
 
     Attributes
     ----------
+    negative : bool
+        Whether the neurons can emit negative outputs (i.e. negative spikes or rates).
     probeable : tuple
         Signals that can be probed in the neuron population.
     """
 
+    negative = True
     probeable = ()
 
     def current(self, x, gain, bias):
@@ -283,6 +286,7 @@ class RectifiedLinear(NeuronType):
         amplitude of the output of the neuron.
     """
 
+    negative = False
     probeable = ("rates",)
 
     amplitude = NumberParam("amplitude", low=0, low_open=True)
@@ -359,6 +363,7 @@ class Sigmoid(NeuronType):
         is ``1 / tau_ref``. Must be positive (i.e. ``tau_ref > 0``).
     """
 
+    negative = False
     probeable = ("rates",)
 
     tau_ref = NumberParam("tau_ref", low=0, low_open=True)
@@ -408,6 +413,7 @@ class Tanh(NeuronType):
         is ``1 / tau_ref``. Must be positive (i.e. ``tau_ref > 0``).
     """
 
+    negative = True
     probeable = ("rates",)
 
     tau_ref = NumberParam("tau_ref", low=0, low_open=True)
@@ -462,6 +468,7 @@ class LIFRate(NeuronType):
         amplitude of the output spikes of the neuron.
     """
 
+    negative = False
     probeable = ("rates",)
 
     tau_rc = NumberParam("tau_rc", low=0, low_open=True)
@@ -740,6 +747,7 @@ class Izhikevich(NeuronType):
        (http://www.izhikevich.org/publications/spikes.pdf)
     """
 
+    negative = False
     probeable = ("spikes", "voltage", "recovery")
 
     tau_recovery = NumberParam("tau_recovery", low=0, low_open=True)
