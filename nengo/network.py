@@ -94,12 +94,12 @@ class Network:
         self.seed = seed
         self._config = self.default_config()
 
-        self.objects = {Ensemble: [], Node: [], Connection: [], Network: [], Probe: []}
-        self.ensembles = self.objects[Ensemble]
-        self.nodes = self.objects[Node]
-        self.connections = self.objects[Connection]
-        self.networks = self.objects[Network]
-        self.probes = self.objects[Probe]
+        self._objects = {Ensemble: [], Node: [], Connection: [], Network: [], Probe: []}
+        self._ensembles = self.objects[Ensemble]
+        self._nodes = self.objects[Node]
+        self._connections = self.objects[Connection]
+        self._networks = self.objects[Network]
+        self._probes = self.objects[Probe]
 
         # By default, we want to add to the current context, unless there is
         # no context; i.e., we're creating a top-level network.
@@ -178,12 +178,60 @@ class Network:
         return self._all_objects(Probe)
 
     @property
+    def objects(self):
+        return self._objects
+
+    @objects.setter
+    def objects(self, _):
+        raise ReadonlyError(attr="objects", obj=self)
+
+    @property
+    def ensembles(self):
+        return self._ensembles
+
+    @ensembles.setter
+    def ensembles(self, _):
+        raise ReadonlyError(attr="ensembles", obj=self)
+
+    @property
+    def nodes(self):
+        return self._nodes
+
+    @nodes.setter
+    def nodes(self, _):
+        raise ReadonlyError(attr="nodes", obj=self)
+
+    @property
+    def networks(self):
+        return self._networks
+
+    @networks.setter
+    def networks(self, _):
+        raise ReadonlyError(attr="networks", obj=self)
+
+    @property
+    def connections(self):
+        return self._connections
+
+    @connections.setter
+    def connections(self, _):
+        raise ReadonlyError(attr="connections", obj=self)
+
+    @property
+    def probes(self):
+        return self._probes
+
+    @probes.setter
+    def probes(self, _):
+        raise ReadonlyError(attr="probes", obj=self)
+
+    @property
     def config(self):
         """(`.Config`) Configuration for this network."""
         return self._config
 
     @config.setter
-    def config(self, dummy):
+    def config(self, _):
         raise ReadonlyError(attr="config", obj=self)
 
     @property

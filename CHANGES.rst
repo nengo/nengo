@@ -35,6 +35,10 @@ Release history
   there are now no weights to apply learning to, so this will result in an
   error. The old behaviour can be obtained by setting ``transform=1``.
   (`#1591 <https://github.com/nengo/nengo/pull/1591>`__)
+- Network list attributes (e.g. ``.ensembles``, ``.connections``, ``.probes``) are now
+  read-only, to prevent users from accidentally overwriting them with their own data.
+  (`#1545 <https://github.com/nengo/nengo/issues/1545>`__,
+  `#1608 <https://github.com/nengo/nengo/pull/1608>`__)
 
 **Fixed**
 

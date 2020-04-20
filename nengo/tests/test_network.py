@@ -3,6 +3,7 @@ from collections import Counter
 import pytest
 
 import nengo
+from nengo.exceptions import ReadonlyError
 from nengo.utils.testing import ThreadedAssertion
 
 
@@ -165,3 +166,23 @@ def test_n_neurons():
             nengo.Ensemble(30, 1)
             assert subnet.n_neurons == 30
         assert net.n_neurons == 40
+
+
+def test_readonly_attributes():
+    def test_attr(net, attr):
+        with pytest.raises(
+            ReadonlyError, match="Network.%s: %s is read-only" % (attr, attr)
+        ):
+            setattr(net, attr, [])
+
+    with nengo.Network() as net:
+        for attr in (
+            "objects",
+            "ensembles",
+            "nodes",
+            "networks",
+            "connections",
+            "probes",
+            "config",
+        ):
+            test_attr(net, attr)
