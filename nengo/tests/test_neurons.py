@@ -321,19 +321,26 @@ def test_sigmoid_response_curves(Simulator, max_rate, intercept, allclose):
     assert np.all(np.diff(y) > 0.0)  # monotonically increasing
 
 
-@pytest.mark.parametrize(
-    "max_rate,intercept", [(300.0, 1.1), (300.0, 1.0), (100.0, 0.9), (100, 1.0)]
-)
 @pytest.mark.filterwarnings("ignore:divide by zero")
-def test_sigmoid_invalid(Simulator, max_rate, intercept):
+def test_sigmoid_invalid(Simulator):
     """Check that invalid sigmoid ensembles raise an error."""
-    with nengo.Network() as m:
-        nengo.Ensemble(
-            1, 1, neuron_type=Sigmoid(), max_rates=[max_rate], intercepts=[intercept]
-        )
-    with pytest.raises(BuildError):
-        with Simulator(m):
-            pass
+
+    sigmoid = Sigmoid(tau_ref=0.5)
+    with pytest.raises(ValidationError, match="Max rates must be below"):
+        sigmoid.gain_bias(max_rates=np.array([100]), intercepts=np.array([0]))
+
+    for max_rate, intercept in [(300.0, 1.1), (300.0, 1.0), (100.0, 0.9), (100, 1.0)]:
+        with nengo.Network() as net:
+            nengo.Ensemble(
+                1,
+                1,
+                neuron_type=Sigmoid(),
+                max_rates=[max_rate],
+                intercepts=[intercept],
+            )
+        with pytest.raises(BuildError, match="lead to neurons with negative"):
+            with Simulator(net):
+                pass
 
 
 def test_dt_dependence(Simulator, nl_nodirect, plt, seed, allclose):
