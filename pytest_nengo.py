@@ -160,6 +160,13 @@ def pytest_generate_tests(metafunc):
     if "nl_nodirect" in metafunc.fixturenames:
         nodirect = [mark_nl(n) for n in neuron_types if n.__name__ != "Direct"]
         metafunc.parametrize("nl_nodirect", nodirect)
+    if "nl_positive" in metafunc.fixturenames:
+        nodirect = [
+            mark_nl(n)
+            for n in neuron_types
+            if n.__name__ != "Direct" and not n.negative
+        ]
+        metafunc.parametrize("nl_positive", nodirect)
 
 
 def pytest_collection_modifyitems(session, config, items):

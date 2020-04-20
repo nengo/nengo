@@ -58,9 +58,12 @@ class NeuronType(FrozenObject):
         Values in the dict indicate their initial values, or how
         to obtain those initial values. These elements can also be
         probed in the neuron population.
+    negative : bool
+        Whether the neurons can emit negative outputs (i.e. negative spikes or rates).
     """
 
     state = {}
+    negative = True
 
     initial_state = DictParam("initial_state", optional=True)
 
@@ -346,6 +349,7 @@ class RectifiedLinear(NeuronType):
     """
 
     state = {"rates": Choice([0])}
+    negative = False
 
     amplitude = NumberParam("amplitude", low=0, low_open=True)
 
@@ -428,6 +432,7 @@ class Sigmoid(NeuronType):
     """
 
     state = {"rates": Choice([0])}
+    negative = False
 
     tau_ref = NumberParam("tau_ref", low=0, low_open=True)
 
@@ -486,6 +491,7 @@ class LIFRate(NeuronType):
     """
 
     state = {"rates": Choice([0])}
+    negative = False
 
     tau_rc = NumberParam("tau_rc", low=0, low_open=True)
     tau_ref = NumberParam("tau_ref", low=0)
@@ -814,6 +820,7 @@ class Izhikevich(NeuronType):
         "voltage": Uniform(low=0, high=1),
         "recovery": Choice([0]),
     }
+    negative = False
 
     tau_recovery = NumberParam("tau_recovery", low=0, low_open=True)
     coupling = NumberParam("coupling", low=0)

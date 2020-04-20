@@ -33,6 +33,8 @@ Release history
   neuron type's state variables. (`#1609`_)
 - Added the ``spiking`` attribute to ``NeuronType``, which exposes whether
   a neuron type is spiking or non-spiking. (`#1609`_)
+- Added the ``negative`` attribute to ``NeuronType``, which indicates whether
+  the neuron type can have negative outputs. (`#1609`_)
 
 **Changed**
 

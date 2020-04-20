@@ -49,7 +49,8 @@ def test_tuning_curves(Simulator, nl_nodirect, plt, seed, dimensions):
     # Check that eval_points cover up to the radius.
     assert np.abs(radius - np.max(np.abs(eval_points))) <= (2 * radius / dimensions)
 
-    assert np.all(activities >= 0)
+    if not nl_nodirect.negative:
+        assert np.all(activities >= 0)
 
     d = np.sqrt(np.sum(np.asarray(eval_points) ** 2, axis=-1))
     assert np.all(activities[d <= radius] <= max_rate)
@@ -90,7 +91,9 @@ def test_response_curves(Simulator, nl_nodirect, plt, seed):
     assert eval_points.ndim == 1 and eval_points.size > 0
     assert np.all(eval_points >= -1.0) and np.all(eval_points <= 1.0)
 
-    assert np.all(activities >= 0.0)
+    if not nl_nodirect.negative:
+        assert np.all(activities >= 0.0)
+
     assert np.all(activities <= max_rate)
     # Activities along preferred direction must increase monotonically.
     assert np.all(np.diff(activities, axis=0) >= 0.0)
