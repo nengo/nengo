@@ -63,9 +63,9 @@ def test_node_to_neurons(Simulator, nl_nodirect, plt, seed, allclose):
     assert allclose(sim.data[a_p][-10:], 0, atol=0.1, rtol=0.01)
 
 
-def test_ensemble_to_neurons(Simulator, nl_nodirect, plt, seed, allclose):
+def test_ensemble_to_neurons(Simulator, nl_positive, plt, seed, allclose):
     with nengo.Network(seed=seed) as net:
-        net.config[nengo.Ensemble].neuron_type = nl_nodirect()
+        net.config[nengo.Ensemble].neuron_type = nl_positive()
         ens = nengo.Ensemble(40, dimensions=1)
         inhibitor = nengo.Ensemble(40, dimensions=1)
         stim = nengo.Node(output=np.sin)
@@ -151,12 +151,12 @@ def test_node_to_ensemble(Simulator, nl_nodirect, plt, seed, allclose):
     )
 
 
-def test_neurons_to_ensemble(Simulator, nl_nodirect, plt, seed):
+def test_neurons_to_ensemble(Simulator, nl_positive, plt, seed):
     N = 20
 
-    m = nengo.Network(seed=seed)
+    m = nengo.Network()
     with m:
-        m.config[nengo.Ensemble].neuron_type = nl_nodirect()
+        m.config[nengo.Ensemble].neuron_type = nl_positive()
         a = nengo.Ensemble(N * 2, dimensions=2)
         b = nengo.Ensemble(N, dimensions=1)
         c = nengo.Ensemble(N, dimensions=N * 2)
@@ -213,12 +213,12 @@ def test_neurons_to_node(Simulator, nl_nodirect, plt, seed, allclose):
     assert allclose(sim.data[a_spikes], sim.data[out_p])
 
 
-def test_neurons_to_neurons(Simulator, nl_nodirect, plt, seed, allclose):
+def test_neurons_to_neurons(Simulator, nl_positive, plt, seed, allclose):
     N1, N2 = 50, 80
 
     m = nengo.Network(seed=seed)
     with m:
-        m.config[nengo.Ensemble].neuron_type = nl_nodirect()
+        m.config[nengo.Ensemble].neuron_type = nl_positive()
         a = nengo.Ensemble(N1, dimensions=1)
         b = nengo.Ensemble(N2, dimensions=1)
         inp = nengo.Node(output=1)
