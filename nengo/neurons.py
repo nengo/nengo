@@ -246,6 +246,9 @@ class NeuronType(FrozenObject):
 
 
 class NeuronTypeParam(Parameter):
+
+    equatable = True
+
     def coerce(self, instance, neurons):
         self.check_type(instance, neurons, NeuronType)
         return super().coerce(instance, neurons)
