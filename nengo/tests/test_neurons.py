@@ -1,4 +1,5 @@
 from inspect import getfullargspec
+import itertools
 import logging
 
 import numpy as np
@@ -15,7 +16,9 @@ from nengo.neurons import (
     LIFRate,
     NeuronType,
     NeuronTypeParam,
+    PoissonSpiking,
     RectifiedLinear,
+    RegularSpiking,
     Sigmoid,
     SpikingRectifiedLinear,
     Tanh,
@@ -702,3 +705,17 @@ def test_argreprs():
     check_repr(
         Izhikevich(tau_recovery=0.1, coupling=0.3, reset_voltage=-1, reset_recovery=5)
     )
+
+    comp_types = {
+        RegularSpiking: [dict(), dict(amplitude=0.4)],
+        PoissonSpiking: [dict(), dict(amplitude=0.2)],
+    }
+    base_types = {
+        RectifiedLinear: [dict(), dict(amplitude=0.7)],
+        Sigmoid: [dict(), dict(tau_ref=0.03)],
+        Tanh: [dict(), dict(tau_ref=0.03)],
+    }
+    for comp_type, comp_params in comp_types.items():
+        for base_type, base_params in base_types.items():
+            for comp_kwargs, base_kwargs in itertools.product(comp_params, base_params):
+                check_repr(comp_type(base_type(**base_kwargs), **comp_kwargs))
