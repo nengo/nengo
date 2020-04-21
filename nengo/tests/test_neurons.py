@@ -1,6 +1,8 @@
+from collections import defaultdict
 from inspect import getfullargspec
 import itertools
 import logging
+import time
 
 import numpy as np
 import pytest
@@ -28,6 +30,16 @@ from nengo.solvers import LstsqL2nz
 from nengo.utils.ensemble import tuning_curves
 from nengo.utils.matplotlib import implot, rasterplot
 from nengo.utils.numpy import rms
+
+
+# --- define a composite neuron type, used in `nl` (see `pytest_nengo.py`)
+class SpikingTanh(RegularSpiking):
+    def __init__(self, tau_ref=0.0025, amplitude=1.0):
+        super().__init__(base_type=Tanh(tau_ref=tau_ref), amplitude=amplitude)
+
+    @property
+    def tau_ref(self):
+        return self.base_type.tau_ref
 
 
 def test_lif_builtin(rng, allclose):
@@ -339,6 +351,65 @@ def test_sigmoid_invalid(Simulator, max_rate, intercept):
     with pytest.raises(BuildError):
         with Simulator(m):
             pass
+
+
+@pytest.mark.parametrize(
+    "base_rate, base_spike",
+    [
+        (nengo.LIFRate(), nengo.LIF()),
+        (nengo.RectifiedLinear(), nengo.SpikingRectifiedLinear()),
+    ],
+)
+def test_spiking_types(base_rate, base_spike, Simulator, seed, plt, allclose):
+    spiking_types = {
+        nengo.RegularSpiking: dict(atol=0.05, rmse_target=0),
+        nengo.PoissonSpiking: dict(atol=0.13, rmse_target=0.014),
+    }
+
+    n_neurons = 1000
+
+    with nengo.Network(seed=seed) as net:
+        u = nengo.Node(lambda t: np.sin(2 * np.pi * t))
+        a = nengo.Ensemble(n_neurons, 1)
+        nengo.Connection(u, a)
+        u_p = nengo.Probe(u, synapse=0.005)
+        a_p = nengo.Probe(a, synapse=0.005)
+
+    neuron_types = {
+        spiking_type: spiking_type(base_rate) for spiking_type in spiking_types
+    }
+    neuron_types[None] = base_spike
+
+    delay = 5
+    results = defaultdict(dict)
+    for neuron_type in neuron_types.values():
+        a.neuron_type = neuron_type
+
+        with nengo.Simulator(net, seed=seed + 1) as sim:
+            timer = time.time()
+            sim.run(1.0)
+            timer = time.time() - timer
+
+        results[neuron_type]["u"] = sim.data[u_p]
+        results[neuron_type]["x"] = sim.data[a_p]
+        plt.plot(sim.trange(), sim.data[a_p], label="%s: t=%.3f" % (neuron_type, timer))
+
+    plt.plot(sim.trange()[delay:], sim.data[u_p][:-delay], "k--")
+    plt.legend(loc=3)
+
+    base_res = results[neuron_types[None]]
+    base_rmse = rms(base_res["x"][delay:] - base_res["u"][:-delay])
+    for spiking_type, tols in spiking_types.items():
+        neuron_type = neuron_types[spiking_type]
+        res = results[neuron_type]
+        x = res["x"][delay:]
+        u = res["u"][:-delay]
+        assert allclose(x, u, atol=tols["atol"]), spiking_type
+
+        # check that spike noise is the target amount above the base spiking model noise
+        rmse = rms(x - u)
+        target_rmse = base_rmse + tols["rmse_target"]
+        assert allclose(rmse, target_rmse, atol=0.001, rtol=0.2), spiking_type
 
 
 def test_dt_dependence(Simulator, nl_nodirect, plt, seed, allclose):

@@ -128,6 +128,7 @@ def pytest_addoption(parser):
             "nengo.Sigmoid",
             "nengo.SpikingRectifiedLinear",
             "nengo.Tanh",
+            "nengo.tests.test_neurons.SpikingTanh",
         ],
         help="Neuron types under test",
     )
