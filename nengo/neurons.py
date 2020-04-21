@@ -906,21 +906,17 @@ class PoissonSpiking(_Spiking):
         amplitude of the output spikes of the neuron.
     """
 
-    @staticmethod
-    def next_spike_times(rng, rate):
-        return -np.log1p(-rng.rand(rate.shape[0])) / rate
-
     def step_math(self, dt, J, output, rng, *base_states):
-        spike_val = self.amplitude / dt
-
         # Sets output to the desired rates
         rates = np.zeros_like(output)
         self.base_type.step_math(dt, J, rates, *base_states)
 
-        output[...] = 0
-        next_spikes = np.zeros_like(output)
-        spiked = np.ones_like(output, dtype=bool)
-        while np.sum(spiked) > 0:
-            next_spikes[spiked] += self.next_spike_times(rng, rates[spiked])
-            spiked &= next_spikes < dt
-            output[spiked] += spike_val
+        signs = None
+        if self.negative:
+            signs = np.sign(rates)
+            rates = np.abs(rates)
+
+        n_spikes = rng.poisson(rates * dt, output.size)
+        output[...] = (self.amplitude / dt) * (
+            n_spikes if signs is None else n_spikes * signs
+        )
