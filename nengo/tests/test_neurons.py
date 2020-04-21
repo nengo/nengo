@@ -354,16 +354,12 @@ def test_sigmoid_invalid(Simulator, max_rate, intercept):
 
 
 @pytest.mark.parametrize(
-    "base_rate, base_spike",
-    [
-        (nengo.LIFRate(), nengo.LIF()),
-        (nengo.RectifiedLinear(), nengo.SpikingRectifiedLinear()),
-    ],
+    "base_rate", [nengo.LIFRate(), nengo.RectifiedLinear(), nengo.Tanh()]
 )
-def test_spiking_types(base_rate, base_spike, Simulator, seed, plt, allclose):
+def test_spiking_types(base_rate, Simulator, seed, plt, allclose):
     spiking_types = {
-        nengo.RegularSpiking: dict(atol=0.05, rmse_target=0),
-        nengo.PoissonSpiking: dict(atol=0.13, rmse_target=0.014),
+        nengo.RegularSpiking: dict(atol=0.05, rmse_target=0.011),
+        nengo.PoissonSpiking: dict(atol=0.13, rmse_target=0.024),
     }
 
     n_neurons = 1000
@@ -378,7 +374,7 @@ def test_spiking_types(base_rate, base_spike, Simulator, seed, plt, allclose):
     neuron_types = {
         spiking_type: spiking_type(base_rate) for spiking_type in spiking_types
     }
-    neuron_types[None] = base_spike
+    neuron_types[None] = base_rate
 
     delay = 5
     results = defaultdict(dict)
@@ -397,8 +393,6 @@ def test_spiking_types(base_rate, base_spike, Simulator, seed, plt, allclose):
     plt.plot(sim.trange()[delay:], sim.data[u_p][:-delay], "k--")
     plt.legend(loc=3)
 
-    base_res = results[neuron_types[None]]
-    base_rmse = rms(base_res["x"][delay:] - base_res["u"][:-delay])
     for spiking_type, tols in spiking_types.items():
         neuron_type = neuron_types[spiking_type]
         res = results[neuron_type]
@@ -408,8 +402,7 @@ def test_spiking_types(base_rate, base_spike, Simulator, seed, plt, allclose):
 
         # check that spike noise is the target amount above the base spiking model noise
         rmse = rms(x - u)
-        target_rmse = base_rmse + tols["rmse_target"]
-        assert allclose(rmse, target_rmse, atol=0.001, rtol=0.2), spiking_type
+        assert allclose(rmse, tols["rmse_target"], atol=0.003, rtol=0.25), spiking_type
 
 
 def test_dt_dependence(Simulator, nl_nodirect, plt, seed, allclose):
