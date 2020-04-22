@@ -75,6 +75,7 @@ autoautosummary_change_modules = {
         "nengo.neurons.Izhikevich",
         "nengo.neurons.RegularSpiking",
         "nengo.neurons.PoissonSpiking",
+        "nengo.neurons.StochasticSpiking",
         "nengo.synapses.LinearFilter",
         "nengo.synapses.Lowpass",
         "nengo.synapses.Alpha",

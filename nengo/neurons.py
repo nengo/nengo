@@ -917,3 +917,38 @@ class PoissonSpiking(_Spiking):
         output[...] = (self.amplitude / dt) * (
             n_spikes if signs is None else n_spikes * signs
         )
+
+
+class StochasticSpiking(_Spiking):
+    """Turn a rate neuron model into a spiking one with semi-Poisson spiking statistics.
+
+    The expected number of spikes per timestep ``e = dt * r`` is determined by the
+    base type firing rate ``r`` and the timestep ``dt``. Given the fractional part ``f``
+    and integer part ``q`` of ``e``, the number of generated spikes is ``q`` with
+    probability ``1 - f`` and ``q + 1`` with probability ``f``. For ``e`` much less than
+    one, this is very similar to Poisson statistics.
+
+    Parameters
+    ----------
+    base_type : NeuronType
+        A rate-based neuron type to convert to a Poisson spiking neuron.
+    amplitude : float
+        Scaling factor on the neuron output. Corresponds to the relative
+        amplitude of the output spikes of the neuron.
+    """
+
+    def step_math(self, dt, J, output, rng, *base_states):
+        # Sets output to the desired rates
+        rates = np.zeros_like(output)
+        self.base_type.step_math(dt, J, rates, *base_states)
+
+        signs = None
+        if self.negative:
+            signs = np.sign(rates)
+            rates = np.abs(rates)
+
+        frac, n_spikes = np.modf(dt * rates)
+        n_spikes += rng.random_sample(size=frac.shape) < frac
+        output[...] = (self.amplitude / dt) * (
+            n_spikes if signs is None else n_spikes * signs
+        )

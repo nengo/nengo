@@ -23,6 +23,7 @@ from nengo.neurons import (
     RegularSpiking,
     Sigmoid,
     SpikingRectifiedLinear,
+    StochasticSpiking,
     Tanh,
 )
 from nengo.processes import WhiteSignal
@@ -353,13 +354,12 @@ def test_sigmoid_invalid(Simulator, max_rate, intercept):
             pass
 
 
-@pytest.mark.parametrize(
-    "base_rate", [nengo.LIFRate(), nengo.RectifiedLinear(), nengo.Tanh()]
-)
+@pytest.mark.parametrize("base_rate", [LIFRate(), RectifiedLinear(), Tanh()])
 def test_spiking_types(base_rate, Simulator, seed, plt, allclose):
     spiking_types = {
-        nengo.RegularSpiking: dict(atol=0.05, rmse_target=0.011),
-        nengo.PoissonSpiking: dict(atol=0.13, rmse_target=0.024),
+        RegularSpiking: dict(atol=0.05, rmse_target=0.011),
+        PoissonSpiking: dict(atol=0.13, rmse_target=0.024),
+        StochasticSpiking: dict(atol=0.10, rmse_target=0.019),
     }
 
     n_neurons = 1000
@@ -773,6 +773,7 @@ def test_argreprs():
     comp_types = {
         RegularSpiking: [dict(), dict(amplitude=0.4)],
         PoissonSpiking: [dict(), dict(amplitude=0.2)],
+        StochasticSpiking: [dict(), dict(amplitude=0.3)],
     }
     base_types = {
         RectifiedLinear: [dict(), dict(amplitude=0.7)],
