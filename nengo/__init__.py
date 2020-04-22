@@ -53,6 +53,7 @@ from .neurons import (
     RegularSpiking,
     Sigmoid,
     SpikingRectifiedLinear,
+    StochasticSpiking,
     Tanh,
 )
 from .network import Network
