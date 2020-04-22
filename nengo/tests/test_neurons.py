@@ -405,6 +405,52 @@ def test_spiking_types(base_rate, Simulator, seed, plt, allclose):
         assert allclose(rmse, tols["rmse_target"], atol=0.003, rtol=0.25), spiking_type
 
 
+def test_regularspiking_min_voltage(Simulator, plt):
+    # TODO: this test is based off Aaron's work looking at the practical effects of
+    # `floor` (i.e. min_voltage = 0) and trunc (i.e. min_voltage = 1) on representation.
+    # It is not meant to be a unit test of the min_voltage functionality. To test that,
+    # I think we should have one neuron, and measure its voltage as it gets first a
+    # positive and then a negative input, and make sure those voltages fall in the
+    # [min_voltage, 1] range (or we could have two neurons and do positive and negative
+    # at the same time)
+
+    ens_kwargs = dict(n_neurons=50, dimensions=1, seed=0,)
+
+    freq = 10  # Hz
+    tau_probe = 0.01  # s
+
+    min_voltages = [-1, -0.1, 0]
+
+    with nengo.Network() as net:
+        stim = nengo.Node(output=lambda t: np.sin(2 * np.pi * freq * t))
+        p_stim = nengo.Probe(stim, synapse=tau_probe)
+
+        probes = []
+        spike_probes = []
+        for min_voltage in min_voltages:
+            neuron_type = RegularSpiking(Tanh(), min_voltage=min_voltage)
+            ens = nengo.Ensemble(**ens_kwargs, neuron_type=neuron_type)
+            nengo.Connection(stim, ens, synapse=None)
+            probes.append(nengo.Probe(ens, synapse=tau_probe))
+            spike_probes.append(nengo.Probe(ens.neurons, "spikes"))
+
+    with Simulator(net) as sim:
+        sim.run(1.0)
+
+    delay = 1
+    x = sim.data[p_stim][:-delay]
+    for i, min_voltage in enumerate(min_voltages):
+        n_spikes = sim.data[spike_probes[i]].sum() * sim.dt
+        plt.plot(
+            sim.trange()[delay:],
+            sim.data[probes[i]][delay:] - x,
+            label="v=%0.1f - %d spikes" % (min_voltage, n_spikes),
+        )
+
+    # plt.plot(sim.trange()[delay:], x, 'k--')
+    plt.legend(loc=3)
+
+
 def test_dt_dependence(Simulator, nl_nodirect, plt, seed, allclose):
     """Neurons should not wildly change with different dt."""
     freq = 10 * (2 * np.pi)

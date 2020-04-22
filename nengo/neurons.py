@@ -860,9 +860,14 @@ class RegularSpiking(_Spiking):
     amplitude : float
         Scaling factor on the neuron output. Corresponds to the relative
         amplitude of the output spikes of the neuron.
+    min_voltage : float
+        The firing threshold for negative spikes. Only has an effect if
+        ``base_type.negative``.
     """
 
-    def __init__(self, base_type, amplitude=1.0):
+    min_voltage = NumberParam("min_voltage", low=-1, high=0)
+
+    def __init__(self, base_type, amplitude=1.0, min_voltage=-0.1):
         super().__init__(base_type, amplitude=amplitude)
 
         if "voltage" in base_type.probeable:
@@ -871,6 +876,8 @@ class RegularSpiking(_Spiking):
                 attr="base_type",
                 obj=self,
             )
+
+        self.min_voltage = min_voltage if self.negative else 0.0
 
     @property
     def probeable(self):
@@ -884,7 +891,14 @@ class RegularSpiking(_Spiking):
         self.base_type.step_math(dt, J, output, *base_states)
 
         voltage += dt * output
-        n_spikes = np.floor(voltage)
+        if self.min_voltage == 0:
+            n_spikes = np.floor(voltage)
+        else:
+            # add positive spikes for any voltages over 1
+            n_spikes = np.maximum(np.floor(voltage), 0)
+            # add negative spikes for any voltages under min_voltage
+            n_spikes += np.minimum(np.floor(voltage - self.min_voltage), 0)
+
         output[...] = (self.amplitude / dt) * n_spikes
         voltage -= n_spikes
 
