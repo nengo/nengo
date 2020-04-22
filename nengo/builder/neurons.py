@@ -9,8 +9,8 @@ from nengo.neurons import (
     Izhikevich,
     LIF,
     NeuronType,
-    PoissonSpiking,
     RegularSpiking,
+    _Spiking,
     SpikingRectifiedLinear,
 )
 from nengo.rc import rc
@@ -331,6 +331,34 @@ def build_izhikevich(model, izhikevich, neurons):
     )
 
 
+@Builder.register(_Spiking)
+def build_spiking(model, neuron_type, neurons):
+    """Builds a `._Spiking` object into a model.
+
+    This builder delegates most of the process to the base neuron type builder,
+    then modifies the `.SimNeurons` operator made in the base builder.
+
+    Parameters
+    ----------
+    model : Model
+        The model to build into.
+    neuron_type : subclass of `._Spiking`
+        Neuron type to build.
+    neuron : Neurons
+        The neuron population object corresponding to the neuron type.
+
+    Notes
+    -----
+    Does not modify ``model.params[]`` and can therefore be called
+    more than once with the same `.LIF` instance.
+    """
+    model.build(neuron_type.base_type, neurons)
+    op = model.operators[-1]
+    assert isinstance(op, SimNeurons) and op.neurons == neuron_type.base_type
+    op.neurons = neuron_type
+    return op
+
+
 @Builder.register(RegularSpiking)
 def build_regular_spiking(model, reg, neurons):
     """Builds a `.RegularSpiking` object into a model.
@@ -353,9 +381,7 @@ def build_regular_spiking(model, reg, neurons):
     Does not modify ``model.params[]`` and can therefore be called
     more than once with the same `.LIF` instance.
     """
-    model.build(reg.base_type, neurons)
-    op = model.operators[-1]
-    op.neurons = reg
+    op = build_spiking(model, reg, neurons)
 
     # set voltage to 0.5 to be between positive and negative spike thresholds of 1 and 0
     model.sig[neurons]["voltage"] = Signal(
@@ -363,29 +389,3 @@ def build_regular_spiking(model, reg, neurons):
     )
     # insert right after `output` so that this is the first state
     op.sets.insert(1, model.sig[neurons]["voltage"])
-
-
-@Builder.register(PoissonSpiking)
-def build_poisson_spiking(model, poisson, neurons):
-    """Builds a `.PoissonSpiking` object into a model.
-
-    This builder delegates most of the process to the base neuron type builder,
-    then modifies the `.SimNeurons` operator made in the base builder.
-
-    Parameters
-    ----------
-    model : Model
-        The model to build into.
-    poisson : PoissonSpiking
-        Neuron type to build.
-    neuron : Neurons
-        The neuron population object corresponding to the neuron type.
-
-    Notes
-    -----
-    Does not modify ``model.params[]`` and can therefore be called
-    more than once with the same `.LIF` instance.
-    """
-    model.build(poisson.base_type, neurons)
-    op = model.operators[-1]
-    op.neurons = poisson

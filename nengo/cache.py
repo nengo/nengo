@@ -32,6 +32,7 @@ from nengo.neurons import (
     RegularSpiking,
     Sigmoid,
     SpikingRectifiedLinear,
+    StochasticSpiking,
     Tanh,
 )
 from nengo.rc import rc
@@ -184,6 +185,7 @@ class Fingerprint:
         RegularSpiking,
         Sigmoid,
         SpikingRectifiedLinear,
+        StochasticSpiking,
         Tanh,
     )
 

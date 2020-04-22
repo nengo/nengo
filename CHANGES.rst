@@ -30,9 +30,10 @@ Release history
   the first Nengo neuron type that allows negative outputs; ``NeuronTypes`` now have
   a ``.negative`` attribute to indicate whether it may have negative outputs.
   (`#1609 <https://github.com/nengo/nengo/pull/1609>`__)
-- Added the ``RegularSpiking`` and ``PoissonSpiking`` neuron types. They each take a
-  non-spiking neuron type as input, and turn it into a spiking neuron type with
-  regularly-spaced spikes or randomly-generated Poisson spikes, respectively.
+- Added the ``RegularSpiking``, ``StochasticSpiking``, and ``PoissonSpiking`` neuron
+  types. They each take a non-spiking neuron type as input, and turn it into a spiking
+  neuron type with regularly-spaced spikes, stochastically rounded spikes, or
+  random Poisson-distributed spikes, respectively.
   (`#1609 <https://github.com/nengo/nengo/pull/1609>`__)
 
 **Changed**
