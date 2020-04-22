@@ -30,6 +30,10 @@ Release history
   (i.e. voltages) to be modified. The default initial voltages are now chosen from
   a uniform distribution, to help ensembles activate more quickly initially.
   (`#1609 <https://github.com/nengo/nengo/pull/1609>`__)
+- Added the ``Tanh`` neuron type to simulate hyperbolic tangent rate neurons. This is
+  the first Nengo neuron type that allows negative outputs; ``NeuronTypes`` now have
+  a ``.negative`` attribute to indicate whether it may have negative outputs.
+  (`#1609 <https://github.com/nengo/nengo/pull/1609>`__)
 
 **Changed**
 
