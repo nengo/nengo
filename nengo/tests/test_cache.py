@@ -389,7 +389,12 @@ def test_supported_fingerprinting(cls, monkeypatch):
     monkeypatch.setitem(sys.modules, "sklearn.utils", Mock())
     monkeypatch.setitem(sys.modules, "sklearn.utils.extmath", Mock())
 
-    obj = cls()
+    args = []
+    if issubclass(cls, nengo.neurons._Spiking):
+        # spiking types require a `base_type` argument, so provide one
+        args.append(nengo.neurons.RectifiedLinear())
+
+    obj = cls(*args)
     assert Fingerprint.supports(obj)
 
     # check fingerprint is created without error and is a valid sha1 hash
