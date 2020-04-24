@@ -311,7 +311,7 @@ class TestPickle:
         nengo.processes.FilteredNoise(),
         nengo.processes.BrownNoise(),
         nengo.processes.PresentInput([0.1, 0.2], 1.0),
-        nengo.synapses.LinearFilter([0.1, 0.2], [0.3, 0.4], True),
+        nengo.synapses.LinearFilter(([0.1, 0.2], [0.3, 0.4]), analog=True),
         nengo.synapses.Lowpass(0.005),
         nengo.synapses.Alpha(0.005),
         nengo.synapses.Triangle(0.005),
