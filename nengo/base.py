@@ -311,7 +311,8 @@ class Process(FrozenObject):
             If False, the input signal ``x`` will be overwritten.
         """
         shape_in = as_shape(np.asarray(x[0]).shape, min_dim=1)
-        shape_out = as_shape(self.default_size_out if d is None else d)
+        size_out = self.default_size_out if d is None else d
+        shape_out = as_shape((size_out,) + shape_in[1:])
         dt = self.default_dt if dt is None else dt
         rng = self.get_rng(rng)
         state = self.make_state(shape_in, shape_out, dt)

@@ -31,6 +31,8 @@ Release history
   It is commonly used for various forms of upsampling in deep networks. (`#1648`_)
 - Added ``Conv`` and ``ConvTranspose`` aliases for ``Convolution`` and
   ``ConvolutionTranspose``. (`#1648`_)
+- Added ``LinearSystem``, a ``Process`` to implement arbitrary linear systems.
+  (`#1650`_)
 
 **Fixed**
 
@@ -57,6 +59,7 @@ Release history
 
 .. _#1648: https://github.com/nengo/nengo/pull/1648
 .. _#1649: https://github.com/nengo/nengo/pull/1649
+.. _#1650: https://github.com/nengo/nengo/pull/1650
 .. _#1654: https://github.com/nengo/nengo/pull/1654
 .. _#1660: https://github.com/nengo/nengo/pull/1660
 .. _#1676: https://github.com/nengo/nengo/pull/1676

@@ -18,6 +18,7 @@ from nengo.config import Config
 from nengo.connection import Connection
 from nengo.ensemble import Ensemble
 from nengo.learning_rules import BCM, PES, RLS, Oja, Voja
+from nengo.linear_system import LinearSystem
 from nengo.network import Network
 from nengo.neurons import (
     LIF,
