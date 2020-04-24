@@ -138,7 +138,7 @@ class BrownNoise(FilteredNoise):
 
     def __init__(self, dist=Gaussian(mean=0, std=1), **kwargs):
         super().__init__(
-            synapse=LinearFilter([1], [1, 0], method="euler"), dist=dist, **kwargs
+            synapse=LinearFilter(([1], [1, 0]), method="euler"), dist=dist, **kwargs
         )
 
     def __repr__(self):
