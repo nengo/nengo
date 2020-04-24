@@ -1,18 +1,18 @@
+import warnings
+
 import numpy as np
 
 from nengo.base import Process
 from nengo.exceptions import ValidationError
-from nengo.params import (
-    BoolParam,
-    EnumParam,
-    NdarrayParam,
-    NumberParam,
-    Parameter,
-    Unconfigurable,
-)
+from nengo.linear_system import LinearSystem
+from nengo.params import NumberParam, Parameter, Unconfigurable
 from nengo.rc import rc
-from nengo.utils.filter_design import cont2discrete, tf2ss
 from nengo.utils.numpy import as_shape, is_number
+
+
+def _is_empty(M):
+    """Determine whether a matrix is size zero or all zeros"""
+    return M.size == 0 or (M == 0).all()
 
 
 class Synapse(Process):
@@ -35,10 +35,10 @@ class Synapse(Process):
     ----------
     default_size_in : int, optional
         The size_in used if not specified.
-    default_size_out : int
+    default_size_out : int, optional
         The size_out used if not specified.
         If None, will be the same as default_size_in.
-    default_dt : float
+    default_dt : float, optional
         The simulation timestep used if not specified.
     seed : int, optional
         Random number seed. Ensures random factors will be the same each run.
@@ -120,27 +120,47 @@ class Synapse(Process):
         return self.filt(x, filtfilt=True, **kwargs)
 
 
-class LinearFilter(Synapse):
+class LinearFilter(LinearSystem, Synapse):
     """General linear time-invariant (LTI) system synapse.
 
-    This class can be used to implement any linear filter, given the
-    filter's transfer function. [1]_
+    This class can be used to implement any linear filter, given a description of the
+    filter. [1]_
 
     Parameters
     ----------
-    num : array_like
-        Numerator coefficients of transfer function.
-    den : array_like
-        Denominator coefficients of transfer function.
+    sys : tuple
+        A tuple describing the linear system used for filtering, in
+        ``(numerator, denominator)``, ``(zeros, poles, gain)``, or ``(A, B, C, D)``
+        (state space) form. See `.LinearSystem` for more details on these forms.
+        The system must have both an input size and output size of 1.
+    den : array_like, optional
+        Denominator coefficients of the transfer function. If used, the first (``sys``)
+        argument is treated as the numerator coefficients of the transfer function.
+        This way of specifying transfer functions is deprecated; the preferred method
+        is to pass a ``(num, den)`` tuple to the ``sys`` argument.
+
+        .. deprecated:: 3.1.0
     analog : boolean, optional
         Whether the synapse coefficients are analog (i.e. continuous-time),
         or discrete. Analog coefficients will be converted to discrete for
         simulation using the simulator ``dt``.
-    method : string
+    method : string, optional
         The method to use for discretization (if ``analog`` is True). See
         `scipy.signal.cont2discrete` for information about the options.
 
         .. versionadded:: 3.0.0
+    x0 : array_like, optional
+        Initial values for the system state. The last dimension must equal the
+        ``state_size``.
+
+        .. versionadded:: 3.1.0
+    initial_output : Distribution or float or (n_synapses,) array_like, optional
+        Initial output value(s) represented by the synapses. ``n_synapses`` is typically
+        equal to the connection's ``size_out``, except when ``post_obj`` is an
+        ``Ensemble`` and ``solver.weights`` is set, in which case ``n_synapses`` equals
+        the number of neurons in the post ``Ensemble``.
+
+        .. versionadded:: 3.1.0
 
     Attributes
     ----------
@@ -148,10 +168,6 @@ class LinearFilter(Synapse):
         Whether the synapse coefficients are analog (i.e. continuous-time),
         or discrete. Analog coefficients will be converted to discrete for
         simulation using the simulator ``dt``.
-    den : ndarray
-        Denominator coefficients of transfer function.
-    num : ndarray
-        Numerator coefficients of transfer function.
     method : string
         The method to use for discretization (if ``analog`` is True). See
         `scipy.signal.cont2discrete` for information about the options.
@@ -161,41 +177,45 @@ class LinearFilter(Synapse):
     .. [1] https://en.wikipedia.org/wiki/Filter_%28signal_processing%29
     """
 
-    num = NdarrayParam("num", shape="*")
-    den = NdarrayParam("den", shape="*")
-    analog = BoolParam("analog")
-    method = EnumParam(
-        "method", values=("gbt", "bilinear", "euler", "backward_diff", "zoh")
-    )
+    _argrepr_filter = {"den"}
 
-    def __init__(self, num, den, analog=True, method="zoh", **kwargs):
-        super().__init__(**kwargs)
-        self.num = num
-        self.den = den
-        self.analog = analog
-        self.method = method
+    def __init__(
+        self, sys, den=None, analog=True, method="zoh", x0=0, default_dt=0.001
+    ):
+        if den is not None:
+            warnings.warn(
+                DeprecationWarning(
+                    "`den` is deprecated. Pass systems in transfer function form as a "
+                    "`(numerator, denominator)` 2-tuple instead."
+                )
+            )
+            sys = (sys, den)
 
-    def combine(self, obj):
-        """Combine in series with another LinearFilter."""
-        if not isinstance(obj, LinearFilter):
-            raise ValidationError(
-                "Can only combine with other LinearFilters", attr="obj"
-            )
-        if self.analog != obj.analog:
-            raise ValidationError(
-                "Cannot combine analog and digital filters", attr="obj"
-            )
-        num = np.polymul(self.num, obj.num)
-        den = np.polymul(self.den, obj.den)
-        return LinearFilter(
-            num,
-            den,
-            analog=self.analog,
-            default_size_in=self.default_size_in,
-            default_size_out=self.default_size_out,
-            default_dt=self.default_dt,
-            seed=self.seed,
+        super().__init__(
+            sys,
+            analog=analog,
+            method=method,
+            x0=x0,
+            default_dt=default_dt,
         )
+
+        if self.input_size != 1:
+            raise ValidationError(
+                "LinearFilter systems can only have one input dimension "
+                f"(got {self.input_size})",
+                attr="input_size",
+                obj=self,
+            )
+
+        if self.output_size != 1:
+            raise ValidationError(
+                "LinearFilter systems can only have one output dimension "
+                f"(got {self.output_size})",
+                attr="output_size",
+                obj=self,
+            )
+
+        self._factory = LinearFilter
 
     def evaluate(self, frequencies):
         """Evaluate the transfer function at the given frequencies.
@@ -208,7 +228,7 @@ class LinearFilter(Synapse):
 
            import matplotlib.pyplot as plt
 
-           synapse = nengo.synapses.LinearFilter([1], [0.02, 1])
+           synapse = nengo.synapses.LinearFilter(([1], [0.02, 1]))
            f = np.logspace(-1, 3, 100)
            y = synapse.evaluate(f)
            plt.subplot(211); plt.semilogx(f, 20*np.log10(np.abs(y)))
@@ -218,49 +238,38 @@ class LinearFilter(Synapse):
         """
         frequencies = 2.0j * np.pi * frequencies
         w = frequencies if self.analog else np.exp(frequencies)
-        y = np.polyval(self.num, w) / np.polyval(self.den, w)
+        num, den = self.tf
+        assert num.ndim == 2 and num.shape[0] == 1
+        y = np.polyval(num[0], w) / np.polyval(den, w)
         return y
 
-    def _get_ss(self, dt):
-        A, B, C, D = tf2ss(self.num, self.den)
-
-        # discretize (if len(A) == 0, filter is stateless and already discrete)
-        if self.analog and len(A) > 0:
-            A, B, C, D, _ = cont2discrete((A, B, C, D), dt, method=self.method)
-
-        return A, B, C, D
-
-    def make_state(self, shape_in, shape_out, dt, dtype=None, y0=0):
+    def make_state(  # pylint: disable=arguments-renamed
+        self, shape_in, shape_out, dt, dtype=None, y0=0
+    ):
         assert shape_in == shape_out
 
-        dtype = rc.float_dtype if dtype is None else np.dtype(dtype)
-        if dtype.kind != "f":
-            raise ValidationError(
-                f"Only float data types are supported (got {dtype}). Please cast "
-                "your data to a float type.",
-                attr="dtype",
-                obj=self,
-            )
-
-        A, B, C, D = self._get_ss(dt)
-
-        # create state memory variable X
-        X = np.zeros((A.shape[0],) + shape_out, dtype=dtype)
+        # call LinearSystem's `make_state`
+        state = super().make_state((1,) + shape_in, (1,) + shape_out, dt, dtype=dtype)
+        X = state["X"]
 
         # initialize X using y0 as steady-state output
-        y0 = np.array(y0, copy=False, ndmin=2)
+        y0 = np.array(y0, copy=False, ndmin=1)
+        if y0.ndim < X.ndim:
+            y0.shape = y0.shape + tuple([1] * (X.ndim - y0.ndim))
+
         if (y0 == 0).all():
             # just leave X as zeros in this case, so that this value works
             # for unstable systems
-            pass
-        elif LinearFilter.OneX.check(A, B, C, D, X):
+            return state
+
+        A, B, C, D = self.discrete_ss(dt)
+        if LinearFilter.OneX.check(A, B, C, D, X):
             # OneX combines B and C into one scaling value `b`
             b = B.item() * C.item()
             X[:] = (b / (1 - A.item())) * y0
         else:
             # Solve for u0 (input) given y0 (output), then X given u0
             assert B.ndim == 1 or B.ndim == 2 and B.shape[1] == 1
-            y0 = np.array(y0, copy=False, ndmin=2)
             IAB = np.linalg.solve(np.eye(len(A)) - A, B)
             Q = C.dot(IAB) + D  # multiplier from input to output (DC gain)
             assert Q.size == 1
@@ -274,14 +283,15 @@ class LinearFilter(Synapse):
                     obj=self,
                 )
 
-        return {"X": X}
+        return state
 
     def make_step(self, shape_in, shape_out, dt, rng, state):
         """Returns a `.Step` instance that implements the linear filter."""
         assert shape_in == shape_out
         assert state is not None
+        assert self.input_size == self.output_size == 1
 
-        A, B, C, D = self._get_ss(dt)
+        A, B, C, D = self.discrete_ss(dt)
         X = state["X"]
 
         if LinearFilter.NoX.check(A, B, C, D, X):
@@ -317,8 +327,8 @@ class LinearFilter(Synapse):
 
         @classmethod
         def check(cls, A, B, C, D, X):
-            if A.size == 0:
-                return X.size == B.size == C.size == 0 and D.size == 1
+            if A.size == 0 or B.size == 0:
+                return X.size == A.size == B.size == C.size == 0 and D.size == 1
             else:
                 return (
                     A.shape[0] == A.shape[1] == B.shape[0] == C.shape[1]
@@ -339,7 +349,7 @@ class LinearFilter(Synapse):
 
         @classmethod
         def check(cls, A, B, C, D, X):
-            return super().check(A, B, C, D, X) and A.size == 0
+            return super().check(A, B, C, D, X) and _is_empty(A) and _is_empty(B)
 
     class OneX(Step):
         """Step for systems with one state element and no passthrough (D)."""
@@ -356,7 +366,7 @@ class LinearFilter(Synapse):
 
         @classmethod
         def check(cls, A, B, C, D, X):
-            return super().check(A, B, C, D, X) and (len(A) == 1 and (D == 0).all())
+            return super().check(A, B, C, D, X) and len(A) == 1 and _is_empty(D)
 
     class OneXScalar(OneX):
         """Step for systems with one state element, no passthrough, and a size-1 input.
@@ -390,7 +400,7 @@ class LinearFilter(Synapse):
 
         @classmethod
         def check(cls, A, B, C, D, X):
-            return super().check(A, B, C, D, X) and (len(A) >= 1 and (D == 0).all())
+            return super().check(A, B, C, D, X) and len(A) >= 1 and _is_empty(D)
 
     class General(Step):
         """Step for any LTI system with at least one state element (X).
@@ -434,7 +444,7 @@ class Lowpass(LinearFilter):
     tau = NumberParam("tau", low=0)
 
     def __init__(self, tau, **kwargs):
-        super().__init__([1], [tau, 1], **kwargs)
+        super().__init__(([1], [tau, 1]), **kwargs)
         self.tau = tau
 
 
@@ -466,7 +476,7 @@ class Alpha(LinearFilter):
     tau = NumberParam("tau", low=0)
 
     def __init__(self, tau, **kwargs):
-        super().__init__([1], [tau ** 2, 2 * tau, 1], **kwargs)
+        super().__init__(([1], [tau ** 2, 2 * tau, 1]), **kwargs)
         self.tau = tau
 
 

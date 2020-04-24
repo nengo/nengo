@@ -614,6 +614,8 @@ class FrozenObject:
     # parameter initialization order matters.
     _param_init_order = []
 
+    _argrepr_filter = set()
+
     def __init__(self):
         self._paramdict = dict(
             (k, v)
@@ -674,8 +676,11 @@ class FrozenObject:
         if spec.defaults is not None:
             defaults.update(zip(spec.args[-len(spec.defaults) :], spec.defaults))
 
+        # start at 1 to drop `self`
+        args = [arg for arg in spec.args[1:] if arg not in self._argrepr_filter]
+
         self.__argreprs = []
-        for arg in spec.args[1:]:  # start at 1 to drop `self`
+        for arg in args:
             if not hasattr(self, arg):
                 # We rely on storing the initial arguments. If we don't have
                 # them, we don't auto-generate a repr.

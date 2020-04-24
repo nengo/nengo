@@ -434,13 +434,17 @@ def test_distributions():
 
 
 def test_synapses():
-    check_init_args(LinearFilter, ["num", "den", "analog", "method"])
-    check_repr(LinearFilter([1, 2], [3, 4]))
-    check_repr(LinearFilter([1, 2], [3, 4], analog=False))
-    assert (
-        repr(LinearFilter([1], [0.03, 1]))
-        == "LinearFilter(num=array([1.]), den=array([0.03, 1.  ]))"
+    def ary(*shape):
+        return np.arange(1, np.prod(shape) + 1).reshape(shape)
+
+    check_init_args(
+        LinearFilter, ["sys", "den", "analog", "method", "x0", "default_dt"]
     )
+    check_repr(LinearFilter(([1, 2], [3, 4])))
+    check_repr(LinearFilter(([1, 2], [3, 4]), analog=False))
+    assert repr(LinearFilter(([1], [0.03, 1]))) == "LinearFilter(sys=([1], [0.03, 1]))"
+    A, B, C, D = ary(2, 2), ary(2, 1) + 1, ary(1, 2) + 2, ary(1, 1)
+    check_repr(LinearFilter((A, B, C, D)))
 
     check_init_args(Lowpass, ["tau"])
     check_repr(Lowpass(0.3))
