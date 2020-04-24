@@ -39,6 +39,8 @@ Release history
   neuron type with regularly-spaced spikes, stochastically rounded spikes, or
   random Poisson-distributed spikes, respectively.
   (`#1609 <https://github.com/nengo/nengo/pull/1609>`__)
+- Added ``LinearSystem``, a ``Process`` to implement arbitrary linear systems.
+  (`#1611 <https://github.com/nengo/nengo/pull/1611>`__)
 
 **Changed**
 

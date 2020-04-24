@@ -40,6 +40,7 @@ from .base import Process
 from .config import Config
 from .connection import Connection
 from .ensemble import Ensemble
+from .linear_system import LinearSystem
 from .node import Node
 from .neurons import (
     AdaptiveLIF,
