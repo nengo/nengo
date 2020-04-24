@@ -46,6 +46,8 @@ Release history
   as are commonly used to match biological spiking statistics. (`#1609`_)
 - Added the ``PositiveNeuronType`` test argument to run tests on all neuron types
   for which ``negative`` is not ``True``. (`#1609`_)
+- Added ``LinearSystem``, a ``Process`` to implement arbitrary linear systems.
+  (`#1611`_)
 
 **Changed**
 

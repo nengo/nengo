@@ -8,6 +8,7 @@ import nengo.utils.numpy as npext
 from nengo.base import Process
 from nengo.dists import Distribution, Gaussian
 from nengo.exceptions import ValidationError
+from nengo.linear_system import LinearSystem
 from nengo.processes import (
     BrownNoise,
     FilteredNoise,
@@ -538,3 +539,310 @@ class TestPiecewise:
         with pytest.warns(UserWarning):
             process = Piecewise({0.05: 0, 0.1: func}, interpolation="linear")
         assert process.interpolation == "zero"
+
+
+class TestLinearSystem:
+    def run_sim(
+        self,
+        Simulator,
+        sys,
+        analog=True,
+        x0=0,
+        dt=0.001,
+        simtime=0.3,
+        plt=None,
+        f_in=None,
+    ):
+        process = (
+            sys
+            if isinstance(sys, LinearSystem)
+            else LinearSystem(sys, analog=analog, x0=x0)
+        )
+
+        with nengo.Network() as model:
+            y = nengo.Node(process)
+            yp = nengo.Probe(y)
+
+            if f_in is not None:
+                u = nengo.Node(f_in)
+                nengo.Connection(u, y, synapse=None)
+
+        with Simulator(model, dt=dt, progress_bar=False) as sim:
+            sim.run(simtime)
+
+        if plt:
+            plt.plot(sim.trange(), sim.data[yp])
+
+        return sim.trange(), sim.data[yp]
+
+    def test_passthrough(self, Simulator, plt, allclose):
+        f_in = lambda t: np.array([0.3, 0.7]) * np.sin(5 * t)
+        dt = 0.001
+        t, y = self.run_sim(
+            Simulator, (None, None, None, [[0, 2], [3, 0]]), dt=dt, plt=plt, f_in=f_in
+        )
+        u = f_in(t[:, None])
+        assert allclose(y[:, 0], 2 * u[:, 1], atol=1e-4)
+        assert allclose(y[:, 1], 3 * u[:, 0], atol=1e-4)
+
+    def test_autonomous_oscillator(self, Simulator, plt, allclose):
+        omega = 6 * np.pi
+        A = [[0, -omega], [omega, 0]]
+        C = np.eye(2)
+        x0 = [1, 0]
+
+        dt = 0.001
+        t, y = self.run_sim(
+            Simulator, (A, None, C, None), plt=plt, x0=x0, dt=dt, simtime=1.0
+        )
+        t -= dt
+        assert allclose(y[:, 0], np.cos(omega * t), atol=1e-4)
+        assert allclose(y[:, 1], np.sin(omega * t), atol=1e-4)
+
+    @pytest.mark.parametrize("dims", [1, 3])
+    def test_integrator(self, dims, Simulator, rng, plt, allclose):
+        dt = 0.001
+        A = None
+        B = np.eye(dims)
+        C = np.eye(dims)
+
+        freqs = rng.uniform(5 * np.pi, 7 * np.pi, size=dims)
+        amps = rng.uniform(0.5, 1.5, size=dims)
+        f_in = lambda t: amps * np.sin(freqs * t)
+
+        t, y = self.run_sim(Simulator, (A, B, C, None), dt=dt, plt=plt, f_in=f_in)
+        t -= dt
+        u = f_in(t[:, None])
+        assert allclose(y, np.cumsum(u, axis=0) * dt, atol=1e-4)
+
+    def test_discretize(self, Simulator, plt):
+        dt = 0.003
+        sys = LinearSystem(([1], [0.02, 1]), method="euler")
+        f_in = lambda t: np.sin(20 * t)
+        t, y0 = self.run_sim(Simulator, sys, dt=dt, plt=plt, f_in=f_in)
+        t, y1 = self.run_sim(Simulator, sys.discretize(dt), dt=dt, plt=plt, f_in=f_in)
+        t, y2 = self.run_sim(
+            Simulator, sys.discrete_ss(dt), analog=False, dt=dt, plt=plt, f_in=f_in
+        )
+        assert np.allclose(y1, y0)
+        assert np.allclose(y2, y0)
+
+    @pytest.mark.parametrize("A", [0, 0.3])
+    @pytest.mark.parametrize("B", [0, 1.3])
+    @pytest.mark.parametrize("C", [0, 1.5])
+    @pytest.mark.parametrize("D", [0, -0.7])
+    @pytest.mark.parametrize("input_size", [0, 2])
+    @pytest.mark.parametrize("shape", [(), (3,)])
+    def test_all_systems(self, A, B, C, D, input_size, shape, rng):
+        state_size = rng.randint(1, 5)
+        output_size = rng.randint(1, 4)
+        A = A * np.ones((state_size, state_size))
+        B = B * np.ones((state_size, input_size))
+        C = C * np.ones((output_size, state_size))
+        D = D * np.ones((output_size, input_size))
+
+        dt = 0.001
+        shape_in = (B.shape[1],) + shape
+        shape_out = (C.shape[0],) + shape
+        shape_state = (A.shape[0],) + shape
+        sys = LinearSystem((A, B, C, D), analog=False)
+        u = rng.uniform(-1, 1, size=shape_in)
+        x0 = rng.uniform(-1, 1, size=shape_state)
+
+        state = sys.make_state(shape_in, shape_out, dt, x0=x0)
+        assert state["X"].shape == shape_state
+        assert np.allclose(state["X"], x0)
+
+        step = sys.make_step(shape_in, shape_out, dt, rng=None, state=state)
+        if input_size > 0:
+            y = step(t=0, u=u)
+        else:
+            y = step(t=0)
+        assert np.allclose(state["X"], A.dot(x0) + B.dot(u))
+        assert np.allclose(y, C.dot(x0) + D.dot(u))
+
+    @pytest.mark.parametrize("dims", [1, 2])
+    def test_combine(self, dims, rng, plt, allclose):
+        """Also tests num-den form with multiple outputs (i.e. multiple num rows)"""
+        dt = 0.0015
+        tau_a = 0.005
+        tau_b = 0.008
+
+        mid_scales = rng.uniform(0.5, 1.5, dims)
+        out_scales = rng.uniform(0.5, 1.5, dims)
+        scales = mid_scales * out_scales
+
+        sys_ref = LinearSystem((scales[:, None], [tau_a * tau_b, tau_a + tau_b, 1]))
+
+        E = np.eye(dims)
+        M = np.diag(mid_scales)
+        C = np.diag(out_scales)
+        sys1 = LinearSystem((-E / tau_a, E / tau_a, C, None)).combine(
+            LinearSystem((mid_scales[:, None], [tau_b, 1]))
+        )
+        sys2 = LinearSystem((-E / tau_a, M / tau_a, C, None)).combine(
+            LinearSystem((np.ones((dims, 1)), [tau_b, 1]))
+        )
+
+        t = dt * np.arange(100)
+        noise_r = 0.5
+        u = rng.uniform(-noise_r, noise_r, size=(len(t), 1))
+
+        out_ref = sys_ref.apply(u, dt=dt)
+        out1 = sys1.apply(u, dt=dt)
+        out2 = sys2.apply(u, dt=dt)
+
+        plt.plot(t, out1)
+        plt.plot(t, out2)
+        plt.plot(t, out_ref, ":")
+
+        assert allclose(out1, out_ref, atol=1e-7)
+        assert allclose(out2, out_ref, atol=1e-7)
+
+    def test_combine_errors(self):
+        sys = (None, np.ones((1, 1)), np.ones((1, 1)), None)
+        sys0 = LinearSystem(sys, x0=np.ones((1, 3)))
+
+        # combine with other type
+        proc1 = WhiteNoise()
+        with pytest.raises(ValidationError, match="Can only combine with"):
+            sys0.combine(proc1)
+
+        # combine analog and digital
+        sys1 = LinearSystem(sys, analog=False)
+        with pytest.raises(ValidationError, match="Cannot combine analog and digital"):
+            sys0.combine(sys1)
+
+        # combine with mismatching input/output size
+        sys1 = LinearSystem((None, np.ones((1, 1)), np.ones((2, 1)), None))
+        with pytest.raises(ValidationError, match="Input size .* must match output"):
+            sys0.combine(sys1)
+
+        # combine with mismatching x0 shapes
+        sys1 = LinearSystem(sys, x0=np.ones((1, 4)))
+        with pytest.raises(ValidationError, match="Initial state shape"):
+            sys0.combine(sys1)
+
+    def test_x0(self, rng, plt, allclose):
+        dt = 0.001
+        nt = 100
+        shape = (5,)
+        dims = 2
+        tau = 0.003
+
+        E = np.eye(dims)
+        sys_a = (None, E, E, None)  # integrator
+        sys_b = (-E / tau, E / tau, E, None)  # lowpass filter
+        sys_a0 = LinearSystem(sys_a)
+        sys_b0 = LinearSystem(sys_b)
+        sys_ab0 = sys_b0.combine(sys_a0)
+
+        x0a = rng.uniform(-0.01, 0.01, size=(dims,) + shape)
+        x0b = rng.uniform(-0.01, 0.01, size=(dims,) + shape)
+        u = rng.uniform(-1, 1, size=(nt, dims) + shape)
+
+        ya_ref0 = np.cumsum(np.vstack([0 * u[:1], u]), axis=0)[:-1] * dt
+        # yb_ref0 = np.cumsum(np.vstack([0 * ub[:1], ub]), axis=0)[:-1] * dt
+
+        for i in range(x0a.ndim):
+            x0ai, x0bi = x0a, x0b
+            for _ in range(i):
+                x0ai, x0bi = x0ai[..., 0], x0bi[..., 0]
+
+            ya_ref = x0ai.reshape(x0ai.shape + tuple([1] * i)) + ya_ref0
+
+            # test that we can specify x0 at init
+            sys_a1 = LinearSystem(sys_a, x0=x0ai)
+
+            # ya0 = sys_a0.apply(u, dt=dt, x0=x0ai)
+            ya1 = sys_a1.apply(u, dt=dt)
+
+            # test that we can combine and x0 is preserved
+            sys_ab0 = sys_b0.combine(sys_a1)
+            yab0_ref = sys_b0.apply(ya_ref)
+            yab0 = sys_ab0.apply(u, dt=dt)
+
+            sys_b1 = LinearSystem(sys_b, x0=x0bi)
+            sys_ab1 = sys_b1.combine(sys_a1)
+            yab1_ref = sys_b1.apply(ya_ref)
+            yab1 = sys_ab1.apply(u, dt=dt)
+
+            if i == 0:
+                plt.subplot(311)
+                plt.plot(ya_ref.reshape(nt, -1), ":")
+                plt.plot(ya1.reshape(nt, -1))
+
+                plt.subplot(312)
+                plt.plot(yab0_ref.reshape(nt, -1), ":")
+                plt.plot(yab0.reshape(nt, -1))
+
+                plt.subplot(313)
+                plt.plot(yab1_ref.reshape(nt, -1), ":")
+                plt.plot(yab1.reshape(nt, -1))
+
+            # assert allclose(ya0, ya_ref, atol=1e-4)
+            assert allclose(ya1, ya_ref, atol=1e-4)
+
+            # higher tolerances because discretizing filters separately is different
+            # from discretizing them together
+            assert allclose(yab0, yab0_ref, rtol=1e-2, atol=5e-4)
+            assert allclose(yab1, yab1_ref, rtol=1e-2, atol=5e-4)
+
+    def test_ss_shape(self):
+        A = np.eye(3)
+        B = [1, 2, 3]
+        C = [1, 2, 3]
+        D = None
+        ss = LinearSystem((A, B, C, D))
+        assert ss.B.shape == (3, 1) and ss.C.shape == (1, 3)
+
+    def test_validation_errors(self):
+        with pytest.raises(ValidationError, match="Must be a tuple in"):
+            LinearSystem((0, 0, 0, 0, 0))
+
+        with pytest.raises(ValidationError, match="A: Must be a square matrix"):
+            LinearSystem((np.ones(3), None, None, None))
+
+        with pytest.raises(ValidationError, match="B: Must be a"):
+            LinearSystem((np.ones((1, 1)), np.ones((2, 1)), None, None))
+
+        with pytest.raises(ValidationError, match="C: Must be a"):
+            LinearSystem((np.ones((2, 2)), np.ones((2, 1)), np.ones((3, 1)), None))
+
+        with pytest.raises(ValidationError, match="D: Must be a"):
+            LinearSystem((np.ones((2, 2)), np.ones((2, 1)), None, np.ones((3, 2))))
+
+        with pytest.raises(ValidationError, match="x0: First dimension"):
+            LinearSystem((np.ones((2, 2)), None, None, None), x0=np.ones(3))
+
+        sys = LinearSystem((np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)), None))
+        with pytest.raises(ValidationError, match="dtype: Only float data types"):
+            sys.make_state((2,), (2,), dt=0.001, dtype=np.int32)
+
+    def test_equivalent_formats(self):
+        tau0, tau1 = 0.01, 0.02
+        sys0 = LinearSystem(([1], [tau0 * tau1, tau0 + tau1, 1]))
+        sys1 = LinearSystem(([], [-1 / tau0, -1 / tau1], [1 / (tau0 * tau1)]))
+
+        assert sys0 == sys1
+        for M0, M1 in zip(sys0.tf, sys1.tf):
+            assert np.allclose(M0, M1)
+        for M0, M1 in zip(sys0.zpk, sys1.zpk):
+            assert np.allclose(M0, M1)
+        for M0, M1 in zip(sys0.ss, sys1.ss):
+            assert np.allclose(M0, M1)
+
+    def test_repr(self):
+        def check_repr(obj):
+            from numpy import (  # pylint: disable=import-outside-toplevel,unused-import
+                array,
+            )
+
+            assert eval(repr(obj)) == obj
+
+        check_repr(LinearSystem(([1], [0.3, 1])))
+        check_repr(LinearSystem(([1], [0.3, 1]), x0=[0.2]))
+        check_repr(LinearSystem(([0.1], [-0.5, -0.7], [1.2])))
+        check_repr(LinearSystem(([-0.1], [0.1], [1.3], [0.1])))
+        check_repr(LinearSystem(([0.1], [0.1], [1.3], [0.1]), analog=False))
+        check_repr(LinearSystem(([0.1], [0.1], [1.3], [0.1]), method="zoh"))
