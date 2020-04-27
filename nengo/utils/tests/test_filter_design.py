@@ -2,18 +2,15 @@ import numpy as np
 import pytest
 
 from nengo.utils.filter_design import (
-    cont2discrete,
-    tf2zpk,
-    zpk2tf,
-    normalize,
-    tf2ss,
-    _none_to_empty_2d,
-    _shape_or_none,
-    _restore,
     abcd_normalize,
+    cont2discrete,
+    normalize,
     ss2tf,
-    zpk2ss,
     ss2zpk,
+    tf2ss,
+    tf2zpk,
+    zpk2ss,
+    zpk2tf,
 )
 
 
@@ -141,31 +138,6 @@ def test_tf2ss():
         tf2ss(num, den)
 
 
-def test_none_to_empty_2d():
-    """test the _none_to_empty_2d function"""
-    assert np.array_equal(np.zeros((0, 0)), _none_to_empty_2d(None))
-
-
-def test_shape_or_none():
-    """test the _shape_or_none function"""
-    assert _shape_or_none(None) == (None,) * 2
-
-
-def test_restore():
-    """test the _restore function and errors"""
-
-    class Test:
-        shape = (0, 0)
-
-    M = Test
-    shape = (0, 0)
-    _restore(M, shape) == np.zeros(shape)
-    with pytest.raises(ValueError):
-        M = np.array([1, 2])
-        shape = (1, 2)
-        _restore(M, shape)
-
-
 def test_abcd_normalize():
     """test the function abcd_normalize"""
     with pytest.raises(ValueError):
@@ -185,7 +157,7 @@ def test_zpk2ss():
         np.array([[3.0, -2.0], [1.0, 0.0]]),
         np.array([[1.0], [0.0]]),
         np.array([[3.0, -3.0]]),
-        np.array([0.0]),
+        np.array([[0.0]]),
     )
 
     assert repr(zpk2ss([1], [1, 2], 3)) == repr(predicted)
