@@ -2,9 +2,6 @@ import numpy as np
 import pytest
 
 from nengo.utils.filter_design import (
-    _none_to_empty_2d,
-    _restore,
-    _shape_or_none,
     abcd_normalize,
     cont2discrete,
     normalize,
@@ -141,31 +138,6 @@ def test_tf2ss():
         tf2ss(num, den)
 
 
-def test_none_to_empty_2d():
-    """test the _none_to_empty_2d function"""
-    assert np.array_equal(np.zeros((0, 0)), _none_to_empty_2d(None))
-
-
-def test_shape_or_none():
-    """test the _shape_or_none function"""
-    assert _shape_or_none(None) == (None,) * 2
-
-
-def test_restore(allclose):
-    """test the _restore function and errors"""
-
-    class Test:
-        shape = (0, 0)
-
-    M = Test
-    shape = (0, 0)
-    assert allclose(_restore(M, shape), np.zeros(shape))
-    with pytest.raises(ValueError):
-        M = np.array([1, 2])
-        shape = (1, 2)
-        _restore(M, shape)
-
-
 def test_abcd_normalize():
     """test the function abcd_normalize"""
     with pytest.raises(ValueError):
@@ -185,7 +157,7 @@ def test_zpk2ss():
         np.array([[3.0, -2.0], [1.0, 0.0]]),
         np.array([[1.0], [0.0]]),
         np.array([[3.0, -3.0]]),
-        np.array([0.0]),
+        np.array([[0.0]]),
     )
 
     assert repr(zpk2ss([1], [1, 2], 3)) == repr(predicted)
