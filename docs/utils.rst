@@ -44,14 +44,6 @@ Ensemble
    .. autoautosummary:: nengo.utils.ensemble
       :nosignatures:
 
-Filter design
-=============
-
-.. automodule:: nengo.utils.filter_design
-
-   .. autoautosummary:: nengo.utils.filter_design
-      :nosignatures:
-
 Functions
 =========
 

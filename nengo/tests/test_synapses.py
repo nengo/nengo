@@ -2,10 +2,10 @@ import numpy as np
 import pytest
 
 import nengo
+from nengo._vendor.scipy.signal import cont2discrete
 from nengo.exceptions import ValidationError
 from nengo.processes import WhiteSignal
 from nengo.synapses import Alpha, LinearFilter, Lowpass, Synapse, SynapseParam, Triangle
-from nengo.utils.filter_design import cont2discrete
 from nengo.utils.testing import signals_allclose
 
 

@@ -2,7 +2,6 @@ from . import builder
 from . import cache
 from . import connection
 from . import ensemble
-from . import filter_design
 from . import functions
 from . import graphs
 from . import ipython

@@ -1,5 +1,6 @@
 import numpy as np
 
+from nengo._vendor.scipy.signal import cont2discrete, tf2ss
 from nengo.base import Process
 from nengo.exceptions import ValidationError
 from nengo.params import (
@@ -11,7 +12,6 @@ from nengo.params import (
     Unconfigurable,
 )
 from nengo.rc import rc
-from nengo.utils.filter_design import cont2discrete, tf2ss
 from nengo.utils.numpy import as_shape, is_number
 
 
