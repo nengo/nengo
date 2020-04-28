@@ -33,6 +33,8 @@ Release history
   ``ConvolutionTranspose``. (`#1648`_)
 - Added ``LinearSystem``, a ``Process`` to implement arbitrary linear systems.
   (`#1650`_)
+- Added ``DoubleExp``, ``Bandpass``, ``Highpass``, ``DiscreteDelay``, and
+  ``LegendreDelay`` synapse models. (`#1650`_)
 
 **Changed**
 

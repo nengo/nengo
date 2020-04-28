@@ -4,7 +4,20 @@ import pytest
 import nengo
 from nengo.exceptions import ValidationError
 from nengo.processes import WhiteSignal
-from nengo.synapses import Alpha, LinearFilter, Lowpass, Synapse, SynapseParam, Triangle
+from nengo.synapses import (
+    Alpha,
+    Bandpass,
+    DiscreteDelay,
+    DoubleExp,
+    Highpass,
+    LegendreDelay,
+    LinearFilter,
+    Lowpass,
+    Synapse,
+    SynapseParam,
+    Triangle,
+)
+from nengo.utils.numpy import rms
 from nengo.utils.testing import signals_allclose
 
 # The following num, den are for a 4th order analog Butterworth filter,
@@ -14,7 +27,14 @@ butter_den = np.array([1.0, -3.18063855, 3.86119435, -2.11215536, 0.43826514])
 
 
 def run_synapse(
-    Simulator, seed, synapse, dt=1e-3, runtime=0.2, high=100, n_neurons=None
+    Simulator,
+    seed,
+    synapse,
+    dt=1e-3,
+    runtime=0.2,
+    high=100,
+    n_neurons=None,
+    ax=None,
 ):
     model = nengo.Network(seed=seed)
     with model:
@@ -32,6 +52,13 @@ def run_synapse(
 
     with Simulator(model, dt=dt, seed=seed + 1) as sim:
         sim.run(runtime)
+
+    if ax is not None:
+        freqs = np.fft.rfftfreq(len(sim.data[ref]), d=dt)
+        ref_fft = np.fft.rfft(sim.data[ref], axis=0)
+        filtered_fft = np.fft.rfft(sim.data[filtered], axis=0)
+        ax.plot(freqs, np.abs(ref_fft), "k")
+        ax.plot(freqs, np.abs(filtered_fft))
 
     return sim.trange(), sim.data[ref], sim.data[filtered]
 
@@ -52,23 +79,80 @@ def test_direct(form, Simulator, plt, seed, allclose):
 
 def test_lowpass(Simulator, plt, seed, allclose):
     dt = 1e-3
-    tau = 0.03
+    tau = 0.01
 
-    t, x, yhat = run_synapse(Simulator, seed, Lowpass(tau), dt=dt)
+    synapse = Lowpass(tau)
+    t, x, yhat = run_synapse(Simulator, seed, synapse, dt=dt)
     y = Lowpass(tau).filt(x, dt=dt, y0=0)
 
     assert signals_allclose(t, y, yhat, delay=dt, plt=plt, allclose=allclose)
 
+    gains = np.abs(synapse.evaluate([0, synapse.cutoff, 1e16]))
+    assert allclose(gains, [1, 1 / np.sqrt(2), 0])
+
 
 def test_alpha(Simulator, plt, seed, allclose):
     dt = 1e-3
-    tau = 0.03
+    tau = 0.01
     num, den = [1], [tau ** 2, 2 * tau, 1]
 
-    t, x, yhat = run_synapse(Simulator, seed, Alpha(tau), dt=dt)
+    synapse = Alpha(tau)
+    t, x, yhat = run_synapse(Simulator, seed, synapse, dt=dt)
     y = LinearFilter((num, den)).filt(x, dt=dt, y0=0)
 
     assert signals_allclose(t, y, yhat, delay=dt, atol=5e-6, plt=plt, allclose=allclose)
+
+    check_synapse = Lowpass(tau).combine(Lowpass(tau))
+    assert np.allclose(check_synapse.tf[0], synapse.tf[0])
+    assert np.allclose(check_synapse.tf[1], synapse.tf[1])
+
+    gains = np.abs(synapse.evaluate([0, synapse.cutoff, 1e16]))
+    assert allclose(gains, [1, 1 / np.sqrt(2), 0])
+
+
+def test_double_exp(Simulator, plt, seed, allclose):
+    dt = 1e-3
+    synapse = DoubleExp(0.01, 0.002)
+    t, x, yhat = run_synapse(Simulator, seed, synapse, dt=dt)
+    y = synapse.filt(x, dt=dt, y0=0)
+    assert signals_allclose(t, y, yhat, delay=dt, atol=5e-6, plt=plt, allclose=allclose)
+
+    check_synapse = Lowpass(0.002).combine(Lowpass(0.01))
+    assert np.allclose(check_synapse.tf[0], synapse.tf[0])
+    assert np.allclose(check_synapse.tf[1], synapse.tf[1])
+
+    freqs = [0, synapse.cutoff_low, synapse.cutoff_high, 1e16]
+    gains = np.abs(synapse.evaluate(freqs))
+    assert (np.diff(freqs) > 0.1).all() and (np.diff(gains) < 0.01).all()
+    assert allclose(gains[[0, -1]], [1, 0])
+    assert allclose(gains[1], 1 / np.sqrt(2), atol=0.05)
+
+
+def test_bandpass(Simulator, plt, seed, allclose):
+    dt = 1e-3
+    synapse = Bandpass(freq=25, alpha=0.1)
+    t, x, yhat = run_synapse(Simulator, seed, synapse, dt=dt)
+    y = synapse.filt(x, dt=dt, y0=0)
+    assert signals_allclose(t, y, yhat, delay=dt, atol=5e-6, plt=plt, allclose=allclose)
+
+    freqs = [0, synapse.cutoff_low, synapse.freq, synapse.cutoff_high, 1e16]
+    gains = np.abs(synapse.evaluate(freqs))
+    assert (np.diff(freqs) > 0.1).all()
+    assert allclose(gains, [0, 1 / np.sqrt(2), 1, 1 / np.sqrt(2), 0])
+
+
+@pytest.mark.parametrize("tau, order", [(0.002, 1), (0.003, 3)])
+def test_highpass(tau, order, Simulator, plt, seed, allclose):
+    dt = 1e-3
+    synapse = Highpass(tau, order=order)
+    t, x, yhat = run_synapse(Simulator, seed, synapse, dt=dt)
+    y = synapse.filt(x, dt=dt, y0=0)
+    assert signals_allclose(t, y, yhat, delay=dt, atol=5e-6, plt=plt, allclose=allclose)
+
+    freqs = [0, synapse.cutoff, 1e16]
+    gains = np.abs(synapse.evaluate(freqs))
+    assert (np.diff(freqs) > 0.1).all()
+    assert allclose(gains, np.array([0, 1 / np.sqrt(2), 1]) ** order)
 
 
 def test_triangle(Simulator, plt, seed, allclose):
@@ -177,6 +261,49 @@ def test_linearfilter_den():
         synapse = nengo.LinearFilter(*sys)
 
     assert synapse == nengo.LinearFilter(sys)
+
+
+@pytest.mark.parametrize(
+    "synapse, rmse_range",
+    [
+        (DiscreteDelay(20), [0, 1e-8]),
+        (LegendreDelay(0.09, 9), [0.001, 0.03]),
+        (LegendreDelay(0.09, 21), [0.001, 0.03]),
+    ],
+)
+def test_delay_synapses(synapse, rmse_range, Simulator, seed, plt, allclose):
+    simtime = 0.5
+    dt = 0.001
+    if isinstance(synapse, DiscreteDelay):
+        # as per DiscreteDelay docstring notes, delay is one less in filt than in sim
+        delay_steps = synapse.steps - 1
+    else:
+        delay = synapse.theta
+        delay_steps = int(round(delay / dt))
+        assert delay_steps > 0 and np.allclose(delay_steps * dt, delay, atol=1e-5)
+
+    process = nengo.processes.WhiteSignal(10.0, high=15, y0=0, seed=seed, default_dt=dt)
+
+    # out of simulator
+    u = process.run(simtime)
+    t = process.ntrange(len(u))
+    y = synapse.filt(u, dt=dt)
+
+    # in simulator
+    with nengo.Network() as net:
+        inp = nengo.Node(process)
+        out = nengo.Probe(inp, synapse=synapse)
+    with Simulator(net, dt=dt) as sim:
+        sim.run(simtime)
+
+    plt.plot(t[delay_steps:], u[:-delay_steps], "--")
+    plt.plot(t, y)
+    plt.plot(t[:-1], sim.data[out][1:])  # remove simulator delay of 1
+
+    rmse_filt = rms(y[delay_steps:] - u[:-delay_steps])
+    rmse_sim = rms(sim.data[out][delay_steps + 1 :] - u[: -delay_steps - 1])
+    assert rmse_range[0] <= rmse_filt <= rmse_range[1]
+    assert np.allclose(rmse_sim, rmse_filt, atol=1e-5, rtol=5e-3)
 
 
 def test_step_errors():
