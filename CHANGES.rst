@@ -48,6 +48,8 @@ Release history
   for which ``negative`` is not ``True``. (`#1609`_)
 - Added ``LinearSystem``, a ``Process`` to implement arbitrary linear systems.
   (`#1611`_)
+- Added ``DoubleExp``, ``Bandpass``, ``Highpass``, ``DiscreteDelay``, and
+  ``LegendreDelay`` synapse models. (`#1611`_)
 
 **Changed**
 

@@ -5,6 +5,7 @@ import numpy as np
 from nengo.base import Process
 from nengo.exceptions import ValidationError
 from nengo.params import (
+    IntParam,
     NumberParam,
     Parameter,
     Unconfigurable,
@@ -230,8 +231,6 @@ class LinearFilter(LinearSystem, Synapse):
 
         .. testcode::
 
-           import matplotlib.pyplot as plt
-
            synapse = nengo.synapses.LinearFilter(([1], [0.02, 1]))
            f = np.logspace(-1, 3, 100)
            y = synapse.evaluate(f)
@@ -240,7 +239,7 @@ class LinearFilter(LinearSystem, Synapse):
            plt.subplot(212); plt.semilogx(f, np.angle(y))
            plt.xlabel('frequency [Hz]'); plt.ylabel('phase [radians]')
         """
-        frequencies = 2.0j * np.pi * frequencies
+        frequencies = 2.0j * np.pi * np.asarray(frequencies)
         w = frequencies if self.analog else np.exp(frequencies)
         num, den = self.tf
         assert num.ndim == 2 and num.shape[0] == 1
@@ -426,11 +425,14 @@ class LinearFilter(LinearSystem, Synapse):
 
 
 class Lowpass(LinearFilter):
-    """Standard first-order lowpass filter synapse.
+    r"""Standard first-order lowpass filter synapse.
 
-    The impulse-response function is given by::
+    The impulse-response function (time domain) and transfer function are:
 
-        f(t) = (1 / tau) * exp(-t / tau)
+    .. math::
+
+        h(t) &= (1 / \tau) \exp(-t / \tau) \\
+        H(s) &= \frac{1}{\tau s + 1}
 
     Parameters
     ----------
@@ -446,18 +448,26 @@ class Lowpass(LinearFilter):
     tau = NumberParam("tau", low=0)
 
     def __init__(self, tau, **kwargs):
-        super().__init__(([1], [tau, 1]), **kwargs)
         self.tau = tau
+        super().__init__(([1], [tau, 1]), analog=True, **kwargs)
+
+    @property
+    def cutoff(self):
+        """Cutoff frequency in Hz; frequencies above this are attenuated."""
+        return 1 / (2 * np.pi * self.tau)
 
 
 class Alpha(LinearFilter):
-    """Alpha-function filter synapse.
+    r"""Alpha-function filter synapse.
 
-    The impulse-response function is given by::
+    The impulse-response function (time domain) and transfer function are:
 
-        alpha(t) = (t / tau**2) * exp(-t / tau)
+    .. math::
 
-    and was found by [1]_ to be a good basic model for synapses.
+        h(t) &= (t / \tau^2) \exp(-t / \tau) \\
+        H(s) &= \frac{1}{(\tau s + 1)^2}
+
+    This was found by [1]_ to be a good basic model for synapses.
 
     Parameters
     ----------
@@ -478,8 +488,332 @@ class Alpha(LinearFilter):
     tau = NumberParam("tau", low=0)
 
     def __init__(self, tau, **kwargs):
-        super().__init__(([1], [tau ** 2, 2 * tau, 1]), **kwargs)
         self.tau = tau
+        super().__init__(([1], [tau ** 2, 2 * tau, 1]), analog=True, **kwargs)
+
+    @property
+    def cutoff(self):
+        """Cutoff frequency in Hz; frequencies above this are attenuated."""
+        return np.sqrt(np.sqrt(2) - 1) / (2 * np.pi * self.tau)
+
+
+class DoubleExp(LinearFilter):
+    r"""A second-order (two-pole) lowpass filter synapse with no zeros.
+
+    The transfer function is:
+
+    .. math::
+
+        h(t) &= \frac{\exp(-t / \tau_1) - \exp(-t / \tau_2)}{\tau_1 - \tau_2} \\
+        H(s) &= \frac{1}{(\tau_1 s + 1)(\tau_2 s + 1)}
+
+    Equivalent to convolving two lowpass synapses together with potentially
+    different time-constants, in either order.
+
+    Parameters
+    ----------
+    tau1 : ``float``
+        Time-constant of one exponential decay.
+    tau2 : ``float``
+        Time-constant of the other exponential decay.
+
+    See Also
+    --------
+    :class:`.Lowpass`
+    :class:`.Alpha`
+
+    Examples
+    --------
+    .. testcode::
+
+        sys = nengo.synapses.DoubleExp(1, 0.01)
+        cutoffs = [sys.cutoff_low, sys.cutoff_high]
+        freqs = np.logspace(-2, 2, 100)
+        gain = np.abs(sys.evaluate(freqs))
+        plt.semilogx(
+            freqs,
+            20 * np.log10(gain),
+            label=r"$F_L = %0.3f$, $F_H = %0.3f$" % tuple(cutoffs),
+        )
+        cutoff_gains = np.abs(sys.evaluate(cutoffs))
+        plt.semilogx(cutoffs, 20 * np.log10(cutoff_gains), "x", label="cutoffs")
+        plt.xlabel("Frequency (Hz)")
+        plt.ylabel("Gain (dB)")
+        plt.legend()
+    """
+
+    tau1 = NumberParam("tau1", low=0)
+    tau2 = NumberParam("tau2", low=0)
+
+    def __init__(self, tau1, tau2, **kwargs):
+        self.tau1 = tau1
+        self.tau2 = tau2
+        super().__init__(([1], [tau1 * tau2, tau1 + tau2, 1]), analog=True, **kwargs)
+
+    @property
+    def cutoff_low(self):
+        """Lower cutoff frequency in Hz; above this, attenuation is 20 dB/decade."""
+        return 1 / (2 * np.pi * max(self.tau1, self.tau2))
+
+    @property
+    def cutoff_high(self):
+        """Higher cutoff frequency in Hz; above this, attenuation is 40 dB/decade."""
+        return 1 / (2 * np.pi * min(self.tau1, self.tau2))
+
+
+class Bandpass(LinearFilter):
+    r"""A second-order bandpass with given frequency and width.
+
+    Implements the transfer function:
+
+    .. math:: H(s) = \frac{\alpha w_0 s}{s^2 + \alpha w_0 s + w_0^2}
+
+    where :math:`w_0 = 2 * \pi * freq` is the peak angular frequency, and
+    :math:`\alpha` determines the width of the pass band. [1]_
+
+    Given desired ``cutoff_low`` and ``cutoff_high``, the low and high frequencies at
+    which the attenuation reaches -3 dB, respectively, ``freq`` and ``alpha`` are::
+
+        freq = sqrt(cutoff_low * cutoff_high)
+        alpha = (cutoff_high - cutoff_low) / freq
+
+    Parameters
+    ----------
+    freq : ``float``
+        Frequency (in hertz) of the peak of the pass band.
+    alpha : ``float``
+        Proportional to width of the pass band. Inverse of the Q factor of the system.
+
+    References
+    ----------
+    .. [1] Hank Zumbahlen (Ed.), "Basic Linear Design", 2007. chapter 8.
+       http://www.analog.com/library/analogDialogue/archives/43-09/EDCh%208%20filter.pdf
+
+    Examples
+    --------
+    Plot frequency responses of bandpass filters centered around 2 Hz with varying
+    pass-band widths:
+
+    .. testcode::
+
+        freqs = np.logspace(-2, 2, 100)
+        for alpha in (0.1, 0.2, 0.5, 1, 2):
+            sys = nengo.synapses.Bandpass(2, alpha)
+            gain = np.abs(sys.evaluate(freqs))
+            plt.semilogx(
+                freqs,
+                20 * np.log10(gain),
+                label=r"$\alpha = %s$, $F_L = %0.3f$, $F_H = %0.3f$" % (
+                    alpha, sys.cutoff_low, sys.cutoff_high
+                )
+            )
+        plt.xlabel("Frequency (Hz)")
+        plt.ylabel("Gain (dB)")
+        plt.legend()
+    """
+
+    freq = NumberParam("freq", low=0, low_open=True)
+    alpha = NumberParam("alpha", low=0, low_open=True)
+
+    def __init__(self, freq, alpha=1, **kwargs):
+        self.freq = freq
+        self.alpha = alpha
+        w0 = freq * (2 * np.pi)
+        super().__init__(
+            ([alpha * w0, 0], [1, alpha * w0, w0 ** 2]), analog=True, **kwargs
+        )
+
+    @property
+    def cutoff_low(self):
+        """Low cutoff frequency in Hz; frequencies below this are attenuated."""
+        return (np.sqrt(1 + 0.25 * self.alpha ** 2) - 0.5 * self.alpha) * self.freq
+
+    @property
+    def cutoff_high(self):
+        """High cutoff frequency in Hz; frequencies above this are attenuated."""
+        return (np.sqrt(1 + 0.25 * self.alpha ** 2) + 0.5 * self.alpha) * self.freq
+
+
+class Highpass(LinearFilter):
+    r"""A highpass filter of given order.
+
+    The transfer function is given by:
+
+    .. math:: H(s) = \left( \frac{\tau s}{\tau s + 1} \right)^{order}
+
+    Equivalent to differentiating the input, scaling by :math:`\tau`,
+    lowpass filtering with time-constant :math:`\tau`, and finally repeating
+    this ``order`` times. The lowpass filter is required to make this causal.
+
+    The ``cutoff`` frequency is given by :math:`1 / (2 \pi \tau)`.
+
+    Parameters
+    ----------
+    tau : ``float``
+        Time-constant of the lowpass filter, and highpass gain.
+    order : ``integer``, optional
+        Dimension of the resulting linear system.
+
+    See Also
+    --------
+    :class:`.Lowpass`
+
+    Examples
+    --------
+    Evaluate the highpass in the frequency domain with a time-constant of 40 ms
+    (a cutoff of about 4 Hz), and order 2:
+
+    .. testcode::
+
+        sys = nengo.synapses.Highpass(0.04, order=2)
+        freqs = np.logspace(-2, 2, 100)
+        gain = np.abs(sys.evaluate(freqs))
+        plt.semilogx(freqs, 20 * np.log10(gain), label="cutoff = %0.3f" % (sys.cutoff))
+        plt.xlabel("Frequency (Hz)")
+        plt.ylabel("Gain (dB)")
+        plt.legend()
+    """
+
+    tau = NumberParam("tau", low=0)
+    order = IntParam("order", low=1)
+
+    def __init__(self, tau, order=1, **kwargs):
+        self.tau = tau
+        self.order = order
+        num = (np.poly1d([tau, 0]) ** order).coeffs
+        den = (np.poly1d([tau, 1]) ** order).coeffs
+        super().__init__((num, den), analog=True, **kwargs)
+
+    @property
+    def cutoff(self):
+        """Cutoff frequency in Hz; frequencies below this are attenuated."""
+        return 1 / (2 * np.pi * self.tau)
+
+
+class DiscreteDelay(LinearFilter):
+    """A discrete (pure) time-delay of a given number of steps.
+
+    Described by the discrete transfer function
+
+    .. math:: H(z) = z^{-steps}
+
+    Parameters
+    ----------
+    steps : ``integer``
+        Number of time-steps to delay the input signal.
+
+    See Also
+    --------
+    :class:`.LegendreDelay`
+
+    Notes
+    -----
+    A single step of the delay will be removed if using the ``filt`` method.
+    This is done for subtle reasons of consistency with `.Simulator`.
+    The correct delay will appear when passed to `.Connection`.
+
+    Examples
+    --------
+    Simulate a network using a discrete delay of 0.3 seconds for a synapse:
+
+    .. testcode::
+
+        from nengo.synapses import DiscreteDelay
+
+        dt = 0.001
+        with nengo.Network() as model:
+            stim = nengo.Node(output=lambda t: np.sin(2*np.pi*t))
+            p_stim = nengo.Probe(stim)
+            p_delay = nengo.Probe(stim, synapse=DiscreteDelay(int(0.3 / dt)))
+
+        with nengo.Simulator(model, dt=dt) as sim:
+            sim.run(1.)
+
+        plt.plot(sim.trange(), sim.data[p_stim], label="Stimulus")
+        plt.plot(sim.trange(), sim.data[p_delay], label="Delayed")
+        plt.xlabel("Time (s)")
+        plt.legend()
+
+    .. testoutput::
+       :hide:
+
+       ...
+    """
+
+    steps = IntParam("steps", low=0)
+
+    def __init__(self, steps, **kwargs):
+        self.steps = steps
+        super().__init__(([1], [1] + [0] * steps), analog=False, **kwargs)
+
+
+class LegendreDelay(LinearFilter):
+    r"""A finite-order approximation of a pure delay, using the shifted Legendre basis.
+
+    Implements the transfer function:
+
+    .. math:: H(s) = e^{-\theta s} + \mathcal{O}(s^{2 n})
+
+    where :math:`n` is the order of the system. This results in a pure delay of
+    :math:`\theta` seconds (i.e. :math:`y(t) \approx u(t - \theta)` in the time-domain),
+    for slowly changing inputs.
+
+    Its canonical state-space realization represents the window of history
+    by the shifted Legendre polnomials:
+
+    .. math:: P_i(2 \theta' \theta^{-1} - 1)
+
+    where ``i`` is the zero-based index into the state-vector.
+
+    Parameters
+    ----------
+    theta : ``float``
+        Length of time-delay in seconds.
+    order : ``integer``
+        Order of approximation in the denominator
+        (dimensionality of resulting system).
+
+    See Also
+    --------
+    :class:`.DiscreteDelay`
+
+    Examples
+    --------
+    Delay 15 Hz band-limited white noise by 100 ms using various orders of
+    approximations:
+
+    .. testcode::
+
+        process = nengo.processes.WhiteSignal(10.0, high=15, y0=0)
+        u = process.run_steps(500)
+        t = process.ntrange(len(u))
+
+        plt.plot(t[100:], u[:-100], linestyle="--", lw=4, label="Ideal")
+        for order in list(range(4, 8)):
+            sys = nengo.synapses.LegendreDelay(0.1, order=order)
+            plt.plot(t, sys.filt(u), label="order=%s" % order)
+
+        plt.xlabel("Time (s)")
+        plt.legend()
+    """
+
+    theta = NumberParam("theta", low=0)
+    order = IntParam("order", low=1)
+
+    def __init__(self, theta, order, **kwargs):
+        self.theta = theta
+        self.order = order
+
+        Q = np.arange(order, dtype=np.float64)
+        R = (2 * Q + 1)[:, None] / theta
+        j, i = np.meshgrid(Q, Q)
+
+        A = np.where(i < j, -1, (-1.0) ** (i - j + 1)) * R
+        B = (-1.0) ** Q[:, None] * R
+        C = np.ones((1, order))
+        D = np.zeros((1,))
+
+        super().__init__((A, B, C, D), analog=True, **kwargs)
 
 
 class Triangle(Synapse):
