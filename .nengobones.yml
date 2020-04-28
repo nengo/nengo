@@ -140,6 +140,7 @@ docs_conf_py:
     - nengo_sphinx_theme.ext.resolvedefaults
     - sphinx.ext.inheritance_diagram
   doctest_setup:
+    - "import matplotlib.pyplot as plt"
     - "import numpy as np"
     - "if np.__version__ >= '1.14':"
     - "    np.set_printoptions(legacy='1.13')"
