@@ -1,3 +1,4 @@
+from collections import OrderedDict
 import warnings
 
 import numpy as np
@@ -217,6 +218,10 @@ class NeuronType(FrozenObject):
         out = np.zeros_like(J)
         self.step_math(dt=1.0, J=J, output=out)
         return out
+
+    def make_neuron_state(self, n_neurons, dt, dtype=None):
+        states = [p for p in self.probeable if p not in ("rates", "spikes")]
+        return OrderedDict((state, 0) for state in states)
 
     def step_math(self, dt, J, output, rng=None):
         """Implements the differential equation for this neuron type.
@@ -697,7 +702,7 @@ class AdaptiveLIF(LIF):
        16.10 (2004): 2101-2124.
     """
 
-    probeable = ("spikes", "adaptation", "voltage", "refractory_time")
+    probeable = ("spikes", "voltage", "refractory_time", "adaptation")
 
     tau_n = NumberParam("tau_n", low=0, low_open=True)
     inc_n = NumberParam("inc_n", low=0)
@@ -717,10 +722,10 @@ class AdaptiveLIF(LIF):
         self.tau_n = tau_n
         self.inc_n = inc_n
 
-    def step_math(self, dt, J, output, voltage, ref, adaptation):
+    def step_math(self, dt, J, output, voltage, refractory_time, adaptation):
         """Implement the AdaptiveLIF nonlinearity."""
         n = adaptation
-        super().step_math(dt, J - n, output, voltage, ref)
+        super().step_math(dt, J - n, output, voltage, refractory_time)
         n += (dt / self.tau_n) * (self.inc_n * output - n)
 
 
@@ -882,7 +887,7 @@ class RegularSpiking(_Spiking):
     def probeable(self):
         base = list(self.base_type.probeable)
         base[base.index("rates")] = "spikes"
-        base.append("voltage")
+        base.insert(1 if base[0] == "spikes" else 0, "voltage")
         return tuple(base)
 
     def step_math(self, dt, J, output, voltage, *base_states):
