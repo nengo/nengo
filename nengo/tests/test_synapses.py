@@ -71,7 +71,7 @@ def test_direct(form, Simulator, plt, seed, allclose):
 
     synapse = LinearFilter(sys, analog=False)
     t, x, yhat = run_synapse(Simulator, seed, synapse, dt=dt)
-    y = synapse.filt(x, dt=dt, y0=0)
+    y = synapse.filt(x, dt=dt)
 
     assert signals_allclose(t, y, yhat, delay=dt, allclose=allclose)
     assert signals_allclose(t, a * x, y, plt=plt, allclose=allclose)
@@ -83,7 +83,7 @@ def test_lowpass(Simulator, plt, seed, allclose):
 
     synapse = Lowpass(tau)
     t, x, yhat = run_synapse(Simulator, seed, synapse, dt=dt)
-    y = Lowpass(tau).filt(x, dt=dt, y0=0)
+    y = Lowpass(tau).filt(x, dt=dt)
 
     assert signals_allclose(t, y, yhat, delay=dt, plt=plt, allclose=allclose)
 
@@ -98,7 +98,7 @@ def test_alpha(Simulator, plt, seed, allclose):
 
     synapse = Alpha(tau)
     t, x, yhat = run_synapse(Simulator, seed, synapse, dt=dt)
-    y = LinearFilter((num, den)).filt(x, dt=dt, y0=0)
+    y = LinearFilter((num, den)).filt(x, dt=dt)
 
     assert signals_allclose(t, y, yhat, delay=dt, atol=5e-6, plt=plt, allclose=allclose)
 
@@ -114,7 +114,7 @@ def test_double_exp(Simulator, plt, seed, allclose):
     dt = 1e-3
     synapse = DoubleExp(0.01, 0.002)
     t, x, yhat = run_synapse(Simulator, seed, synapse, dt=dt)
-    y = synapse.filt(x, dt=dt, y0=0)
+    y = synapse.filt(x, dt=dt)
     assert signals_allclose(t, y, yhat, delay=dt, atol=5e-6, plt=plt, allclose=allclose)
 
     check_synapse = Lowpass(0.002).combine(Lowpass(0.01))
@@ -132,7 +132,7 @@ def test_bandpass(Simulator, plt, seed, allclose):
     dt = 1e-3
     synapse = Bandpass(freq=25, alpha=0.1)
     t, x, yhat = run_synapse(Simulator, seed, synapse, dt=dt)
-    y = synapse.filt(x, dt=dt, y0=0)
+    y = synapse.filt(x, dt=dt)
     assert signals_allclose(t, y, yhat, delay=dt, atol=5e-6, plt=plt, allclose=allclose)
 
     freqs = [0, synapse.cutoff_low, synapse.freq, synapse.cutoff_high, 1e16]
@@ -146,7 +146,7 @@ def test_highpass(tau, order, Simulator, plt, seed, allclose):
     dt = 1e-3
     synapse = Highpass(tau, order=order)
     t, x, yhat = run_synapse(Simulator, seed, synapse, dt=dt)
-    y = synapse.filt(x, dt=dt, y0=0)
+    y = synapse.filt(x, dt=dt)
     assert signals_allclose(t, y, yhat, delay=dt, atol=5e-6, plt=plt, allclose=allclose)
 
     freqs = [0, synapse.cutoff, 1e16]
@@ -155,12 +155,13 @@ def test_highpass(tau, order, Simulator, plt, seed, allclose):
     assert allclose(gains, np.array([0, 1 / np.sqrt(2), 1]) ** order)
 
 
+@pytest.mark.filterwarnings("ignore:`y0` is deprecated")
 def test_triangle(Simulator, plt, seed, allclose):
     dt = 1e-3
     tau = 0.03
 
     t, x, ysim = run_synapse(Simulator, seed, Triangle(tau), dt=dt)
-    yfilt = Triangle(tau).filt(x, dt=dt, y0=0)
+    yfilt = Triangle(tau).filt(x, dt=dt)
 
     # compare with convolved filter
     n_taps = int(round(tau / dt)) + 1
@@ -182,7 +183,7 @@ def test_decoders(Simulator, plt, seed, allclose):
 
     t, x, yhat = run_synapse(Simulator, seed, Lowpass(tau), dt=dt, n_neurons=100)
 
-    y = Lowpass(tau).filt(x, dt=dt, y0=0)
+    y = Lowpass(tau).filt(x, dt=dt)
     assert signals_allclose(t, y, yhat, delay=dt, plt=plt, allclose=allclose)
 
 
@@ -190,7 +191,7 @@ def test_linearfilter(Simulator, plt, seed, allclose):
     dt = 1e-3
     synapse = LinearFilter((butter_num, butter_den), analog=False)
     t, x, yhat = run_synapse(Simulator, seed, synapse, dt=dt)
-    y = synapse.filt(x, dt=dt, y0=0)
+    y = synapse.filt(x, dt=dt)
 
     assert signals_allclose(t, y, yhat, delay=dt, plt=plt, allclose=allclose)
 
@@ -221,16 +222,17 @@ def test_linearfilter_evaluate(plt):
 
 def test_linearfilter_y0(allclose):
     # --- y0 sets initial state correctly for high-order filter
-    synapse = LinearFilter((butter_num, butter_den), analog=False)
     v = 9.81
     x = v * np.ones(10)
-    assert allclose(synapse.filt(x, y0=v), v)
-    assert not allclose(synapse.filt(x, y0=0), v, record_rmse=False, print_fail=0)
+    synapse = LinearFilter((butter_num, butter_den), analog=False, initial_output=v)
+    assert allclose(synapse.filt(x), v)
+    synapse = LinearFilter((butter_num, butter_den), analog=False, initial_output=0)
+    assert not allclose(synapse.filt(x), v, record_rmse=False, print_fail=0)
 
     # --- y0 does not work for high-order synapse when DC gain is zero
-    synapse = LinearFilter(([1, 0], [1, 1]))
+    synapse = LinearFilter(([1, 0], [1, 1]), initial_output=1)
     with pytest.raises(ValidationError, match="Cannot solve for state"):
-        synapse.filt(np.ones(10), y0=1)
+        synapse.filt(np.ones(10))
 
 
 def test_linearfilter_extras(allclose):
@@ -240,7 +242,7 @@ def test_linearfilter_extras(allclose):
 
     # differentiator should work properly
     diff = nengo.LinearFilter(([1, -1], [1, 0]), analog=False)
-    assert allclose(diff.filt([1.0, -1.0, 2.0], y0=0), [1.0, -2.0, 3.0])
+    assert allclose(diff.filt([1.0, -1.0, 2.0]), [1.0, -2.0, 3.0])
 
     # Filtering an integer array should cast to a float
     x = np.arange(10, dtype=nengo.rc.int_dtype)
@@ -333,7 +335,7 @@ def test_filt(plt, rng, allclose):
     x = np.convolve(u, k, mode="full")[:nt]
 
     # support lists as input
-    y = Lowpass(tau).filt(list(u), dt=dt, y0=0)
+    y = Lowpass(tau).filt(list(u), dt=dt)
 
     plt.plot(t, x)
     plt.plot(t, y)
@@ -341,6 +343,7 @@ def test_filt(plt, rng, allclose):
     assert allclose(x, y, atol=1e-3, rtol=1e-2)
 
 
+@pytest.mark.filterwarnings("ignore:`y0` is deprecated")
 def test_filtfilt(plt, rng, allclose):
     dt = 1e-3
     tend = 3.0
@@ -383,8 +386,8 @@ def test_linearfilter_combine(rng, allclose):
     nt = 3000
     tau0, tau1 = 0.01, 0.02
     u = rng.normal(size=(nt, 10))
-    x = LinearFilter(([], [-1 / tau0, -1 / tau1], 1 / (tau0 * tau1))).filt(u, y0=0)
-    y = Lowpass(tau0).combine(Lowpass(tau1)).filt(u, y0=0)
+    x = LinearFilter(([], [-1 / tau0, -1 / tau1], 1 / (tau0 * tau1))).filt(u)
+    y = Lowpass(tau0).combine(Lowpass(tau1)).filt(u)
     assert allclose(x, y)
 
     with pytest.raises(ValidationError, match="other LinearFilter"):
@@ -430,6 +433,46 @@ def test_combined_delay(Simulator, allclose):
     # for sys2, this comes from one level of filtering + delay in sys2
     assert allclose(sim.data[p1][:2], 0)
     assert not allclose(sim.data[p1][2], 0, record_rmse=False, print_fail=0)
+
+
+@pytest.mark.parametrize(
+    "Synapse",
+    [
+        lambda output: nengo.Lowpass(0.05, initial_output=output),
+        lambda output: nengo.synapses.Triangle(0.15, initial_output=output),
+    ],
+)
+def test_initial_output_errors(Synapse):
+    def test(size_a, size_b, synapse, ens_a=False, **kwargs):
+        with nengo.Network() as net:
+            a = nengo.Ensemble(2, size_a) if ens_a else nengo.Node([0] * size_a)
+            b = nengo.Node(size_in=size_b)
+            nengo.Connection(a, b, synapse=synapse, **kwargs)
+
+        with nengo.Simulator(net):
+            pass
+
+    # these should work
+    func2 = lambda x: [1, 1]
+    test(2, 2, Synapse(output=[1, 2]))
+    test(3, 2, Synapse(output=[1, 2]), ens_a=True, function=func2)
+
+    with pytest.raises(ValidationError, match="initial_output.*not broadcastable"):
+        test(2, 2, Synapse(output=[1, 2, 3]))
+
+    with pytest.raises(ValidationError, match="initial_output.*not broadcastable"):
+        test(3, 2, Synapse(output=[1, 2, 3]), ens_a=True, function=func2)
+
+    with pytest.raises(ValidationError, match="initial_output.*too long"):
+        test(2, 2, Synapse(output=np.ones((1, 1))))
+
+
+def test_initial_output_warnings():
+    with pytest.warns(UserWarning, match="Setting `y0` overrides.*`initial_output`"):
+        nengo.Lowpass(0.1, initial_output=1).filt([1, 2, 3], y0=2)
+
+    with pytest.warns(DeprecationWarning, match="`y0` is deprecated"):
+        nengo.Lowpass(0.1).filt([1, 2, 3], y0=2)
 
 
 def test_synapseparam():
