@@ -29,6 +29,10 @@ Release history
 - Added the ``step_order`` attribute to ``nengo.Simulator``, which contains an
   ordered list of the operations run on each timestep.
   (`#1615 <https://github.com/nengo/nengo/pull/1615>`__)
+- Added the ``make_state`` method to ``NeuronType``, which initializes the
+  neuron type's state variables. (`#1609`_)
+- Added the ``spiking`` attribute to ``NeuronType``, which exposes whether
+  a neuron type is spiking or non-spiking. (`#1609`_)
 
 **Changed**
 
@@ -42,6 +46,18 @@ Release history
   read-only, to prevent users from accidentally overwriting them with their own data.
   (`#1545 <https://github.com/nengo/nengo/issues/1545>`__,
   `#1608 <https://github.com/nengo/nengo/pull/1608>`__)
+- The ``NeuronType.step_math`` method has been renamed to ``NeuronType.step``.
+  (`#1609`_)
+- Neuron types can now create arbitrary state variables without needing to register
+  a new build function. The ``state`` class attribute declares the neuron type's
+  state variables and their default initial values. All ``__init__`` methods accept
+  an ``initial_state`` dictionary for users to override the default initial state
+  values. (`#1609`_)
+
+**Deprecated**
+
+- ``NeuronType.step`` replaces the ``NeuronType.step_math`` method,
+  which will be removed in Nengo 4.0.0. (`#1609`_)
 
 **Fixed**
 
@@ -55,6 +71,8 @@ Release history
 - Fixed a bug where the ``LstsqDrop`` solver errored when solving for zero weights.
   (`#1541 <https://github.com/nengo/nengo/issues/1541>`__,
   `#1607 <https://github.com/nengo/nengo/pull/1607>`__)
+
+.. _#1609: https://github.com/nengo/nengo/pull/1609
 
 3.0.0 (November 18, 2019)
 =========================

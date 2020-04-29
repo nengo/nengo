@@ -42,7 +42,7 @@ def test_lif_builtin(rng, allclose):
 
     spikes = np.zeros((int(t_final / dt),) + J.shape)
     for spikes_i in spikes:
-        lif.step_math(dt, J, spikes_i, voltage, reftime)
+        lif.step(dt, J, spikes_i, voltage, reftime)
 
     math_rates = lif.rates(x, gain, bias)
     sim_rates = spikes.mean(0)
@@ -604,3 +604,68 @@ def test_rates_shaping(rng, nl_nodirect):
         # Too many dimensions
         x = rng.rand(10, n_neurons, 1)
         rates = neuron_type.rates(x, gain, bias)
+
+
+@pytest.mark.parametrize(
+    "neuron_type", [nengo.LIF, nengo.SpikingRectifiedLinear],
+)
+@pytest.mark.filterwarnings("ignore:divide by zero")
+def test_initial_state(neuron_type, Simulator, seed, plt, allclose):
+    n = 50
+    initial_voltage = {
+        "uniform": nengo.dists.Uniform(0, 1),
+        "choice": nengo.dists.Choice([0.5]),
+        "linspace": np.linspace(0.1, 0.9, n),
+    }
+
+    with nengo.Network(seed=seed) as net:
+        probes = {}
+        for key, voltage in initial_voltage.items():
+            a = nengo.Ensemble(
+                50,
+                1,
+                neuron_type=neuron_type(initial_state={"voltage": voltage}),
+                gain=nengo.dists.Choice([1.0]),
+                bias=nengo.dists.Choice([0.0]),
+            )
+            probes[key] = nengo.Probe(a.neurons, "voltage")
+
+    with Simulator(net) as sim:
+        sim.run(0.1)
+
+    for i, (key, probe) in enumerate(probes.items()):
+        plt.subplot(len(probes), 1, i + 1)
+        plt.plot(sim.trange(), sim.data[probe][:, :15])
+
+    for key, voltage in initial_voltage.items():
+        probe = probes[key]
+        initial_voltage = sim.data[probe][0]
+        if neuron_type is nengo.LIF:  # undo decay
+            initial_voltage = initial_voltage * np.exp(sim.dt / a.neuron_type.tau_rc)
+
+        if isinstance(voltage, nengo.dists.Uniform):
+            histogram, _ = np.histogram(initial_voltage, bins=10)
+            histogram = histogram / histogram.mean()
+            assert np.abs(histogram - 1).mean() < 0.5
+        else:
+            if isinstance(voltage, nengo.dists.Distribution):
+                voltage = voltage.sample(n)
+            assert allclose(initial_voltage, voltage, atol=1e-5)
+
+
+def test_bad_initial_state(Simulator):
+    with pytest.raises(ValidationError, match="State variable 'rates' not recognized"):
+        nengo.LIF(initial_state={"rates": nengo.dists.Choice([0])})
+
+    with pytest.raises(ValidationError, match="State variable 'voltage' must be a"):
+        nengo.LIF(initial_state={"voltage": "voltage"})
+
+    class MyLIF(nengo.LIF):
+        state = {"in": nengo.dists.Choice([0])}
+
+    with nengo.Network() as net:
+        nengo.Ensemble(1, 1, neuron_type=MyLIF())
+
+    with pytest.raises(BuildError, match="State name 'in' overlaps"):
+        with Simulator(net):
+            pass

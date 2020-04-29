@@ -388,13 +388,16 @@ def test_noise_copies_ok(Simulator, nl_nodirect, seed, plt, allclose):
 
     process = FilteredNoise(synapse=nengo.Alpha(1.0), dist=Choice([0.5]))
     with nengo.Network(seed=seed) as model:
-        inp, gain, bias = 1, 5, 2
-        model.config[nengo.Ensemble].neuron_type = nl_nodirect()
+        if "spikes" in nl_nodirect.state:
+            neuron_type = nl_nodirect(initial_state={"voltage": Choice([0])})
+        else:
+            neuron_type = nl_nodirect()
+        model.config[nengo.Ensemble].neuron_type = neuron_type
         model.config[nengo.Ensemble].encoders = Choice([[1]])
-        model.config[nengo.Ensemble].gain = Choice([gain])
-        model.config[nengo.Ensemble].bias = Choice([bias])
+        model.config[nengo.Ensemble].gain = Choice([5])
+        model.config[nengo.Ensemble].bias = Choice([2])
         model.config[nengo.Ensemble].noise = process
-        const = nengo.Node(output=inp)
+        const = nengo.Node(output=1)
         a = nengo.Ensemble(1, 1, noise=process)
         b = nengo.Ensemble(1, 1, noise=process)
         c = nengo.Ensemble(1, 1)  # defaults to noise=process

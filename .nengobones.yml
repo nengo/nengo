@@ -84,6 +84,7 @@ setup_cfg:
       - "ignore:Object <BasalGanglia \"bg\"> has already been built"
       - "ignore:Object <Thalamus \"thalamus\"> has already been built"
       - "ignore:IPython.core.inputsplitter is deprecated"
+      - "ignore:'step_math' has been renamed"
     plt_filename_drop:
       - ^nengo\.
       - tests\.

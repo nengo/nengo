@@ -8,6 +8,7 @@ def pytest_runtest_setup(item):
     rc.set("decoder_cache", "enabled", "False")
     rc.set("exceptions", "simplified", "False")
     rc.set("nengo.Simulator", "fail_fast", "True")
+    rc.set("progress", "progress_bar", "False")
 
 
 def pytest_terminal_summary(terminalreporter):

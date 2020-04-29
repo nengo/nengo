@@ -138,27 +138,30 @@ def test_core_objects():
 
 
 def test_neuron_types():
-    check_init_args(Direct, [])
+    check_init_args(Direct, ["initial_state"])
     check_repr(Direct())
     assert repr(Direct()) == "Direct()"
 
-    check_init_args(RectifiedLinear, ["amplitude"])
+    check_init_args(RectifiedLinear, ["amplitude", "initial_state"])
     check_repr(RectifiedLinear())
     check_repr(RectifiedLinear(amplitude=2))
+    check_repr(RectifiedLinear(initial_state={"rates": Choice([1.0])}))
     assert repr(RectifiedLinear()) == "RectifiedLinear()"
 
-    check_init_args(SpikingRectifiedLinear, ["amplitude"])
+    check_init_args(SpikingRectifiedLinear, ["amplitude", "initial_state"])
     check_repr(SpikingRectifiedLinear())
     check_repr(SpikingRectifiedLinear(amplitude=2))
+    check_repr(SpikingRectifiedLinear(initial_state={"voltage": Choice([1.0])}))
     assert repr(SpikingRectifiedLinear()) == "SpikingRectifiedLinear()"
 
-    check_init_args(Sigmoid, ["tau_ref"])
+    check_init_args(Sigmoid, ["tau_ref", "initial_state"])
     check_repr(Sigmoid())
     check_repr(Sigmoid(tau_ref=0.1))
+    check_repr(Sigmoid(initial_state={"rates": Choice([1.0])}))
     assert repr(Sigmoid()), "Sigmoid()"
     assert repr(Sigmoid(tau_ref=0.001)) == "Sigmoid(tau_ref=0.001)"
 
-    check_init_args(LIFRate, ["tau_rc", "tau_ref", "amplitude"])
+    check_init_args(LIFRate, ["tau_rc", "tau_ref", "amplitude", "initial_state"])
     check_repr(LIFRate())
     check_repr(LIFRate(tau_rc=0.1))
     check_repr(LIFRate(tau_ref=0.1))
@@ -167,10 +170,13 @@ def test_neuron_types():
     check_repr(LIFRate(tau_rc=0.05, amplitude=2))
     check_repr(LIFRate(tau_ref=0.02, amplitude=2))
     check_repr(LIFRate(tau_rc=0.05, tau_ref=0.02, amplitude=2))
+    check_repr(LIFRate(initial_state={"rates": Choice([1.0])}))
     assert repr(LIFRate()) == "LIFRate()"
     assert repr(LIFRate(tau_rc=0.01, tau_ref=0)) == "LIFRate(tau_rc=0.01, tau_ref=0)"
 
-    check_init_args(LIF, ["tau_rc", "tau_ref", "min_voltage", "amplitude"])
+    check_init_args(
+        LIF, ["tau_rc", "tau_ref", "min_voltage", "amplitude", "initial_state"]
+    )
     check_repr(LIF())
     check_repr(LIF(tau_rc=0.1))
     check_repr(LIF(tau_ref=0.1))
@@ -181,11 +187,13 @@ def test_neuron_types():
     check_repr(LIF(tau_ref=0.02, amplitude=2))
     check_repr(LIF(tau_rc=0.05, tau_ref=0.02, amplitude=2))
     check_repr(LIF(tau_rc=0.05, tau_ref=0.02, min_voltage=-0.5, amplitude=2))
+    check_repr(LIF(initial_state={"refractory_time": Choice([0.1])}))
     assert repr(LIF()) == "LIF()"
     assert repr(LIF(tau_rc=0.01, tau_ref=0)) == "LIF(tau_rc=0.01, tau_ref=0)"
 
     check_init_args(
-        AdaptiveLIFRate, ["tau_n", "inc_n", "tau_rc", "tau_ref", "amplitude"]
+        AdaptiveLIFRate,
+        ["tau_n", "inc_n", "tau_rc", "tau_ref", "amplitude", "initial_state"],
     )
     check_repr(AdaptiveLIFRate())
     check_repr(AdaptiveLIFRate(tau_n=0.1))
@@ -196,6 +204,7 @@ def test_neuron_types():
     check_repr(
         AdaptiveLIFRate(tau_n=0.1, inc_n=0.5, tau_rc=0.05, tau_ref=0.02, amplitude=2)
     )
+    check_repr(AdaptiveLIFRate(initial_state={"adaptation": Choice([0.1])}))
     assert repr(AdaptiveLIFRate()) == "AdaptiveLIFRate()"
     assert (
         repr(AdaptiveLIFRate(tau_rc=0.01, tau_n=0.5, inc_n=0.02))
@@ -203,7 +212,16 @@ def test_neuron_types():
     )
 
     check_init_args(
-        AdaptiveLIF, ["tau_n", "inc_n", "tau_rc", "tau_ref", "min_voltage", "amplitude"]
+        AdaptiveLIF,
+        [
+            "tau_n",
+            "inc_n",
+            "tau_rc",
+            "tau_ref",
+            "min_voltage",
+            "amplitude",
+            "initial_state",
+        ],
     )
     check_repr(AdaptiveLIF())
     check_repr(AdaptiveLIF(tau_n=0.1))
@@ -221,6 +239,7 @@ def test_neuron_types():
             amplitude=2,
         )
     )
+    check_repr(AdaptiveLIF(initial_state={"adaptation": Choice([0.1])}))
     assert repr(AdaptiveLIF()) == "AdaptiveLIF()"
     assert (
         repr(AdaptiveLIF(tau_rc=0.01, tau_n=0.5, inc_n=0.02))
@@ -228,7 +247,14 @@ def test_neuron_types():
     )
 
     check_init_args(
-        Izhikevich, ["tau_recovery", "coupling", "reset_voltage", "reset_recovery"]
+        Izhikevich,
+        [
+            "tau_recovery",
+            "coupling",
+            "reset_voltage",
+            "reset_recovery",
+            "initial_state",
+        ],
     )
     check_repr(Izhikevich())
     check_repr(Izhikevich(tau_recovery=0.1))
@@ -238,6 +264,7 @@ def test_neuron_types():
     check_repr(
         Izhikevich(tau_recovery=0.1, coupling=0.3, reset_voltage=-1, reset_recovery=5)
     )
+    check_repr(Izhikevich(initial_state={"recovery": Choice([0.1])}))
     assert repr(Izhikevich()) == "Izhikevich()"
     assert (
         repr(
@@ -592,9 +619,9 @@ def test_operators():
     assert fnmatch(
         repr(SimOja(sig, sig, sig, sig, 0.1, 1.0, tag="tag")), "<SimOja 'tag' at 0x*>",
     )
-    assert fnmatch(repr(SimNeurons(LIF(), sig, sig, [sig])), "<SimNeurons at 0x*>")
+    assert fnmatch(repr(SimNeurons(LIF(), sig, {"sig": sig})), "<SimNeurons at 0x*>")
     assert fnmatch(
-        repr(SimNeurons(LIF(), sig, sig, [sig], tag="tag")),
+        repr(SimNeurons(LIF(), sig, {"sig": sig}, tag="tag")),
         "<SimNeurons 'tag' at 0x*>",
     )
     assert fnmatch(

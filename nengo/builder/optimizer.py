@@ -716,20 +716,16 @@ class SimNeuronsMerger(Merger):
 
     @staticmethod
     def merge(ops):
-        def gather(ops, key):
-            return [getattr(o, key) for o in ops]
-
-        J, J_sigr = SigMerger.merge(gather(ops, "J"))
-        output, out_sigr = SigMerger.merge(gather(ops, "output"))
-        states = []
-        states_sigr = {}
-        for signals in zip(*gather(ops, "states")):
-            st, st_sigr = SigMerger.merge(signals)
-            states.append(st)
-            states_sigr.update(st_sigr)
+        J, J_sigr = SigMerger.merge([op.J for op in ops])
+        state = {}
+        state_sigr = {}
+        for key in ops[0].state:
+            st, st_sigr = SigMerger.merge([op.sets[op.state[key]] for op in ops])
+            state[key] = st
+            state_sigr.update(st_sigr)
         return (
-            SimNeurons(ops[0].neurons, J, output, states),
-            Merger.merge_dicts(J_sigr, out_sigr, states_sigr),
+            SimNeurons(ops[0].neurons, J, state=state),
+            Merger.merge_dicts(J_sigr, state_sigr),
         )
 
 
