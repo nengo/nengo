@@ -26,6 +26,10 @@ Release history
 
 - Added a new example notebook for Legendre Memory Units.
   (`#1589 <https://github.com/nengo/nengo/pull/1589>`__)
+- Added the ``initial_phase`` attribute to ``Ensemble``, to allow initial neuron phases
+  (i.e. voltages) to be modified. The default initial voltages are now chosen from
+  a uniform distribution, to help ensembles activate more quickly initially.
+  (`#1609 <https://github.com/nengo/nengo/pull/1609>`__)
 
 **Changed**
 

@@ -136,6 +136,9 @@ class Ensemble(NengoObject):
     )
     noise = ProcessParam("noise", default=None, optional=True)
     normalize_encoders = BoolParam("normalize_encoders", default=True, optional=True)
+    initial_phase = DistOrArrayParam(
+        "initial_phase", default=Uniform(0, 1), sample_shape=("n_neurons",)
+    )
 
     _param_init_order = ["n_neurons", "dimensions"]
 
@@ -154,6 +157,7 @@ class Ensemble(NengoObject):
         bias=Default,
         noise=Default,
         normalize_encoders=Default,
+        initial_phase=Default,
         label=Default,
         seed=Default,
     ):
@@ -171,6 +175,7 @@ class Ensemble(NengoObject):
         self.neuron_type = neuron_type
         self.noise = noise
         self.normalize_encoders = normalize_encoders
+        self.initial_phase = initial_phase
 
     def __getitem__(self, key):
         return ObjView(self, key)

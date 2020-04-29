@@ -216,9 +216,22 @@ class NeuronType(FrozenObject):
         self.step_math(dt=1.0, J=J, output=out)
         return out
 
-    def make_neuron_state(self, n_neurons, dt, dtype=None):
+    def make_neuron_state(self, phases, dt, dtype=None):
         states = [p for p in self.probeable if p not in ("rates", "spikes")]
-        return OrderedDict((state, 0) for state in states)
+
+        result = OrderedDict((state, 0) for state in states)
+        if "voltage" in result:
+            # apply phases to voltages
+            result["voltage"] = phases
+
+        return result
+
+        # # distribute phases equally across states (each neuron will be at a random
+        # # position between 0 and 1 in one of the states, and 0 in all other states)
+        # phase_frac, phase_int = np.modf(phases * len(states))
+        # return OrderedDict(
+        #     (state, (phase_int == i) * phase_frac) for i, state in enumerate(states)
+        # )
 
     def step_math(self, dt, J, output):
         """Implements the differential equation for this neuron type.
