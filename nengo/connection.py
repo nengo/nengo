@@ -1,7 +1,7 @@
 import numpy as np
 
 from nengo.base import NengoObject, NengoObjectParam, ObjView
-from nengo.dists import DistOrArrayParam, Distribution
+from nengo.dists import Choice, DistOrArrayParam, Distribution
 from nengo.ensemble import Ensemble, Neurons
 from nengo.exceptions import ValidationError
 from nengo.learning_rules import LearningRuleType, LearningRuleTypeParam
@@ -316,6 +316,28 @@ class ConnectionTransformParam(Parameter):
         return super().coerce(conn, transform)
 
 
+class ConnectionInitialValueParam(DistOrArrayParam):
+    """Connection-specific validation for initial values."""
+
+    def coerce(self, conn, value):
+        value = super().coerce(conn, value)
+
+        if isinstance(value, np.ndarray):
+            if isinstance(conn.post_obj, Ensemble) and conn.solver.weights:
+                n_synapses = conn.post_obj.n_neurons
+            else:
+                n_synapses = conn.size_out
+
+            if value.ndim > 0 and value.shape != (n_synapses,):
+                raise ValidationError(
+                    "Must be a vector of length %d" % n_synapses,
+                    attr=self.name,
+                    obj=conn,
+                )
+
+        return value
+
+
 class Connection(NengoObject):
     """Connects two objects together.
 
@@ -401,6 +423,11 @@ class Connection(NengoObject):
     scale_eval_points : bool, optional
         Indicates whether the evaluation points should be scaled
         by the radius of the pre Ensemble.
+    initial_value : Distribution or float or (n_synapses,) array_like, optional
+        Initial value(s) represented by connection. ``n_synapses`` is typically equal
+        to the connection's ``size_out``, except when ``post_obj`` is an ``Ensemble``
+        and ``solver.weights`` is set, in which case ``n_synapses`` equals the number
+        of neurons in the post ``Ensemble``.
     label : str, optional
         A descriptive label for the connection.
     seed : int, optional
@@ -475,6 +502,9 @@ class Connection(NengoObject):
         "eval_points", default=None, optional=True, sample_shape=("*", "size_in")
     )
     scale_eval_points = BoolParam("scale_eval_points", default=True)
+    initial_value = ConnectionInitialValueParam(
+        "initial_value", default=Choice([0.0]), sample_shape=("*",)
+    )
 
     _param_init_order = [
         "pre",
@@ -498,6 +528,7 @@ class Connection(NengoObject):
         learning_rule_type=Default,
         eval_points=Default,
         scale_eval_points=Default,
+        initial_value=Default,
         label=Default,
         seed=Default,
     ):
@@ -513,6 +544,7 @@ class Connection(NengoObject):
         self.transform = transform  # Must be set after function
         self.solver = solver  # Must be set before learning rule
         self.learning_rule_type = learning_rule_type  # set after transform
+        self.initial_value = initial_value
 
     def __str__(self):
         return self._str(include_id=False)

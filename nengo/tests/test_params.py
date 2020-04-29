@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 import numpy as np
 import pytest
 
@@ -336,26 +338,37 @@ def test_iter_params_does_not_list_obsolete_params():
 def test_configure_all_nengo_parameters():
 
     # make up a non-default value for the parameter
-    conv_func = {
-        params.BoolParam: lambda attr: not attr.default,
-        params.NumberParam: lambda attr: (
-            1 if attr.default is None else attr.default + 1
-        ),
-        params.StringParam: lambda attr: "abc",
-        params.NdarrayParam: lambda attr: np.zeros([1] * len(attr.shape)),
-        nengo.base.ProcessParam: lambda attr: nengo.processes.WhiteNoise(),
-        nengo.node.OutputParam: lambda attr: lambda t, x=0: x + 1,
-        nengo.synapses.SynapseParam: lambda attr: nengo.synapses.Alpha(0.1),
-        nengo.solvers.SolverParam: lambda attr: nengo.solvers.LstsqL2nz(
-            weights=isinstance(attr, nengo.connection.ConnectionSolverParam)
-        ),
-        nengo.connection.ConnectionFunctionParam: lambda attr: lambda x: x + 1,
-        nengo.connection.ConnectionTransformParam: lambda attr: 2.0,
-        nengo.learning_rules.LearningRuleTypeParam: (
-            lambda attr: nengo.learning_rules.PES()
-        ),
-        nengo.neurons.NeuronTypeParam: lambda attr: nengo.AdaptiveLIF(),
-    }
+    conv_func = OrderedDict(
+        [
+            (nengo.connection.ConnectionFunctionParam, lambda attr: lambda x: x + 1),
+            (nengo.connection.ConnectionTransformParam, lambda attr: 2.0),
+            (
+                nengo.connection.ConnectionInitialValueParam,
+                lambda attr: nengo.dists.Choice([0.5]),
+            ),
+            (
+                nengo.learning_rules.LearningRuleTypeParam,
+                (lambda attr: nengo.learning_rules.PES()),
+            ),
+            (nengo.neurons.NeuronTypeParam, lambda attr: nengo.AdaptiveLIF()),
+            (nengo.base.ProcessParam, lambda attr: nengo.processes.WhiteNoise()),
+            (nengo.node.OutputParam, lambda attr: lambda t, x=0: x + 1),
+            (nengo.synapses.SynapseParam, lambda attr: nengo.synapses.Alpha(0.1)),
+            (
+                nengo.solvers.SolverParam,
+                lambda attr: nengo.solvers.LstsqL2nz(
+                    weights=isinstance(attr, nengo.connection.ConnectionSolverParam)
+                ),
+            ),
+            (params.BoolParam, lambda attr: not attr.default),
+            (
+                params.NumberParam,
+                lambda attr: (1 if attr.default is None else attr.default + 1),
+            ),
+            (params.StringParam, lambda attr: "abc"),
+            (params.NdarrayParam, lambda attr: np.zeros([1] * len(attr.shape))),
+        ]
+    )
 
     net = nengo.Network()
 

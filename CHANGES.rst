@@ -44,6 +44,10 @@ Release history
 - Added ``DoubleExp``, ``Bandpass``, ``Highpass``, ``DiscreteDelay``, and
   ``LegendreDelay`` synapse models.
   (`#1611 <https://github.com/nengo/nengo/pull/1611>`__)
+- ``Connection`` now has the ``initial_value`` parameter, which allows the connection
+  synapses to be initialized to represent the desired value. This is useful for
+  minimizing startup transients in models with long synapses (e.g. recurrent networks).
+  (`#1611 <https://github.com/nengo/nengo/pull/1611>`__)
 
 **Changed**
 

@@ -6,7 +6,7 @@ import pytest
 import nengo
 import nengo.utils.numpy as npext
 from nengo.connection import ConnectionSolverParam
-from nengo.dists import Choice, UniformHypersphere
+from nengo.dists import Choice, Uniform, UniformHypersphere
 from nengo.exceptions import BuildError, ValidationError
 from nengo.solvers import LstsqL2
 from nengo.processes import Piecewise
@@ -1136,3 +1136,152 @@ def test_learning_rule_equality():
         assert conn0.learning_rule[0] != conn1.learning_rule
         assert conn1.learning_rule_type[0] == conn0.learning_rule_type
         assert conn1.learning_rule[0] == conn1.learning_rule[1]
+
+
+@pytest.mark.parametrize("synapse", [nengo.Lowpass(0.05), nengo.Alpha(0.03)])
+def test_initial_value(synapse, Simulator, seed, plt, allclose):
+    initial_values = [
+        None,
+        nengo.dists.Choice([1.0]),
+        [1, -1],
+    ]
+
+    with nengo.Network(seed=seed) as net:
+        u = nengo.Node([1, -1])
+        dims = u.size_out
+
+        a = nengo.Ensemble(200, dims, radius=1.5)
+        nengo.Connection(u, a, synapse=None)
+
+        def add_output(initial_value=None):
+            v = nengo.Node(size_in=dims)
+            conn = nengo.Connection(a, v, synapse=synapse)
+            if initial_value is not None:
+                conn.initial_value = initial_value
+            return nengo.Probe(v)
+
+        probes = [add_output(v) for v in initial_values]
+
+    with Simulator(net) as sim:
+        sim.run(0.3)
+
+    initial_sampled = [
+        np.zeros(dims)
+        if v is None
+        else v.sample(dims)
+        if hasattr(v, "sample")
+        else np.asarray(v)
+        for v in initial_values
+    ]
+    for v, probe in zip(initial_sampled, probes):
+        plt.plot(sim.trange(), sim.data[probe], label="%s" % (list(v),))
+    plt.legend()
+
+    for v, probe in zip(initial_sampled, probes):
+        assert allclose(sim.data[probe][1], v, atol=10e-2)
+        close_d = np.isclose(v, u.output, atol=1e-4)
+        if close_d.any():
+            assert allclose(sim.data[probe][1:, close_d], v[close_d], atol=5e-2)
+        if not close_d.all():
+            assert not allclose(sim.data[probe][1:, ~close_d], v[~close_d], atol=5e-2)
+
+
+def test_neuron_initial_values(Simulator, seed, rng, plt, allclose):
+    def encoder_gain_bias(n_neurons, dims, neuron_type, rng):
+        encoders = UniformHypersphere(surface=True).sample(n_neurons, dims, rng=rng)
+        max_rates = Uniform(150, 250).sample(n_neurons, rng=rng)
+        intercepts = Uniform(-1, 0.99).sample(n_neurons, rng=rng)
+        gain, bias = neuron_type.gain_bias(max_rates, intercepts)
+        return (encoders, gain, bias)
+
+    synapse = nengo.Alpha(0.03)
+    neuron_type0 = nengo.LIF()
+    neuron_type1 = nengo.LIFRate()
+    Solver = nengo.solvers.LstsqL2
+    x0 = np.array([1.0, -1.0])
+    n_neurons0 = 150
+    n_neurons1 = n_neurons0 + 1
+    dims = len(x0)
+
+    radius = np.sqrt(dims)
+    encoders0, gain0, bias0 = encoder_gain_bias(n_neurons0, dims, neuron_type0, rng)
+    encoders1, gain1, bias1 = encoder_gain_bias(n_neurons1, dims, neuron_type1, rng)
+    eval_points0 = UniformHypersphere(surface=False).sample(1000, dims, rng=rng)
+    acts0 = neuron_type0.rates(eval_points0.dot(encoders0.T), gain0, bias0)
+    decoders, _ = Solver()(acts0, eval_points0)
+    weights = encoders1.dot(decoders.T)
+
+    neurons0 = neuron_type0.rates(x0[None, :].dot(encoders0.T), gain0, bias0)
+    assert neurons0.shape == (1, n_neurons0)
+    initial_value_a = neurons0.dot(decoders).dot(encoders1.T)[0]
+    initial_value_b = gain1 * initial_value_a  # weight solver weights include gains
+
+    with nengo.Network(seed=seed) as net:
+        u = nengo.Node(x0)
+        ens0 = nengo.Ensemble(
+            n_neurons0,
+            dims,
+            radius=radius,
+            neuron_type=neuron_type0,
+            encoders=encoders0,
+            gain=gain0,
+            bias=bias0,
+        )
+        nengo.Connection(u, ens0, synapse=None)
+
+        def make_output(initial_value=None, weights=None):
+            ens1 = nengo.Ensemble(
+                n_neurons1,
+                dims,
+                radius=radius,
+                neuron_type=neuron_type1,
+                encoders=encoders1,
+                gain=gain1,
+                bias=bias1,
+            )
+            kwargs = dict(synapse=synapse)
+            if initial_value is not None:
+                kwargs["initial_value"] = initial_value
+            if weights is not None:
+                kwargs["transform"] = weights
+                nengo.Connection(ens0.neurons, ens1.neurons, **kwargs)
+            else:
+                kwargs["solver"] = Solver(weights=True)
+                nengo.Connection(ens0, ens1, **kwargs)
+
+            return nengo.Probe(ens1)
+
+        r_p = make_output(weights=weights)
+        a_p = make_output(weights=weights, initial_value=initial_value_a)
+        b_p = make_output(initial_value=initial_value_b)
+
+    with Simulator(net) as sim:
+        sim.run(0.3)
+
+    plt.plot(sim.trange(), sim.data[r_p], "--", label="r")
+    plt.plot(sim.trange(), sim.data[a_p], label="a")
+    plt.plot(sim.trange(), sim.data[b_p], label="b")
+    plt.legend()
+
+    assert not allclose(sim.data[r_p], x0, atol=2e-1, rtol=0, record_rmse=False)
+    for probe in (a_p, b_p):
+        assert allclose(sim.data[probe], x0, atol=2e-1, rtol=0, record_rmse=False)
+
+    assert allclose(sim.data[a_p], sim.data[b_p], atol=1e-2, rtol=0, record_rmse=False)
+
+
+def test_bad_initial_values():
+    with nengo.Network():
+        node2 = nengo.Node(size_in=2)
+        ens3 = nengo.Ensemble(2, 3)
+
+        nengo.Connection(node2, node2, initial_value=[1, 2])
+        nengo.Connection(ens3, node2, function=lambda x: [1, 1], initial_value=[1, 2])
+
+        with pytest.raises(ValidationError, match="initial_value"):
+            nengo.Connection(node2, node2, initial_value=[1])
+
+        with pytest.raises(ValidationError, match="initial_value"):
+            nengo.Connection(
+                ens3, node2, function=lambda x: [1, 1], initial_value=[1, 2, 3]
+            )

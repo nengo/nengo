@@ -7,6 +7,7 @@ from nengo.builder.ensemble import gen_eval_points, get_activities
 from nengo.builder.node import SimPyFunc
 from nengo.builder.operator import Copy, ElementwiseInc, Reset
 from nengo.connection import Connection
+from nengo.dists import Distribution
 from nengo.transforms import Dense, NoTransform
 from nengo.ensemble import Ensemble, Neurons
 from nengo.exceptions import BuildError
@@ -297,7 +298,11 @@ def build_connection(model, conn):
 
     # Build synapse
     if conn.synapse is not None:
-        weighted = model.build(conn.synapse, weighted, mode="update")
+        y0 = conn.initial_value
+        if isinstance(y0, Distribution):
+            y0 = y0.sample(weighted.size, rng=rng).reshape(weighted.shape)
+        assert y0.shape == weighted.shape
+        weighted = model.build(conn.synapse, weighted, mode="update", y0=y0)
 
     # Store the weighted-filtered output in case we want to probe it
     model.sig[conn]["weighted"] = weighted
