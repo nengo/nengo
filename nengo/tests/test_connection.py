@@ -1136,3 +1136,68 @@ def test_learning_rule_equality():
         assert conn0.learning_rule[0] != conn1.learning_rule
         assert conn1.learning_rule_type[0] == conn0.learning_rule_type
         assert conn1.learning_rule[0] == conn1.learning_rule[1]
+
+
+@pytest.mark.parametrize("synapse", [nengo.Lowpass(0.05), nengo.Alpha(0.03)])
+def test_initial_value(synapse, Simulator, seed, plt, allclose):
+    initial_values = [
+        None,
+        nengo.dists.Choice([1.0]),
+        [1, -1],
+    ]
+
+    with nengo.Network(seed=seed) as net:
+        u = nengo.Node([1, -1])
+        dims = u.size_out
+
+        a = nengo.Ensemble(200, dims, seed=1, radius=1.5)
+        nengo.Connection(u, a, synapse=None)
+
+        def add_output(initial_value=None):
+            v = nengo.Node(size_in=dims)
+            conn = nengo.Connection(a, v, synapse=synapse)
+            if initial_value is not None:
+                conn.initial_value = initial_value
+            return nengo.Probe(v)
+
+        probes = [add_output(v) for v in initial_values]
+
+    with Simulator(net) as sim:
+        sim.run(0.3)
+
+    initial_sampled = [
+        np.zeros(dims)
+        if v is None
+        else v.sample(dims)
+        if hasattr(v, "sample")
+        else np.asarray(v)
+        for v in initial_values
+    ]
+    for v, probe in zip(initial_sampled, probes):
+        plt.plot(sim.trange(), sim.data[probe], label="%s" % (list(v),))
+    plt.legend()
+
+    for v, probe in zip(initial_sampled, probes):
+        assert allclose(sim.data[probe][1], v, atol=10e-2)
+        close_d = np.isclose(v, u.output, atol=1e-4)
+        if close_d.any():
+            assert allclose(sim.data[probe][1:, close_d], v[close_d], atol=5e-2)
+        if not close_d.all():
+            assert not allclose(sim.data[probe][1:, ~close_d], v[~close_d], atol=5e-2)
+
+
+def test_bad_initial_values():
+    with nengo.Network():
+        node2 = nengo.Node(size_in=2)
+        ens3 = nengo.Ensemble(2, 3)
+
+        nengo.Connection(node2, node2, initial_value=[1, 2])
+        nengo.Connection(ens3, node2, function=lambda x: [1, 1], initial_value=[1, 2])
+
+        with pytest.raises(ValidationError, match="initial_value"):
+            nengo.Connection(node2, node2, initial_value=[1])
+
+        with pytest.raises(ValidationError, match="initial_value"):
+            nengo.Connection(
+                ens3, node2, function=lambda x: [1, 1], initial_value=[1, 2, 3]
+            )

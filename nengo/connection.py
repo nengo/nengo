@@ -1,7 +1,7 @@
 import numpy as np
 
 from nengo.base import NengoObject, NengoObjectParam, ObjView
-from nengo.dists import DistOrArrayParam, Distribution
+from nengo.dists import Choice, DistOrArrayParam, Distribution
 from nengo.ensemble import Ensemble, Neurons
 from nengo.exceptions import ValidationError
 from nengo.learning_rules import LearningRuleType, LearningRuleTypeParam
@@ -475,6 +475,9 @@ class Connection(NengoObject):
         "eval_points", default=None, optional=True, sample_shape=("*", "size_in")
     )
     scale_eval_points = BoolParam("scale_eval_points", default=True)
+    initial_value = DistOrArrayParam(
+        "initial_value", default=Choice([0.0]), sample_shape=("size_out",)
+    )
 
     _param_init_order = [
         "pre",
@@ -498,6 +501,7 @@ class Connection(NengoObject):
         learning_rule_type=Default,
         eval_points=Default,
         scale_eval_points=Default,
+        initial_value=Default,
         label=Default,
         seed=Default,
     ):
@@ -513,6 +517,7 @@ class Connection(NengoObject):
         self.transform = transform  # Must be set after function
         self.solver = solver  # Must be set before learning rule
         self.learning_rule_type = learning_rule_type  # set after transform
+        self.initial_value = initial_value
 
     def __str__(self):
         return self._str(include_id=False)
