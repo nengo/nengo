@@ -1,6 +1,6 @@
 """Operator graph optimizers."""
 
-from collections import defaultdict, namedtuple
+from collections import defaultdict, namedtuple, OrderedDict
 from itertools import zip_longest
 import logging
 import warnings
@@ -721,11 +721,13 @@ class SimNeuronsMerger(Merger):
 
         J, J_sigr = SigMerger.merge(gather(ops, "J"))
         output, out_sigr = SigMerger.merge(gather(ops, "output"))
-        states = []
+
+        old_states = gather(ops, "states")
+        states = OrderedDict()
         states_sigr = {}
-        for signals in zip(*gather(ops, "states")):
-            st, st_sigr = SigMerger.merge(signals)
-            states.append(st)
+        for key in old_states[0]:
+            st, st_sigr = SigMerger.merge([d[key] for d in old_states])
+            states[key] = st
             states_sigr.update(st_sigr)
         return (
             SimNeurons(ops[0].neurons, J, output, states),
