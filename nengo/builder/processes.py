@@ -1,6 +1,9 @@
+import numpy as np
+
 from nengo.builder import Builder, Operator, Signal
 from nengo.processes import Process
 from nengo.rc import rc
+from nengo.synapses import Synapse
 
 
 class SimProcess(Operator):
@@ -124,7 +127,9 @@ class SimProcess(Operator):
 
 
 @Builder.register(Process)
-def build_process(model, process, sig_in=None, sig_out=None, mode="set", seed_or_rng=0):
+def build_process(
+    model, process, sig_in=None, sig_out=None, mode="set", seed_or_rng=0, **kwargs
+):
     """Builds a `.Process` object into a model.
 
     Parameters
@@ -147,9 +152,6 @@ def build_process(model, process, sig_in=None, sig_out=None, mode="set", seed_or
     Does not modify ``model.params[]`` and can therefore be called
     more than once with the same `.Process` instance.
     """
-    if sig_out is None:
-        sig_out = Signal(shape=sig_in.shape, name="%s.%s" % (sig_in.name, process))
-
     shape_in = sig_in.shape if sig_in is not None else (0,)
     shape_out = sig_out.shape if sig_out is not None else (0,)
     dtype = (
@@ -161,7 +163,7 @@ def build_process(model, process, sig_in=None, sig_out=None, mode="set", seed_or
     )
     state_rng = process.get_rng(seed_or_rng, offset=1)  # offset matches `Process.apply`
     state_init = process.make_state(
-        shape_in, shape_out, model.dt, rng=state_rng, dtype=dtype
+        shape_in, shape_out, model.dt, rng=state_rng, dtype=dtype, **kwargs
     )
     state = {}
     for name, value in state_init.items():
@@ -181,3 +183,57 @@ def build_process(model, process, sig_in=None, sig_out=None, mode="set", seed_or
     )
 
     return sig_out
+
+
+@Builder.register(Synapse)
+def build_synapse(model, synapse, sig_in=None, sig_out=None, mode="set", seed_or_rng=0):
+    """Builds a `.Synapse` object into a model.
+
+    Wrapper around `.build_process` that configures the output signal with the
+    initial output.
+
+    Parameters
+    ----------
+    model : Model
+        The model to build into.
+    synapse : Synapse
+        Synapse to build.
+    sig_in : Signal, optional
+        The input signal, or None if no input signal.
+    sig_out : Signal, optional
+        The output signal, or None if no output signal.
+    mode : "set" or "inc" or "update", optional
+        The ``mode`` of the built `.SimProcess`.
+    seed_or_rng : int or `numpy.random.RandomState`
+        The parent seed or random number generator to use if the seed is not set.
+
+    Notes
+    -----
+    Does not modify ``model.params[]`` and can therefore be called
+    more than once with the same `.Synapse` instance.
+    """
+    y0 = None
+    if sig_out is None:
+        assert sig_in is not None, "Both `sig_in` and `sig_out` cannot be None"
+        output_shape = sig_in.shape
+
+        # state_rng offset matches `Process.apply`
+        state_rng = synapse.get_rng(seed_or_rng, offset=1)
+        y0 = synapse._sample_initial_output(output_shape, rng=state_rng)
+        if y0 is None:
+            y0 = np.zeros(output_shape, dtype=rc.float_dtype)
+        else:
+            y0 = y0 * np.ones(output_shape, dtype=rc.float_dtype)  # broadcast
+
+        assert y0.shape == output_shape
+        sig_out = Signal(y0, name="%s.%s" % (sig_in.name, synapse))
+
+    return build_process(
+        model,
+        synapse,
+        sig_in=sig_in,
+        sig_out=sig_out,
+        mode=mode,
+        seed_or_rng=seed_or_rng,
+        y0=y0,
+    )

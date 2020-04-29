@@ -3,6 +3,7 @@ import warnings
 import numpy as np
 
 from nengo.base import Process
+from nengo.dists import DistOrArrayParam, Distribution
 from nengo.exceptions import ValidationError
 from nengo.params import (
     IntParam,
@@ -47,6 +48,13 @@ class Synapse(Process):
         The simulation timestep used if not specified.
     seed : int, optional
         Random number seed. Ensures random factors will be the same each run.
+    initial_output : Distribution or float or (n_synapses,) array_like, optional
+        Initial output value(s) represented by the synapses. ``n_synapses`` is typically
+        equal to the connection's ``size_out``, except when ``post_obj`` is an
+        ``Ensemble`` and ``solver.weights`` is set, in which case ``n_synapses`` equals
+        the number of neurons in the post ``Ensemble``.
+
+        .. versionadded:: 3.1.0
 
     Attributes
     ----------
@@ -56,12 +64,21 @@ class Synapse(Process):
         The size_in used if not specified.
     default_size_out : int
         The size_out used if not specified.
+    initial_output : Distribution or float or (n_synapses,) array_like, optional
+        Initial output value(s) represented by the synapses.
     seed : int, optional
         Random number seed. Ensures random factors will be the same each run.
     """
 
+    initial_output = DistOrArrayParam("initial_output", optional=True)
+
     def __init__(
-        self, default_size_in=1, default_size_out=None, default_dt=0.001, seed=None
+        self,
+        default_size_in=1,
+        default_size_out=None,
+        default_dt=0.001,
+        seed=None,
+        initial_output=None,
     ):
         if default_size_out is None:
             default_size_out = default_size_in
@@ -71,11 +88,14 @@ class Synapse(Process):
             default_dt=default_dt,
             seed=seed,
         )
+        self.initial_output = initial_output
 
     def make_state(self, shape_in, shape_out, dt, rng, dtype=None, y0=None):
         raise NotImplementedError("Synapse must implement make_state")
 
-    def filt(self, x, dt=None, axis=0, y0=0, copy=True, filtfilt=False, rng=np.random):
+    def filt(
+        self, x, dt=None, axis=0, y0=None, copy=True, filtfilt=False, rng=np.random
+    ):
         """Filter ``x`` with this synapse model.
 
         Parameters
@@ -106,6 +126,16 @@ class Synapse(Process):
         dt = self.default_dt if dt is None else dt
         filtered = np.array(x, copy=copy, dtype=rc.float_dtype)
         filt_view = np.rollaxis(filtered, axis=axis)  # rolled view on filtered
+        if y0 is not None:
+            if self.initial_output is not None:
+                warnings.warn("Setting `y0` overrides the existing `initial_output`")
+            else:
+                warnings.warn(
+                    DeprecationWarning(
+                        "`y0` is deprecated. Use `initial_output` on the synapse "
+                        "instance instead."
+                    )
+                )
 
         shape_in = shape_out = as_shape(filt_view[0].shape, min_dim=1)
         state_rng = self.get_rng(rng, offset=1)
@@ -132,6 +162,29 @@ class Synapse(Process):
         Equivalent to `filt(x, filtfilt=True, **kwargs) <.Synapse.filt>`.
         """
         return self.filt(x, filtfilt=True, **kwargs)
+
+    def _sample_initial_output(self, shape, y0=None, rng=np.random):
+        if self.initial_output is None and y0 is None:
+            return None
+
+        output = self.initial_output if y0 is None else y0
+        if isinstance(output, Distribution):
+            output = output.sample(n=np.prod(shape), d=1).reshape(shape)
+        else:
+            output = np.array(output, copy=False, ndmin=len(shape))
+
+        assert len(output.shape) >= len(shape)
+        too_long = len(output.shape) > len(shape)
+        if too_long or not all(o in (1, s) for o, s in zip(output.shape, shape)):
+            details = " (output shape is too long)" if too_long else ""
+            raise ValidationError(
+                "Output shape %s is not broadcastable to filter shape %s%s"
+                % (output.shape, shape, details),
+                "initial_output",
+                obj=self,
+            )
+
+        return output
 
 
 class LinearFilter(LinearSystem, Synapse):
@@ -182,6 +235,8 @@ class LinearFilter(LinearSystem, Synapse):
         Whether the synapse coefficients are analog (i.e. continuous-time),
         or discrete. Analog coefficients will be converted to discrete for
         simulation using the simulator ``dt``.
+    initial_output : Distribution or float or (n_synapses,) array_like, optional
+        Initial output value(s) represented by the synapses.
     method : string
         The method to use for discretization (if ``analog`` is True). See
         `scipy.signal.cont2discrete` for information about the options.
@@ -194,7 +249,14 @@ class LinearFilter(LinearSystem, Synapse):
     _argrepr_filter = {"den"}
 
     def __init__(
-        self, sys, den=None, analog=True, method="zoh", x0=0, default_dt=0.001
+        self,
+        sys,
+        den=None,
+        analog=True,
+        method="zoh",
+        x0=0,
+        initial_output=None,
+        **kwargs
     ):
         if den is not None:
             warnings.warn(
@@ -205,13 +267,11 @@ class LinearFilter(LinearSystem, Synapse):
             )
             sys = (sys, den)
 
-        super().__init__(
-            sys,
-            analog=analog,
-            method=method,
-            x0=x0,
-            default_dt=default_dt,
-        )
+        super().__init__(sys, analog=analog, method=method, x0=x0, **kwargs)
+
+        # hack to let us set `initial_output` again (it was set in the above `super`)
+        LinearFilter.initial_output.data.pop(self)
+        self.initial_output = initial_output
 
         if self.input_size != 1:
             raise ValidationError(
@@ -255,43 +315,48 @@ class LinearFilter(LinearSystem, Synapse):
         y = np.polyval(num[0], w) / np.polyval(den, w)
         return y
 
-    def make_state(self, shape_in, shape_out, dt, rng, dtype=None, y0=0):
+    def make_state(self, shape_in, shape_out, dt, rng, dtype=None, y0=None):
         assert shape_in == shape_out
+        initial_output = self._sample_initial_output(shape_out, y0=y0, rng=rng)
 
         # call LinearSystem's `make_state`
         state = super().make_state(
             shape_in + (1,), shape_out + (1,), dt, rng, dtype=dtype
         )
+        if initial_output is not None:
+            self.update_state_from_output(state, initial_output, dt=dt)
+
+        return state
+
+    def update_state_from_output(self, state, output, dt=None):
+        dt = self.default_dt if dt is None else dt
+
         X = state["X"]
-
-        # initialize X using y0 as steady-state output
-        y0 = np.array(y0, copy=False, ndmin=1)
-        assert y0.shape[-1] == 1
-
-        if (y0 == 0).all():
-            # just leave X as zeros in this case, so that this value works
-            # for unstable systems
-            return state
-
-        A, B, C, D = self.discrete_ss(dt)
-        if LinearFilter.OneX.check(A, B, C, D, X):
-            # OneX combines B and C into one scaling value `b`
-            b = B.item() * C.item()
-            X[:] = (b / (1 - A.item())) * y0
+        if (output == 0).all():
+            # just leave X as zeros in this case (this will work for unstable systems)
+            X[:] = 0
         else:
-            # Solve for u0 (input) given y0 (output), then X given u0
-            assert B.ndim == 1 or B.ndim == 2 and B.shape[1] == 1
-            IAB = np.linalg.solve(np.eye(len(A)) - A, B)
-            Q = C.dot(IAB) + D  # multiplier from input to output (DC gain)
-            assert Q.size == 1
-            if np.abs(Q.item()) > 1e-8:
-                X[:] = y0.dot(IAB.T / Q.item())
+            output = output[..., np.newaxis]
+            A, B, C, D = self.discrete_ss(dt)
+            if LinearFilter.OneX.check(A, B, C, D, X):
+                # OneX combines B and C into one scaling value `b`
+                b = B.item() * C.item()
+                X[:] = (b / (1 - A.item())) * output
             else:
-                raise ValidationError(
-                    "Cannot solve for state if DC gain is zero. Please set `y0=0`.",
-                    "y0",
-                    obj=self,
-                )
+                # Solve for u0 (input) given output, then X given u0
+                assert B.ndim == 1 or B.ndim == 2 and B.shape[1] == 1
+                IAB = np.linalg.solve(np.eye(len(A)) - A, B)
+                Q = C.dot(IAB) + D  # multiplier from input to output (DC gain)
+                assert Q.size == 1
+                if np.abs(Q.item()) > 1e-8:
+                    X[:] = output.dot(IAB.T / Q.item())
+                else:
+                    raise ValidationError(
+                        "Cannot solve for state if DC gain is zero. Please set "
+                        "initial state to `None` or `0`.",
+                        "initial_state",
+                        obj=self,
+                    )
 
         return state
 
@@ -862,7 +927,7 @@ class Triangle(Synapse):
 
         return n_taps, n0, ndiff
 
-    def make_state(self, shape_in, shape_out, dt, rng, dtype=None, y0=0):
+    def make_state(self, shape_in, shape_out, dt, rng, dtype=None, y0=None):
         assert shape_in == shape_out
         dtype = rc.float_dtype if dtype is None else np.dtype(dtype)
 
@@ -871,10 +936,11 @@ class Triangle(Synapse):
         X = np.zeros((n_taps,) + shape_out, dtype=dtype)
         Xi = np.zeros(1, dtype=dtype)  # counter for X position
 
-        if y0 != 0 and len(X) > 0:
-            y0 = np.array(y0, copy=False, ndmin=1)
-            X[:] = ndiff * y0[None, ...]
+        y0 = self._sample_initial_output(shape_out, y0=y0, rng=rng)
+        if y0 is not None:
             Y[:] = y0
+            if len(X) > 0:
+                X[:] = ndiff * y0[None, ...]
 
         return {"Y": Y, "X": X, "Xi": Xi}
 

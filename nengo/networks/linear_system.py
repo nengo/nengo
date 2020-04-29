@@ -204,8 +204,7 @@ class LinearSystemNetwork(nengo.Network):
                 self.state_output,
                 self.state_input,
                 transform=A,
-                synapse=self.synapse,
-                initial_value=self.mapped_system.x0,
+                synapse=self.synapse.copy(initial_output=self.mapped_system.x0),
             )
 
             if system.input_size == 0:

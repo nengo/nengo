@@ -422,7 +422,7 @@ def test_synapses():
         return np.arange(1, np.prod(shape) + 1).reshape(shape)
 
     check_init_args(
-        LinearFilter, ["sys", "den", "analog", "method", "x0", "default_dt"]
+        LinearFilter, ["sys", "den", "analog", "method", "x0", "initial_output"]
     )
     check_repr(LinearFilter(([1, 2], [3, 4])))
     check_repr(LinearFilter(([1, 2], [3, 4]), analog=False))

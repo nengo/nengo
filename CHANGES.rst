@@ -63,6 +63,9 @@ Release history
   recurrent synapse. For ``Lowpass`` synapses, this is equivalent to Principle 3 of the
   Neural Engineering Framework (NEF), but it generalizes to other synapse types, as well
   as discrete synapses. (`#1611`_)
+- ``Synapse`` now has the ``initial_output`` parameter, which allows synapses to be
+  initialized to represent the desired value. This is useful for minimizing startup
+  transients in models with long synapses (e.g. recurrent networks). (`#1611`_)
 
 **Changed**
 
