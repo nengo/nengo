@@ -1,3 +1,4 @@
+from collections import OrderedDict
 import inspect
 
 import numpy as np
@@ -5,11 +6,8 @@ import numpy as np
 from nengo.builder import Builder, Operator, Signal
 from nengo.dists import Distribution
 from nengo.exceptions import BuildError
-from nengo.neurons import (
-    NeuronType,
-    RegularSpiking,
-    _Spiking,
-)
+from nengo.neurons import NeuronType, _Spiking
+from nengo.rc import rc
 from nengo.utils.numpy import is_array_like
 
 
@@ -56,7 +54,9 @@ class SimNeurons(Operator):
         super().__init__(tag=tag)
         self.neurons = neurons
 
-        self.sets = [output] + ([] if states is None else states)
+        self.states = OrderedDict() if states is None else states
+
+        self.sets = [output] + list(self.states.values())
         self.incs = []
         self.reads = [J]
         self.updates = []
@@ -69,31 +69,71 @@ class SimNeurons(Operator):
     def output(self):
         return self.sets[0]
 
-    @property
-    def states(self):
-        return self.sets[1:]
-
     def _descstr(self):
         return "%s, %s, %s" % (self.neurons, self.J, self.output)
 
     def make_step(self, signals, dt, rng):
         J = signals[self.J]
         output = signals[self.output]
-        states = [signals[state] for state in self.states]
+        states = {name: signals[sig] for name, sig in self.states.items()}
 
         argspec = inspect.getfullargspec(self.neurons.step_math)
         if "rng" in argspec.args:
 
             def step_simneurons_withrng():
-                self.neurons.step_math(dt, J, output, rng, *states)
+                self.neurons.step_math(dt, J, output, rng, **states)
 
             return step_simneurons_withrng
         else:
 
             def step_simneurons():
-                self.neurons.step_math(dt, J, output, *states)
+                self.neurons.step_math(dt, J, output, **states)
 
             return step_simneurons
+
+
+def get_neuron_states(model, neurontype, neurons, dtype=None):
+    """Get the initial neuron state values for the neuron type."""
+    dtype = rc.float_dtype if dtype is None else dtype
+    ens = neurons.ensemble
+    rng = np.random.RandomState(model.seeds[ens] + 1)
+    n_neurons = neurons.size_in
+
+    if isinstance(ens.initial_phase, Distribution):
+        phases = ens.initial_phase.sample(n_neurons, rng=rng)
+    else:
+        phases = ens.initial_phase
+
+    if phases.ndim == 0:
+        phases = phases * np.ones(n_neurons, dtype=dtype)
+    elif phases.ndim == 1 and phases.size != n_neurons or phases.ndim > 1:
+        raise BuildError(
+            "`initial_phase` array must be 0-D, or 1-D of length `n_neurons`"
+        )
+
+    return neurontype.make_neuron_state(phases, model.dt, dtype=dtype)
+
+
+def sample_state_init(state_init, n_neurons, dtype=None):
+    """Sample a state init value, ensuring the correct size. """
+    dtype = rc.float_dtype if dtype is None else dtype
+
+    if isinstance(state_init, Distribution):
+        raise NotImplementedError()
+    elif is_array_like(state_init):
+        state_init = np.asarray(state_init, dtype=dtype)
+        if state_init.ndim == 0:
+            state_init = state_init * np.ones(n_neurons, dtype=dtype)
+        elif (
+            state_init.ndim == 1 and state_init.size != n_neurons or state_init.ndim > 1
+        ):
+            raise BuildError(
+                "State init array must be 0-D, or 1-D of length `n_neurons`"
+            )
+    else:
+        raise BuildError("State init must be a distribution or array-like")
+
+    return state_init
 
 
 @Builder.register(NeuronType)
@@ -119,32 +159,19 @@ def build_neurons(model, neurontype, neurons):
     Does not modify ``model.params[]`` and can therefore be called
     more than once with the same `.NeuronType` instance.
     """
-    dtype = model.sig[neurons]["in"].dtype
     n_neurons = neurons.size_in
-    state_init = neurontype.make_neuron_state(n_neurons, model.dt, dtype=dtype)
+    state_init = get_neuron_states(model, neurontype, neurons)
 
-    states = []
+    states = OrderedDict()
     for key, init in state_init.items():
         if key in model.sig[neurons]:
             raise BuildError("State name %r overlaps with existing signal name" % key)
 
-        if isinstance(init, Distribution):
-            raise NotImplementedError()
-        elif is_array_like(init):
-            init = np.asarray(init, dtype=dtype)
-            if init.ndim == 0:
-                init = init * np.ones(n_neurons, dtype=dtype)
-            elif init.ndim == 1 and init.size != n_neurons or init.ndim > 1:
-                raise BuildError(
-                    "State init array must be 0-D, or 1-D of length `n_neurons`"
-                )
-        else:
-            raise BuildError("State init must be a distribution or array-like")
-
-        model.sig[neurons][key] = Signal(
-            initial_value=init, shape=(n_neurons,), name="%s.%s" % (neurons, key)
+        states[key] = model.sig[neurons][key] = Signal(
+            initial_value=sample_state_init(init, n_neurons),
+            shape=(n_neurons,),
+            name="%s.%s" % (neurons, key),
         )
-        states.append(model.sig[neurons][key])
 
     model.add_op(
         SimNeurons(
@@ -157,60 +184,26 @@ def build_neurons(model, neurontype, neurons):
 
 
 @Builder.register(_Spiking)
-def build_spiking(model, neuron_type, neurons):
-    """Builds a `._Spiking` object into a model.
-
-    This builder delegates most of the process to the base neuron type builder,
-    then modifies the `.SimNeurons` operator made in the base builder.
-
-    Parameters
-    ----------
-    model : Model
-        The model to build into.
-    neuron_type : subclass of `._Spiking`
-        Neuron type to build.
-    neuron : Neurons
-        The neuron population object corresponding to the neuron type.
-
-    Notes
-    -----
-    Does not modify ``model.params[]`` and can therefore be called
-    more than once with the same `.LIF` instance.
-    """
-    model.build(neuron_type.base_type, neurons)
+def build_spiking(model, spiking_type, neurons):
+    """Generic builder for the ``_Spiking`` neuron types. """
+    model.build(spiking_type.base_type, neurons)
     op = model.operators[-1]
-    assert isinstance(op, SimNeurons) and op.neurons == neuron_type.base_type
-    op.neurons = neuron_type
-    return op
+    op.neurons = spiking_type
 
+    n_neurons = neurons.size_in
+    states = op.states
+    state_init = get_neuron_states(model, spiking_type, neurons)
 
-@Builder.register(RegularSpiking)
-def build_regular_spiking(model, reg, neurons):
-    """Builds a `.RegularSpiking` object into a model.
+    for key, init in state_init.items():
+        init = sample_state_init(init, n_neurons)
 
-    This builder delegates most of the process to the base neuron type builder,
-    then sets up an additional signal. We then modify the `.SimNeurons`
-    operator made in the base builder.
-
-    Parameters
-    ----------
-    model : Model
-        The model to build into.
-    reg : RegularSpiking
-        Neuron type to build.
-    neuron : Neurons
-        The neuron population object corresponding to the neuron type.
-
-    Notes
-    -----
-    Does not modify ``model.params[]`` and can therefore be called
-    more than once with the same `.LIF` instance.
-    """
-    op = build_spiking(model, reg, neurons)
-
-    # set voltage to 0.5 to be between positive and negative spike thresholds of 1 and 0
-    model.sig[neurons]["voltage"] = Signal(
-        0.5 * np.ones(neurons.size_in), name="%s.voltage" % neurons
-    )
-    # insert right after `output` so that this is the first state
-    op.sets.insert(1, model.sig[neurons]["voltage"])
+        if key in states:
+            # update with new init value
+            states[key].initial_value = init
+        elif key not in model.sig[neurons]:
+            states[key] = model.sig[neurons][key] = Signal(
+                initial_value=init, shape=(n_neurons,), name="%s.%s" % (neurons, key),
+            )
+            op.sets.append(states[key])
+        else:
+            raise BuildError("State name %r overlaps with existing signal name" % key)
