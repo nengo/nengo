@@ -48,6 +48,10 @@ Release history
   synapses to be initialized to represent the desired value. This is useful for
   minimizing startup transients in models with long synapses (e.g. recurrent networks).
   (`#1611 <https://github.com/nengo/nengo/pull/1611>`__)
+- Added the ``ScatteredHypersphere`` distribution. This distribution is similar to
+  ``UniformHypersphere``, except that points are more evenly spread across the space
+  (minimizing the clusters and empty spaces that happen in a true uniform distribution).
+  (`#1611 <https://github.com/nengo/nengo/pull/1611>`__)
 
 **Changed**
 
