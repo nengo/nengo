@@ -1,9 +1,17 @@
 import itertools
+import os
+import time
 
 import numpy as np
 import pytest
 
-from nengo.utils.numpy import array_hash, meshgrid_nd
+import nengo.utils.numpy
+from nengo.utils.numpy import (
+    array_hash,
+    betaincinv22_lookup,
+    _make_betaincinv22_table,
+    meshgrid_nd,
+)
 from nengo._vendor.scipy import expm
 
 
@@ -87,3 +95,76 @@ def test_expm(rng, allclose):
     scipy_linalg = pytest.importorskip("scipy.linalg")
     for a in [np.eye(3), rng.randn(10, 10), -10 + rng.randn(10, 10)]:
         assert allclose(scipy_linalg.expm(a), expm(a))
+
+
+def betaincinv22_test(plt, allclose, filename=None):
+    scipy_special = pytest.importorskip("scipy.special")
+
+    kwargs = {}
+    if filename is not None:
+        kwargs["filename"] = filename
+
+    # call once to load table, so that doesn't effect timing
+    betaincinv22_lookup(5, [0.1], **kwargs)
+
+    dims = np.concatenate(
+        [np.arange(1, 50), np.round(np.logspace(np.log10(51), 3.1)).astype(np.int64)]
+    )
+    x = np.linspace(0, 1, 1000)
+
+    results = []
+    for dim in dims:
+        ref_timer = time.time()
+        yref = scipy_special.betaincinv(dim / 2, 0.5, x)
+        ref_timer = time.time() - ref_timer
+
+        timer = time.time()
+        y = betaincinv22_lookup(dim, x, **kwargs)
+        timer = time.time() - timer
+
+        results.append((yref, y, ref_timer, timer))
+
+    n_show = 5
+    resultsT = list(zip(*results))
+    errors = np.abs(np.array(resultsT[0]) - np.array(resultsT[1])).max(axis=1)
+    show_inds = np.argsort(errors)[-n_show:]
+
+    subplots = plt.subplots(nrows=2, sharex=True)
+    if isinstance(subplots, tuple):
+        fig, ax = subplots
+
+        for i in show_inds:
+            yref, y, ref_timer, timer = results[i]
+            dim = dims[i]
+
+            ax[0].plot(x, y, label="dims=%d" % dim)
+            ax[1].plot(x, y - yref)
+
+        speedups = np.array(resultsT[2]) / np.array(resultsT[3])
+        ax[0].set_title("average speedup = %0.1f times" % speedups.mean())
+        ax[0].set_ylabel("value")
+        ax[1].set_xlabel("input")
+        ax[1].set_ylabel("error")
+        ax[0].legend()
+
+    for i, (yref, y, ref_timer, timer) in enumerate(results):
+        # allow error to increase for higher dimensions (to 5e-3 when dims=1000)
+        atol = 1e-3 + (np.log10(dims[i]) / 3) * 4e-3
+        assert allclose(y, yref, atol=atol), "dims=%d" % dims[i]
+
+
+def test_make_betaincinv22_table(monkeypatch, tmpdir, plt, allclose):
+    pytest.importorskip("scipy.special")
+    monkeypatch.setattr(nengo.utils.numpy, "_betaincinv22_table", None)
+
+    filename = os.path.join(str(tmpdir), "betaincinv22_test_table.npz")
+
+    _make_betaincinv22_table(filename=filename, n_interp=200, n_dims=50)
+    betaincinv22_test(filename=filename, plt=plt, allclose=allclose)
+
+
+def test_betaincinv22_lookup(monkeypatch, plt, allclose):
+    pytest.importorskip("scipy.special")
+    monkeypatch.setattr(nengo.utils.numpy, "_betaincinv22_table", None)
+
+    betaincinv22_test(plt=plt, allclose=allclose)
