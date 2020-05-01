@@ -1,9 +1,10 @@
 """
 Extra functions to extend the capabilities of Numpy.
 """
+from collections import OrderedDict
 from collections.abc import Iterable
 import logging
-
+import os
 import warnings
 
 import numpy as np
@@ -285,3 +286,86 @@ else:
 
     def rfftfreq(n, d=1.0):
         return np.abs(np.fft.fftfreq(n=n, d=d)[: n // 2 + 1])
+
+
+_betaincinv22_file = os.path.join(
+    os.path.abspath(os.path.dirname(__file__)), "betaincinv22_table.npz"
+)
+_betaincinv22_table = None
+
+
+def _make_betaincinv22_table(filename=_betaincinv22_file, n_interp=200, n_dims=50):
+    """Save lookup table for betaincinv22_lookup. """
+    import scipy.special  # pylint: disable=import-outside-toplevel
+
+    rng = np.random.RandomState(0)
+
+    n_dims_log = int(0.5 * n_dims)
+    dims_lin = np.arange(1, n_dims - n_dims_log + 1)
+    dims_log = np.round(np.logspace(np.log10(dims_lin[-1] + 1), 3, n_dims_log)).astype(
+        dims_lin.dtype
+    )
+    dims = np.unique(np.concatenate([dims_lin, dims_log]))
+
+    x_table = []
+    y_table = []
+    for dim in dims:
+        n_range = int(0.8 * n_interp)
+        x0 = np.linspace(0, 1, n_interp - n_range)  # samples in the domain
+        y0 = np.linspace(1e-16, 1 - 1e-7, n_range)  # samples in the range
+        x1 = scipy.special.betainc(dim / 2.0, 0.5, y0)
+        interp_x = np.unique(np.concatenate([x0, x1]))
+        while len(interp_x) < n_interp:
+            # add random points until we achieve the length
+            interp_x = np.unique(
+                np.concatenate([interp_x, rng.uniform(size=n_interp - len(interp_x))])
+            )
+
+        interp_x.sort()
+        assert interp_x.size == n_interp
+
+        interp_y = scipy.special.betaincinv(dim / 2.0, 0.5, interp_x)
+        x_table.append(interp_x)
+        y_table.append(interp_y)
+
+    x_table = np.asarray(x_table)
+    y_table = np.asarray(y_table)
+
+    np.savez(filename, dims=dims, x=x_table, y=y_table)
+
+
+def betaincinv22_lookup(dims, x, filename=_betaincinv22_file):
+    """Look up values for betaincinv(dims / 2, 0.5, x). """
+    global _betaincinv22_table
+
+    if not is_integer(dims) or dims < 1:
+        raise ValueError("`dims` must be an integer >= 1")
+
+    if _betaincinv22_table is None:
+        data = np.load(filename)
+        _betaincinv22_table = OrderedDict(
+            (d, (x, y)) for d, x, y in zip(data["dims"], data["x"], data["y"])
+        )
+        assert (np.diff(list(_betaincinv22_table)) >= 1).all()
+
+    if dims in _betaincinv22_table:
+        xp, yp = _betaincinv22_table[dims]
+    else:
+        known_dims = np.array(list(_betaincinv22_table))
+        i = np.searchsorted(known_dims, dims)
+        assert i > 0
+        if i >= len(known_dims):
+            # dims is larger than any known dimension we have, so just use the largest
+            xp, yp = _betaincinv22_table[known_dims[-1]]
+        else:
+            # take average of two curves
+            dims0, dims1 = known_dims[i - 1], known_dims[i]
+            xp0, yp0 = _betaincinv22_table[dims0]
+            xp1, yp1 = _betaincinv22_table[dims1]
+            assert dims0 < dims < dims1
+            ratio0 = (dims1 - dims) / (dims1 - dims0)
+            ratio1 = 1 - ratio0
+            xp = (ratio0 * xp0 + ratio1 * xp1) if len(xp0) == len(xp1) else xp0
+            yp = ratio0 * np.interp(xp, xp0, yp0) + ratio1 * np.interp(xp, xp1, yp1)
+
+    return np.interp(x, xp, yp)

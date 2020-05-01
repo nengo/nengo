@@ -60,7 +60,7 @@ setup(
     author_email="info@appliedbrainresearch.com",
     packages=find_packages(),
     url="https://www.nengo.ai/nengo",
-    include_package_data=False,
+    include_package_data=True,
     license="Free for non-commercial use",
     description="Tools for building and simulating large-scale neural models",
     long_description=read("README.rst", "CHANGES.rst"),

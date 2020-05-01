@@ -50,6 +50,11 @@ Release history
   (`#1611`_)
 - Added ``DoubleExp``, ``Bandpass``, ``Highpass``, ``DiscreteDelay``, and
   ``LegendreDelay`` synapse models. (`#1611`_)
+- Added the ``ScatteredHypersphere`` distribution. This distribution is similar to
+  ``UniformHypersphere``, except that points are more evenly spread across the space
+  by use of quasirandom (i.e., low-discrepancy) number-theoretic sequences that minimize
+  the clusters and empty spaces that happen with independently drawn samples).
+  (`#1611`_)
 
 **Changed**
 

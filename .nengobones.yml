@@ -18,11 +18,13 @@ manifest_in:
     - nengo *.md
     - nengo *.rst
     - nengo *.txt
+    - nengo *.npz
 
 setup_py:
   package_data:
     nengo:
       - nengo-data/nengorc
+  include_package_data: True
   py_modules:
     - pytest_nengo
   entry_points:
