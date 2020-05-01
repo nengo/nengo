@@ -37,6 +37,7 @@ import nengo
 import numpy as np
 if np.__version__ >= '1.14':
     np.set_printoptions(legacy='1.13')
+import matplotlib.pyplot as plt
 """
 
 # -- sphinx.ext.intersphinx

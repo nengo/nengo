@@ -40,3 +40,4 @@ graft nengo-data
 recursive-include nengo *.md
 recursive-include nengo *.rst
 recursive-include nengo *.txt
+recursive-include nengo *.npz

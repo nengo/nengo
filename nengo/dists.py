@@ -1,18 +1,22 @@
+import os
 import warnings
+from collections import OrderedDict
 
 import numpy as np
 
-from nengo.exceptions import ValidationError
+import nengo.utils.numpy as npext
+from nengo.exceptions import ConvergenceError, ValidationError
 from nengo.params import (
     BoolParam,
+    EnumParam,
+    FrozenObject,
     IntParam,
     NdarrayParam,
     NumberParam,
     Parameter,
     Unconfigurable,
-    FrozenObject,
 )
-import nengo.utils.numpy as npext
+from nengo.utils.numpy import is_integer
 
 
 class Distribution(FrozenObject):
@@ -48,6 +52,43 @@ class Distribution(FrozenObject):
             dimension enumerates the dimensions of the process.
         """
         raise NotImplementedError("Distributions should implement sample.")
+
+
+class DistributionParam(Parameter):
+    """A Distribution."""
+
+    equatable = True
+
+    def coerce(self, instance, dist):
+        self.check_type(instance, dist, Distribution)
+        return super().coerce(instance, dist)
+
+
+class DistOrArrayParam(NdarrayParam):
+    """Can be a Distribution or samples from a distribution."""
+
+    def __init__(
+        self,
+        name,
+        default=Unconfigurable,
+        sample_shape=None,
+        sample_dtype=np.float64,
+        optional=False,
+        readonly=None,
+    ):
+        super().__init__(
+            name=name,
+            default=default,
+            shape=sample_shape,
+            dtype=sample_dtype,
+            optional=optional,
+            readonly=readonly,
+        )
+
+    def coerce(self, instance, distorarray):
+        if isinstance(distorarray, Distribution):
+            return Parameter.coerce(self, instance, distorarray)
+        return super().coerce(instance, distorarray)
 
 
 def get_samples(dist_or_samples, n, d=None, rng=np.random):
@@ -304,6 +345,305 @@ class UniformHypersphere(Distribution):
         )
 
         return samples
+
+
+class QuasirandomSequence(Distribution):
+    """Sequence for quasi Monte Carlo sampling the ``[0, 1]``-cube.
+
+    This is similar to ``np.random.uniform(0, 1, size=(num, d))``, but with the
+    additional property that each ``d``-dimensional point is uniformly scattered.
+
+    While the sequence is defined deterministically, we introduce two stochastic
+    elements to encourage heterogeneity in models using these sequences.
+    First, we offset the start of the sequence by a random number between 0 and 1
+    to ensure we don't oversample points aligned to the step size.
+    Second, we shuffle the resulting sequence before returning to ensure we don't
+    introduce correlations between parameters sampled from this distribution.
+
+    This is based on the tutorial and code from [#]_.
+
+    See Also
+    --------
+    ScatteredHypersphere
+
+    References
+    ----------
+    .. [#] Martin Roberts. "The Unreasonable Effectiveness of Quasirandom Sequences."
+       http://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/
+
+    Examples
+    --------
+
+    .. testcode::
+
+       rd = nengo.dists.QuasirandomSequence().sample(10000, 2)
+       plt.scatter(*rd.T, c=np.arange(len(rd)), cmap='Blues', s=7)
+    """
+
+    @staticmethod
+    def _phi(d, tol=1e-10):
+        """Newton-Raphson-Method to calculate ``g = phi_d``."""
+        x = 1.0
+        for _ in range(100):
+            dx = (x ** (d + 1) - x - 1) / ((d + 1) * x ** d - 1)
+            x -= dx
+            if abs(dx) < tol:
+                break
+        else:
+            raise ConvergenceError("'phi' computation did not converge for d=%s" % d)
+
+        return x
+
+    def sample(self, n, d=1, rng=np.random):
+        if d is None or d < 1:  # check this, since other dists allow d = None
+            raise ValidationError("Dimensions must be a positive integer", "d")
+
+        seed = rng.uniform(0, 1, size=d)
+        if d == 1:
+            # Tile the points optimally
+            z = (seed + (1 / n) * np.arange(n, dtype=np.float64)) % 1
+            z = z[:, np.newaxis]
+        else:
+            phi_inv = 1.0 / self._phi(d)
+            alpha = phi_inv ** np.arange(1, d + 1)
+            z = (seed + np.outer(np.arange(1, n + 1), alpha)) % 1
+        rng.shuffle(z)
+        return z
+
+
+class ScatteredHypersphere(Distribution):
+    r"""Quasirandom distribution over the hypersphere or hyperball.
+
+    Applies a spherical transform to the given quasirandom sequence
+    (by default `.QuasirandomSequence`) to obtain uniformly scattered samples.
+
+    This distribution has the nice mathematical property that the discrepancy
+    between the empirical distribution and :math:`n` samples is
+    :math:`\widetilde{\mathcal{O}} (1 / n)` as opposed to
+    :math:`\mathcal{O} (1 / \sqrt{n})` for the Monte Carlo method [1]_.
+    This means that the number of samples is effectively squared, making this
+    useful as a means for sampling ``eval_points`` and ``encoders``.
+
+    Parameters
+    ----------
+    surface : bool, optional
+        Whether sample points should be distributed uniformly
+        over the surface of the hyperphere (True),
+        or within the hypersphere (False).
+    min_magnitude : Number, optional
+        Lower bound on the returned vector magnitudes (such that they are in
+        the range ``[min_magnitude, 1]``). Must be in the range [0, 1).
+        Ignored if ``surface`` is ``True``.
+    base : `.Distribution`, optional
+        The base distribution from which to sample quasirandom numbers.
+    method : {"sct-approx", "sct", "tfww"}
+        Method to use for mapping points to the hypersphere.
+
+        * "sct-approx": Same as "sct", but uses lookup table to approximate the
+          beta distribution, making it faster with almost exactly the same result.
+        * "sct": Use the exact Spherical Coordinate Transform
+          (section 1.5.2 of [1]_).
+        * "tfww": Use the Tashiro-Fang-Wang-Wong method (section 4.3 of [1]_).
+          Faster than "sct" and "sct-approx", with the same level of uniformity
+          for larger numbers of samples (``n >= 4000``, approximately).
+
+    See Also
+    --------
+    UniformHypersphere
+    QuasirandomSequence
+
+    Notes
+    -----
+    The `.QuasirandomSequence` distribution is mostly deterministic.
+    Nondeterminism comes from a random ``d``-dimensional rotation.
+
+    References
+    ----------
+    .. [1] K.-T. Fang and Y. Wang, Number-Theoretic Methods in Statistics.
+       Chapman & Hall, 1994.
+
+    Examples
+    --------
+    Plot points sampled from the surface of the sphere in 3 dimensions:
+
+    .. testcode::
+
+       from mpl_toolkits.mplot3d import Axes3D
+
+       points = nengo.dists.ScatteredHypersphere(surface=True).sample(1000, d=3)
+
+       ax = plt.subplot(111, projection="3d")
+       ax.scatter(*points.T, s=5)
+
+    Plot points sampled from the volume of the sphere in 2 dimensions (i.e. circle):
+
+    .. testcode::
+
+       points = nengo.dists.ScatteredHypersphere(surface=False).sample(1000, d=2)
+       plt.scatter(*points.T, s=5)
+    """
+
+    surface = BoolParam("surface")
+    min_magnitude = NumberParam("min_magnitude", low=0, high=1, high_open=True)
+    base = DistributionParam("base")
+    method = EnumParam("method", values=("sct-approx", "sct", "tfww"))
+
+    def __init__(
+        self,
+        surface=False,
+        min_magnitude=0,
+        base=QuasirandomSequence(),
+        method="sct-approx",
+    ):
+        super().__init__()
+        if surface and min_magnitude > 0:
+            warnings.warn("min_magnitude ignored because surface is True")
+        self.surface = surface
+        self.min_magnitude = min_magnitude
+        self.base = base
+        self.method = method
+
+        if self.method == "sct":
+            import scipy.special  # pylint: disable=import-outside-toplevel
+
+            assert scipy.special
+
+    @classmethod
+    def spherical_coords_ppf(cls, dims, y, approx=False):
+        if not approx:
+            import scipy.special  # pylint: disable=import-outside-toplevel
+
+        y_reflect = np.where(y < 0.5, y, 1 - y)
+        if approx:
+            z_sq = _betaincinv22.lookup(dims, 2 * y_reflect)
+        else:
+            z_sq = scipy.special.betaincinv(dims / 2.0, 0.5, 2 * y_reflect)
+        x = np.arcsin(np.sqrt(z_sq)) / np.pi
+        return np.where(y < 0.5, x, 1 - x)
+
+    @classmethod
+    def spherical_transform_sct(cls, samples, approx=False):
+        """Map samples from the ``[0, 1]``-cube onto the hypersphere.
+
+        Uses the SCT method described in section 1.5.3 of Fang and Wang (1994).
+        """
+        samples = np.asarray(samples)
+        samples = samples[:, np.newaxis] if samples.ndim == 1 else samples
+        n, d = samples.shape
+
+        # inverse transform method (section 1.5.2)
+        coords = np.empty_like(samples)
+        for j in range(d):
+            coords[:, j] = cls.spherical_coords_ppf(d - j, samples[:, j], approx=approx)
+
+        # spherical coordinate transform
+        mapped = np.ones((n, d + 1))
+        i = np.ones(d)
+        i[-1] = 2.0
+        s = np.sin(i[np.newaxis, :] * np.pi * coords)
+        c = np.cos(i[np.newaxis, :] * np.pi * coords)
+        mapped[:, 1:] = np.cumprod(s, axis=1)
+        mapped[:, :-1] *= c
+        return mapped
+
+    @staticmethod
+    def spherical_transform_tfww(c_samples):
+        """Map samples from the ``[0, 1]``-cube onto the hypersphere surface.
+
+        Uses the TFWW method described in section 4.3 of Fang and Wang (1994).
+        """
+        c_samples = np.asarray(c_samples)
+        c_samples = c_samples[:, np.newaxis] if c_samples.ndim == 1 else c_samples
+        n, s1 = c_samples.shape
+        s = s1 + 1
+
+        x_samples = np.zeros((n, s))
+
+        if s == 2:
+            phi = 2 * np.pi * c_samples[:, 0]
+            x_samples[:, 0] = np.cos(phi)
+            x_samples[:, 1] = np.sin(phi)
+            return x_samples
+
+        even = s % 2 == 0
+        m = s // 2 if even else (s - 1) // 2
+
+        g = np.zeros((n, m + 1))
+        g[:, -1] = 1
+        for j in range(m - 1, 0, -1):
+            g[:, j] = g[:, j + 1] * c_samples[:, j - 1] ** (
+                (1.0 / j) if even else (2.0 / (2 * j + 1))
+            )
+
+        d = np.sqrt(np.diff(g, axis=1))
+
+        phi = c_samples[:, m - 1 :]
+        if even:
+            phi *= 2 * np.pi
+            x_samples[:, 0::2] = d * np.cos(phi)
+            x_samples[:, 1::2] = d * np.sin(phi)
+        else:
+            # there is a mistake in eq. 4.3.7 here, see eq. 1.5.28 for correct version
+            phi[:, 1:] *= 2 * np.pi
+            f = 2 * d[:, 0] * np.sqrt(phi[:, 0] * (1 - phi[:, 0]))
+            x_samples[:, 0] = d[:, 0] * (1 - 2 * phi[:, 0])
+            x_samples[:, 1] = f * np.cos(phi[:, 1])
+            x_samples[:, 2] = f * np.sin(phi[:, 1])
+            if s > 3:
+                x_samples[:, 3::2] = d[:, 1:] * np.cos(phi[:, 2:])
+                x_samples[:, 4::2] = d[:, 1:] * np.sin(phi[:, 2:])
+
+        return x_samples
+
+    @staticmethod
+    def random_orthogonal(d, rng=np.random):
+        """Returns a random orthogonal matrix."""
+        m = rng.standard_normal((d, d))
+        u, _, v = np.linalg.svd(m)
+        return np.dot(u, v)
+
+    def sample(self, n, d=1, rng=np.random):
+        if d == 1 and self.surface:
+            return np.sign(self.base.sample(n, d, rng) - 0.5)
+
+        if d == 1:
+            pos_samples = self.base.sample(int(n / 2), d, rng)
+            neg_samples = self.base.sample(n - pos_samples.size, d, rng)
+            if self.min_magnitude > 0:
+                for samples in [pos_samples, neg_samples]:
+                    samples *= 1.0 - self.min_magnitude
+                    samples += self.min_magnitude
+            samples = np.vstack([pos_samples, -1 * neg_samples])
+            rng.shuffle(samples)
+            return samples
+
+        radius = None
+        if self.surface:
+            samples = self.base.sample(n, d - 1, rng)
+        else:
+            samples = self.base.sample(n, d, rng)
+            samples, radius = samples[:, :-1], samples[:, -1:]
+            if self.min_magnitude != 0:
+                min_d = self.min_magnitude ** d
+                radius *= 1 - min_d
+                radius += min_d
+            radius **= 1.0 / d
+
+        if self.method == "sct":
+            mapped = self.spherical_transform_sct(samples, approx=False)
+        elif self.method == "sct-approx":
+            mapped = self.spherical_transform_sct(samples, approx=True)
+        else:
+            assert self.method == "tfww"
+            mapped = self.spherical_transform_tfww(samples)
+
+        # radius adjustment for ball
+        if radius is not None:
+            mapped *= radius
+
+        # random rotation
+        rotation = self.random_orthogonal(d, rng=rng)
+        return np.dot(mapped, rotation)
 
 
 class Choice(Distribution):
@@ -606,38 +946,92 @@ class CosineSimilarity(SubvectorLength):
         return np.where(y > 0.5, x, -x)
 
 
-class DistributionParam(Parameter):
-    """A Distribution."""
+class _betaincinv22:
+    """Look up values for ``betaincinv(dims / 2, 0.5, x)``."""
 
-    equatable = True
+    path = os.path.join(
+        os.path.abspath(os.path.dirname(__file__)), "data", "betaincinv22_table.npz"
+    )
+    table = None
 
-    def coerce(self, instance, dist):
-        self.check_type(instance, dist, Distribution)
-        return super().coerce(instance, dist)
+    @classmethod
+    def make_table(cls, n_interp=200, n_dims=50):
+        """Save lookup table for ``_betaincinv22.lookup``."""
+        import scipy.special  # pylint: disable=import-outside-toplevel
 
+        rng = np.random.RandomState(0)
 
-class DistOrArrayParam(NdarrayParam):
-    """Can be a Distribution or samples from a distribution."""
+        n_dims_log = int(0.5 * n_dims)
+        dims_lin = np.arange(1, n_dims - n_dims_log + 1)
+        dims_log = np.round(
+            np.logspace(np.log10(dims_lin[-1] + 1), 3, n_dims_log)
+        ).astype(dims_lin.dtype)
+        dims = np.unique(np.concatenate([dims_lin, dims_log]))
 
-    def __init__(
-        self,
-        name,
-        default=Unconfigurable,
-        sample_shape=None,
-        sample_dtype=np.float64,
-        optional=False,
-        readonly=None,
-    ):
-        super().__init__(
-            name=name,
-            default=default,
-            shape=sample_shape,
-            dtype=sample_dtype,
-            optional=optional,
-            readonly=readonly,
+        x_table = []
+        y_table = []
+        for dim in dims:
+            n_range = int(0.8 * n_interp)
+            x0 = np.linspace(0, 1, n_interp - n_range)  # samples in the domain
+            y0 = np.linspace(1e-16, 1 - 1e-7, n_range)  # samples in the range
+            x1 = scipy.special.betainc(dim / 2.0, 0.5, y0)
+            interp_x = np.unique(np.concatenate([x0, x1]))
+            while len(interp_x) < n_interp:
+                # add random points until we achieve the length
+                interp_x = np.unique(
+                    np.concatenate(
+                        [interp_x, rng.uniform(size=n_interp - len(interp_x))]
+                    )
+                )
+
+            interp_x.sort()
+            assert interp_x.size == n_interp
+
+            interp_y = scipy.special.betaincinv(dim / 2.0, 0.5, interp_x)
+            x_table.append(interp_x)
+            y_table.append(interp_y)
+
+        x_table = np.asarray(x_table)
+        y_table = np.asarray(y_table)
+
+        np.savez(cls.path, dims=dims, x=x_table, y=y_table)
+
+    @classmethod
+    def load_table(cls):
+        if cls.table is not None:
+            return cls.table
+        data = np.load(cls.path)
+        cls.table = OrderedDict(
+            [(d, (x, y)) for d, x, y in zip(data["dims"], data["x"], data["y"])]
         )
+        assert np.all(np.diff(list(cls.table)) >= 1)
+        return cls.table
 
-    def coerce(self, instance, distorarray):
-        if isinstance(distorarray, Distribution):
-            return Parameter.coerce(self, instance, distorarray)
-        return super().coerce(instance, distorarray)
+    @classmethod
+    def lookup(cls, dims, x):
+        if not is_integer(dims) or dims < 1:
+            raise ValidationError("must be an integer >= 1", attr="dims")
+
+        table = cls.load_table()
+
+        if dims in table:
+            xp, yp = table[dims]
+        else:
+            known_dims = np.array(list(table))
+            i = np.searchsorted(known_dims, dims)
+            assert i > 0
+            if i >= len(known_dims):
+                # dims is larger than any dimension we have, so use the largest
+                xp, yp = table[known_dims[-1]]
+            else:
+                # take average of two curves
+                dims0, dims1 = known_dims[i - 1], known_dims[i]
+                xp0, yp0 = table[dims0]
+                xp1, yp1 = table[dims1]
+                assert dims0 < dims < dims1
+                ratio0 = (dims1 - dims) / (dims1 - dims0)
+                ratio1 = 1 - ratio0
+                xp = (ratio0 * xp0 + ratio1 * xp1) if len(xp0) == len(xp1) else xp0
+                yp = ratio0 * np.interp(xp, xp0, yp0) + ratio1 * np.interp(xp, xp1, yp1)
+
+        return np.interp(x, xp, yp)

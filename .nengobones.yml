@@ -18,11 +18,13 @@ manifest_in:
     - nengo *.md
     - nengo *.rst
     - nengo *.txt
+    - nengo *.npz
 
 setup_py:
   package_data:
     nengo:
       - nengo-data/nengorc
+  include_package_data: True
   py_modules:
     - pytest_nengo
   entry_points:
@@ -116,6 +118,7 @@ docs_conf_py:
     - "import numpy as np"
     - "if np.__version__ >= '1.14':"
     - "    np.set_printoptions(legacy='1.13')"
+    - "import matplotlib.pyplot as plt"
   html_redirects:
     backend_api.html: backend-api.html
     examples/advanced/functions_and_tuning_curves.html:

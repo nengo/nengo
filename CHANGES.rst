@@ -46,6 +46,10 @@ Release history
   as are commonly used to match biological spiking statistics. (`#1609`_)
 - Added the ``PositiveNeuronType`` test argument to run tests on all neuron types
   for which ``negative`` is not ``True``. (`#1609`_)
+- Added the ``QuasirandomSequence`` distribution, which is similar to
+  ``Uniform`` but spreads points across the space evenly. (`#1611`_)
+- Added the ``ScatteredHypersphere`` distribution, which is similar to
+  ``UniformHypersphere`` but spreads points across the space more evenly. (`#1611`_)
 
 **Changed**
 
@@ -76,6 +80,8 @@ Release history
 - Various improvements to simulation speed. (`#1629`_)
 - ``EnsembleArray`` now raises an error if ``add_output`` would
   overwrite an existing attribute. (`#1611`_)
+- The ``encoders`` and ``eval_points`` of ``Ensemble`` are now sampled from
+  ``ScatteredHypersphere`` by default. (`#1611`_)
 
 **Deprecated**
 

@@ -6,20 +6,20 @@ import pytest
 
 import nengo
 from nengo import (
+    BCM,
+    LIF,
+    PES,
     AdaptiveLIF,
     AdaptiveLIFRate,
     Alpha,
-    BCM,
     Convolution,
     Dense,
     Direct,
     Izhikevich,
-    LIF,
     LIFRate,
     LinearFilter,
     Lowpass,
     Oja,
-    PES,
     RectifiedLinear,
     Sigmoid,
     Sparse,
@@ -40,12 +40,13 @@ from nengo.builder.operator import (
 from nengo.builder.processes import SimProcess
 from nengo.builder.signal import Signal
 from nengo.dists import (
+    PDF,
     Choice,
     CosineSimilarity,
     Exponential,
     Gaussian,
-    PDF,
     Samples,
+    ScatteredHypersphere,
     SqrtBeta,
     SubvectorLength,
     Uniform,
@@ -354,6 +355,23 @@ def test_distributions():
     check_repr(UniformHypersphere(min_magnitude=0.3))
     assert repr(UniformHypersphere()) == "UniformHypersphere()"
     assert repr(UniformHypersphere(surface=True)) == "UniformHypersphere(surface=True)"
+
+    check_init_args(
+        ScatteredHypersphere, ["surface", "min_magnitude", "base", "method"]
+    )
+    check_repr(ScatteredHypersphere())
+    check_repr(ScatteredHypersphere(surface=True))
+    check_repr(ScatteredHypersphere(min_magnitude=0.3))
+    check_repr(ScatteredHypersphere(base=Uniform(0, 1)))
+    check_repr(ScatteredHypersphere(method="tfww"))
+    assert repr(ScatteredHypersphere()) == "ScatteredHypersphere()"
+    assert (
+        repr(ScatteredHypersphere(surface=True)) == "ScatteredHypersphere(surface=True)"
+    )
+    assert (
+        repr(ScatteredHypersphere(base=Uniform(0, 1), method="tfww"))
+        == "ScatteredHypersphere(base=Uniform(low=0, high=1), method='tfww')"
+    )
 
     check_init_args(Choice, ["options", "weights"])
     check_repr(Choice([3, 2, 1]))

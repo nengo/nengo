@@ -30,6 +30,10 @@ class ValidationError(NengoException, ValueError):
         return "{}.{}: {}".format(klassname, self.attr, super().__str__())
 
 
+class ConvergenceError(NengoException, RuntimeError):
+    """A RuntimeError raised when an algorithm does not converge."""
+
+
 class ReadonlyError(ValidationError):
     """A ValidationError occurring because a parameter is read-only."""
 

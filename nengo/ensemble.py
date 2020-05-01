@@ -1,7 +1,7 @@
 from nengo.base import NengoObject, ObjView, ProcessParam
-from nengo.dists import DistOrArrayParam, Uniform, UniformHypersphere
+from nengo.dists import DistOrArrayParam, ScatteredHypersphere, Uniform
 from nengo.exceptions import ReadonlyError
-from nengo.neurons import LIF, NeuronTypeParam, Direct
+from nengo.neurons import LIF, Direct, NeuronTypeParam
 from nengo.params import BoolParam, Default, IntParam, NumberParam
 
 
@@ -108,7 +108,7 @@ class Ensemble(NengoObject):
     radius = NumberParam("radius", default=1.0, low=1e-10)
     encoders = DistOrArrayParam(
         "encoders",
-        default=UniformHypersphere(surface=True),
+        default=ScatteredHypersphere(surface=True),
         sample_shape=("n_neurons", "dimensions"),
     )
     intercepts = DistOrArrayParam(
@@ -124,7 +124,7 @@ class Ensemble(NengoObject):
         sample_shape=("n_neurons",),
     )
     eval_points = DistOrArrayParam(
-        "eval_points", default=UniformHypersphere(), sample_shape=("*", "dimensions")
+        "eval_points", default=ScatteredHypersphere(), sample_shape=("*", "dimensions")
     )
     n_eval_points = IntParam("n_eval_points", default=None, optional=True)
     neuron_type = NeuronTypeParam("neuron_type", default=LIF())

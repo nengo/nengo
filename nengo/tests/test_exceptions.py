@@ -3,10 +3,12 @@ from io import BytesIO
 import pytest
 
 import nengo
+import nengo.spa
 from nengo.exceptions import (
     BuildError,
     CacheIOError,
     ConfigError,
+    ConvergenceError,
     FingerprintError,
     MovedError,
     NetworkContextError,
@@ -21,8 +23,7 @@ from nengo.exceptions import (
     ValidationError,
 )
 from nengo.params import ObsoleteParam
-from nengo.rc import rc, RC_DEFAULTS
-import nengo.spa
+from nengo.rc import RC_DEFAULTS, rc
 from nengo.utils.builder import generate_graphviz
 
 
@@ -78,6 +79,22 @@ def test_validation_error(request):
         [
             ("test_validation_error", "nengo.dists.PDF(x=[1, 1], p=[0.1, 0.2])"),
             ("__init__", "raise ValidationError(..."),
+        ],
+    )
+
+
+def test_convergence_error():
+    with pytest.raises(ConvergenceError) as excinfo:
+        nengo.dists.QuasirandomSequence()._phi(1, tol=0)
+    assert str(excinfo.value) == "'phi' computation did not converge for d=1"
+    check_tb_entries(
+        excinfo.traceback,
+        [
+            (
+                "test_convergence_error",
+                "nengo.dists.QuasirandomSequence()._phi(1, tol=0)",
+            ),
+            ("_phi", "raise ConvergenceError(..."),
         ],
     )
 
