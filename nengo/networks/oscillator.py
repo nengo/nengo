@@ -14,7 +14,7 @@ class Oscillator(nengo.Network):
     recurrent_tau : float
         Time constant on the recurrent connection.
     frequency : float
-        Desired frequency, in Hz, of the cyclic oscillation.
+        Desired frequency, in radians per second, of the cyclic oscillation.
     n_neurons : int
         Number of neurons in the recurrently connected ensemble.
     **kwargs
