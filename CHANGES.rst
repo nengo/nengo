@@ -70,6 +70,11 @@ Release history
   form. If passing systems in transfer function form, they should be passed as a
   ``(numerator, denominator)`` tuple; the separate ``den`` argument is deprecated.
   (`#1611 <https://github.com/nengo/nengo/pull/1611>`__)
+- The ``encoders`` and ``eval_points`` of ``Ensemble`` are now sampled from
+  ``ScatteredHypersphere``, for better encoding and decoding accuracy. This is only
+  modestly slower than the previous ``UniformHypersphere``, but if speed is a concern,
+  the user may want to use the ``"tfww"`` method on ``ScatteredHypersphere``.
+  (`#1611 <https://github.com/nengo/nengo/pull/1611>`__)
 
 **Fixed**
 
