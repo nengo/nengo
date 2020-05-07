@@ -57,7 +57,7 @@ from nengo.neurons import (
     Tanh,
 )
 from nengo.network import Network
-from nengo.learning_rules import PES, BCM, Oja, Voja
+from nengo.learning_rules import BCM, Oja, PES, RLS, Voja
 from nengo.params import Default
 from nengo.probe import Probe
 from nengo.rc import rc, RC_DEFAULTS

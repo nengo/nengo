@@ -279,6 +279,27 @@ def rmse(x, y, axis=None, keepdims=False):  # pragma: no cover
     return rms(x - y, axis=axis, keepdims=keepdims)
 
 
+def nrmse(a, b, axis=None, keepdims=False):
+    """Compute the root-mean-square (RMS) error normalized by the RMS of ``b``.
+
+    Equivalent to ``rms(a - b, **kwargs) / rms(b, **kwargs)``
+
+    Parameters
+    ----------
+    a, b : array_like
+        Arrays to compute RMS error over, normalized by the rms amplitude of ``b``.
+    axis : None or int or tuple of ints, optional
+        Axis or axes to sum across. ``None`` sums all axes. See ``np.sum``.
+    keepdims : bool, optional
+        If True, the reduced axes are left in the result. See ``np.sum`` in
+        newer versions of Numpy (>= 1.7).
+    """
+    a, b = np.asarray(a), np.asarray(b)
+    return rms(a - b, axis=axis, keepdims=keepdims) / rms(
+        b, axis=axis, keepdims=keepdims
+    )
+
+
 if hasattr(np.fft, "rfftfreq"):
     rfftfreq = np.fft.rfftfreq
 else:

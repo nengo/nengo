@@ -2,13 +2,7 @@ import warnings
 
 from nengo.config import SupportDefaultsMixin
 from nengo.exceptions import ValidationError
-from nengo.params import (
-    Default,
-    IntParam,
-    FrozenObject,
-    NumberParam,
-    Parameter,
-)
+from nengo.params import Default, FrozenObject, IntParam, NumberParam, Parameter
 from nengo.synapses import Lowpass, SynapseParam
 from nengo.utils.numpy import is_iterable
 
@@ -125,6 +119,118 @@ class PES(LearningRuleType):
             )
 
         self.pre_synapse = pre_synapse
+
+
+class RLS(LearningRuleType):
+    r"""Recursive least-squares rule for online decoder optimization.
+
+    This implements an online version of the standard least-squares solvers used
+    to learn connection weights offline (e.g. `nengo.solvers.LstsqL2`). It can be
+    applied in the same scenarios as `.PES`, to minimize an error signal.
+
+    The cost of RLS is :math:`\mathcal{O}(n^2)` extra time and memory. If possible,
+    it is more efficient to do the learning offline using e.g. `.LstsqL2`.
+
+    Parameters
+    ----------
+    learning_rate : float, optional
+        Effective learning rate. This is better understood as
+        :math:`\frac{1}{\alpha}`, where :math:`\alpha` is an L2-regularization
+        term. A large learning rate means little regularization, which implies
+        quick over-fitting. A small learning rate means large regularization,
+        which translates to slower learning [#]_.
+    pre_synapse : Synapse, optional
+        Synapse model applied to the pre-synaptic neural activities.
+
+    See Also
+    --------
+    nengo.PES
+    nengo.solvers.LstsqL2
+
+    Notes
+    -----
+    RLS works by maintaining the inverse neural correlation matrix,
+    :math:`P = \Gamma^{-1}`, where :math:`\Gamma = A^T A + \alpha I` are the
+    regularized correlations, :math:`A` is a matrix of (possibly filtered)
+    neural activities, and :math:`\alpha` is an L2-regularization term
+    controlled by the ``learning_rate``. :math:`P` is used to project the
+    error signal and update the weights each time-step.
+
+    References
+    ----------
+    .. [#] Sussillo, D., & Abbott, L. F. (2009). Generating coherent patterns
+       of activity from chaotic neural networks. Neuron, 63(4), 544-557.
+
+    Examples
+    --------
+    Below, we compare `.PES` against `.RLS`, learning a feed-forward
+    communication channel (identity function) online, starting with 100 spiking
+    LIF neurons with decoders (weights) set to zero. A faster learning rate for
+    `.PES` results in over-fitting to the most recent online example, while a
+    slower learning rate does not learn quickly enough. This is a general problem
+    with greedy optimization. `.RLS` performs better since it is L2-optimal.
+
+    .. testcode::
+
+       from nengo.learning_rules import PES, RLS
+
+       tau = 0.005
+       learning_rules = (
+           PES(learning_rate=1e-3, pre_synapse=tau),
+           RLS(learning_rate=1e-3, pre_synapse=tau),
+       )
+
+       with nengo.Network() as model:
+           u = nengo.Node(output=lambda t: np.sin(2 * np.pi * t))
+           probes = []
+           for lr in learning_rules:
+               e = nengo.Node(size_in=1, output=lambda t, e: e if t < 1 else 0)
+               x = nengo.Ensemble(100, 1, seed=0)
+               y = nengo.Node(size_in=1)
+
+               nengo.Connection(u, e, synapse=None, transform=-1)
+               nengo.Connection(u, x, synapse=None)
+               conn = nengo.Connection(
+                   x, y, synapse=None, learning_rule_type=lr, function=lambda x: 0
+               )
+               nengo.Connection(y, e, synapse=None)
+               nengo.Connection(e, conn.learning_rule, synapse=tau)
+               probes.append(nengo.Probe(y, synapse=tau))
+           probes.append(nengo.Probe(u, synapse=tau))
+
+       with nengo.Simulator(model) as sim:
+           sim.run(2.0)
+
+       plt.plot(sim.trange(), sim.data[probes[0]], label=str(learning_rules[0]))
+       plt.plot(sim.trange(), sim.data[probes[1]], label=str(learning_rules[1]))
+       plt.plot(sim.trange(), sim.data[probes[2]], label="Ideal", linestyle="--")
+       plt.vlines([1], -1, 1, label="Training -> Testing")
+       plt.ylim(-2, 2)
+       plt.legend(loc="upper right")
+       plt.xlabel("Time (s)")
+
+    .. testoutput::
+      :hide:
+
+      ...
+    """
+
+    modifies = "decoders"
+    probeable = ("pre_filtered", "error", "delta", "inv_gamma")
+
+    learning_rate = NumberParam("learning_rate", low=0, readonly=True, default=1e-3)
+    pre_synapse = SynapseParam("pre_synapse", default=Lowpass(tau=0.005), readonly=True)
+
+    def __init__(self, learning_rate=Default, pre_synapse=Default):
+        super().__init__(learning_rate=learning_rate, size_in="post_state")
+        self.pre_synapse = pre_synapse
+
+    @property
+    def _argdefaults(self):
+        return (
+            ("learning_rate", RLS.learning_rate.default),
+            ("pre_synapse", RLS.pre_synapse.default),
+        )
 
 
 def _remove_default_post_synapse(argreprs, default):

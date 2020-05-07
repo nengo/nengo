@@ -66,6 +66,7 @@ numpydoc_show_class_members = False
 autoautosummary_change_modules = {
     "nengo": [
         "nengo.learning_rules.PES",
+        "nengo.learning_rules.RLS",
         "nengo.learning_rules.BCM",
         "nengo.learning_rules.Oja",
         "nengo.learning_rules.Voja",
