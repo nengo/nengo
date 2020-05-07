@@ -21,13 +21,14 @@ from nengo import (
     Oja,
     PES,
     RectifiedLinear,
+    RLS,
     Sigmoid,
     Sparse,
     SpikingRectifiedLinear,
     Tanh,
     Voja,
 )
-from nengo.builder.learning_rules import SimBCM, SimOja, SimPES
+from nengo.builder.learning_rules import SimBCM, SimOja, SimPES, SimRLS, SimVoja
 from nengo.builder.neurons import SimNeurons
 from nengo.builder.operator import (
     Copy,
@@ -80,6 +81,8 @@ def check_init_args(cls, args):
 
 
 def check_repr(obj):
+    assert not isinstance(obj, str), "Passing a string doesn't test `repr(obj)`"
+
     # some reprs need these in the local namespace
     array = np.array
     int64 = np.int64
@@ -293,7 +296,7 @@ def test_learning_rule_types():
         BCM, ["learning_rate", "pre_synapse", "post_synapse", "theta_synapse"]
     )
     check_repr(
-        "BCM(learning_rate=0.1, pre_synapse=0.2, post_synapse=0.3, theta_synapse=0.4)"
+        BCM(learning_rate=0.1, pre_synapse=0.2, post_synapse=0.3, theta_synapse=0.4)
     )
     assert repr(BCM()) == "BCM()"
     assert repr(
@@ -305,8 +308,12 @@ def test_learning_rule_types():
 
     check_init_args(Oja, ["learning_rate", "pre_synapse", "post_synapse", "beta"])
     check_repr(
-        "Oja(learning_rate=0.1, pre_synapse=Lowpass(tau=0.2),"
-        "post_synapse=Lowpass(tau=0.3), beta=0.4)"
+        Oja(
+            learning_rate=0.1,
+            pre_synapse=Lowpass(tau=0.2),
+            post_synapse=Lowpass(tau=0.3),
+            beta=0.4,
+        )
     )
     assert repr(Oja()) == "Oja()"
     assert repr(
@@ -322,6 +329,15 @@ def test_learning_rule_types():
     assert (
         repr(Voja(learning_rate=0.1, post_synapse=0.2))
         == "Voja(learning_rate=0.1, post_synapse=Lowpass(tau=0.2))"
+    )
+
+    check_init_args(RLS, ["learning_rate", "pre_synapse"])
+    check_repr(RLS(2.4e-3))
+    check_repr(RLS(learning_rate=0.1, pre_synapse=Alpha(tau=0.2)))
+    assert repr(RLS()) == "RLS()"
+    assert (
+        repr(RLS(learning_rate=0.1, pre_synapse=0.2))
+        == "RLS(learning_rate=0.1, pre_synapse=Lowpass(tau=0.2))"
     )
 
 
@@ -642,6 +658,16 @@ def test_operators():
     assert fnmatch(repr(SimOja(sig, sig, sig, sig, 0.1, 1.0)), "<SimOja at 0x*>")
     assert fnmatch(
         repr(SimOja(sig, sig, sig, sig, 0.1, 1.0, tag="tag")), "<SimOja 'tag' at 0x*>"
+    )
+    assert fnmatch(repr(SimVoja(sig, sig, sig, sig, 1.0, sig, 1.0)), "<SimVoja at 0x*>")
+    assert fnmatch(
+        repr(SimVoja(sig, sig, sig, sig, 0.1, sig, 1.0, tag="tag")),
+        "<SimVoja 'tag' at 0x*>",
+    )
+    assert fnmatch(repr(SimRLS(sig, sig, sig, sig)), "<SimRLS at 0x*>")
+    assert fnmatch(
+        repr(SimRLS(sig, sig, sig, sig, tag="tag")),
+        "<SimRLS 'tag' at 0x*>",
     )
     assert fnmatch(repr(SimNeurons(LIF(), sig, {"sig": sig})), "<SimNeurons at 0x*>")
     assert fnmatch(

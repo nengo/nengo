@@ -3,13 +3,17 @@ import pytest
 
 import nengo
 from nengo.builder import Builder
+from nengo.builder.ensemble import get_activities
 from nengo.builder.operator import Reset, Copy
 from nengo.builder.signal import Signal
 from nengo.dists import UniformHypersphere
 from nengo.exceptions import BuildError, ValidationError
-from nengo.learning_rules import LearningRuleTypeParam, PES, BCM, Oja, Voja
+from nengo.learning_rules import LearningRuleTypeParam, PES, BCM, Oja, RLS, Voja
 from nengo.processes import WhiteSignal
 from nengo.synapses import Alpha, Lowpass
+from nengo.utils.numpy import nrmse
+
+from nengo.builder.learning_rules import SimRLS
 
 
 def best_weights(weight_data):
@@ -575,6 +579,123 @@ def test_voja_modulate(Simulator, NonDirectNeuronType, seed, allclose):
     # Check that encoders changed during first 0.5s
     i = np.where(tend)[0][0]  # first time point after changeover
     assert not allclose(sim.data[p_enc][0], sim.data[p_enc][i], record_rmse=False)
+
+
+def _test_rls_network(
+    Simulator,
+    seed,
+    plt,
+    tols,
+    dims=1,
+    lrate=0.01,
+    neuron_type=nengo.LIFRate(),
+    tau=None,
+    t_train=0.5,
+    t_test=0.25,
+):
+    # Input is a scalar sinusoid with given frequency
+    n_neurons = 100
+    freq = 5
+
+    # Learn a linear transformation within t_train seconds
+    transform = np.random.RandomState(seed=seed).randn(dims, 1)
+    lr = RLS(learning_rate=lrate, pre_synapse=tau)
+
+    with nengo.Network(seed=seed) as model:
+        u = nengo.Node(output=lambda t: np.sin(freq * 2 * np.pi * t))
+        x = nengo.Ensemble(n_neurons, 1, neuron_type=neuron_type)
+        y = nengo.Node(size_in=dims)
+        y_on = nengo.Node(size_in=dims)
+        y_off = nengo.Node(size_in=dims)
+
+        e = nengo.Node(
+            size_in=dims, output=lambda t, e: e if t < t_train else np.zeros_like(e)
+        )
+
+        nengo.Connection(u, y, synapse=None, transform=transform)
+        nengo.Connection(u, x, synapse=None)
+        conn_on = nengo.Connection(
+            x,
+            y_on,
+            synapse=None,
+            learning_rule_type=lr,
+            function=lambda _: np.zeros(dims),
+        )
+        nengo.Connection(y, e, synapse=None, transform=-1)
+        nengo.Connection(y_on, e, synapse=None)
+        nengo.Connection(e, conn_on.learning_rule, synapse=tau)
+
+        nengo.Connection(x, y_off, synapse=None, transform=transform)
+
+        p_y = nengo.Probe(y, synapse=tau)
+        p_y_on = nengo.Probe(y_on, synapse=tau)
+        p_y_off = nengo.Probe(y_off, synapse=tau)
+        p_inv_gamma = nengo.Probe(conn_on.learning_rule, "inv_gamma")
+
+    with Simulator(model) as sim:
+        sim.run(t_train + t_test)
+
+    plt.plot(sim.trange(), sim.data[p_y_off], "k")
+    plt.plot(sim.trange(), sim.data[p_y_on])
+
+    # Check _descstr
+    ops = [op for op in sim.model.operators if isinstance(op, SimRLS)]
+    assert len(ops) == 1
+    assert str(ops[0]).startswith("SimRLS")
+
+    test = sim.trange() >= t_train
+
+    on_versus_off = nrmse(sim.data[p_y_on][test], sim.data[p_y_off][test])
+    on_versus_ideal = nrmse(sim.data[p_y_on][test], sim.data[p_y][test])
+    off_versus_ideal = nrmse(sim.data[p_y_off][test], sim.data[p_y][test])
+
+    A = get_activities(sim.data[x], x, np.linspace(-1, 1, 1000)[:, None])
+    gamma_off = A.T.dot(A) + np.eye(n_neurons) / lr.learning_rate
+    gamma_on = np.linalg.inv(sim.data[p_inv_gamma][-1])
+
+    gamma_off /= np.linalg.norm(gamma_off)
+    gamma_on /= np.linalg.norm(gamma_on)
+    gamma_diff = nrmse(gamma_on, gamma_off)
+
+    assert on_versus_off < tols[0]
+    assert on_versus_ideal < tols[1]
+    assert off_versus_ideal < tols[2]
+    assert gamma_diff < tols[3]
+
+
+def test_rls_scalar_rate(Simulator, seed, plt):
+    # use artificially high rate to ensure we can make error arbitrarily small
+    _test_rls_network(
+        Simulator,
+        seed,
+        plt,
+        lrate=100,
+        tols=[0.02, 3e-3, 0.02, 0.3],
+    )
+
+
+def test_rls_multidim(Simulator, seed, plt):
+    # use artificially high rate to ensure we can make error arbitrarily small
+    _test_rls_network(
+        Simulator,
+        seed,
+        plt,
+        dims=11,
+        lrate=100,
+        tols=[0.02, 3e-3, 0.02, 0.3],
+    )
+
+
+def test_rls_scalar_spiking(Simulator, seed, plt):
+    _test_rls_network(
+        Simulator,
+        seed,
+        plt,
+        neuron_type=nengo.LIF(),
+        lrate=0.05,
+        tau=0.01,
+        tols=[0.03, 0.04, 0.04, 0.3],
+    )
 
 
 def test_frozen():

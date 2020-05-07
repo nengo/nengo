@@ -55,6 +55,9 @@ Release history
   by use of quasirandom (i.e., low-discrepancy) number-theoretic sequences that minimize
   the clusters and empty spaces that happen with independently drawn samples).
   (`#1611`_)
+- Added the ``RLS`` (recursive least-squares) learning rule. This is an online version
+  of the least-squares method typically used for offline decoder-solving in Nengo.
+  It is demonstrated in the new ``learning/force-learning.ipynb`` notebook. (`#1611`_)
 
 **Changed**
 
