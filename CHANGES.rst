@@ -52,6 +52,10 @@ Release history
   ``UniformHypersphere``, except that points are more evenly spread across the space
   (minimizing the clusters and empty spaces that happen in a true uniform distribution).
   (`#1611 <https://github.com/nengo/nengo/pull/1611>`__)
+- Added the ``RLS`` (recursive least-squares) learning rule. This is an online version
+  of the least-squares method typically used for offline decoder-solving in Nengo.
+  It is demonstrated in the new ``learning/force-learning.ipynb`` notebook.
+  (`#1611 <https://github.com/nengo/nengo/pull/1611>`__)
 
 **Changed**
 
