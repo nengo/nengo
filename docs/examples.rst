@@ -95,6 +95,7 @@ Learning
    examples/learning/learn-unsupervised
    examples/learning/learn-associations
    examples/learning/lmu
+   examples/learning/force-learning
 
 Networks
 --------

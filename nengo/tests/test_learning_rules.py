@@ -1,3 +1,5 @@
+from inspect import getfullargspec
+
 import numpy as np
 import pytest
 
@@ -7,13 +9,22 @@ from nengo.builder.operator import Reset, Copy
 from nengo.builder.signal import Signal
 from nengo.dists import UniformHypersphere
 from nengo.exceptions import ValidationError
-from nengo.learning_rules import LearningRuleTypeParam, PES, BCM, Oja, Voja
+from nengo.learning_rules import LearningRuleTypeParam, PES, BCM, Oja, RLS, Voja
 from nengo.processes import WhiteSignal
 from nengo.synapses import Alpha, Lowpass
+import nengo.utils.numpy as npext
+
+from nengo.builder.learning_rules import SimRLS
 
 
 def best_weights(weight_data):
     return np.argmax(np.sum(np.var(weight_data, axis=0), axis=0))
+
+
+def nrmse(actual, target, **kwargs):
+    actual = np.asarray(actual)
+    target = np.asarray(target)
+    return npext.rms(actual - target, **kwargs) / npext.rms(target, **kwargs)
 
 
 def _test_pes(
@@ -577,6 +588,119 @@ def test_voja_modulate(Simulator, nl_nodirect, seed, allclose):
     assert not allclose(sim.data[p_enc][0], sim.data[p_enc][i], record_rmse=False)
 
 
+def _test_rls_network(
+    Simulator,
+    seed,
+    plt,
+    tols,
+    dims=1,
+    lrate=0.01,
+    neuron_type=nengo.LIFRate(),
+    tau=None,
+    t_train=0.5,
+    t_test=0.25,
+):
+    # Input is a scalar sinusoid with given frequency
+    n_neurons = 100
+    freq = 5
+
+    # Learn a linear transformation within t_train seconds
+    transform = np.random.RandomState(seed=seed).randn(dims, 1)
+    lr = RLS(learning_rate=lrate, pre_synapse=tau)
+
+    with nengo.Network(seed=seed) as model:
+        u = nengo.Node(output=lambda t: np.sin(freq * 2 * np.pi * t))
+        x = nengo.Ensemble(n_neurons, 1, neuron_type=neuron_type)
+        y = nengo.Node(size_in=dims)
+        y_on = nengo.Node(size_in=dims)
+        y_off = nengo.Node(size_in=dims)
+
+        e = nengo.Node(
+            size_in=dims, output=lambda t, e: e if t < t_train else np.zeros_like(e)
+        )
+
+        nengo.Connection(u, y, synapse=None, transform=transform)
+        nengo.Connection(u, x, synapse=None)
+        conn_on = nengo.Connection(
+            x,
+            y_on,
+            synapse=None,
+            learning_rule_type=lr,
+            function=lambda _: np.zeros(dims),
+        )
+        nengo.Connection(y, e, synapse=None, transform=-1)
+        nengo.Connection(y_on, e, synapse=None)
+        nengo.Connection(e, conn_on.learning_rule, synapse=tau)
+
+        nengo.Connection(x, y_off, synapse=None, transform=transform)
+
+        p_y = nengo.Probe(y, synapse=tau)
+        p_y_on = nengo.Probe(y_on, synapse=tau)
+        p_y_off = nengo.Probe(y_off, synapse=tau)
+        p_inv_gamma = nengo.Probe(conn_on.learning_rule, "inv_gamma")
+
+    with Simulator(model) as sim:
+        sim.run(t_train + t_test)
+
+    plt.plot(sim.trange(), sim.data[p_y_off], "k")
+    plt.plot(sim.trange(), sim.data[p_y_on])
+
+    # Check _descstr
+    ops = [op for op in sim.model.operators if isinstance(op, SimRLS)]
+    assert len(ops) == 1
+    assert str(ops[0]).startswith("SimRLS")
+
+    test = sim.trange() >= t_train
+
+    on_versus_off = nrmse(sim.data[p_y_on][test], target=sim.data[p_y_off][test])
+    on_versus_ideal = nrmse(sim.data[p_y_on][test], target=sim.data[p_y][test])
+    off_versus_ideal = nrmse(sim.data[p_y_off][test], target=sim.data[p_y][test])
+
+    def get_activities(model, ens, eval_points):
+        """nengo.builder.ensemble.get_activities from < 2.3.0."""
+        x = np.dot(eval_points, model.params[ens].encoders.T / ens.radius)
+        return ens.neuron_type.rates(x, model.params[ens].gain, model.params[ens].bias)
+
+    A = get_activities(sim.model, x, np.linspace(-1, 1, 1000)[:, None])
+    gamma_off = A.T.dot(A) + np.eye(n_neurons) / lr.learning_rate
+    gamma_on = np.linalg.inv(sim.data[p_inv_gamma][-1])
+
+    gamma_off /= np.linalg.norm(gamma_off)
+    gamma_on /= np.linalg.norm(gamma_on)
+    gamma_diff = nrmse(gamma_on, target=gamma_off)
+
+    assert on_versus_off < tols[0]
+    assert on_versus_ideal < tols[1]
+    assert off_versus_ideal < tols[2]
+    assert gamma_diff < tols[3]
+
+
+def test_rls_scalar_rate(Simulator, seed, plt):
+    # use artificially high rate to ensure we can make error arbitrarily small
+    _test_rls_network(
+        Simulator, seed, plt, lrate=100, tols=[0.02, 3e-3, 0.02, 0.3],
+    )
+
+
+def test_rls_multidim(Simulator, seed, plt):
+    # use artificially high rate to ensure we can make error arbitrarily small
+    _test_rls_network(
+        Simulator, seed, plt, dims=11, lrate=100, tols=[0.02, 3e-3, 0.02, 0.3],
+    )
+
+
+def test_rls_scalar_spiking(Simulator, seed, plt):
+    _test_rls_network(
+        Simulator,
+        seed,
+        plt,
+        neuron_type=nengo.LIF(),
+        lrate=0.05,
+        tau=0.01,
+        tols=[0.03, 0.04, 0.04, 0.3],
+    )
+
+
 def test_frozen():
     """Test attributes inherited from FrozenObject"""
     a = PES(learning_rate=2e-3, pre_synapse=4e-3)
@@ -706,3 +830,40 @@ def test_null_error(Simulator):
 
         # works with encoder learning rules (since they don't require a transform)
         nengo.Connection(a.neurons, b, learning_rule_type=Voja(), transform=None)
+
+
+def test_argreprs():
+    def check_init_args(cls, args):
+        assert getfullargspec(cls.__init__).args[1:] == args
+
+    def check_repr(obj):
+        assert eval(repr(obj)) == obj
+
+    check_init_args(PES, ["learning_rate", "pre_synapse"])
+    check_repr(PES(2.4e-3))
+    check_repr(PES(2.4e-3, pre_synapse=0.012))
+
+    check_init_args(RLS, ["learning_rate", "pre_synapse"])
+    check_repr(RLS(2.4e-3))
+    check_repr(RLS(2.4e-3, pre_synapse=0.012))
+
+    check_init_args(
+        BCM, ["learning_rate", "pre_synapse", "post_synapse", "theta_synapse"]
+    )
+    check_repr(BCM(2.4e-3))
+    check_repr(BCM(2.4e-3, pre_synapse=0.032))
+    check_repr(BCM(2.4e-3, post_synapse=0.038))
+    check_repr(BCM(2.4e-3, theta_synapse=0.012))
+    check_repr(BCM(2.4e-3, pre_synapse=0.012, post_synapse=0.021, theta_synapse=0.1))
+
+    check_init_args(Oja, ["learning_rate", "pre_synapse", "post_synapse", "beta"])
+    check_repr(Oja(2.4e-3))
+    check_repr(Oja(2.4e-3, pre_synapse=0.032))
+    check_repr(Oja(2.4e-3, post_synapse=0.038))
+    check_repr(Oja(2.4e-3, beta=0.13))
+    check_repr(Oja(2.4e-3, pre_synapse=0.012, post_synapse=0.021, beta=0.17))
+
+    check_init_args(Voja, ["learning_rate", "post_synapse"])
+    check_repr(Voja(2.4e-3))
+    check_repr(Voja(2.4e-3, post_synapse=0.038))
+    check_repr(Voja(post_synapse=0.038))

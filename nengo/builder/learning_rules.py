@@ -5,7 +5,7 @@ from nengo.builder.operator import Copy, Reset
 from nengo.connection import LearningRule
 from nengo.ensemble import Ensemble
 from nengo.exceptions import BuildError
-from nengo.learning_rules import BCM, Oja, PES, Voja
+from nengo.learning_rules import BCM, Oja, PES, RLS, Voja
 from nengo.node import Node
 
 
@@ -70,7 +70,7 @@ class SimPES(Operator):
     def __init__(
         self, pre_filtered, error, delta, learning_rate, encoders=None, tag=None
     ):
-        super(SimPES, self).__init__(tag=tag)
+        super().__init__(tag=tag)
 
         self.learning_rate = learning_rate
 
@@ -457,6 +457,93 @@ class SimVoja(Operator):
         return step_simvoja
 
 
+class SimRLS(Operator):
+    r"""Calculate connection weight change according to the RLS rule.
+
+    Implements the Recursive Least Squares (RLS) learning rule of the form
+
+    .. math::
+
+        g_i &= \sum_j P_{ij}(n-1) r_i
+        P_{ij}(n) &= P_{ij}(n-1)
+                   - g_i g_j / \left( 1 + \sum_{ij} r_i P_{ij}(n-1) r_j \right)
+        \Delta \omega_{ji} &= \frac{\kappa \delta_t}{n} e_j \sum_{k} P_{ik}(n) r_k
+
+    where :math:`r_i` are the filtered presynaptic activities, :math:`e_j` are the
+    errors, :math:`\kappa` is the learning rate, :math:`\delta_t` is the simulator
+    timestep, and :math:`n` is the number of presynaptic neurons.
+
+    Parameters
+    ----------
+    pre_filtered : Signal
+        The filtered presynaptic activity, :math:`r_i`.
+    error : Signal
+        The error signal, :math:`e_j`.
+    delta : Signal
+        The synaptic weight change to be applied, :math:`\Delta \omega_{ji}`.
+    inv_gamma : ndarray
+        The inverse activity matrix :math:`P_{ij}`.
+    tag : str, optional
+        A label associated with the operator, for debugging purposes.
+
+    Notes
+    -----
+    1. sets ``[]``
+    2. incs ``[]``
+    3. reads ``[pre_filtered, error]``
+    4. updates ``[delta, inv_gamma]``
+    """
+
+    def __init__(self, pre_filtered, error, delta, inv_gamma, tag=None):
+        super().__init__(tag=tag)
+
+        self.sets = []
+        self.incs = []
+        self.reads = [pre_filtered, error]
+        self.updates = [delta, inv_gamma]
+
+    @property
+    def delta(self):
+        return self.updates[0]
+
+    @property
+    def inv_gamma(self):
+        return self.updates[1]
+
+    @property
+    def pre_filtered(self):
+        return self.reads[0]
+
+    @property
+    def error(self):
+        return self.reads[1]
+
+    def _descstr(self):
+        return "pre=%s > %s" % (self.pre_filtered, self.delta)
+
+    def make_step(self, signals, dt, rng):
+        r = signals[self.pre_filtered]
+        delta = signals[self.delta]
+        error = signals[self.error]
+        P = signals[self.inv_gamma]
+        assert r.ndim == error.ndim == 1
+        assert delta.ndim == P.ndim == 2
+        assert np.array_equal(P, P.T), "P must be symmetric"
+
+        def step_simrls():
+            # We want to compute:
+            #   P1 = P - (P r) (r^T P) / (1 + r^T P r)
+            #   delta = -error^T (P1 r)
+            # Taking advantage of the fact that P is symmetric (so P r = (r^T P)^T),
+            # and  P1 r = (1 / (1 + r^T P r)) P r, we have:
+            Pr = P.dot(r)
+            rPr1 = 1 / (1 + r.dot(Pr))
+            P[...] -= Pr[:, None] * (Pr[None, :] * rPr1)
+            delta[...] = error[:, None] * (-rPr1 * Pr[None, :])
+
+        return step_simrls
+
+
 def get_pre_ens(conn):
     """Get the input `.Ensemble` for connection."""
     return conn.pre_obj if isinstance(conn.pre_obj, Ensemble) else conn.pre_obj.ensemble
@@ -730,3 +817,59 @@ def build_pes(model, pes, rule):
     # expose these for probes
     model.sig[rule]["error"] = error
     model.sig[rule]["activities"] = acts
+
+
+@Builder.register(RLS)
+def build_rls(model, rls, rule):
+    """Builds a `.RLS` (Recursive Least Squares) object into a model.
+
+    Calls synapse build functions to filter the pre activities,
+    and adds a `.SimRLS` operator to the model to calculate the delta.
+
+    Parameters
+    ----------
+    model : Model
+        The model to build into.
+    rls : RLS
+        Learning rule type to build.
+    rule : LearningRule
+        The learning rule object corresponding to the neuron type.
+
+    Notes
+    -----
+    Does not modify ``model.params[]`` and can therefore be called
+    more than once with the same `.RLS` instance.
+    """
+    conn = rule.connection
+    pre_activities = model.sig[conn.pre_obj]["out"]
+
+    pre_filtered = (
+        pre_activities
+        if rls.pre_synapse is None
+        else model.build(rls.pre_synapse, pre_activities)
+    )
+
+    # Create input error signal
+    error = Signal(np.zeros(rule.size_in), name="RLS:error")
+    model.add_op(Reset(error))
+    model.sig[rule]["in"] = error
+
+    # Create signal for running estimate of inverse correlation matrix
+    assert pre_filtered.ndim == 1
+    n_neurons = pre_filtered.shape[0]
+    learning_rate = rls.learning_rate * model.dt / n_neurons
+    inv_gamma = Signal(np.eye(n_neurons) * learning_rate, name="RLS:inv_gamma")
+
+    model.add_op(
+        SimRLS(
+            pre_filtered=pre_filtered,
+            error=error,
+            delta=model.sig[rule]["delta"],
+            inv_gamma=inv_gamma,
+        )
+    )
+
+    # expose these for probes
+    model.sig[rule]["pre_filtered"] = pre_filtered
+    model.sig[rule]["error"] = error
+    model.sig[rule]["inv_gamma"] = inv_gamma
