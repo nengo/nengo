@@ -37,7 +37,7 @@ class LinearSystem(Process):
             * length 4: (A, B, C, D) state-space form
 
     x0 : array_like
-        Initial values for the system state. The first dimension must equal the
+        Initial values for the system state. The last dimension must equal the
         ``state_size``.
     analog : boolean, optional
         Whether ``sys`` is in analog (continuous-time) or discrete form.
@@ -127,10 +127,10 @@ class LinearSystem(Process):
         if self.D.ndim != 2 or self.D.shape != Dshape:
             raise ValidationError("Must be a (%d, %d) matrix" % Dshape, "D", obj=self)
 
-        if self.x0.ndim > 0 and self.x0.shape[0] != self.state_size:
+        if self.x0.ndim > 0 and self.x0.shape[-1] != self.state_size:
             raise ValidationError(
-                "First dimension (%d) must equal state size (%d)"
-                % (self.x0.shape[0], self.state_size),
+                "Last dimension (%d) must equal state size (%d)"
+                % (self.x0.shape[-1], self.state_size),
                 "x0",
                 obj=self,
             )
@@ -176,12 +176,12 @@ class LinearSystem(Process):
 
     def _expand_x0(self, x0=None, shape=(), broadcast=False):
         x0 = np.asarray(x0) if x0 is not None else self.x0
-        full_shape = (self.state_size,) + shape
+        full_shape = shape + (self.state_size,)
         if self.state_size == 0:
             return np.zeros(full_shape, dtype=x0.dtype)
 
         if x0.ndim > 0 and (
-            x0.ndim > len(full_shape) or x0.shape != full_shape[: x0.ndim]
+            x0.ndim > len(full_shape) or x0.shape != full_shape[-x0.ndim :]
         ):
             raise ValidationError(
                 "Initial state shape %s does not match requested shape %s"
@@ -190,7 +190,6 @@ class LinearSystem(Process):
                 obj=self,
             )
 
-        x0 = x0.reshape(x0.shape + tuple([1] * (len(full_shape) - len(x0.shape))))
         return x0 if broadcast else x0 * np.ones(full_shape, dtype=x0.dtype)
 
     def combine(self, other):
@@ -239,13 +238,13 @@ class LinearSystem(Process):
             x0shape = (
                 ()
                 if self.x0.ndim <= 1 and other.x0.ndim <= 1
-                else self.x0.shape[1:]
+                else self.x0.shape[:-1]
                 if self.x0.ndim > other.x0.ndim
-                else other.x0.shape[1:]
+                else other.x0.shape[:-1]
             )
             x0a = self._expand_x0(shape=x0shape)
             x0b = other._expand_x0(shape=x0shape)
-            x0 = np.concatenate([x0b, x0a], axis=0)
+            x0 = np.concatenate([x0b, x0a], axis=-1)
 
         return cls(
             sys=(A, B, C, D),
@@ -294,11 +293,11 @@ class LinearSystem(Process):
             )
 
         # create state memory variable X
-        assert shape_in[0] == self.input_size
-        assert shape_out[0] == self.output_size
-        assert shape_in[1:] == shape_out[1:]
-        X = np.zeros((self.state_size,) + shape_out[1:], dtype=dtype)
-        X[:] = self._expand_x0(x0, shape=shape_out[1:], broadcast=True)
+        assert shape_in[-1] == self.input_size
+        assert shape_out[-1] == self.output_size
+        assert shape_in[:-1] == shape_out[:-1]
+        X = np.zeros(shape_out[:-1] + (self.state_size,), dtype=dtype)
+        X[:] = self._expand_x0(x0, shape=shape_out[:-1], broadcast=True)
         return {"X": X}
 
     def make_step(self, shape_in, shape_out, dt, rng, state):  # noqa: C901
@@ -306,6 +305,7 @@ class LinearSystem(Process):
 
         X = state["X"]
         A, B, C, D = [M.astype(X.dtype) for M in self.discrete_ss(dt)]
+        AT, BT, CT, DT = A.T, B.T, C.T, D.T
         has_A = A.size > 0 and (A != 0).any()
         has_B = B.size > 0 and (B != 0).any()
         has_C = C.size > 0 and (C != 0).any()
@@ -316,20 +316,20 @@ class LinearSystem(Process):
 
             def step_linearsystem(t, u, A=A, B=B, C=C, D=D, X=X):
                 if has_C and has_D:
-                    Y = C.dot(X) + D.dot(u)
+                    Y = X.dot(CT) + u.dot(DT)
                 elif has_C:
-                    Y = C.dot(X)
+                    Y = X.dot(CT)
                 elif has_D:
-                    Y = D.dot(u)
+                    Y = u.dot(DT)
                 else:
                     Y = np.zeros(shape_out) if has_output else None
 
                 if has_A and has_B:
-                    X[...] = A.dot(X) + B.dot(u)
+                    X[...] = X.dot(AT) + u.dot(BT)
                 elif has_A:
-                    X[...] = A.dot(X)
+                    X[...] = X.dot(AT)
                 elif has_B:
-                    X[...] = B.dot(u)
+                    X[...] = u.dot(BT)
                 else:
                     X[...] = 0
 
@@ -339,12 +339,12 @@ class LinearSystem(Process):
 
             def step_linearsystem(t, A=A, B=B, C=C, D=D, X=X):
                 if has_C:
-                    Y = C.dot(X)
+                    Y = X.dot(CT)
                 else:
                     Y = np.zeros(shape_out) if has_output else None
 
                 if has_A:
-                    X[...] = A.dot(X)
+                    X[...] = X.dot(AT)
                 else:
                     X[...] = 0
 

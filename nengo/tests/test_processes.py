@@ -633,7 +633,7 @@ class TestLinearSystem:
     @pytest.mark.parametrize("C", [0, 1.5])
     @pytest.mark.parametrize("D", [0, -0.7])
     @pytest.mark.parametrize("input_size", [0, 2])
-    @pytest.mark.parametrize("shape", [(), (3,)])
+    @pytest.mark.parametrize("shape", [(), (3,), (3, 4)])
     def test_all_systems(self, A, B, C, D, input_size, shape, rng):
         state_size = rng.randint(1, 5)
         output_size = rng.randint(1, 4)
@@ -643,9 +643,9 @@ class TestLinearSystem:
         D = D * np.ones((output_size, input_size))
 
         dt = 0.001
-        shape_in = (B.shape[1],) + shape
-        shape_out = (C.shape[0],) + shape
-        shape_state = (A.shape[0],) + shape
+        shape_in = shape + (B.shape[1],)
+        shape_out = shape + (C.shape[0],)
+        shape_state = shape + (A.shape[0],)
         sys = LinearSystem((A, B, C, D), analog=False)
         u = rng.uniform(-1, 1, size=shape_in)
         x0 = rng.uniform(-1, 1, size=shape_state)
@@ -659,8 +659,8 @@ class TestLinearSystem:
             y = step(t=0, u=u)
         else:
             y = step(t=0)
-        assert np.allclose(state["X"], A.dot(x0) + B.dot(u))
-        assert np.allclose(y, C.dot(x0) + D.dot(u))
+        assert np.allclose(state["X"], x0.dot(A.T) + u.dot(B.T))
+        assert np.allclose(y, x0.dot(C.T) + u.dot(D.T))
 
     @pytest.mark.parametrize("dims", [1, 2])
     def test_combine(self, dims, rng, plt, allclose):
@@ -702,7 +702,7 @@ class TestLinearSystem:
 
     def test_combine_errors(self):
         sys = (None, np.ones((1, 1)), np.ones((1, 1)), None)
-        sys0 = LinearSystem(sys, x0=np.ones((1, 3)))
+        sys0 = LinearSystem(sys, x0=np.ones((3, 1)))
 
         # combine with other type
         proc1 = WhiteNoise()
@@ -720,7 +720,7 @@ class TestLinearSystem:
             sys0.combine(sys1)
 
         # combine with mismatching x0 shapes
-        sys1 = LinearSystem(sys, x0=np.ones((1, 4)))
+        sys1 = LinearSystem(sys, x0=np.ones((4, 1)))
         with pytest.raises(ValidationError, match="Initial state shape"):
             sys0.combine(sys1)
 
@@ -738,9 +738,9 @@ class TestLinearSystem:
         sys_b0 = LinearSystem(sys_b)
         sys_ab0 = sys_b0.combine(sys_a0)
 
-        x0a = rng.uniform(-0.01, 0.01, size=(dims,) + shape)
-        x0b = rng.uniform(-0.01, 0.01, size=(dims,) + shape)
-        u = rng.uniform(-1, 1, size=(nt, dims) + shape)
+        x0a = rng.uniform(-0.01, 0.01, size=shape + (dims,))
+        x0b = rng.uniform(-0.01, 0.01, size=shape + (dims,))
+        u = rng.uniform(-1, 1, size=(nt,) + shape + (dims,))
 
         ya_ref0 = np.cumsum(np.vstack([0 * u[:1], u]), axis=0)[:-1] * dt
         # yb_ref0 = np.cumsum(np.vstack([0 * ub[:1], ub]), axis=0)[:-1] * dt
@@ -748,9 +748,9 @@ class TestLinearSystem:
         for i in range(x0a.ndim):
             x0ai, x0bi = x0a, x0b
             for _ in range(i):
-                x0ai, x0bi = x0ai[..., 0], x0bi[..., 0]
+                x0ai, x0bi = x0ai[0], x0bi[0]
 
-            ya_ref = x0ai.reshape(x0ai.shape + tuple([1] * i)) + ya_ref0
+            ya_ref = x0ai + ya_ref0
 
             # test that we can specify x0 at init
             sys_a1 = LinearSystem(sys_a, x0=x0ai)
@@ -805,7 +805,7 @@ class TestLinearSystem:
         with pytest.raises(ValidationError, match="D: Must be a"):
             LinearSystem((np.ones((2, 2)), np.ones((2, 1)), None, np.ones((3, 2))))
 
-        with pytest.raises(ValidationError, match="x0: First dimension"):
+        with pytest.raises(ValidationError, match="x0: Last dimension"):
             LinearSystem((np.ones((2, 2)), None, None, None), x0=np.ones(3))
 
         sys = LinearSystem((np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)), None))

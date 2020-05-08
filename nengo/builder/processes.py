@@ -212,6 +212,6 @@ def build_synapse(
         sig_in=sig_in,
         sig_out=sig_out,
         mode=mode,
-        y0=y0[None, ...],
+        y0=y0[..., None],
         **kwargs,
     )
