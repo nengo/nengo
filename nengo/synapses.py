@@ -250,13 +250,12 @@ class LinearFilter(LinearSystem, Synapse):
         assert shape_in == shape_out
 
         # call LinearSystem's `make_state`
-        state = super().make_state((1,) + shape_in, (1,) + shape_out, dt, dtype=dtype)
+        state = super().make_state(shape_in + (1,), shape_out + (1,), dt, dtype=dtype)
         X = state["X"]
 
         # initialize X using y0 as steady-state output
         y0 = np.array(y0, copy=False, ndmin=1)
-        if y0.ndim < X.ndim:
-            y0.shape = y0.shape + tuple([1] * (X.ndim - y0.ndim))
+        assert y0.shape[-1] == 1
 
         if (y0 == 0).all():
             # just leave X as zeros in this case, so that this value works
@@ -275,8 +274,7 @@ class LinearFilter(LinearSystem, Synapse):
             Q = C.dot(IAB) + D  # multiplier from input to output (DC gain)
             assert Q.size == 1
             if np.abs(Q.item()) > 1e-8:
-                u0 = y0 / Q.item()
-                X[:] = IAB.dot(u0)
+                X[:] = y0.dot(IAB.T / Q.item())
             else:
                 raise ValidationError(
                     "Cannot solve for state if DC gain is zero. Please set `y0=0`.",
@@ -317,10 +315,10 @@ class LinearFilter(LinearSystem, Synapse):
                     attr="A,B,C,D,X",
                     obj=self,
                 )
-            self.A = A
-            self.B = B
-            self.C = C
-            self.D = D
+            self.AT = A.T
+            self.BT = B.T
+            self.CT = C.T
+            self.DT = D.T
             self.X = X
 
         def __call__(self, t, signal):
@@ -333,7 +331,7 @@ class LinearFilter(LinearSystem, Synapse):
             else:
                 return (
                     A.shape[0] == A.shape[1] == B.shape[0] == C.shape[1]
-                    and A.shape[0] == X.shape[0]
+                    and A.shape[0] == X.shape[-1]
                     and C.shape[0] == B.shape[1] == 1
                     and D.size == 1
                 )
@@ -362,8 +360,8 @@ class LinearFilter(LinearSystem, Synapse):
 
         def __call__(self, t, signal):
             self.X *= self.a
-            self.X += self.b * signal
-            return self.X[0]
+            self.X += self.b * signal[..., None]
+            return self.X.squeeze(axis=-1)
 
         @classmethod
         def check(cls, A, B, C, D, X):
@@ -396,8 +394,8 @@ class LinearFilter(LinearSystem, Synapse):
         """
 
         def __call__(self, t, signal):
-            self.X[:] = np.dot(self.A, self.X) + self.B * signal
-            return np.dot(self.C, self.X)[0]
+            self.X[:] = np.dot(self.X, self.AT) + signal[..., None] * self.BT
+            return np.dot(self.X, self.CT).squeeze(axis=-1)
 
         @classmethod
         def check(cls, A, B, C, D, X):
@@ -415,8 +413,8 @@ class LinearFilter(LinearSystem, Synapse):
         """
 
         def __call__(self, t, signal):
-            Y = np.dot(self.C, self.X)[0] + self.D * signal
-            self.X[:] = np.dot(self.A, self.X) + self.B * signal
+            Y = np.dot(self.X, self.CT).squeeze(axis=-1) + signal * self.DT
+            self.X[:] = np.dot(self.X, self.AT) + signal[..., None] * self.BT
             return Y
 
         @classmethod
