@@ -304,7 +304,7 @@ def build_connection(model, conn):
             initial_value = initial_value.sample(n_synapses, rng=rng)
 
         assert initial_value.size == n_synapses
-        initial_value = initial_value.reshape((1, n_synapses))
+        initial_value = initial_value.reshape((n_synapses, 1))
         weighted = model.build(conn.synapse, weighted, mode="update", y0=initial_value)
 
     # Store the weighted-filtered output in case we want to probe it
