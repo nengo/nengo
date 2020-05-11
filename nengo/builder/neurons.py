@@ -188,6 +188,7 @@ def build_spiking(model, spiking_type, neurons):
     """Generic builder for the ``_Spiking`` neuron types. """
     model.build(spiking_type.base_type, neurons)
     op = model.operators[-1]
+    assert isinstance(op, SimNeurons) and op.neurons is spiking_type.base_type
     op.neurons = spiking_type
 
     n_neurons = neurons.size_in
