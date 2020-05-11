@@ -530,9 +530,9 @@ def test_initial_phase(neuron_type, Simulator, seed, plt, allclose):
             initial_voltage = initial_voltage * np.exp(sim.dt / neuron_type.tau_rc)
 
         if isinstance(phase, nengo.dists.Uniform):
-            hist, _ = np.histogram(initial_voltage, bins=10)
-            hist = hist / hist.mean()
-            assert np.abs(hist - 1).mean() < 0.5
+            histogram, _ = np.histogram(initial_voltage, bins=10)
+            histogram = histogram / histogram.mean()
+            assert np.abs(histogram - 1).mean() < 0.5
         else:
             if isinstance(phase, nengo.dists.Distribution):
                 phase = phase.sample(n)
