@@ -168,3 +168,14 @@ def test_betaincinv22_lookup(monkeypatch, plt, allclose):
     monkeypatch.setattr(nengo.utils.numpy, "_betaincinv22_table", None)
 
     betaincinv22_test(plt=plt, allclose=allclose)
+
+
+def test_betaincinv22_errors():
+    x = np.linspace(0.1, 0.9)
+    betaincinv22_lookup(3, x)
+
+    with pytest.raises(ValueError, match="`dims` must be an integer >= 1"):
+        betaincinv22_lookup(0, x)
+
+    with pytest.raises(ValueError, match="`dims` must be an integer >= 1"):
+        betaincinv22_lookup(2.2, x)

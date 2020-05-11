@@ -198,13 +198,15 @@ def test_scattered_hypersphere(dims, surface, seed, plt):
         volume *= dims
     even_distance = (volume / n) ** (1 / (dims - 1 if surface else dims))
 
+    # --- plots
+    colors = ["b", "g", "r", "m", "c"]
+
     plt.subplot(211)
     bins = np.linspace(np.min(dd), np.max(dd), 31)
-    colors = ["b", "g", "r", "m", "c"]
     for i, d in enumerate(dd):
-        hist, _ = np.histogram(d, bins=bins)
+        histogram, _ = np.histogram(d, bins=bins)
         plt.plot(
-            0.5 * (bins[:-1] + bins[1:]), hist, colors[i],
+            0.5 * (bins[:-1] + bins[1:]), histogram, colors[i],
         )
         plt.plot([d.min()], [0], colors[i] + "x")
     plt.plot([even_distance], [0], "kx")
@@ -213,14 +215,16 @@ def test_scattered_hypersphere(dims, surface, seed, plt):
     plt.subplot(212)
     bins = np.linspace(0, 1.1, 31)
     for i, r in enumerate(rr):
-        hist, _ = np.histogram(r, bins=bins)
+        histogram, _ = np.histogram(r, bins=bins)
         plt.plot(
             0.5 * (bins[:-1] + bins[1:]),
-            hist,
+            histogram,
+            colors[i],
             label="%s: t=%0.2e" % (dists[i], times[i]),
         )
     plt.legend()
 
+    # --- checks
     uniform_min = dd[0].min()
     for i, dist in enumerate(dists):
         if i == 0:
@@ -228,11 +232,11 @@ def test_scattered_hypersphere(dims, surface, seed, plt):
 
         # check that we're significantly better than UniformHypersphere
         d_min = dd[i].min()
-        assert d_min > 1.2 * uniform_min
+        assert d_min > 1.2 * uniform_min, str(dist)
 
         # check that all surface points are on the surface
         if surface:
-            assert np.allclose(rr[i], 1.0, atol=1e-5)
+            assert np.allclose(rr[i], 1.0, atol=1e-5), str(dist)
 
 
 @pytest.mark.parametrize("weights", [None, [5, 1, 2, 9], [3, 2, 1, 0]])
