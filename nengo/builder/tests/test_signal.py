@@ -114,6 +114,10 @@ def test_signal_values(allclose):
     with pytest.raises((ValueError, RuntimeError)):
         two_d.initial_value[...] = np.array([[0.5], [-0.5]])
 
+    # assert that replacement signal must be same size
+    with pytest.raises(SignalError, match="Replacement shape .* must equal original"):
+        two_d.initial_value = np.array([0.1, 0.2, 0.3])
+
 
 def test_signal_reshape():
     """Tests Signal.reshape"""
