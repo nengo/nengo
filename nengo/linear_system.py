@@ -4,7 +4,7 @@ from nengo.base import Process
 from nengo.exceptions import ValidationError
 from nengo.params import BoolParam, EnumParam, NdarrayParam
 from nengo.rc import rc
-from nengo.utils.filter_design import (
+from nengo._vendor.scipy.signal import (
     cont2discrete,
     ss2tf,
     tf2ss,
