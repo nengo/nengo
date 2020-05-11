@@ -15,7 +15,8 @@ from nengo.rc import rc
 from nengo.utils.numpy import as_shape, is_number
 
 
-def is_empty(M):
+def _is_empty(M):
+    """Determine whether a matrix is size zero or all zeros"""
     return M.size == 0 or (M == 0).all()
 
 
@@ -326,7 +327,7 @@ class LinearFilter(LinearSystem, Synapse):
 
         @classmethod
         def check(cls, A, B, C, D, X):
-            return super().check(A, B, C, D, X) and is_empty(A) and is_empty(B)
+            return super().check(A, B, C, D, X) and _is_empty(A) and _is_empty(B)
 
     class OneX(Step):
         """Step for systems with one state element and no passthrough (D)."""
@@ -343,7 +344,7 @@ class LinearFilter(LinearSystem, Synapse):
 
         @classmethod
         def check(cls, A, B, C, D, X):
-            return super().check(A, B, C, D, X) and len(A) == 1 and is_empty(D)
+            return super().check(A, B, C, D, X) and len(A) == 1 and _is_empty(D)
 
     class NoD(Step):
         """Step for systems with no passthrough matrix (D).
@@ -363,7 +364,7 @@ class LinearFilter(LinearSystem, Synapse):
 
         @classmethod
         def check(cls, A, B, C, D, X):
-            return super().check(A, B, C, D, X) and len(A) >= 1 and is_empty(D)
+            return super().check(A, B, C, D, X) and len(A) >= 1 and _is_empty(D)
 
     class General(Step):
         """Step for any LTI system with at least one state element (X).
