@@ -1,7 +1,7 @@
 """Functions for filter design.
 
-These functions are now located in `_vendor/scipy/signal` to reflect the fact that they
-are copied from Scipy. They are imported here for backwards compatibility.
+These functions are now located in ``_vendor/scipy/signal`` to reflect the fact that
+they are copied from Scipy. They are imported here for backwards compatibility.
 """
 
 from nengo._vendor.scipy.signal import (  # pylint: disable=unused-import
