@@ -22,4 +22,4 @@ def test_spiking_builders(SpikingType):
         assert len(ops) == 1
 
         adaptation = sim.model.sig[neurons]["adaptation"]
-        assert sum(adaptation is sig for sig in ops[0].states) == 1
+        assert sum(adaptation is sig for sig in ops[0].states.values()) == 1
