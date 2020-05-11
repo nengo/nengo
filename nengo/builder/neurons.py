@@ -6,7 +6,7 @@ import numpy as np
 from nengo.builder import Builder, Operator, Signal
 from nengo.dists import Distribution
 from nengo.exceptions import BuildError
-from nengo.neurons import NeuronType, _Spiking
+from nengo.neurons import NeuronType
 from nengo.rc import rc
 from nengo.utils.numpy import is_array_like
 
@@ -181,30 +181,3 @@ def build_neurons(model, neurontype, neurons):
             states=states,
         )
     )
-
-
-@Builder.register(_Spiking)
-def build_spiking(model, spiking_type, neurons):
-    """Generic builder for the ``_Spiking`` neuron types. """
-    model.build(spiking_type.base_type, neurons)
-    op = model.operators[-1]
-    assert isinstance(op, SimNeurons) and op.neurons is spiking_type.base_type
-    op.neurons = spiking_type
-
-    n_neurons = neurons.size_in
-    states = op.states
-    state_init = get_neuron_states(model, spiking_type, neurons)
-
-    for key, init in state_init.items():
-        init = sample_state_init(init, n_neurons)
-
-        if key in states:
-            # update with new init value
-            states[key].initial_value = init
-        elif key not in model.sig[neurons]:
-            states[key] = model.sig[neurons][key] = Signal(
-                initial_value=init, shape=(n_neurons,), name="%s.%s" % (neurons, key),
-            )
-            op.sets.append(states[key])
-        else:
-            raise BuildError("State name %r overlaps with existing signal name" % key)
