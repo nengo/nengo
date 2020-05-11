@@ -61,6 +61,8 @@ class Signal:
         readonly=False,
         offset=0,
     ):
+        self._initial_value = None  # set as None temporarily, for initial_value setter
+
         if self.assert_named_signals:
             assert name is not None
         self._name = name
@@ -71,39 +73,11 @@ class Signal:
         elif shape is not None:
             assert initial_value.shape == shape
 
-        self._initial_value = initial_value
-        if np.any(
-            np.isnan(self._initial_value.data if self.sparse else self._initial_value)
-        ):
-            raise SignalError("%r contains NaNs." % self)
-
-        if self.sparse:
-            assert initial_value.ndim == 2
-            assert offset == 0
-            assert base is None
-            if npext.is_spmatrix(initial_value):
-                self._initial_value.data.setflags(write=False)
-        else:
-            # To ensure we do not modify data passed into the signal,
-            # we make a view of the data and mark it as not writeable.
-            # Consumers (like SignalDict) are responsible for making copies
-            # that can be modified, or using the readonly view appropriately.
-            readonly_view = np.asarray(self._initial_value)
-            if readonly_view.ndim > 0 and base is None:
-                readonly_view = np.ascontiguousarray(readonly_view)
-            # Ensure we have a view and aren't modifying the original's flags
-            readonly_view = readonly_view.view()
-            readonly_view.setflags(write=False)
-            self._initial_value = readonly_view
-
-        if base is not None:
-            assert isinstance(base, Signal) and not base.is_view
-            # make sure initial_value uses the same data as base.initial_value
-            assert initial_value.base is base.initial_value.base
         self._base = base
         self._offset = offset
-
         self._readonly = bool(readonly)
+
+        self.initial_value = initial_value
 
     def __getstate__(self):
         state = dict(self.__dict__)
@@ -196,8 +170,42 @@ class Signal:
         return self._initial_value
 
     @initial_value.setter
-    def initial_value(self, val):
-        raise SignalError("Cannot change initial value after initialization")
+    def initial_value(self, initial_value):
+        if self._initial_value is not None and self.shape != initial_value.shape:
+            raise SignalError(
+                "Replacement shape %s must equal original shape %s"
+                % (initial_value.shape, self.shape)
+            )
+
+        self._initial_value = initial_value
+        if np.any(
+            np.isnan(self._initial_value.data if self.sparse else self._initial_value)
+        ):
+            raise SignalError("%r contains NaNs." % self)
+
+        if self.sparse:
+            assert initial_value.ndim == 2
+            assert self.offset == 0
+            assert not self.is_view
+            if npext.is_spmatrix(initial_value):
+                self._initial_value.data.setflags(write=False)
+        else:
+            # To ensure we do not modify data passed into the signal,
+            # we make a view of the data and mark it as not writeable.
+            # Consumers (like SignalDict) are responsible for making copies
+            # that can be modified, or using the readonly view appropriately.
+            readonly_view = np.asarray(self._initial_value)
+            if readonly_view.ndim > 0 and self.base is None:
+                readonly_view = np.ascontiguousarray(readonly_view)
+            # Ensure we have a view and aren't modifying the original's flags
+            readonly_view = readonly_view.view()
+            readonly_view.setflags(write=False)
+            self._initial_value = readonly_view
+
+        if self.is_view:
+            assert isinstance(self.base, Signal) and not self.base.is_view
+            # make sure initial_value uses the same data as base.initial_value
+            assert initial_value.base is self.base.initial_value.base
 
     @property
     def is_view(self):

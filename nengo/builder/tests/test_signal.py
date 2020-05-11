@@ -106,9 +106,11 @@ def test_signal_values(allclose):
     two_d_view = two_d[0, :]
     assert allclose(two_d_view.initial_value, np.array([1]))
 
-    # cannot change signal value after creation
-    with pytest.raises(SignalError):
-        two_d.initial_value = np.array([[0.5], [-0.5]])
+    # can change initial value after creation
+    two_d.initial_value = np.array([[0.5], [-0.5]])
+    assert allclose(two_d.initial_value, np.array([[0.5], [-0.5]]))
+
+    # assert that signal itself is read-only
     with pytest.raises((ValueError, RuntimeError)):
         two_d.initial_value[...] = np.array([[0.5], [-0.5]])
 
@@ -247,10 +249,6 @@ def test_signal_initial_value(sig_type, tmpdir, allclose):
         else sig.initial_value,
         dense,
     )
-
-    # cannot change once set
-    with pytest.raises(SignalError, match="Cannot change initial value"):
-        sig.initial_value = sig.initial_value
 
     # check signal pickles correctly
     pkl_path = str(tmpdir.join("tmp.pkl"))
