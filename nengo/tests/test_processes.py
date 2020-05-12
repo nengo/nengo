@@ -539,3 +539,47 @@ class TestPiecewise:
         with pytest.warns(UserWarning):
             process = Piecewise({0.05: 0, 0.1: func}, interpolation="linear")
         assert process.interpolation == "zero"
+
+
+def test_argreprs():
+    """Test repr() for each process type."""
+    assert repr(WhiteNoise()) == "WhiteNoise(Gaussian(mean=0, std=1), scale=True)"
+    assert (
+        repr(WhiteNoise(scale=False))
+        == "WhiteNoise(Gaussian(mean=0, std=1), scale=False)"
+    )
+    assert (
+        repr(FilteredNoise())
+        == "FilteredNoise(synapse=Lowpass(tau=0.005), dist=Gaussian(mean=0, std=1), scale=True)"
+    )
+    assert (
+        repr(FilteredNoise(scale=False))
+        == "FilteredNoise(synapse=Lowpass(tau=0.005), dist=Gaussian(mean=0, std=1), scale=False)"
+    )
+    assert repr(BrownNoise()) == "BrownNoise(Gaussian(mean=0, std=1))"
+    assert (
+        repr(PresentInput((1.2, 3.4), 5))
+        == "PresentInput(inputs=array([1.2, 3.4]), presentation_time=5)"
+    )
+    assert repr(WhiteSignal(1, 2)) == "WhiteSignal(period=1, high=2, rms=0.5)"
+    assert (
+        repr(WhiteSignal(1.2, 3.4, 5.6, 7.8))
+        == "WhiteSignal(period=1.2, high=3.4, rms=5.6)"
+    )
+
+    assert (
+        repr(Piecewise({1: "word1", 2: "word2", 3: "word3"}))
+        == "Piecewise(data={1: array(['word1'], dtype='<U5'), 2: array(['word2'], dtype='<U5'), 3: array(['word3'], dtype='<U5')})"
+    )
+
+
+@pytest.mark.parametrize(
+    "interpolation", ("linear", "nearest", "slinear", "quadratic", "cubic")
+)
+def test_Piecewise(interpolation):
+    assert (
+        repr(Piecewise({1: "word1", 2: "word2", 3: "word3"}, interpolation))
+        == "Piecewise(data={1: array(['word1'], dtype='<U5'), 2: array(['word2'], dtype='<U5'), 3: array(['word3'], dtype='<U5')}, interpolation='"
+        + interpolation
+        + "')"
+    )
