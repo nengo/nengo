@@ -2,7 +2,7 @@ import numpy as np
 
 from nengo.base import Process
 from nengo.exceptions import ValidationError
-from nengo.params import BoolParam, EnumParam, NdarrayParam
+from nengo.params import BoolParam, EnumParam, NdarrayParam, Parameter
 from nengo.rc import rc
 from nengo._vendor.scipy.signal import (
     cont2discrete,
@@ -350,3 +350,11 @@ class LinearSystem(Process):
                 return Y
 
         return step_linearsystem
+
+
+class LinearSystemParam(Parameter):
+    equatable = True
+
+    def coerce(self, instance, system):
+        self.check_type(instance, system, LinearSystem)
+        return super().coerce(instance, system)
