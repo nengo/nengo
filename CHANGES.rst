@@ -56,6 +56,12 @@ Release history
   of the least-squares method typically used for offline decoder-solving in Nengo.
   It is demonstrated in the new ``learning/force-learning.ipynb`` notebook.
   (`#1611 <https://github.com/nengo/nengo/pull/1611>`__)
+- Added ``LinearSystemNetwork``. This network takes a ``LinearSystem`` process and
+  implements it in neurons, properly accounting for the synapse model used on the
+  recurrent synapse. For ``Lowpass`` synapses, this is equivalent to Principle 3 of the
+  Neural Engineering Framework (NEF), but it generalizes to other synapse types, as well
+  as discrete synapses.
+  (`#1611 <https://github.com/nengo/nengo/pull/1611>`__)
 
 **Changed**
 
