@@ -35,6 +35,11 @@ Release history
   (`#1650`_)
 - Added ``DoubleExp``, ``Bandpass``, ``Highpass``, ``DiscreteDelay``, and
   ``LegendreDelay`` synapse models. (`#1650`_)
+- Added ``LinearSystemNetwork``. This network takes a ``LinearSystem`` process and
+  implements it in neurons, properly accounting for the synapse model used on the
+  recurrent synapse. For ``Lowpass`` synapses, this is equivalent to Principle 3 of the
+  Neural Engineering Framework (NEF), but it generalizes to other synapse types, as well
+  as discrete synapses. (`#1650`_)
 
 **Changed**
 
