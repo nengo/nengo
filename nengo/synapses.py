@@ -895,3 +895,12 @@ class SynapseParam(Parameter):
         synapse = Lowpass(synapse) if is_number(synapse) else synapse
         self.check_type(instance, synapse, Synapse)
         return super().coerce(instance, synapse)
+
+
+class LinearFilterParam(SynapseParam):
+    equatable = True
+
+    def coerce(self, instance, synapse):
+        synapse = super().coerce(instance, synapse)
+        self.check_type(instance, synapse, LinearFilter)
+        return synapse
