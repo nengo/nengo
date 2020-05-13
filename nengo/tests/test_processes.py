@@ -577,6 +577,7 @@ def test_argreprs():
     "interpolation", ("linear", "nearest", "slinear", "quadratic", "cubic")
 )
 def test_Piecewise(interpolation):
+    """Test repr() for each Piecewise"""
     assert (
         repr(Piecewise({1: "word1", 2: "word2", 3: "word3"}, interpolation))
         == "Piecewise(data={1: array(['word1'], dtype='<U5'), 2: array(['word2'], dtype='<U5'), 3: array(['word3'], dtype='<U5')}, interpolation='"

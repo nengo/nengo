@@ -228,6 +228,7 @@ def test_argreprs():
 
 
 def test_SparseMatrix_str():
+    """test repr() for SparseMatrix"""
     assert (
         repr(SparseMatrix(((1, 2), (3, 4)), (5, 6), (7, 8)))
         == "SparseMatrix(indices=array([[1, 2],\n       [3, 4]], dtype=int64), data=array([5, 6]), shape=(7, 8))"
@@ -251,6 +252,7 @@ def test_channelshape_str():
 
 @pytest.mark.parametrize("dimensions", (1, 2))
 def test_NoTransform(dimensions):
+    """test repr() for NoTransform"""
     assert (
         repr(NoTransform(dimensions)) == "NoTransform(size_in=" + str(dimensions) + ")"
     )
