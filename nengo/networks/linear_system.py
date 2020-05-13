@@ -1,5 +1,4 @@
 import numpy as np
-from numpy.linalg import matrix_power
 
 import nengo
 from nengo.linear_system import LinearSystem, LinearSystemParam
@@ -10,9 +9,8 @@ def ss2sim(sys, synapse, dt=None):
     """Maps a linear system onto a synapse in state-space form.
 
     This implements a generalization of Principle 3 from the Neural Engineering
-    Framework (NEF). [#]_
-    Intuitively, this routine compensates for the change in dynamics
-    that occurs when the integrator that usually forms the basis for any
+    Framework (NEF). [#]_ Intuitively, this routine compensates for the change in
+    dynamics that occurs when the integrator that usually forms the basis for any
     linear system is replaced by the given synapse.
     This is needed because in neural systems we don't have access to a
     perfect integrator; instead the synapse model becomes the
@@ -41,13 +39,11 @@ def ss2sim(sys, synapse, dt=None):
 
     See Also
     --------
-    :class:`.LinearNetwork`
-    :class:`.LinearSystem`
-    :func:`.cont2discrete`
+    :class:`.LinearSystemNetwork`
 
     Notes
     -----
-    This routine is called automatically by :class:`.LinearNetwork`.
+    This routine is called automatically by :class:`.LinearSystemNetwork`.
 
     Principle 3 is a special case of this routine when called with
     a continuous :func:`Lowpass` synapse and ``dt=None``. However, specifying
@@ -150,27 +146,60 @@ def ss2sim(sys, synapse, dt=None):
 
     A, B, C, D = sys.ss
     k = synapse.state_size
-    powA = [matrix_power(A, i) for i in range(k + 1)]
+    powA = [np.linalg.matrix_power(A, i) for i in range(k + 1)]
 
     AH = np.sum([c[i] * powA[i] for i in range(k + 1)], axis=0)
     BH = np.dot(
-        np.sum(
-            [c[i] * powA[i - j - 1] for j in range(k) for i in range(j + 1, k + 1)],
-            axis=0,
-        ),
-        B,
+        sum(c[i] * powA[i - j - 1] for j in range(k) for i in range(j + 1, k + 1)), B,
     )
 
     return LinearSystem((AH, BH, C, D), analog=sys.analog, x0=sys.x0)
 
 
 class LinearSystemNetwork(nengo.Network):
-    sys = LinearSystemParam("sys")
+    """Implement an arbitrary linear system in neurons.
+
+    Takes a linear system and uses `.ss2sim` to account for the effect of the
+    input/recurrent synapse on the system dynamics. The resulting network will provide
+    an accurate implementation of the system using the provided synapse.
+
+    Parameters
+    ----------
+    system : `.LinearSystem`
+        The LinearSystem to be implemented.
+    synapse : `.LinearFilter`
+        The synapse to use on the recurrent connection and input connection. Must be
+        an instance or subclass of `.LinearFilter`.
+    n_neurons : int
+        The number of neurons in the state (``X``) ensemble.
+    dt : float (optional)
+        The time constant used to discretize the synapses. If provided, it should be
+        the same as the simulator time constant. If not provided (default), the system
+        will not account for the effects of discretization.
+
+    Attributes
+    ----------
+    mapped_system : `.LinearSystem`
+        The mapped linear system that will be implemented by .
+    It accounts for the effect of the recurrent/input synapses on the dynamics.
+    input : `.Node`
+        A passthrough `.Node` for connecting the system input.
+    X : `.Ensemble`
+        The `.Ensemble` representing the system state.
+    output : `.Node`
+        A passthrough `.Node` for retreiving the system output.
+    ss_connections : dict of (str, `.Connection`)
+        Dictionary containing a `.Connection` for each of the state-space transform
+        matrices "A", "B", "C", and "D". "B" will not be present if the system does
+        not have input, and "D" will not be present if the ``D`` matrix is zero.
+    """
+
+    system = LinearSystemParam("system")
     synapse = LinearFilterParam("synapse")
 
     def __init__(
         self,
-        sys,
+        system,
         synapse,
         n_neurons=100,
         dt=None,
@@ -180,41 +209,39 @@ class LinearSystemNetwork(nengo.Network):
         add_to_container=None,
         **ens_kwargs
     ):
-        self.sys = sys
-        self.synapse = synapse
-
         super().__init__(label, seed, add_to_container)
 
-        self.mapped_sys = ss2sim(self.sys, self.synapse, dt=dt)
-        A, B, C, D = self.mapped_sys.ss
+        self.system = system
+        self.synapse = synapse
+        self.mapped_system = ss2sim(self.system, self.synapse, dt=dt)
+        A, B, C, D = self.mapped_system.ss
 
         self.ss_connections = {}
         self.X = nengo.Ensemble(
-            n_neurons, dimensions=self.mapped_sys.state_size, **ens_kwargs
+            n_neurons, dimensions=self.mapped_system.state_size, **ens_kwargs
         )
         self.ss_connections["A"] = nengo.Connection(
             self.X,
             self.X,
             transform=A,
             synapse=self.synapse,
-            initial_value=self.mapped_sys.x0,
+            initial_value=self.mapped_system.x0,
         )
 
-        if sys.input_size == 0:
+        if system.input_size == 0:
             self.input = None
         else:
-            self.input = nengo.Node(size_in=sys.input_size)
+            self.input = nengo.Node(size_in=system.input_size)
             self.ss_connections["B"] = nengo.Connection(
                 self.input, self.X, transform=B, synapse=self.synapse
             )
 
-        self.output = nengo.Node(size_in=sys.output_size)
+        self.output = nengo.Node(size_in=system.output_size)
         self.ss_connections["C"] = nengo.Connection(
             self.X, self.output, transform=C, synapse=output_synapse,
         )
 
         if D.size > 0 and (D != 0).any():
-            print("D conn")
             self.ss_connections["D"] = nengo.Connection(
                 self.input, self.output, transform=D, synapse=output_synapse,
             )

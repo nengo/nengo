@@ -6,7 +6,15 @@ import nengo.utils.numpy as npext
 
 
 def _test_linear_system_network(
-    sys, synapse, Simulator, seed=0, plt=None, simtime=1.0, input_f=None, **kwargs
+    sys,
+    synapse,
+    Simulator,
+    seed=0,
+    plt=None,
+    dt=None,
+    simtime=1.0,
+    input_f=None,
+    **kwargs
 ):
     probe_synapse = nengo.Alpha(0.005)
 
@@ -14,7 +22,7 @@ def _test_linear_system_network(
         ref = nengo.Node(sys, label="ref")
         ref_p = nengo.Probe(ref, synapse=probe_synapse)
 
-        subnet = LinearSystemNetwork(sys, synapse, **kwargs)
+        subnet = LinearSystemNetwork(sys, synapse, dt=dt, **kwargs)
         input_p = (
             nengo.Probe(subnet.input, synapse=probe_synapse) if subnet.input else None
         )
@@ -26,7 +34,7 @@ def _test_linear_system_network(
             nengo.Connection(inp, ref, synapse=None)
             nengo.Connection(inp, subnet.input, synapse=None)
 
-    with Simulator(net) as sim:
+    with Simulator(net, dt=0.001 if dt is None else dt) as sim:
         sim.run(simtime)
 
     t = sim.trange()
