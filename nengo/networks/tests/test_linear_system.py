@@ -76,15 +76,19 @@ def test_attractor_oscillator(Simulator, seed, plt):
     A = [[gain, -omega], [omega, gain]]
     B = 3 * np.array([[1, 1], [-1, 1]])
     C = [[0, 1], [1, 0]]
-    D = 0.3 * np.array([[0, -1], [1, 0]])
+    # D = 0.3 * np.array([[0, -1], [1, 0]])
+    D = None
     x0 = [0.5, 0]
 
     sys = LinearSystem((A, B, C, D), x0=x0)
-    synapse = nengo.Alpha(0.01)
+    # synapse = nengo.Alpha(0.01)
+    synapse = nengo.Lowpass(0.02)
     t, ref, u, x, y = _test_linear_system_network(
         sys,
         synapse,
         Simulator,
+        dt=0.001,
+        # dt=None,
         input_f=lambda t: np.sin(inp_freqs * t),
         seed=seed,
         plt=plt,
