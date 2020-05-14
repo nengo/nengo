@@ -720,8 +720,8 @@ def test_lstsql1_repr():
 
 
 def test_argreprsscipy():
-    pytest.importorskip("scipy.optimize")
     """Test repr() for Nnls"""
+    pytest.importorskip("scipy.optimize")
     assert repr(Nnls(True)) == "Nnls(weights=True)"
     assert repr(NnlsL2(True, 0.2)) == "NnlsL2(weights=True, reg=0.2)"
     assert repr(NnlsL2nz(True, 0.2)) == "NnlsL2nz(weights=True, reg=0.2)"
