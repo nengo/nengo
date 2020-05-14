@@ -417,8 +417,8 @@ def test_regularization(Simulator, nl_nodirect, plt):
 
             for i, Solver in enumerate(Solvers):
                 for k, reg in enumerate(regs):
-                    for l, synapse in enumerate(filters):
-                        probes[i, j, k, l] = nengo.Probe(
+                    for m, synapse in enumerate(filters):
+                        probes[i, j, k, m] = nengo.Probe(
                             a, solver=Solver(reg=reg), synapse=synapse
                         )
 
@@ -700,14 +700,19 @@ def test_argreprs():
     assert repr(LstsqNoise(True, 0.2)) == "LstsqNoise(weights=True, noise=0.2)"
     assert repr(LstsqL2(True, 0.2)) == "LstsqL2(weights=True, reg=0.2)"
     assert repr(LstsqL2nz(True, 0.2)) == "LstsqL2nz(weights=True, reg=0.2)"
-    assert (
-        repr(LstsqL1(True, 0.2, 0.3, 4))
-        == "LstsqL1(weights=True, l1=0.2, l2=0.3, max_iter=4)"
-    )
+
     assert repr(Nnls(True)) == "Nnls(weights=True)"
     assert repr(NnlsL2(True, 0.2)) == "NnlsL2(weights=True, reg=0.2)"
     assert repr(NnlsL2nz(True, 0.2)) == "NnlsL2nz(weights=True, reg=0.2)"
     assert (
         repr(NoSolver(((1.2, 3.4), (5.6, 7.8)), True))
         == "NoSolver(values=array([[1.2, 3.4],\n       [5.6, 7.8]]), weights=True)"
+    )
+
+
+def test_LstsqL1_repr():
+    pytest.importorskip("sklearn")
+    assert (
+        repr(LstsqL1(True, 0.2, 0.3, 4))
+        == "LstsqL1(weights=True, l1=0.2, l2=0.3, max_iter=4)"
     )

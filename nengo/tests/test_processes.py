@@ -549,12 +549,12 @@ def test_argreprs():
         == "WhiteNoise(Gaussian(mean=0, std=1), scale=False)"
     )
     assert (
-        repr(FilteredNoise())
-        == "FilteredNoise(synapse=Lowpass(tau=0.005), dist=Gaussian(mean=0, std=1), scale=True)"
+        repr(FilteredNoise()) == "FilteredNoise(synapse=Lowpass(tau=0.005),"
+        " dist=Gaussian(mean=0, std=1), scale=True)"
     )
     assert (
-        repr(FilteredNoise(scale=False))
-        == "FilteredNoise(synapse=Lowpass(tau=0.005), dist=Gaussian(mean=0, std=1), scale=False)"
+        repr(FilteredNoise(scale=False)) == "FilteredNoise(synapse=Lowpass(tau=0.005),"
+        " dist=Gaussian(mean=0, std=1), scale=False)"
     )
     assert repr(BrownNoise()) == "BrownNoise(Gaussian(mean=0, std=1))"
     assert (

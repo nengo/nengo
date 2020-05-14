@@ -225,9 +225,11 @@ def test_argreprs():
         repr(nengo.Sparse((1, 1), indices=((1, 1), (1, 1), (1, 1)), init=2))
         == "Sparse(shape=(1, 1))"
     )
-    assert repr(SparseMatrix(((1, 2), (3, 4)), (5, 6), (7, 8))) == (
-        "SparseMatrix(indices=array([[1, 2],\n       [3, 4]],"
-        " dtype=int64), data=array([5, 6]), shape=(7, 8))"
+    assert repr(SparseMatrix(((1, 2), (3, 4)), (5, 6), (7, 8))).replace(
+        ", dtype=int64", ""
+    ) == (
+        "SparseMatrix(indices=array([[1, 2],\n       [3, 4]]),"
+        " data=array([5, 6]), shape=(7, 8))"
     )
     assert (
         repr(ChannelShape((1, 2, 3)))
