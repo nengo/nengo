@@ -3,7 +3,7 @@ import pytest
 
 import nengo
 from nengo.exceptions import BuildError, ValidationError
-from nengo.transforms import ChannelShape
+from nengo.transforms import ChannelShape, NoTransform, SparseMatrix
 from nengo._vendor.npconv2d import conv2d
 
 
@@ -218,9 +218,19 @@ def test_argreprs():
         == "Convolution(n_filters=3, input_shape=(1, 2, 3), "
         "channels_last=False)"
     )
-
-
-def test_channelshape_str():
+    assert (
+        repr(nengo.Sparse((1, 1), indices=((1, 1), (1, 1)))) == "Sparse(shape=(1, 1))"
+    )
+    assert (
+        repr(nengo.Sparse((1, 1), indices=((1, 1), (1, 1), (1, 1)), init=2))
+        == "Sparse(shape=(1, 1))"
+    )
+    assert repr(SparseMatrix(((1, 2), (3, 4)), (5, 6), (7, 8))).replace(
+        ", dtype=int64", ""
+    ) == (
+        "SparseMatrix(indices=array([[1, 2],\n       [3, 4]]),"
+        " data=array([5, 6]), shape=(7, 8))"
+    )
     assert (
         repr(ChannelShape((1, 2, 3)))
         == "ChannelShape(shape=(1, 2, 3), channels_last=True)"
@@ -233,3 +243,8 @@ def test_channelshape_str():
     # `str` always has channels last
     assert str(ChannelShape((1, 2, 3))) == "(1, 2, ch=3)"
     assert str(ChannelShape((1, 2, 3), channels_last=False)) == "(ch=1, 2, 3)"
+
+    for dimensions in range(2):
+        assert repr(NoTransform(dimensions)) == "NoTransform(size_in=%s)" % str(
+            dimensions
+        )
