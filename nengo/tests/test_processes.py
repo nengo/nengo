@@ -575,8 +575,9 @@ def test_argreprs():
 
 
 def test_piecewise_repr():
-    """Test repr() for picewise"""
+    """Test repr() for piecewise"""
     pytest.importorskip("scipy")
+    pytest.importorskip("scipy.optimize")
     for interpolation in ("linear", "nearest", "slinear", "quadratic", "cubic"):
         assert (
             repr(Piecewise({1: "word1", 2: "word2", 3: "word3"}, interpolation))
