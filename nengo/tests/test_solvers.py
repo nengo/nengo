@@ -710,7 +710,8 @@ def test_argreprs():
     )
 
 
-def test_LstsqL1_repr():
+def test_lstsqL1_repr():
+    """Test repr() for LstsqL1"""
     pytest.importorskip("sklearn")
     assert (
         repr(LstsqL1(True, 0.2, 0.3, 4))
