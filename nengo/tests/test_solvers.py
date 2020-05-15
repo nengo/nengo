@@ -232,6 +232,7 @@ def test_scipy_solvers(rng, allclose):
 @pytest.mark.parametrize("Solver", [Nnls, NnlsL2, NnlsL2nz])
 def test_nnls(Solver, plt, rng, allclose):
     pytest.importorskip("scipy")
+    pytest.importorskip("scipy.optimize")
 
     A, x = get_system(500, 100, 1, rng=rng, sort=True)
     y = x ** 2
@@ -262,6 +263,7 @@ def test_nnls_weights(Simulator, Solver, seed):
     by encoders.
     """
     pytest.importorskip("scipy")
+    pytest.importorskip("scipy.optimize")
 
     with nengo.Network(seed=seed) as net:
         a = nengo.Ensemble(26, 1)
@@ -417,8 +419,8 @@ def test_regularization(Simulator, nl_nodirect, plt):
 
             for i, Solver in enumerate(Solvers):
                 for k, reg in enumerate(regs):
-                    for l, synapse in enumerate(filters):
-                        probes[i, j, k, l] = nengo.Probe(
+                    for m, synapse in enumerate(filters):
+                        probes[i, j, k, m] = nengo.Probe(
                             a, solver=Solver(reg=reg), synapse=synapse
                         )
 
@@ -662,6 +664,7 @@ def test_non_compositional_solver(Simulator, solver, rng, seed, plt, allclose):
 
 def test_non_compositional_solver_transform_error(Simulator):
     pytest.importorskip("scipy")
+    pytest.importorskip("scipy.optimize")
 
     with nengo.Network() as net:
         a = nengo.Ensemble(10, 1)
@@ -690,3 +693,35 @@ def test_lstsqdrop_zero_weights():
 
     with nengo.Simulator(model) as sim:
         assert isinstance(sim.data[conn].solver_info["info1s"], list)
+
+
+def test_argreprs():
+    """Test repr() for each solver type."""
+    assert repr(nengo.solvers.Solver(True)) == "Solver(weights=True)"
+    assert repr(Lstsq(True, 0.1)) == "Lstsq(weights=True, rcond=0.1)"
+
+    assert repr(LstsqNoise(True, 0.2)) == "LstsqNoise(weights=True, noise=0.2)"
+    assert repr(LstsqL2(True, 0.2)) == "LstsqL2(weights=True, reg=0.2)"
+    assert repr(LstsqL2nz(True, 0.2)) == "LstsqL2nz(weights=True, reg=0.2)"
+
+    assert (
+        repr(NoSolver(((1.2, 3.4), (5.6, 7.8)), True))
+        == "NoSolver(values=array([[1.2, 3.4],\n       [5.6, 7.8]]), weights=True)"
+    )
+
+
+def test_lstsql1_repr():
+    """Test repr() for LstsqL1."""
+    pytest.importorskip("sklearn")
+    assert (
+        repr(LstsqL1(True, 0.2, 0.3, 4))
+        == "LstsqL1(weights=True, l1=0.2, l2=0.3, max_iter=4)"
+    )
+
+
+def test_argreprs_scipy():
+    """Test repr() for Nnls."""
+    pytest.importorskip("scipy.optimize")
+    assert repr(Nnls(True)) == "Nnls(weights=True)"
+    assert repr(NnlsL2(True, 0.2)) == "NnlsL2(weights=True, reg=0.2)"
+    assert repr(NnlsL2nz(True, 0.2)) == "NnlsL2nz(weights=True, reg=0.2)"
