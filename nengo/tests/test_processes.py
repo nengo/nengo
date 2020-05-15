@@ -36,8 +36,7 @@ class TimeProcess(Process):
         size_out = np.prod(shape_out)
         if size_in == 0:
             return lambda t: [t] * size_out
-        else:
-            return lambda t, x: [t * np.sum(x)] * size_out
+        return lambda t, x: [t * np.sum(x)] * size_out
 
 
 def test_time(Simulator, allclose):
@@ -410,7 +409,7 @@ class TestPiecewise:
         with pytest.raises(ValidationError):
             Piecewise(data, interpolation="not-interpolation")
 
-    def test_fallback_to_zero(self, Simulator, monkeypatch):
+    def test_fallback_to_zero(self, monkeypatch):
         # Emulate not having scipy in case we have scipy
         monkeypatch.setitem(sys.modules, "scipy.interpolate", None)
 
@@ -528,7 +527,7 @@ class TestPiecewise:
         assert allclose(f[t == 0.1], func(0.1))
         assert allclose(f[t == 0.15], func(0.15))
 
-    def test_invalid_function_length(self, Simulator):
+    def test_invalid_function_length(self):
         with pytest.raises(ValidationError):
             Piecewise({0.5: 0, 1.0: lambda t: [t, t ** 2]})
 

@@ -2,13 +2,12 @@ import warnings
 
 import numpy as np
 
-import nengo.utils.numpy as npext
 from nengo.base import Process
 from nengo.dists import DistributionParam, Gaussian
 from nengo.exceptions import ValidationError
 from nengo.params import BoolParam, DictParam, EnumParam, NdarrayParam, NumberParam
 from nengo.synapses import LinearFilter, Lowpass, SynapseParam
-from nengo.utils.numpy import is_number
+from nengo.utils.numpy import array_hash, is_number, rfftfreq
 
 
 class WhiteNoise(Process):
@@ -50,7 +49,7 @@ class WhiteNoise(Process):
         # ^ need sqrt(dt) when integrating, so divide by sqrt(dt) here,
         #   since dt / sqrt(dt) = sqrt(dt).
 
-        def step_whitenoise(t):
+        def step_whitenoise(_):
             x = dist.sample(n=1, d=shape_out[0], rng=rng)[0]
             return alpha * x if scale else x
 
@@ -198,7 +197,7 @@ class WhiteSignal(Process):
         coefficients[0] = 0.0
         coefficients[-1].imag = 0.0
 
-        set_to_zero = npext.rfftfreq(2 * n_coefficients, d=dt) > self.high
+        set_to_zero = rfftfreq(2 * n_coefficients, d=dt) > self.high
         coefficients[set_to_zero] = 0.0
         power_correction = np.sqrt(
             1.0 - np.sum(set_to_zero, dtype=float) / n_coefficients
@@ -266,6 +265,8 @@ class PiecewiseDataParam(DictParam):
     values are numerical constants or callables of the same dimensionality.
     """
 
+    equatable = True
+
     def coerce(self, instance, data):
         data = super().coerce(instance, data)
 
@@ -305,6 +306,11 @@ class PiecewiseDataParam(DictParam):
             size_out = size
 
         return data
+
+    def hashvalue(self, instance):
+        return hash(
+            frozenset(tuple((k, array_hash(v)) for k, v in self.data[instance].items()))
+        )
 
 
 class Piecewise(Process):
@@ -451,8 +457,7 @@ class Piecewise(Process):
                 ti = (np.searchsorted(tp, t + 0.5 * dt) - 1).clip(-1, len(yp) - 1)
                 if ti == -1:
                     return np.zeros(shape_out)
-                else:
-                    return np.ravel(yp[ti](t)) if callable(yp[ti]) else yp[ti]
+                return np.ravel(yp[ti](t)) if callable(yp[ti]) else yp[ti]
 
         else:
             assert self.sp_interpolate is not None

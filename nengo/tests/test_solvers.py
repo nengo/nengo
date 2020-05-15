@@ -67,7 +67,7 @@ def get_eval_points(n_points, dims, rng=None, sort=False):
     return points[np.argsort(points[:, 0])] if sort else points
 
 
-def get_rate_function(n_neurons, dims, neuron_type=nengo.LIF, rng=None):
+def get_rate_function(n_neurons, neuron_type=nengo.LIF, rng=None):
     neurons = neuron_type(n_neurons)
     gain, bias = neurons.gain_bias(
         rng.uniform(50, 100, n_neurons), rng.uniform(-0.9, 0.9, n_neurons)
@@ -80,7 +80,7 @@ def get_system(m, n, d, rng=None, sort=False):
     """Get a system of LIF tuning curves and the corresponding eval points."""
     eval_points = get_eval_points(m, d, rng=rng, sort=sort)
     encoders = get_encoders(n, d, rng=rng)
-    rates = get_rate_function(n, d, rng=rng)
+    rates = get_rate_function(n, rng=rng)
     return rates(np.dot(eval_points, encoders)), eval_points
 
 
@@ -117,7 +117,7 @@ def test_decoder_solver(Solver, plt, rng, allclose):
     n_neurons = 100
     n_points = 1000
 
-    rates = get_rate_function(n_neurons, dims, rng=rng)
+    rates = get_rate_function(n_neurons, rng=rng)
     E = get_encoders(n_neurons, dims, rng=rng)
 
     train = get_eval_points(n_points, dims, rng=rng)
@@ -150,7 +150,7 @@ def test_subsolvers(Solver, seed, rng, tol=1e-2):
 
     subsolvers = [lstsq.Conjgrad, lstsq.BlockConjgrad]
     for subsolver in subsolvers:
-        x, info = Solver(solver=subsolver(tol=tol))(A, b, rng=get_rng())
+        x, _ = Solver(solver=subsolver(tol=tol))(A, b, rng=get_rng())
         rel_rmse = rms(x - x0) / rms(x0)
         assert rel_rmse < 5 * tol
         # the above 5 * tol is just a heuristic; the main purpose of this
@@ -176,7 +176,7 @@ def test_weight_solver(Solver, rng, allclose):
     a_neurons, b_neurons = 100, 101
     n_points = 1000
 
-    rates = get_rate_function(a_neurons, dims, rng=rng)
+    rates = get_rate_function(a_neurons, rng=rng)
     Ea = get_encoders(a_neurons, dims, rng=rng)  # pre encoders
     Eb = get_encoders(b_neurons, dims, rng=rng)  # post encoders
 
@@ -231,7 +231,7 @@ def test_scipy_solvers(rng, allclose):
 
 @pytest.mark.parametrize("Solver", [Nnls, NnlsL2, NnlsL2nz])
 def test_nnls(Solver, plt, rng, allclose):
-    pytest.importorskip("scipy")
+    pytest.importorskip("scipy.optimize")
 
     A, x = get_system(500, 100, 1, rng=rng, sort=True)
     y = x ** 2
@@ -261,7 +261,7 @@ def test_nnls_weights(Simulator, Solver, seed):
     because it cannot be done by solving for decoders first then multiplying
     by encoders.
     """
-    pytest.importorskip("scipy")
+    pytest.importorskip("scipy.optimize")
 
     with nengo.Network(seed=seed) as net:
         a = nengo.Ensemble(26, 1)
@@ -417,8 +417,8 @@ def test_regularization(Simulator, nl_nodirect, plt):
 
             for i, Solver in enumerate(Solvers):
                 for k, reg in enumerate(regs):
-                    for l, synapse in enumerate(filters):
-                        probes[i, j, k, l] = nengo.Probe(
+                    for m, synapse in enumerate(filters):
+                        probes[i, j, k, m] = nengo.Probe(
                             a, solver=Solver(reg=reg), synapse=synapse
                         )
 
@@ -631,7 +631,7 @@ def test_nosolver_validation():
 
 
 @pytest.mark.parametrize("solver", [LstsqDrop(weights=True)])
-def test_non_compositional_solver(Simulator, solver, rng, seed, plt, allclose):
+def test_non_compositional_solver(Simulator, solver, seed, plt, allclose):
     if isinstance(solver, LstsqL1):
         pytest.importorskip("sklearn")
     if isinstance(solver, Nnls):
@@ -661,7 +661,7 @@ def test_non_compositional_solver(Simulator, solver, rng, seed, plt, allclose):
 
 
 def test_non_compositional_solver_transform_error(Simulator):
-    pytest.importorskip("scipy")
+    pytest.importorskip("scipy.optimize")
 
     with nengo.Network() as net:
         a = nengo.Ensemble(10, 1)

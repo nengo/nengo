@@ -1,7 +1,4 @@
-from inspect import getfullargspec
-
 import numpy as np
-from numpy import array  # pylint: disable=unused-import
 import pytest
 
 import nengo
@@ -308,27 +305,6 @@ def test_frozen():
 
     with pytest.raises((ValueError, RuntimeError)):
         a.den[0] = 9
-
-
-def test_argreprs():
-    def check_init_args(cls, args):
-        assert getfullargspec(cls.__init__).args[1:] == args
-
-    def check_repr(obj):
-        assert eval(repr(obj)) == obj
-
-    check_init_args(LinearFilter, ["num", "den", "analog", "method"])
-    check_repr(LinearFilter([1, 2], [3, 4]))
-    check_repr(LinearFilter([1, 2], [3, 4], analog=False))
-
-    check_init_args(Lowpass, ["tau"])
-    check_repr(Lowpass(0.3))
-
-    check_init_args(Alpha, ["tau"])
-    check_repr(Alpha(0.3))
-
-    check_init_args(Triangle, ["t"])
-    check_repr(Triangle(0.3))
 
 
 def test_synapse_subclass(Simulator):

@@ -515,6 +515,16 @@ class ChannelShape:
         self.shape = tuple(shape)
         self.channels_last = channels_last
 
+    def __eq__(self, other):
+        return (
+            type(self) == type(other)
+            and self.shape == other.shape
+            and self.channels_last == other.channels_last
+        )
+
+    def __hash__(self):
+        return hash((self.shape, self.channels_last))
+
     def __repr__(self):
         return "%s(shape=%s, channels_last=%s)" % (
             type(self).__name__,

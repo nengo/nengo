@@ -1,4 +1,3 @@
-from inspect import getfullargspec
 import logging
 
 import numpy as np
@@ -42,7 +41,7 @@ def test_lif_builtin(rng, allclose):
     reftime = np.zeros_like(J)
 
     spikes = np.zeros((int(t_final / dt),) + J.shape)
-    for i, spikes_i in enumerate(spikes):
+    for spikes_i in spikes:
         lif.step_math(dt, J, spikes_i, voltage, reftime)
 
     math_rates = lif.rates(x, gain, bias)
@@ -245,7 +244,7 @@ def test_alif(Simulator, plt):
     assert rel_rmse < 0.07
 
 
-def test_izhikevich(Simulator, plt, seed, rng):
+def test_izhikevich(Simulator, plt, seed):
     """Smoke test for using Izhikevich neurons.
 
     Tests that the 6 parameter sets listed in the original paper can be
@@ -316,7 +315,7 @@ def test_sigmoid_response_curves(Simulator, max_rate, intercept, allclose):
 
     with Simulator(m) as sim:
         pass
-    x, y = nengo.utils.ensemble.response_curves(e, sim)
+    _, y = nengo.utils.ensemble.response_curves(e, sim)
     assert allclose(np.max(y), max_rate)
     assert np.all(y > 0.0)
     assert np.all(np.diff(y) > 0.0)  # monotonically increasing
@@ -374,7 +373,7 @@ def test_dt_dependence(Simulator, nl_nodirect, plt, seed, allclose):
     ax2.set_xlim(right=t[-1])
     ax2.set_ylabel("Neural activity")
 
-    assert rms(activity_data[0] - activity_data[1]) < ((1.0 / dt) * 0.01)
+    assert rms(activity_data[0] - activity_data[1]) < ((1.0 / dts[-1]) * 0.01)
     assert allclose(out_data[0], out_data[1], atol=0.05)
 
 
@@ -605,95 +604,3 @@ def test_rates_shaping(rng, nl_nodirect):
         # Too many dimensions
         x = rng.rand(10, n_neurons, 1)
         rates = neuron_type.rates(x, gain, bias)
-
-
-def test_argreprs():
-    """Test repr() for each neuron type."""
-
-    def check_init_args(cls, args):
-        assert getfullargspec(cls.__init__).args[1:] == args
-
-    def check_repr(obj):
-        assert eval(repr(obj)) == obj
-
-    check_init_args(Direct, [])
-    check_repr(Direct())
-
-    check_init_args(RectifiedLinear, ["amplitude"])
-    check_repr(RectifiedLinear())
-    check_repr(RectifiedLinear(amplitude=2))
-
-    check_init_args(SpikingRectifiedLinear, ["amplitude"])
-    check_repr(SpikingRectifiedLinear())
-    check_repr(SpikingRectifiedLinear(amplitude=2))
-
-    check_init_args(Sigmoid, ["tau_ref"])
-    check_repr(Sigmoid())
-    check_repr(Sigmoid(tau_ref=0.1))
-
-    check_init_args(LIFRate, ["tau_rc", "tau_ref", "amplitude"])
-    check_repr(LIFRate())
-    check_repr(LIFRate(tau_rc=0.1))
-    check_repr(LIFRate(tau_ref=0.1))
-    check_repr(LIFRate(amplitude=2))
-    check_repr(LIFRate(tau_rc=0.05, tau_ref=0.02))
-    check_repr(LIFRate(tau_rc=0.05, amplitude=2))
-    check_repr(LIFRate(tau_ref=0.02, amplitude=2))
-    check_repr(LIFRate(tau_rc=0.05, tau_ref=0.02, amplitude=2))
-
-    check_init_args(LIF, ["tau_rc", "tau_ref", "min_voltage", "amplitude"])
-    check_repr(LIF())
-    check_repr(LIF(tau_rc=0.1))
-    check_repr(LIF(tau_ref=0.1))
-    check_repr(LIF(amplitude=2))
-    check_repr(LIF(min_voltage=-0.5))
-    check_repr(LIF(tau_rc=0.05, tau_ref=0.02))
-    check_repr(LIF(tau_rc=0.05, amplitude=2))
-    check_repr(LIF(tau_ref=0.02, amplitude=2))
-    check_repr(LIF(tau_rc=0.05, tau_ref=0.02, amplitude=2))
-    check_repr(LIF(tau_rc=0.05, tau_ref=0.02, min_voltage=-0.5, amplitude=2))
-
-    check_init_args(
-        AdaptiveLIFRate, ["tau_n", "inc_n", "tau_rc", "tau_ref", "amplitude"]
-    )
-    check_repr(AdaptiveLIFRate())
-    check_repr(AdaptiveLIFRate(tau_n=0.1))
-    check_repr(AdaptiveLIFRate(inc_n=0.5))
-    check_repr(AdaptiveLIFRate(tau_rc=0.1))
-    check_repr(AdaptiveLIFRate(tau_ref=0.1))
-    check_repr(AdaptiveLIFRate(amplitude=2))
-    check_repr(
-        AdaptiveLIFRate(tau_n=0.1, inc_n=0.5, tau_rc=0.05, tau_ref=0.02, amplitude=2)
-    )
-
-    check_init_args(
-        AdaptiveLIF, ["tau_n", "inc_n", "tau_rc", "tau_ref", "min_voltage", "amplitude"]
-    )
-    check_repr(AdaptiveLIF())
-    check_repr(AdaptiveLIF(tau_n=0.1))
-    check_repr(AdaptiveLIF(inc_n=0.5))
-    check_repr(AdaptiveLIF(tau_rc=0.1))
-    check_repr(AdaptiveLIF(tau_ref=0.1))
-    check_repr(AdaptiveLIF(min_voltage=-0.5))
-    check_repr(
-        AdaptiveLIF(
-            tau_n=0.1,
-            inc_n=0.5,
-            tau_rc=0.05,
-            tau_ref=0.02,
-            min_voltage=-0.5,
-            amplitude=2,
-        )
-    )
-
-    check_init_args(
-        Izhikevich, ["tau_recovery", "coupling", "reset_voltage", "reset_recovery"]
-    )
-    check_repr(Izhikevich())
-    check_repr(Izhikevich(tau_recovery=0.1))
-    check_repr(Izhikevich(coupling=0.3))
-    check_repr(Izhikevich(reset_voltage=-1))
-    check_repr(Izhikevich(reset_recovery=5))
-    check_repr(
-        Izhikevich(tau_recovery=0.1, coupling=0.3, reset_voltage=-1, reset_recovery=5)
-    )

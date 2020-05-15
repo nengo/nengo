@@ -1,5 +1,3 @@
-from inspect import getfullargspec
-
 import numpy as np
 from numpy import array  # pylint: disable=unused-import
 import pytest
@@ -13,7 +11,6 @@ from nengo.dists import (
     PDF,
     Samples,
     SqrtBeta,
-    SubvectorLength,
     Uniform,
     UniformHypersphere,
 )
@@ -108,12 +105,12 @@ def test_hypersphere_surface(dimensions, rng, allclose):
     assert allclose(np.mean(samples, axis=0), 0, atol=0.25 / dimensions)
 
 
-def test_hypersphere_dimension_fail(rng):
+def test_hypersphere_dimension_fail():
     with pytest.raises(ValueError):
         UniformHypersphere(0).sample(1, 0)
 
 
-def test_hypersphere_warns(rng):
+def test_hypersphere_warns():
     with pytest.warns(UserWarning):
         UniformHypersphere(surface=True, min_magnitude=0.1)
 
@@ -134,7 +131,7 @@ def test_choice(weights, rng, allclose):
 
     # check that frequency of choices matches weights
     inds = [tchoices.index(s) for s in tsample]
-    histogram, bins = np.histogram(inds, bins=np.linspace(-0.5, N - 0.5, N + 1))
+    histogram, _ = np.histogram(inds, bins=np.linspace(-0.5, N - 0.5, N + 1))
     p_empirical = histogram / float(histogram.sum())
     p = np.ones(N) / N if dist.p is None else dist.p
     sterr = 1.0 / np.sqrt(n)  # expected maximum standard error
@@ -348,49 +345,3 @@ def test_frozen():
     assert hash(a) != hash(c)  # not guaranteed, but highly likely
     assert b != c
     assert hash(b) != hash(c)  # not guaranteed, but highly likely
-
-
-def test_argreprs():
-    def check_init_args(cls, args):
-        assert getfullargspec(cls.__init__).args[1:] == args
-
-    def check_repr(obj):
-        assert eval(repr(obj)) == obj
-
-    check_init_args(PDF, ["x", "p"])
-    check_repr(PDF([1, 2, 3], [0.1, 0.8, 0.1]))
-
-    check_init_args(Uniform, ["low", "high", "integer"])
-    check_repr(Uniform(1, 3))
-    check_repr(Uniform(1, 4, integer=True))
-
-    check_init_args(Gaussian, ["mean", "std"])
-    check_repr(Gaussian(0, 2))
-
-    check_init_args(Exponential, ["scale", "shift", "high"])
-    check_repr(Exponential(2.0))
-    check_repr(Exponential(2.0, shift=0.1))
-    check_repr(Exponential(2.0, shift=0.1, high=10.0))
-
-    check_init_args(UniformHypersphere, ["surface", "min_magnitude"])
-    check_repr(UniformHypersphere())
-    check_repr(UniformHypersphere(surface=True))
-    check_repr(UniformHypersphere(min_magnitude=0.3))
-
-    check_init_args(Choice, ["options", "weights"])
-    check_repr(Choice([3, 2, 1]))
-    check_repr(Choice([3, 2, 1], weights=[0.1, 0.2, 0.7]))
-
-    check_init_args(Samples, ["samples"])
-    check_repr(Samples([3, 2, 1]))
-
-    check_init_args(SqrtBeta, ["n", "m"])
-    check_repr(SqrtBeta(3))
-    check_repr(SqrtBeta(3, m=2))
-
-    check_init_args(SubvectorLength, ["dimensions", "subdimensions"])
-    check_repr(SubvectorLength(6))
-    check_repr(SubvectorLength(6, 2))
-
-    check_init_args(CosineSimilarity, ["dimensions"])
-    check_repr(CosineSimilarity(6))

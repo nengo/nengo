@@ -458,7 +458,7 @@ def test_learningrule_attr(seed):
         assert rule.connection is conn and rule.learning_rule_type is rule_type
 
     with nengo.Network(seed=seed):
-        a, b, e = [nengo.Ensemble(10, 2) for i in range(3)]
+        a, b = [nengo.Ensemble(10, 2) for i in range(2)]
         T = np.ones((10, 10))
 
         r1 = PES()
@@ -621,7 +621,7 @@ def test_custom_type(Simulator, allclose):
             super().__init__(1.0, size_in=3)
 
     @Builder.register(TestRule)
-    def build_test_rule(model, test_rule, rule):
+    def build_test_rule(model, _, rule):
         error = Signal(np.zeros(rule.connection.size_in))
         model.add_op(Reset(error))
         model.sig[rule]["in"] = error[: rule.size_in]
@@ -674,7 +674,7 @@ def test_slicing(Simulator, seed, allclose):
     assert allclose(sim.data[p][t, 1], -0.5, atol=0.15)
 
 
-def test_null_error(Simulator):
+def test_null_error():
     with nengo.Network():
         a = nengo.Ensemble(1, 1)
         b = nengo.Ensemble(1, 1)
