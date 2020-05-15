@@ -575,7 +575,7 @@ def test_argreprs():
 
 
 def test_piecewise_repr():
-    """Test repr() for piecewise"""
+    """Test repr() for piecewise."""
     pytest.importorskip("scipy")
     pytest.importorskip("scipy.optimize")
     for interpolation in ("linear", "nearest", "slinear", "quadratic", "cubic"):
