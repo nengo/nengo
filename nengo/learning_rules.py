@@ -1,7 +1,6 @@
 import warnings
 
 from nengo.base import FrozenObject
-from nengo.config import SupportDefaultsMixin
 from nengo.exceptions import ValidationError
 from nengo.params import (
     Default,
@@ -30,7 +29,7 @@ class LearningRuleTypeSizeInParam(IntParam):
             return super().coerce(instance, size_in)  # IntParam validation
 
 
-class LearningRuleType(FrozenObject, SupportDefaultsMixin):
+class LearningRuleType(FrozenObject):
     """Base class for all learning rule objects.
 
     To use a learning rule, pass it as a ``learning_rule_type`` keyword
