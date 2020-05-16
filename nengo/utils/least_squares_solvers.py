@@ -17,10 +17,10 @@ For example:
 import numpy as np
 
 import nengo.utils.numpy as npext
+from nengo.base import FrozenObject
 from nengo.exceptions import ValidationError
 from nengo.params import (
     BoolParam,
-    FrozenObject,
     IntParam,
     NdarrayParam,
     NumberParam,

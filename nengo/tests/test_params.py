@@ -385,33 +385,3 @@ def test_configure_all_nengo_parameters():
             except Exception:
                 print("Error setting %s.%s" % (obj, name))
                 raise
-
-
-def test_frozenobject_reprs():
-    class TestFO(params.FrozenObject):
-        a = params.NumberParam("a", default=3, readonly=True)
-        b = params.NumberParam("b")
-
-        def __init__(self, a, b=4):
-            super().__init__()
-            self.a = a
-            self.b = b
-
-    # test that parameters are only shown in repr if their values are different
-    # than the default, for both parameter defaults and argument defaults
-    assert repr(TestFO(3)) == "TestFO()"
-    assert repr(TestFO(2)) == "TestFO(a=2)"
-    assert repr(TestFO(2, b=3)) == "TestFO(a=2, b=3)"
-
-
-def test_frozenobject_missing_arg_repr():
-    class TestFO(params.FrozenObject):
-        a = params.NumberParam("a", default=3, readonly=True)
-
-        def __init__(self, a, b=4):
-            super().__init__()
-            self.a = a
-
-    fobj = TestFO(3)
-    assert repr(fobj).startswith("<TestFO at")
-    assert fobj._argreprs == "Cannot find 'b'"

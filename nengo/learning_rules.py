@@ -1,11 +1,11 @@
 import warnings
 
+from nengo.base import FrozenObject
 from nengo.config import SupportDefaultsMixin
 from nengo.exceptions import ValidationError
 from nengo.params import (
     Default,
     IntParam,
-    FrozenObject,
     NumberParam,
     Parameter,
 )

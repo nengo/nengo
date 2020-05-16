@@ -2,6 +2,7 @@ import warnings
 
 import numpy as np
 
+from nengo.base import FrozenObject
 from nengo.exceptions import ValidationError
 from nengo.params import (
     BoolParam,
@@ -10,7 +11,6 @@ from nengo.params import (
     NumberParam,
     Parameter,
     Unconfigurable,
-    FrozenObject,
 )
 import nengo.utils.numpy as npext
 

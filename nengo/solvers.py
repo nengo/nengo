@@ -11,7 +11,8 @@ import time
 import numpy as np
 
 import nengo.utils.least_squares_solvers as lstsq
-from nengo.params import BoolParam, FrozenObject, NdarrayParam, NumberParam, Parameter
+from nengo.base import FrozenObject
+from nengo.params import BoolParam, NdarrayParam, NumberParam, Parameter
 from nengo.utils.least_squares_solvers import (
     format_system,
     rmses,
