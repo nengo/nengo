@@ -543,28 +543,19 @@ class TestPiecewise:
 
 def test_argreprs():
     """Test repr() for each process type."""
-    assert repr(WhiteNoise()) == "WhiteNoise(Gaussian(mean=0, std=1), scale=True)"
+    assert repr(WhiteNoise()) == "WhiteNoise()"
+    assert repr(WhiteNoise(scale=False)) == "WhiteNoise(scale=False)"
+    assert repr(FilteredNoise()) == "FilteredNoise()"
+    assert repr(FilteredNoise(scale=False)) == "FilteredNoise(scale=False)"
+    assert repr(BrownNoise()) == "BrownNoise()"
     assert (
-        repr(WhiteNoise(scale=False))
-        == "WhiteNoise(Gaussian(mean=0, std=1), scale=False)"
-    )
-    assert (
-        repr(FilteredNoise()) == "FilteredNoise(synapse=Lowpass(tau=0.005),"
-        " dist=Gaussian(mean=0, std=1), scale=True)"
-    )
-    assert (
-        repr(FilteredNoise(scale=False)) == "FilteredNoise(synapse=Lowpass(tau=0.005),"
-        " dist=Gaussian(mean=0, std=1), scale=False)"
-    )
-    assert repr(BrownNoise()) == "BrownNoise(Gaussian(mean=0, std=1))"
-    assert (
-        repr(PresentInput((1.2, 3.4), 5))
+        repr(PresentInput([1.2, 3.4], 5))
         == "PresentInput(inputs=array([1.2, 3.4]), presentation_time=5)"
     )
-    assert repr(WhiteSignal(1, 2)) == "WhiteSignal(period=1, high=2, rms=0.5)"
+    assert repr(WhiteSignal(1, 2)) == "WhiteSignal(period=1, high=2)"
     assert (
-        repr(WhiteSignal(1.2, 3.4, 5.6, 7.8))
-        == "WhiteSignal(period=1.2, high=3.4, rms=5.6)"
+        repr(WhiteSignal(period=1.2, high=3.4, rms=5.6, y0=7.8))
+        == "WhiteSignal(period=1.2, high=3.4, rms=5.6, y0=7.8)"
     )
 
     assert (
