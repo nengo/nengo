@@ -203,26 +203,23 @@ def test_sparse_nef(encoders, decoders, Simulator):
 def test_argreprs():
     """Test repr() for each transform type."""
     assert repr(nengo.Dense((1, 2), init=[[1, 1]])) == "Dense(shape=(1, 2))"
-
     assert (
-        repr(nengo.Convolution(3, (1, 2, 3)))
+        repr(nengo.Convolution(n_filters=3, input_shape=(1, 2, 3)))
         == "Convolution(n_filters=3, input_shape=(1, 2, 3))"
     )
     assert (
-        repr(nengo.Convolution(3, (1, 2, 3), kernel_size=(3, 2)))
-        == "Convolution(n_filters=3, input_shape=(1, 2, 3), "
-        "kernel_size=(3, 2))"
+        repr(nengo.Convolution(n_filters=3, input_shape=(1, 2, 3), kernel_size=(3, 2)))
+        == "Convolution(n_filters=3, input_shape=(1, 2, 3), kernel_size=(3, 2))"
     )
     assert (
-        repr(nengo.Convolution(3, (1, 2, 3), channels_last=False))
-        == "Convolution(n_filters=3, input_shape=(1, 2, 3), "
-        "channels_last=False)"
+        repr(nengo.Convolution(n_filters=3, input_shape=(1, 2, 3), channels_last=False))
+        == "Convolution(n_filters=3, input_shape=(1, 2, 3), channels_last=False)"
     )
     assert (
-        repr(nengo.Sparse((1, 1), indices=((1, 1), (1, 1)))) == "Sparse(shape=(1, 1))"
+        repr(nengo.Sparse((1, 1), indices=[[1, 1], [1, 1]])) == "Sparse(shape=(1, 1))"
     )
     assert (
-        repr(nengo.Sparse((1, 1), indices=((1, 1), (1, 1), (1, 1)), init=2))
+        repr(nengo.Sparse((1, 1), indices=[[1, 1], [1, 1], [1, 1]], init=2))
         == "Sparse(shape=(1, 1))"
     )
     assert repr(SparseMatrix(((1, 2), (3, 4)), (5, 6), (7, 8))).replace(
@@ -245,6 +242,4 @@ def test_argreprs():
     assert str(ChannelShape((1, 2, 3), channels_last=False)) == "(ch=1, 2, 3)"
 
     for dimensions in range(2):
-        assert repr(NoTransform(dimensions)) == "NoTransform(size_in=%s)" % str(
-            dimensions
-        )
+        assert repr(NoTransform(dimensions)) == "NoTransform(size_in=%d)" % dimensions

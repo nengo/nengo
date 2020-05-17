@@ -720,14 +720,14 @@ def test_argreprs():
         repr(
             BCM(learning_rate=0.1, pre_synapse=0.2, post_synapse=0.3, theta_synapse=0.4)
         )
-        == "BCM(learning_rate=0.1, pre_synapse=Lowpass(tau=0.2),"
-        " post_synapse=Lowpass(tau=0.3), theta_synapse=Lowpass(tau=0.4))"
+        == "BCM(learning_rate=0.1, pre_synapse=Lowpass(tau=0.2), "
+        "post_synapse=Lowpass(tau=0.3), theta_synapse=Lowpass(tau=0.4))"
     )
     assert repr(Oja()) == "Oja()"
     assert (
         repr(Oja(learning_rate=0.1, pre_synapse=0.2, post_synapse=0.3, beta=0.4))
-        == "Oja(learning_rate=0.1, pre_synapse=Lowpass(tau=0.2),"
-        " post_synapse=Lowpass(tau=0.3), beta=0.4)"
+        == "Oja(learning_rate=0.1, pre_synapse=Lowpass(tau=0.2), "
+        "post_synapse=Lowpass(tau=0.3), beta=0.4)"
     )
     assert repr(Voja()) == "Voja()"
     assert (

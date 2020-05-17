@@ -568,20 +568,17 @@ def test_argreprs():
     )
 
     assert (
-        repr(Piecewise({1: "word1", 2: "word2", 3: "word3"}))
-        == "Piecewise(data={1: array(['word1'], dtype='<U5'), 2:"
-        " array(['word2'], dtype='<U5'), 3: array(['word3'], dtype='<U5')})"
+        repr(Piecewise({1: 0.1, 2: 0.2, 3: 0.3}))
+        == "Piecewise(data={1: array([0.1]), 2: array([0.2]), 3: array([0.3])})"
     )
 
 
 def test_piecewise_repr():
     """Test repr() for piecewise."""
-    pytest.importorskip("scipy")
     pytest.importorskip("scipy.optimize")
     for interpolation in ("linear", "nearest", "slinear", "quadratic", "cubic"):
         assert (
-            repr(Piecewise({1: "word1", 2: "word2", 3: "word3"}, interpolation))
-            == "Piecewise(data={1: array(['word1'], dtype='<U5'), 2: array(['word2'],"
-            " dtype='<U5'), 3: array(['word3'], dtype='<U5')}, interpolation=%r)"
-            % interpolation
+            repr(Piecewise({1: 0.1, 2: 0.2, 3: 0.3}, interpolation))
+            == "Piecewise(data={1: array([0.1]), 2: array([0.2]), 3: array([0.3])}, "
+            "interpolation=%r)" % interpolation
         )
