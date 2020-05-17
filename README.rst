@@ -2,6 +2,10 @@
   :target: https://pypi.python.org/pypi/nengo
   :alt: Latest PyPI version
 
+.. image:: https://img.shields.io/pypi/pyversions/nengo.svg
+  :target: https://pypi.python.org/pypi/nengo
+  :alt: Python versions
+
 .. image:: https://img.shields.io/travis/nengo/nengo/master.svg
   :target: https://travis-ci.org/nengo/nengo
   :alt: Travis-CI build status
