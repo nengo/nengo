@@ -88,18 +88,6 @@ class LearningRuleType(FrozenObject, SupportDefaultsMixin):
         self.learning_rate = learning_rate
         self.size_in = size_in
 
-    def __repr__(self):
-        r = []
-        for name, default in self._argdefaults:
-            value = getattr(self, name)
-            if value != default:
-                r.append("%s=%r" % (name, value))
-        return "%s(%s)" % (type(self).__name__, ", ".join(r))
-
-    @property
-    def _argdefaults(self):
-        return (("learning_rate", LearningRuleType.learning_rate.default),)
-
 
 class PES(LearningRuleType):
     """Prescribed Error Sensitivity learning rule.
@@ -138,12 +126,12 @@ class PES(LearningRuleType):
 
         self.pre_synapse = pre_synapse
 
-    @property
-    def _argdefaults(self):
-        return (
-            ("learning_rate", PES.learning_rate.default),
-            ("pre_synapse", PES.pre_synapse.default),
-        )
+
+def _remove_default_post_synapse(argreprs, default):
+    default_post_synapse = "post_synapse=%r" % (default,)
+    if default_post_synapse in argreprs:
+        argreprs.remove(default_post_synapse)
+    return argreprs
 
 
 class BCM(LearningRuleType):
@@ -213,13 +201,8 @@ class BCM(LearningRuleType):
         self.theta_synapse = theta_synapse
 
     @property
-    def _argdefaults(self):
-        return (
-            ("learning_rate", BCM.learning_rate.default),
-            ("pre_synapse", BCM.pre_synapse.default),
-            ("post_synapse", self.pre_synapse),
-            ("theta_synapse", BCM.theta_synapse.default),
-        )
+    def _argreprs(self):
+        return _remove_default_post_synapse(super()._argreprs, self.pre_synapse)
 
 
 class Oja(LearningRuleType):
@@ -288,13 +271,8 @@ class Oja(LearningRuleType):
         )
 
     @property
-    def _argdefaults(self):
-        return (
-            ("learning_rate", Oja.learning_rate.default),
-            ("pre_synapse", Oja.pre_synapse.default),
-            ("post_synapse", self.pre_synapse),
-            ("beta", Oja.beta.default),
-        )
+    def _argreprs(self):
+        return _remove_default_post_synapse(super()._argreprs, self.pre_synapse)
 
 
 class Voja(LearningRuleType):
@@ -335,13 +313,6 @@ class Voja(LearningRuleType):
         super().__init__(learning_rate, size_in=1)
 
         self.post_synapse = post_synapse
-
-    @property
-    def _argdefaults(self):
-        return (
-            ("learning_rate", Voja.learning_rate.default),
-            ("post_synapse", Voja.post_synapse.default),
-        )
 
 
 class LearningRuleTypeParam(Parameter):

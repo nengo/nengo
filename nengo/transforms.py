@@ -586,10 +586,6 @@ class NoTransform(Transform):
         raise TypeError("Cannot sample a NoTransform")
 
     @property
-    def _argreprs(self):
-        return ["size_in=%d" % self.size_in]
-
-    @property
     def size_in(self):
         """Expected size of input to transform."""
         return self._size_in

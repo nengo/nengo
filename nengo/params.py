@@ -667,7 +667,7 @@ class FrozenObject:
             value = getattr(self, arg)
 
             param = self._paramdict.get(arg, None)
-            if arg in defaults:
+            if arg in defaults and defaults[arg] is not Default:
                 not_default = not equal(value, defaults[arg])
             elif param is not None and param.default is not Unconfigurable:
                 not_default = not equal(value, param.default)
