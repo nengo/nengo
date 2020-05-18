@@ -7,6 +7,7 @@ from nengo.dists import Distribution, DistOrArrayParam, Uniform
 from nengo.exceptions import ValidationError
 from nengo.params import (
     BoolParam,
+    Default,
     EnumParam,
     IntParam,
     NdarrayParam,
@@ -88,9 +89,9 @@ class Dense(Transform):
     """
 
     shape = ShapeParam("shape", length=2, low=1)
-    init = DistOrArrayParam("init")
+    init = DistOrArrayParam("init", default=1.0, readonly=True)
 
-    def __init__(self, shape, init=1.0):
+    def __init__(self, shape, init=Default):
         super().__init__()
 
         self.shape = shape
@@ -383,11 +384,13 @@ class Convolution(Transform):
 
     n_filters = IntParam("n_filters", low=1)
     input_shape = ChannelShapeParam("input_shape", low=1)
-    kernel_size = ShapeParam("kernel_size", low=1)
-    strides = ShapeParam("strides", low=1)
-    padding = EnumParam("padding", values=("same", "valid"))
-    channels_last = BoolParam("channels_last")
-    init = DistOrArrayParam("init")
+    kernel_size = ShapeParam("kernel_size", default=(3, 3), low=1, readonly=True)
+    strides = ShapeParam("strides", default=(1, 1), low=1, readonly=True)
+    padding = EnumParam(
+        "padding", default="valid", values=("same", "valid"), readonly=True
+    )
+    channels_last = BoolParam("channels_last", default=True, readonly=True)
+    init = DistOrArrayParam("init", default=Uniform(-1, 1), readonly=True)
 
     _param_init_order = ["channels_last", "input_shape"]
 
@@ -395,11 +398,11 @@ class Convolution(Transform):
         self,
         n_filters,
         input_shape,
-        kernel_size=(3, 3),
-        strides=(1, 1),
-        padding="valid",
-        channels_last=True,
-        init=Uniform(-1, 1),
+        kernel_size=Default,
+        strides=Default,
+        padding=Default,
+        channels_last=Default,
+        init=Default,
     ):
         super().__init__()
 
@@ -411,19 +414,19 @@ class Convolution(Transform):
         self.padding = padding
         self.init = init
 
-        if len(kernel_size) != self.dimensions:
+        if len(self.kernel_size) != self.dimensions:
             raise ValidationError(
                 "Kernel dimensions (%d) do not match input dimensions (%d)"
                 % (len(kernel_size), self.dimensions),
                 attr="kernel_size",
             )
-        if len(strides) != self.dimensions:
+        if len(self.strides) != self.dimensions:
             raise ValidationError(
                 "Stride dimensions (%d) do not match input dimensions (%d)"
                 % (len(strides), self.dimensions),
                 attr="strides",
             )
-        if not isinstance(init, Distribution):
+        if not isinstance(self.init, Distribution):
             if init.shape != self.kernel_shape:
                 raise ValidationError(
                     "Kernel shape %s does not match expected shape %s"

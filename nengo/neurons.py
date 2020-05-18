@@ -4,7 +4,7 @@ import numpy as np
 
 from nengo.base import FrozenObject
 from nengo.exceptions import SimulationError, ValidationError
-from nengo.params import Parameter, NumberParam
+from nengo.params import Default, Parameter, NumberParam
 
 
 def settled_firingrate(step_math, J, states, dt=0.001, settle_time=0.1, sim_time=1.0):
@@ -286,9 +286,9 @@ class RectifiedLinear(NeuronType):
 
     probeable = ("rates",)
 
-    amplitude = NumberParam("amplitude", low=0, low_open=True)
+    amplitude = NumberParam("amplitude", default=1, low=0, low_open=True, readonly=True)
 
-    def __init__(self, amplitude=1):
+    def __init__(self, amplitude=Default):
         super().__init__()
 
         self.amplitude = amplitude
@@ -356,9 +356,9 @@ class Sigmoid(NeuronType):
 
     probeable = ("rates",)
 
-    tau_ref = NumberParam("tau_ref", low=0)
+    tau_ref = NumberParam("tau_ref", default=0.0025, low=0, readonly=True)
 
-    def __init__(self, tau_ref=0.0025):
+    def __init__(self, tau_ref=Default):
         super().__init__()
         self.tau_ref = tau_ref
 
@@ -403,11 +403,11 @@ class LIFRate(NeuronType):
 
     probeable = ("rates",)
 
-    tau_rc = NumberParam("tau_rc", low=0, low_open=True)
-    tau_ref = NumberParam("tau_ref", low=0)
-    amplitude = NumberParam("amplitude", low=0, low_open=True)
+    tau_rc = NumberParam("tau_rc", default=0.02, low=0, low_open=True, readonly=True)
+    tau_ref = NumberParam("tau_ref", default=0.002, low=0, readonly=True)
+    amplitude = NumberParam("amplitude", default=1, low=0, low_open=True, readonly=True)
 
-    def __init__(self, tau_rc=0.02, tau_ref=0.002, amplitude=1):
+    def __init__(self, tau_rc=Default, tau_ref=Default, amplitude=Default):
         super().__init__()
         self.tau_rc = tau_rc
         self.tau_ref = tau_ref
@@ -485,9 +485,11 @@ class LIF(LIFRate):
 
     probeable = ("spikes", "voltage", "refractory_time")
 
-    min_voltage = NumberParam("min_voltage", high=0)
+    min_voltage = NumberParam("min_voltage", default=0, high=0, readonly=True)
 
-    def __init__(self, tau_rc=0.02, tau_ref=0.002, min_voltage=0, amplitude=1):
+    def __init__(
+        self, tau_rc=Default, tau_ref=Default, min_voltage=Default, amplitude=Default
+    ):
         super().__init__(tau_rc=tau_rc, tau_ref=tau_ref, amplitude=amplitude)
         self.min_voltage = min_voltage
 
@@ -559,10 +561,17 @@ class AdaptiveLIFRate(LIFRate):
 
     probeable = ("rates", "adaptation")
 
-    tau_n = NumberParam("tau_n", low=0, low_open=True)
-    inc_n = NumberParam("inc_n", low=0)
+    tau_n = NumberParam("tau_n", default=1, low=0, low_open=True, readonly=True)
+    inc_n = NumberParam("inc_n", default=0.01, low=0, readonly=True)
 
-    def __init__(self, tau_n=1, inc_n=0.01, tau_rc=0.02, tau_ref=0.002, amplitude=1):
+    def __init__(
+        self,
+        tau_n=Default,
+        inc_n=Default,
+        tau_rc=Default,
+        tau_ref=Default,
+        amplitude=Default,
+    ):
         super().__init__(tau_rc=tau_rc, tau_ref=tau_ref, amplitude=amplitude)
         self.tau_n = tau_n
         self.inc_n = inc_n
@@ -614,17 +623,17 @@ class AdaptiveLIF(LIF):
 
     probeable = ("spikes", "adaptation", "voltage", "refractory_time")
 
-    tau_n = NumberParam("tau_n", low=0, low_open=True)
-    inc_n = NumberParam("inc_n", low=0)
+    tau_n = NumberParam("tau_n", default=1, low=0, low_open=True, readonly=True)
+    inc_n = NumberParam("inc_n", default=0.01, low=0, readonly=True)
 
     def __init__(
         self,
-        tau_n=1,
-        inc_n=0.01,
-        tau_rc=0.02,
-        tau_ref=0.002,
-        min_voltage=0,
-        amplitude=1,
+        tau_n=Default,
+        inc_n=Default,
+        tau_rc=Default,
+        tau_ref=Default,
+        min_voltage=Default,
+        amplitude=Default,
     ):
         super().__init__(
             tau_rc=tau_rc, tau_ref=tau_ref, min_voltage=min_voltage, amplitude=amplitude
@@ -681,13 +690,19 @@ class Izhikevich(NeuronType):
 
     probeable = ("spikes", "voltage", "recovery")
 
-    tau_recovery = NumberParam("tau_recovery", low=0, low_open=True)
-    coupling = NumberParam("coupling", low=0)
-    reset_voltage = NumberParam("reset_voltage")
-    reset_recovery = NumberParam("reset_recovery")
+    tau_recovery = NumberParam(
+        "tau_recovery", default=0.02, low=0, low_open=True, readonly=True
+    )
+    coupling = NumberParam("coupling", default=0.2, low=0, readonly=True)
+    reset_voltage = NumberParam("reset_voltage", default=-65.0, readonly=True)
+    reset_recovery = NumberParam("reset_recovery", default=8.0, readonly=True)
 
     def __init__(
-        self, tau_recovery=0.02, coupling=0.2, reset_voltage=-65.0, reset_recovery=8.0
+        self,
+        tau_recovery=Default,
+        coupling=Default,
+        reset_voltage=Default,
+        reset_recovery=Default,
     ):
         super().__init__()
         self.tau_recovery = tau_recovery

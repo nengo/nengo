@@ -4,6 +4,7 @@ from nengo.base import Process
 from nengo.exceptions import ValidationError
 from nengo.params import (
     BoolParam,
+    Default,
     EnumParam,
     NdarrayParam,
     NumberParam,
@@ -163,12 +164,15 @@ class LinearFilter(Synapse):
 
     num = NdarrayParam("num", shape="*")
     den = NdarrayParam("den", shape="*")
-    analog = BoolParam("analog")
+    analog = BoolParam("analog", default=True, readonly=True)
     method = EnumParam(
-        "method", values=("gbt", "bilinear", "euler", "backward_diff", "zoh")
+        "method",
+        default="zoh",
+        values=("gbt", "bilinear", "euler", "backward_diff", "zoh"),
+        readonly=True,
     )
 
-    def __init__(self, num, den, analog=True, method="zoh", **kwargs):
+    def __init__(self, num, den, analog=Default, method="zoh", **kwargs):
         super().__init__(**kwargs)
         self.num = num
         self.den = den

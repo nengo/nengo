@@ -21,6 +21,7 @@ from nengo.base import FrozenObject
 from nengo.exceptions import ValidationError
 from nengo.params import (
     BoolParam,
+    Default,
     IntParam,
     NdarrayParam,
     NumberParam,
@@ -54,9 +55,9 @@ class LeastSquaresSolver(FrozenObject):
 class Cholesky(LeastSquaresSolver):
     """Solve a least-squares system using the Cholesky decomposition."""
 
-    transpose = BoolParam("transpose", optional=True)
+    transpose = BoolParam("transpose", default=None, optional=True, readonly=True)
 
-    def __init__(self, transpose=None):
+    def __init__(self, transpose=Default):
         super().__init__()
         self.transpose = transpose
 
@@ -110,10 +111,10 @@ class ConjgradScipy(LeastSquaresSolver):
         https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.cg.html
     """
 
-    tol = NumberParam("tol", low=0)
-    atol = NumberParam("atol", low=0)
+    tol = NumberParam("tol", default=1e-4, low=0, readonly=True)
+    atol = NumberParam("atol", default=1e-8, low=0, readonly=True)
 
-    def __init__(self, tol=1e-4, atol=1e-8):
+    def __init__(self, tol=Default, atol=Default):
         super().__init__()
         self.tol = tol
         self.atol = atol
@@ -157,9 +158,9 @@ class ConjgradScipy(LeastSquaresSolver):
 class LSMRScipy(LeastSquaresSolver):
     """Solve a least-squares system using Scipy's LSMR."""
 
-    tol = NumberParam("tol", low=0)
+    tol = NumberParam("tol", default=1e-4, low=0, readonly=True)
 
-    def __init__(self, tol=1e-4):
+    def __init__(self, tol=Default):
         super().__init__()
         self.tol = tol
 
@@ -183,11 +184,13 @@ class LSMRScipy(LeastSquaresSolver):
 class Conjgrad(LeastSquaresSolver):
     """Solve a least-squares system using conjugate gradient."""
 
-    tol = NumberParam("tol", low=0)
-    maxiters = IntParam("maxiters", low=1, optional=True)
-    X0 = NdarrayParam("X0", shape=("*", "*"), optional=True)
+    tol = NumberParam("tol", default=1e-2, low=0, readonly=True)
+    maxiters = IntParam("maxiters", default=None, low=1, optional=True, readonly=True)
+    X0 = NdarrayParam(
+        "X0", default=None, shape=("*", "*"), optional=True, readonly=True
+    )
 
-    def __init__(self, tol=1e-2, maxiters=None, X0=None):
+    def __init__(self, tol=Default, maxiters=Default, X0=Default):
         super().__init__()
         self.tol = tol
         self.maxiters = maxiters
@@ -252,10 +255,12 @@ class Conjgrad(LeastSquaresSolver):
 class BlockConjgrad(LeastSquaresSolver):
     """Solve a multiple-RHS least-squares system using block conj. gradient."""
 
-    tol = NumberParam("tol", low=0)
-    X0 = NdarrayParam("X0", shape=("*", "*"), optional=True)
+    tol = NumberParam("tol", default=1e-2, low=0, readonly=True)
+    X0 = NdarrayParam(
+        "X0", default=None, shape=("*", "*"), optional=True, readonly=True
+    )
 
-    def __init__(self, tol=1e-2, X0=None):
+    def __init__(self, tol=Default, X0=Default):
         super().__init__()
         self.tol = tol
         self.X0 = X0
@@ -334,11 +339,11 @@ class RandomizedSVD(LeastSquaresSolver):
     sklearn.utils.extmath.randomized_svd : Function used by this class
     """
 
-    n_components = IntParam("n_components", low=1)
-    n_oversamples = IntParam("n_oversamples", low=0)
-    n_iter = IntParam("n_iter", low=0)
+    n_components = IntParam("n_components", default=60, low=1, readonly=True)
+    n_oversamples = IntParam("n_oversamples", default=10, low=0, readonly=True)
+    n_iter = IntParam("n_iter", default=0, low=0, readonly=True)
 
-    def __init__(self, n_components=60, n_oversamples=10, n_iter=0):
+    def __init__(self, n_components=Default, n_oversamples=Default, n_iter=Default):
         from sklearn.utils.extmath import (  # pylint: disable=import-outside-toplevel
             randomized_svd,
         )

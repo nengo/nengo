@@ -398,13 +398,21 @@ class Process(FrozenObject):
         Random number seed. Ensures random factors will be the same each run.
     """
 
-    default_size_in = IntParam("default_size_in", low=0)
-    default_size_out = IntParam("default_size_out", low=0)
-    default_dt = NumberParam("default_dt", low=0, low_open=True)
-    seed = IntParam("seed", low=0, high=maxseed, optional=True)
+    default_size_in = IntParam("default_size_in", default=0, low=0, readonly=True)
+    default_size_out = IntParam("default_size_out", default=1, low=0, readonly=True)
+    default_dt = NumberParam(
+        "default_dt", default=0.001, low=0, low_open=True, readonly=True
+    )
+    seed = IntParam(
+        "seed", default=None, low=0, high=maxseed, optional=True, readonly=True
+    )
 
     def __init__(
-        self, default_size_in=0, default_size_out=1, default_dt=0.001, seed=None
+        self,
+        default_size_in=Default,
+        default_size_out=Default,
+        default_dt=Default,
+        seed=Default,
     ):
         super().__init__()
         self.default_size_in = default_size_in

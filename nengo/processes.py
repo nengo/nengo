@@ -6,7 +6,14 @@ import nengo.utils.numpy as npext
 from nengo.base import Process
 from nengo.dists import DistributionParam, Gaussian
 from nengo.exceptions import ValidationError
-from nengo.params import BoolParam, DictParam, EnumParam, NdarrayParam, NumberParam
+from nengo.params import (
+    BoolParam,
+    Default,
+    DictParam,
+    EnumParam,
+    NdarrayParam,
+    NumberParam,
+)
 from nengo.synapses import LinearFilter, Lowpass, SynapseParam
 from nengo.utils.numpy import is_number
 
@@ -32,10 +39,10 @@ class WhiteNoise(Process):
        Uhlenbeck process and its integral. Phys. Rev. E 54, pp. 2084-91.
     """
 
-    dist = DistributionParam("dist")
-    scale = BoolParam("scale")
+    dist = DistributionParam("dist", default=Gaussian(mean=0, std=1), readonly=True)
+    scale = BoolParam("scale", default=True, readonly=True)
 
-    def __init__(self, dist=Gaussian(mean=0, std=1), scale=True, **kwargs):
+    def __init__(self, dist=Default, scale=Default, **kwargs):
         super().__init__(default_size_in=0, **kwargs)
         self.dist = dist
         self.scale = scale
@@ -75,17 +82,11 @@ class FilteredNoise(Process):
         Random number seed. Ensures noise will be the same each run.
     """
 
-    synapse = SynapseParam("synapse")
-    dist = DistributionParam("dist")
-    scale = BoolParam("scale")
+    synapse = SynapseParam("synapse", default=Lowpass(tau=0.005), readonly=True)
+    dist = DistributionParam("dist", default=Gaussian(mean=0, std=1), readonly=True)
+    scale = BoolParam("scale", default=True, readonly=True)
 
-    def __init__(
-        self,
-        synapse=Lowpass(tau=0.005),
-        dist=Gaussian(mean=0, std=1),
-        scale=True,
-        **kwargs
-    ):
+    def __init__(self, synapse=Default, dist=Default, scale=Default, **kwargs):
         super().__init__(default_size_in=0, **kwargs)
         self.synapse = synapse
         self.dist = dist
@@ -125,7 +126,7 @@ class BrownNoise(FilteredNoise):
         Random number seed. Ensures noise will be the same each run.
     """
 
-    def __init__(self, dist=Gaussian(mean=0, std=1), **kwargs):
+    def __init__(self, dist=Default, **kwargs):
         super().__init__(
             synapse=LinearFilter([1], [1, 0], method="euler"), dist=dist, **kwargs
         )
@@ -161,10 +162,10 @@ class WhiteSignal(Process):
 
     period = NumberParam("period", low=0, low_open=True)
     high = NumberParam("high", low=0, low_open=True)
-    rms = NumberParam("rms", low=0, low_open=True)
-    y0 = NumberParam("y0", optional=True)
+    rms = NumberParam("rms", default=0.5, low=0, low_open=True, readonly=True)
+    y0 = NumberParam("y0", default=None, optional=True, readonly=True)
 
-    def __init__(self, period, high, rms=0.5, y0=None, **kwargs):
+    def __init__(self, period, high, rms=Default, y0=None, **kwargs):
         super().__init__(default_size_in=0, **kwargs)
         self.period = period
         self.high = high
@@ -402,10 +403,12 @@ class Piecewise(Process):
     data = PiecewiseDataParam("data", readonly=True)
     interpolation = EnumParam(
         "interpolation",
+        default="zero",
         values=("zero", "linear", "nearest", "slinear", "quadratic", "cubic"),
+        readonly=True,
     )
 
-    def __init__(self, data, interpolation="zero", **kwargs):
+    def __init__(self, data, interpolation=Default, **kwargs):
         self.data = data
 
         needs_scipy = ("linear", "nearest", "slinear", "quadratic", "cubic")

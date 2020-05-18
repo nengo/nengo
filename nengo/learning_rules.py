@@ -79,10 +79,10 @@ class LearningRuleType(FrozenObject):
     modifies = None
     probeable = ()
 
-    learning_rate = NumberParam("learning_rate", low=0, readonly=True, default=1e-6)
-    size_in = LearningRuleTypeSizeInParam("size_in", low=0)
+    learning_rate = NumberParam("learning_rate", default=1e-6, low=0, readonly=True)
+    size_in = LearningRuleTypeSizeInParam("size_in", default=0, low=0, readonly=True)
 
-    def __init__(self, learning_rate=Default, size_in=0):
+    def __init__(self, learning_rate=Default, size_in=Default):
         super().__init__()
         self.learning_rate = learning_rate
         self.size_in = size_in
@@ -112,7 +112,7 @@ class PES(LearningRuleType):
     modifies = "decoders"
     probeable = ("error", "activities", "delta")
 
-    learning_rate = NumberParam("learning_rate", low=0, readonly=True, default=1e-4)
+    learning_rate = NumberParam("learning_rate", default=1e-4, low=0, readonly=True)
     pre_synapse = SynapseParam("pre_synapse", default=Lowpass(tau=0.005), readonly=True)
 
     def __init__(self, learning_rate=Default, pre_synapse=Default):
@@ -177,7 +177,7 @@ class BCM(LearningRuleType):
     modifies = "weights"
     probeable = ("theta", "pre_filtered", "post_filtered", "delta")
 
-    learning_rate = NumberParam("learning_rate", low=0, readonly=True, default=1e-9)
+    learning_rate = NumberParam("learning_rate", default=1e-9, low=0, readonly=True)
     pre_synapse = SynapseParam("pre_synapse", default=Lowpass(tau=0.005), readonly=True)
     post_synapse = SynapseParam("post_synapse", default=None, readonly=True)
     theta_synapse = SynapseParam(
@@ -249,10 +249,10 @@ class Oja(LearningRuleType):
     modifies = "weights"
     probeable = ("pre_filtered", "post_filtered", "delta")
 
-    learning_rate = NumberParam("learning_rate", low=0, readonly=True, default=1e-6)
+    learning_rate = NumberParam("learning_rate", default=1e-6, low=0, readonly=True)
     pre_synapse = SynapseParam("pre_synapse", default=Lowpass(tau=0.005), readonly=True)
     post_synapse = SynapseParam("post_synapse", default=None, readonly=True)
-    beta = NumberParam("beta", low=0, readonly=True, default=1.0)
+    beta = NumberParam("beta", default=1.0, low=0, readonly=True)
 
     def __init__(
         self,
@@ -303,7 +303,7 @@ class Voja(LearningRuleType):
     modifies = "encoders"
     probeable = ("post_filtered", "scaled_encoders", "delta")
 
-    learning_rate = NumberParam("learning_rate", low=0, readonly=True, default=1e-2)
+    learning_rate = NumberParam("learning_rate", default=1e-2, low=0, readonly=True)
     post_synapse = SynapseParam(
         "post_synapse", default=Lowpass(tau=0.005), readonly=True
     )
