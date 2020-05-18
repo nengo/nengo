@@ -1,20 +1,26 @@
+from collections import OrderedDict
 from copy import copy
+import inspect
+import sys
 import warnings
 
 import numpy as np
 
 import nengo
-from nengo.config import SupportDefaultsMixin
-from nengo.exceptions import NotAddedToNetworkWarning, ValidationError
+from nengo.config import Config
+from nengo.exceptions import NotAddedToNetworkWarning, ReadonlyError, ValidationError
 from nengo.params import (
-    FrozenObject,
+    Default,
+    equal,
     IntParam,
     iter_params,
     NumberParam,
+    ObsoleteParam,
     Parameter,
     StringParam,
     Unconfigurable,
 )
+from nengo.rc import rc
 from nengo.utils.numpy import as_shape, maxint, maxseed, is_integer
 
 
@@ -38,7 +44,7 @@ class NetworkMember(type):
         return inst
 
 
-class NengoObject(SupportDefaultsMixin, metaclass=NetworkMember):
+class NengoObject(metaclass=NetworkMember):
     """A base class for Nengo objects.
 
     Parameters
@@ -105,7 +111,17 @@ class NengoObject(SupportDefaultsMixin, metaclass=NetworkMember):
                 "Did you mean to change an existing attribute?" % (name, self),
                 SyntaxWarning,
             )
-        super().__setattr__(name, val)
+        if val is Default:
+            val = Config.default(type(self), name)
+
+        if rc.getboolean("exceptions", "simplified"):
+            try:
+                super().__setattr__(name, val)
+            except ValidationError:
+                exc_info = sys.exc_info()
+                raise exc_info[1].with_traceback(None)
+        else:
+            super().__setattr__(name, val)
 
     def __str__(self):
         return self._str(include_id=not hasattr(self, "label") or self.label is None)
@@ -202,6 +218,115 @@ class ObjView:
             return str(self.slice)
 
 
+class FrozenObject:
+    """An object with parameters that cannot change value after instantiation.
+
+    Since such objects are read-only ("frozen"), they can be safely used in
+    multiple locations, compared, etc.
+    """
+
+    # Order in which parameters have to be initialized.
+    # Missing parameters will be initialized last in an undefined order.
+    # This is needed for pickling and copying of Nengo objects when the
+    # parameter initialization order matters.
+    _param_init_order = []
+
+    def __init__(self):
+        self._paramdict = OrderedDict(
+            (k, v)
+            for k, v in inspect.getmembers(type(self))
+            if isinstance(v, Parameter) and not isinstance(v, ObsoleteParam)
+        )
+        for p in self._params:
+            if not p.readonly:
+                msg = "All parameters of a FrozenObject must be readonly"
+                raise ReadonlyError(attr=p, obj=self, msg=msg)
+        self.__argreprs = None
+
+    @property
+    def _params(self):
+        return list(self._paramdict.values())
+
+    def __eq__(self, other):
+        if self is other:  # quick check for speed
+            return True
+        return type(self) == type(other) and all(
+            p.equal(self, other) for p in self._params
+        )
+
+    def __hash__(self):
+        return hash((type(self), tuple(p.hashvalue(self) for p in self._params)))
+
+    def __getstate__(self):
+        d = dict(self.__dict__)
+        d.pop("_paramdict")  # do not pickle the param dict itself
+        for k in self._paramdict:
+            d[k] = getattr(self, k)
+
+        return d
+
+    def __setstate__(self, state):
+        FrozenObject.__init__(self)  # set up the param dict
+
+        for attr in self._param_init_order:
+            setattr(self, attr, state.pop(attr))
+        for attr in set(self._paramdict).difference(self._param_init_order):
+            setattr(self, attr, state.pop(attr))
+
+        self.__dict__.update(state)
+
+    def __setattr__(self, name, val):
+        if val is Default:
+            val = getattr(type(self), name).default
+
+        if rc.getboolean("exceptions", "simplified"):
+            try:
+                super().__setattr__(name, val)
+            except ValidationError:
+                exc_info = sys.exc_info()
+                raise exc_info[1].with_traceback(None)
+        else:
+            super().__setattr__(name, val)
+
+    def __repr__(self):
+        if isinstance(self._argreprs, str):
+            return "<%s at 0x%x>" % (type(self).__name__, id(self))
+        return "%s(%s)" % (type(self).__name__, ", ".join(self._argreprs))
+
+    @property
+    def _argreprs(self):
+        if self.__argreprs is not None:
+            return self.__argreprs
+
+        # get arguments to display from __init__ functions
+        spec = inspect.getfullargspec(type(self).__init__)
+        defaults = {}
+        if spec.defaults is not None:
+            defaults.update(zip(spec.args[-len(spec.defaults) :], spec.defaults))
+
+        self.__argreprs = []
+        for arg in spec.args[1:]:  # start at 1 to drop `self`
+            if not hasattr(self, arg):
+                # We rely on storing the initial arguments. If we don't have
+                # them, we don't auto-generate a repr.
+                self.__argreprs = "Cannot find %r" % arg
+                break
+            value = getattr(self, arg)
+
+            param = self._paramdict.get(arg, None)
+            if arg in defaults and defaults[arg] is not Default:
+                not_default = not equal(value, defaults[arg])
+            elif param is not None and param.default is not Unconfigurable:
+                not_default = not equal(value, param.default)
+            else:
+                not_default = True
+
+            if not_default:
+                self.__argreprs.append("%s=%r" % (arg, value))
+
+        return self.__argreprs
+
+
 class NengoObjectParam(Parameter):
     def __init__(
         self,
@@ -273,13 +398,21 @@ class Process(FrozenObject):
         Random number seed. Ensures random factors will be the same each run.
     """
 
-    default_size_in = IntParam("default_size_in", low=0)
-    default_size_out = IntParam("default_size_out", low=0)
-    default_dt = NumberParam("default_dt", low=0, low_open=True)
-    seed = IntParam("seed", low=0, high=maxseed, optional=True)
+    default_size_in = IntParam("default_size_in", default=0, low=0, readonly=True)
+    default_size_out = IntParam("default_size_out", default=1, low=0, readonly=True)
+    default_dt = NumberParam(
+        "default_dt", default=0.001, low=0, low_open=True, readonly=True
+    )
+    seed = IntParam(
+        "seed", default=None, low=0, high=maxseed, optional=True, readonly=True
+    )
 
     def __init__(
-        self, default_size_in=0, default_size_out=1, default_dt=0.001, seed=None
+        self,
+        default_size_in=Default,
+        default_size_out=Default,
+        default_dt=Default,
+        seed=Default,
     ):
         super().__init__()
         self.default_size_in = default_size_in

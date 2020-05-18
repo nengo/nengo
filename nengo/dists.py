@@ -2,15 +2,16 @@ import warnings
 
 import numpy as np
 
+from nengo.base import FrozenObject
 from nengo.exceptions import ValidationError
 from nengo.params import (
     BoolParam,
+    Default,
     IntParam,
     NdarrayParam,
     NumberParam,
     Parameter,
     Unconfigurable,
-    FrozenObject,
 )
 import nengo.utils.numpy as npext
 
@@ -161,9 +162,9 @@ class Uniform(Distribution):
 
     low = NumberParam("low")
     high = NumberParam("high")
-    integer = BoolParam("integer")
+    integer = BoolParam("integer", default=False, readonly=True)
 
-    def __init__(self, low, high, integer=False):
+    def __init__(self, low, high, integer=Default):
         super().__init__()
         self.low = low
         self.high = high
@@ -242,10 +243,10 @@ class Exponential(Distribution):
     """
 
     scale = NumberParam("scale", low=0, low_open=True)
-    shift = NumberParam("shift")
-    high = NumberParam("high")
+    shift = NumberParam("shift", default=0.0, readonly=True)
+    high = NumberParam("high", default=np.inf, readonly=True)
 
-    def __init__(self, scale, shift=0.0, high=np.inf):
+    def __init__(self, scale, shift=Default, high=Default):
         super().__init__()
         self.scale = scale
         self.shift = shift
@@ -276,15 +277,18 @@ class UniformHypersphere(Distribution):
         Ignored if ``surface`` is ``True``.
     """
 
-    surface = BoolParam("surface")
-    min_magnitude = NumberParam("min_magnitude", low=0, high=1, high_open=True)
+    surface = BoolParam("surface", default=False, readonly=True)
+    min_magnitude = NumberParam(
+        "min_magnitude", default=0, low=0, high=1, high_open=True, readonly=True
+    )
 
-    def __init__(self, surface=False, min_magnitude=0):
+    def __init__(self, surface=Default, min_magnitude=Default):
         super().__init__()
-        if surface and min_magnitude > 0:
-            warnings.warn("min_magnitude ignored because surface is True")
         self.surface = surface
         self.min_magnitude = min_magnitude
+
+        if self.surface and self.min_magnitude > 0:
+            warnings.warn("min_magnitude ignored because surface is True")
 
     def sample(self, n, d=None, rng=np.random):
         if d is None or d < 1:  # check this, since other dists allow d = None
@@ -324,9 +328,11 @@ class Choice(Distribution):
     """
 
     options = NdarrayParam("options", shape=("*", "..."))
-    weights = NdarrayParam("weights", shape=("*"), optional=True)
+    weights = NdarrayParam(
+        "weights", default=None, shape=("*"), optional=True, readonly=True
+    )
 
-    def __init__(self, options, weights=None):
+    def __init__(self, options, weights=Default):
         super().__init__()
         self.options = options
         self.weights = weights
@@ -444,7 +450,7 @@ class SqrtBeta(Distribution):
     """
 
     n = IntParam("n", low=0)
-    m = IntParam("m", low=0)
+    m = IntParam("m", default=1, low=0, readonly=True)
 
     def __init__(self, n, m=1):
         super().__init__()

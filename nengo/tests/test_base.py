@@ -1,8 +1,9 @@
 import pytest
 
 import nengo
-from nengo.base import NengoObjectParam
+from nengo.base import FrozenObject, NengoObjectParam
 from nengo.exceptions import ValidationError
+from nengo.params import NumberParam
 
 
 def test_nengoobjectparam():
@@ -49,3 +50,33 @@ def test_nengoobjectparam_nonzero():
 
         inst.nin = nout
         inst.nout = nin
+
+
+def test_frozenobject_reprs():
+    class TestFO(FrozenObject):
+        a = NumberParam("a", default=3, readonly=True)
+        b = NumberParam("b")
+
+        def __init__(self, a, b=4):
+            super().__init__()
+            self.a = a
+            self.b = b
+
+    # test that parameters are only shown in repr if their values are different
+    # than the default, for both parameter defaults and argument defaults
+    assert repr(TestFO(3)) == "TestFO()"
+    assert repr(TestFO(2)) == "TestFO(a=2)"
+    assert repr(TestFO(2, b=3)) == "TestFO(a=2, b=3)"
+
+
+def test_frozenobject_missing_arg_repr():
+    class TestFO(FrozenObject):
+        a = NumberParam("a", default=3, readonly=True)
+
+        def __init__(self, a, b=4):
+            super().__init__()
+            self.a = a
+
+    fobj = TestFO(3)
+    assert repr(fobj).startswith("<TestFO at")
+    assert fobj._argreprs == "Cannot find 'b'"

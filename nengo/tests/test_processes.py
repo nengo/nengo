@@ -539,3 +539,37 @@ class TestPiecewise:
         with pytest.warns(UserWarning):
             process = Piecewise({0.05: 0, 0.1: func}, interpolation="linear")
         assert process.interpolation == "zero"
+
+
+def test_argreprs():
+    """Test repr() for each process type."""
+    assert repr(WhiteNoise()) == "WhiteNoise()"
+    assert repr(WhiteNoise(scale=False)) == "WhiteNoise(scale=False)"
+    assert repr(FilteredNoise()) == "FilteredNoise()"
+    assert repr(FilteredNoise(scale=False)) == "FilteredNoise(scale=False)"
+    assert repr(BrownNoise()) == "BrownNoise()"
+    assert (
+        repr(PresentInput([1.2, 3.4], 5))
+        == "PresentInput(inputs=array([1.2, 3.4]), presentation_time=5)"
+    )
+    assert repr(WhiteSignal(1, 2)) == "WhiteSignal(period=1, high=2)"
+    assert (
+        repr(WhiteSignal(period=1.2, high=3.4, rms=5.6, y0=7.8))
+        == "WhiteSignal(period=1.2, high=3.4, rms=5.6, y0=7.8)"
+    )
+
+    assert (
+        repr(Piecewise({1: 0.1, 2: 0.2, 3: 0.3}))
+        == "Piecewise(data={1: array([0.1]), 2: array([0.2]), 3: array([0.3])})"
+    )
+
+
+def test_piecewise_repr():
+    """Test repr() for piecewise."""
+    pytest.importorskip("scipy.optimize")
+    for interpolation in ("linear", "nearest", "slinear", "quadratic", "cubic"):
+        assert (
+            repr(Piecewise({1: 0.1, 2: 0.2, 3: 0.3}, interpolation))
+            == "Piecewise(data={1: array([0.1]), 2: array([0.2]), 3: array([0.3])}, "
+            "interpolation=%r)" % interpolation
+        )

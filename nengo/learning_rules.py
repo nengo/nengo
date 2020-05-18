@@ -1,11 +1,10 @@
 import warnings
 
-from nengo.config import SupportDefaultsMixin
+from nengo.base import FrozenObject
 from nengo.exceptions import ValidationError
 from nengo.params import (
     Default,
     IntParam,
-    FrozenObject,
     NumberParam,
     Parameter,
 )
@@ -30,7 +29,7 @@ class LearningRuleTypeSizeInParam(IntParam):
             return super().coerce(instance, size_in)  # IntParam validation
 
 
-class LearningRuleType(FrozenObject, SupportDefaultsMixin):
+class LearningRuleType(FrozenObject):
     """Base class for all learning rule objects.
 
     To use a learning rule, pass it as a ``learning_rule_type`` keyword
@@ -80,25 +79,13 @@ class LearningRuleType(FrozenObject, SupportDefaultsMixin):
     modifies = None
     probeable = ()
 
-    learning_rate = NumberParam("learning_rate", low=0, readonly=True, default=1e-6)
-    size_in = LearningRuleTypeSizeInParam("size_in", low=0)
+    learning_rate = NumberParam("learning_rate", default=1e-6, low=0, readonly=True)
+    size_in = LearningRuleTypeSizeInParam("size_in", default=0, low=0, readonly=True)
 
-    def __init__(self, learning_rate=Default, size_in=0):
+    def __init__(self, learning_rate=Default, size_in=Default):
         super().__init__()
         self.learning_rate = learning_rate
         self.size_in = size_in
-
-    def __repr__(self):
-        r = []
-        for name, default in self._argdefaults:
-            value = getattr(self, name)
-            if value != default:
-                r.append("%s=%r" % (name, value))
-        return "%s(%s)" % (type(self).__name__, ", ".join(r))
-
-    @property
-    def _argdefaults(self):
-        return (("learning_rate", LearningRuleType.learning_rate.default),)
 
 
 class PES(LearningRuleType):
@@ -125,7 +112,7 @@ class PES(LearningRuleType):
     modifies = "decoders"
     probeable = ("error", "activities", "delta")
 
-    learning_rate = NumberParam("learning_rate", low=0, readonly=True, default=1e-4)
+    learning_rate = NumberParam("learning_rate", default=1e-4, low=0, readonly=True)
     pre_synapse = SynapseParam("pre_synapse", default=Lowpass(tau=0.005), readonly=True)
 
     def __init__(self, learning_rate=Default, pre_synapse=Default):
@@ -138,12 +125,12 @@ class PES(LearningRuleType):
 
         self.pre_synapse = pre_synapse
 
-    @property
-    def _argdefaults(self):
-        return (
-            ("learning_rate", PES.learning_rate.default),
-            ("pre_synapse", PES.pre_synapse.default),
-        )
+
+def _remove_default_post_synapse(argreprs, default):
+    default_post_synapse = "post_synapse=%r" % (default,)
+    if default_post_synapse in argreprs:
+        argreprs.remove(default_post_synapse)
+    return argreprs
 
 
 class BCM(LearningRuleType):
@@ -190,7 +177,7 @@ class BCM(LearningRuleType):
     modifies = "weights"
     probeable = ("theta", "pre_filtered", "post_filtered", "delta")
 
-    learning_rate = NumberParam("learning_rate", low=0, readonly=True, default=1e-9)
+    learning_rate = NumberParam("learning_rate", default=1e-9, low=0, readonly=True)
     pre_synapse = SynapseParam("pre_synapse", default=Lowpass(tau=0.005), readonly=True)
     post_synapse = SynapseParam("post_synapse", default=None, readonly=True)
     theta_synapse = SynapseParam(
@@ -213,13 +200,8 @@ class BCM(LearningRuleType):
         self.theta_synapse = theta_synapse
 
     @property
-    def _argdefaults(self):
-        return (
-            ("learning_rate", BCM.learning_rate.default),
-            ("pre_synapse", BCM.pre_synapse.default),
-            ("post_synapse", self.pre_synapse),
-            ("theta_synapse", BCM.theta_synapse.default),
-        )
+    def _argreprs(self):
+        return _remove_default_post_synapse(super()._argreprs, self.pre_synapse)
 
 
 class Oja(LearningRuleType):
@@ -267,10 +249,10 @@ class Oja(LearningRuleType):
     modifies = "weights"
     probeable = ("pre_filtered", "post_filtered", "delta")
 
-    learning_rate = NumberParam("learning_rate", low=0, readonly=True, default=1e-6)
+    learning_rate = NumberParam("learning_rate", default=1e-6, low=0, readonly=True)
     pre_synapse = SynapseParam("pre_synapse", default=Lowpass(tau=0.005), readonly=True)
     post_synapse = SynapseParam("post_synapse", default=None, readonly=True)
-    beta = NumberParam("beta", low=0, readonly=True, default=1.0)
+    beta = NumberParam("beta", default=1.0, low=0, readonly=True)
 
     def __init__(
         self,
@@ -288,13 +270,8 @@ class Oja(LearningRuleType):
         )
 
     @property
-    def _argdefaults(self):
-        return (
-            ("learning_rate", Oja.learning_rate.default),
-            ("pre_synapse", Oja.pre_synapse.default),
-            ("post_synapse", self.pre_synapse),
-            ("beta", Oja.beta.default),
-        )
+    def _argreprs(self):
+        return _remove_default_post_synapse(super()._argreprs, self.pre_synapse)
 
 
 class Voja(LearningRuleType):
@@ -326,7 +303,7 @@ class Voja(LearningRuleType):
     modifies = "encoders"
     probeable = ("post_filtered", "scaled_encoders", "delta")
 
-    learning_rate = NumberParam("learning_rate", low=0, readonly=True, default=1e-2)
+    learning_rate = NumberParam("learning_rate", default=1e-2, low=0, readonly=True)
     post_synapse = SynapseParam(
         "post_synapse", default=Lowpass(tau=0.005), readonly=True
     )
@@ -335,13 +312,6 @@ class Voja(LearningRuleType):
         super().__init__(learning_rate, size_in=1)
 
         self.post_synapse = post_synapse
-
-    @property
-    def _argdefaults(self):
-        return (
-            ("learning_rate", Voja.learning_rate.default),
-            ("post_synapse", Voja.post_synapse.default),
-        )
 
 
 class LearningRuleTypeParam(Parameter):

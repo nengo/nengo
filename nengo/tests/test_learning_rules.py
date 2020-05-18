@@ -706,3 +706,31 @@ def test_null_error(Simulator):
 
         # works with encoder learning rules (since they don't require a transform)
         nengo.Connection(a.neurons, b, learning_rule_type=Voja(), transform=None)
+
+
+def test_argreprs():
+    """Test repr() for each learning rule type."""
+    assert repr(PES()) == "PES()"
+    assert (
+        repr(PES(learning_rate=0.1, pre_synapse=0.2))
+        == "PES(learning_rate=0.1, pre_synapse=Lowpass(tau=0.2))"
+    )
+    assert repr(BCM()) == "BCM()"
+    assert (
+        repr(
+            BCM(learning_rate=0.1, pre_synapse=0.2, post_synapse=0.3, theta_synapse=0.4)
+        )
+        == "BCM(learning_rate=0.1, pre_synapse=Lowpass(tau=0.2), "
+        "post_synapse=Lowpass(tau=0.3), theta_synapse=Lowpass(tau=0.4))"
+    )
+    assert repr(Oja()) == "Oja()"
+    assert (
+        repr(Oja(learning_rate=0.1, pre_synapse=0.2, post_synapse=0.3, beta=0.4))
+        == "Oja(learning_rate=0.1, pre_synapse=Lowpass(tau=0.2), "
+        "post_synapse=Lowpass(tau=0.3), beta=0.4)"
+    )
+    assert repr(Voja()) == "Voja()"
+    assert (
+        repr(Voja(learning_rate=0.1, post_synapse=0.2))
+        == "Voja(learning_rate=0.1, post_synapse=Lowpass(tau=0.2))"
+    )
