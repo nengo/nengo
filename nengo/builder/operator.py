@@ -86,17 +86,22 @@ class Operator:
         self._updates = None
 
     def __repr__(self):
-        return "<%s %s at 0x%x>" % (type(self).__name__, self._tagstr(), id(self))
+        return "<%s%s at 0x%x>" % (
+            type(self).__name__,
+            "" if self.tag is None else " %r" % self.tag,
+            id(self),
+        )
 
     def __str__(self):
-        strs = (s for s in (self._descstr(), self._tagstr()) if s)
-        return "%s{%s}" % (type(self).__name__, " ".join(strs))
+        return "%s{%s%s}" % (
+            type(self).__name__,
+            self._descstr,
+            "" if self.tag is None else " %r" % self.tag,
+        )
 
+    @property
     def _descstr(self):
         return ""
-
-    def _tagstr(self):
-        return (' "%s"' % self.tag) if self.tag is not None else ""
 
     @property
     def all_signals(self):
@@ -289,6 +294,7 @@ class Reset(Operator):
     def dst(self):
         return self.sets[0]
 
+    @property
     def _descstr(self):
         return str(self.dst)
 
@@ -376,6 +382,7 @@ class Copy(Operator):
     def src(self):
         return self.reads[0]
 
+    @property
     def _descstr(self):
         def sigstring(sig, sl):
             return "%s%s" % (sig, ("[%s]" % (sl,)) if sl is not None else "")
@@ -480,6 +487,7 @@ class ElementwiseInc(Operator):
     def Y(self):
         return self.incs[0]
 
+    @property
     def _descstr(self):
         return "%s, %s -> %s" % (self.A, self.X, self.Y)
 
@@ -604,6 +612,7 @@ class DotInc(Operator):
     def Y(self):
         return self.incs[0]
 
+    @property
     def _descstr(self):
         return "%s, %s -> %s" % (self.A, self.X, self.Y)
 
@@ -791,6 +800,7 @@ class SimPyFunc(Operator):
     def x(self):
         return self.reads[-1] if self.x_passed else None
 
+    @property
     def _descstr(self):
         return "%s -> %s, fn=%r" % (self.x, self.output, function_name(self.fn))
 

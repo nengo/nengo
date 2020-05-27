@@ -6,7 +6,7 @@ Other Nengo backends provide more specialized Simulators for custom platforms.
 
 import logging
 import warnings
-from collections import Mapping
+from collections.abc import Mapping
 
 import numpy as np
 
@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 class Simulator:
-    """Reference simulator for Nengo models.
+    r"""Reference simulator for Nengo models.
 
     The simulator takes a `.Network` and builds internal data structures to
     run the model defined by that network. Run the simulator with the
@@ -38,21 +38,64 @@ class Simulator:
 
     .. testcode::
 
-       with nengo.Network() as my_network:
-           my_ensemble = nengo.Ensemble(10, 1)
-           my_probe = nengo.Probe(my_ensemble)
-
-       with nengo.Simulator(my_network) as sim:
+       with nengo.Network() as net:
+           ensemble = nengo.Ensemble(10, 1)
+       with nengo.Simulator(net, progress_bar=False) as sim:
            sim.run(0.1)
-       print(sim.data[my_probe])
-
-    .. testoutput::
-       :hide:
-
-       ...
 
     Note that the ``data`` attribute is still accessible even when a simulator
     has been closed. Running the simulator, however, will raise an error.
+
+    When debugging or comparing models, it can be helpful to see the full ordered
+    list of operators that the simulator will execute on each timestep.
+
+    .. testcode::
+
+       with nengo.Simulator(nengo.Network(), progress_bar=False) as sim:
+           print('\n'.join("* %s" % op for op in sim.step_order))
+
+    .. testoutput::
+
+       * TimeUpdate{}
+
+    The diff of two simulators' sorted ops tells us how two built models differ.
+    We can use ``difflib`` in the Python standard library to see the differences.
+
+    .. testcode::
+
+       # Original model
+       with nengo.Network() as net:
+           ensemble = nengo.Ensemble(10, 1, label="Ensemble")
+       sim1 = nengo.Simulator(net, progress_bar=False)
+
+       # Add a node
+       with net:
+           node = nengo.Node(output=0, label="Node")
+           nengo.Connection(node, ensemble)
+       sim2 = nengo.Simulator(net, progress_bar=False)
+
+       import difflib
+
+       print("".join(difflib.unified_diff(
+           sorted("%s: %s\n" % (type(op).__name__, op.tag) for op in sim1.step_order),
+           sorted("%s: %s\n" % (type(op).__name__, op.tag) for op in sim2.step_order),
+           fromfile="sim1",
+           tofile="sim2",
+           n=0,
+       )).strip())
+
+       sim1.close()
+       sim2.close()
+
+    .. testoutput::
+       :options:
+
+       --- sim1
+       +++ sim2
+       @@ -0,0 +1 @@
+       +Copy: <Connection from <Node "Node"> to <Ensemble "Ensemble">>
+       @@ -4,0 +6 @@
+       +SimProcess: Lowpass(tau=0.005)
 
     Parameters
     ----------
@@ -219,6 +262,11 @@ class Simulator:
     def n_steps(self):
         """(int) The current time step of the simulator."""
         return self._n_steps
+
+    @property
+    def step_order(self):
+        """(list) The ordered list of step functions run by this simulator."""
+        return self._step_order
 
     @property
     def time(self):

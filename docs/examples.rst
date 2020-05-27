@@ -116,12 +116,3 @@ Under the hood
    examples/usage/rectified-linear
    examples/advanced/nef-summary
    examples/advanced/nef-algorithm
-
-Reference
----------
-
-.. toctree::
-   :maxdepth: 1
-
-   examples/usage/exceptions
-   examples/usage/strings

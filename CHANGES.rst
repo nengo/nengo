@@ -26,6 +26,9 @@ Release history
 
 - Added a new example notebook for Legendre Memory Units.
   (`#1589 <https://github.com/nengo/nengo/pull/1589>`__)
+- Added the ``step_order`` attribute to ``nengo.Simulator``, which contains an
+  ordered list of the operations run on each timestep.
+  (`#1615 <https://github.com/nengo/nengo/pull/1615>`__)
 
 **Changed**
 

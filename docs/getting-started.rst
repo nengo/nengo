@@ -181,7 +181,7 @@ meaning that ``my_ensemble`` will now represent
 
 Ensembles can also be connected to other models.
 When the dimensionality of the objects being
-connectd are different, we can use Python's
+connected are different, we can use Python's
 slice syntax to route information from
 one node or ensemble to another.
 For example:

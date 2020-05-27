@@ -87,6 +87,7 @@ class SimProcess(Operator):
     def t(self):
         return self.reads[0]
 
+    @property
     def _descstr(self):
         return "%s, %s -> %s" % (self.process, self.input, self.output)
 
@@ -155,7 +156,15 @@ def build_process(model, process, sig_in=None, sig_out=None, mode="set"):
         model.sig[process]["_state_" + name] = state[name]
 
     model.add_op(
-        SimProcess(process, sig_in, sig_out, model.time, mode=mode, state=state)
+        SimProcess(
+            process,
+            sig_in,
+            sig_out,
+            model.time,
+            mode=mode,
+            state=state,
+            tag=str(process),
+        )
     )
 
     return sig_out

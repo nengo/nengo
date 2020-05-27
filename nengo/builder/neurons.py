@@ -72,6 +72,7 @@ class SimNeurons(Operator):
     def states(self):
         return self.sets[1:]
 
+    @property
     def _descstr(self):
         return "%s, %s, %s" % (self.neurons, self.J, self.output)
 

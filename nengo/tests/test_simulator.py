@@ -12,7 +12,7 @@ from nengo.builder.ensemble import BuiltEnsemble
 from nengo.builder.operator import DotInc
 from nengo.builder.signal import Signal
 from nengo.exceptions import SimulatorClosed, ValidationError
-from nengo.rc import rc
+from nengo.rc import rc, RC_DEFAULTS
 from nengo.utils.progress import ProgressBar
 
 
@@ -36,7 +36,9 @@ def test_steps(Simulator, allclose):
 @pytest.mark.parametrize("bits", ["16", "32", "64"])
 def test_dtype(Simulator, request, seed, bits):
     # Ensure dtype is set back to default after the test, even if it fails
-    request.addfinalizer(lambda: rc.set("precision", "bits", "64"))
+    request.addfinalizer(
+        lambda: rc.set("precision", "bits", str(RC_DEFAULTS["precision"]["bits"]))
+    )
 
     float_dtype = np.dtype(getattr(np, "float%s" % bits))
     int_dtype = np.dtype(getattr(np, "int%s" % bits))

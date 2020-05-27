@@ -95,6 +95,7 @@ class SimPES(Operator):
     def pre_filtered(self):
         return self.reads[0]
 
+    @property
     def _descstr(self):
         return "pre=%s, error=%s -> %s" % (self.pre_filtered, self.error, self.delta)
 
@@ -198,6 +199,7 @@ class SimBCM(Operator):
     def theta(self):
         return self.reads[2]
 
+    @property
     def _descstr(self):
         return "pre=%s, post=%s -> %s" % (
             self.pre_filtered,
@@ -305,6 +307,7 @@ class SimOja(Operator):
     def weights(self):
         return self.reads[2]
 
+    @property
     def _descstr(self):
         return "pre=%s, post=%s -> %s" % (
             self.pre_filtered,
@@ -428,6 +431,7 @@ class SimVoja(Operator):
     def weights(self):
         return self.reads[2]
 
+    @property
     def _descstr(self):
         return "pre=%s, post=%s -> %s" % (
             self.pre_decoded,

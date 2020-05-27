@@ -169,6 +169,7 @@ class ConvInc(Operator):
     def Y(self):
         return self.incs[0]
 
+    @property
     def _descstr(self):
         return "conv2d(%s, %s) -> %s" % (self.W, self.X, self.Y)
 
