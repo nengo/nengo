@@ -66,7 +66,7 @@ class Solver(FrozenObject):
             Matrix of the neurons' activities at the evaluation points.
         Y : (n_eval_points, n_targets) array_like
             Matrix of target values at the evaluation points.
-        rng : `numpy.random.mtrand.RandomState`, optional
+        rng : `numpy.random.RandomState`, optional
             A random number generator to use as required.
 
         Returns

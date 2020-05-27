@@ -178,7 +178,7 @@ class Operator:
             A mapping from signals to their associated live ndarrays.
         dt : float
             Length of each simulation timestep, in seconds.
-        rng : `numpy.random.mtrand.RandomState`
+        rng : `numpy.random.RandomState`
             Random number generator for stochastic operators.
         """
         raise NotImplementedError("subclasses must implement this method.")
