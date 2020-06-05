@@ -42,12 +42,11 @@ class Mock:
     def __getattr__(cls, name):
         if name in ("__file__", "__path__"):
             return "/dev/null"
-        elif name[0] == name[0].upper():
+        if name[0] == name[0].upper():
             mockType = type(name, (), {})
             mockType.__module__ = __name__
             return mockType
-        else:
-            return Mock()
+        return Mock()
 
 
 def isstrictsubclass(x, cls):
@@ -86,52 +85,33 @@ class SolverMock:
         self.n_calls[self] += 1
         if E is None:
             return np.random.rand(x.shape[1], targets.shape[1]), {"info": "v"}
-        else:
-            return np.random.rand(x.shape[1], E.shape[1]), {"info": "v"}
+        return np.random.rand(x.shape[1], E.shape[1]), {"info": "v"}
 
 
-def get_solver_test_args(**kwargs):
-    M = 100
-    N = 10
-    D = 2
+def get_solver_test_args(
+    n_eval_points=100,
+    n_neurons=10,
+    dimensions=2,
+    solver=nengo.solvers.LstsqL2nz(),
+    weights=False,
+):
     conn = nengo.Connection(
-        nengo.Ensemble(N, D, add_to_container=False),
-        nengo.Node(size_in=D, add_to_container=False),
+        nengo.Ensemble(n_neurons, dimensions, add_to_container=False),
+        nengo.Node(size_in=dimensions, add_to_container=False),
+        solver=solver,
         add_to_container=False,
     )
-    conn.solver = kwargs.pop("solver", nengo.solvers.LstsqL2nz())
     defaults = {
         "conn": conn,
-        "gain": np.ones(N),
-        "bias": np.ones(N),
-        "x": np.ones((M, D)),
-        "targets": np.ones((M, N)),
+        "gain": np.ones(n_neurons),
+        "bias": np.ones(n_neurons),
+        "x": np.ones((n_eval_points, dimensions)),
+        "targets": np.ones((n_eval_points, n_neurons)),
         "rng": np.random.RandomState(42),
     }
-    defaults.update(kwargs)
+    if weights:
+        defaults["E"] = np.ones((dimensions, n_neurons // 2))
     return defaults
-
-
-def get_weight_solver_test_args():
-    M = 100
-    N = 10
-    N2 = 5
-    D = 2
-    conn = nengo.Connection(
-        nengo.Ensemble(N, D, add_to_container=False),
-        nengo.Node(size_in=D, add_to_container=False),
-        solver=nengo.solvers.LstsqL2nz(),
-        add_to_container=False,
-    )
-    return {
-        "conn": conn,
-        "gain": np.ones(N),
-        "bias": np.ones(N),
-        "x": np.ones((M, D)),
-        "targets": np.ones((M, N)),
-        "rng": np.random.RandomState(42),
-        "E": np.ones((D, N2)),
-    }
 
 
 def test_decoder_cache(tmpdir):
@@ -310,11 +290,11 @@ def test_decoder_cache_with_E_argument_to_solver(tmpdir):
 
     with DecoderCache(cache_dir=cache_dir) as cache:
         decoders1, solver_info1 = cache.wrap_solver(solver_mock)(
-            **get_weight_solver_test_args()
+            **get_solver_test_args(weights=True)
         )
         assert SolverMock.n_calls[solver_mock] == 1
         decoders2, solver_info2 = cache.wrap_solver(solver_mock)(
-            **get_weight_solver_test_args()
+            **get_solver_test_args(weights=True)
         )
         assert SolverMock.n_calls[solver_mock] == 1  # read from cache?
         assert_equal(decoders1, decoders2)
@@ -369,7 +349,6 @@ def test_fingerprinting(reference, equal, different):
     (
         np.array([object()]),  # array
         np.array([(1.0,)], dtype=[("field1", "f8")]),  # array
-        {"a": 1, "b": 2},  # dict
         object(),  # object instance
         dummy_fn,  # function
     ),

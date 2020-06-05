@@ -49,10 +49,13 @@ def iter_params(obj):
 
 def equal(a, b):
     """Check if two (possibly array-like) objects are equal."""
+    if isinstance(a, dict) and isinstance(b, dict):
+        return set(a) == set(b) and all(equal(a[key], b[key]) for key in a)
+
     if is_array_like(a) or is_array_like(b):
         return np.array_equal(a, b)
-    else:
-        return a == b
+
+    return a == b
 
 
 class Parameter:
@@ -422,9 +425,22 @@ class ShapeParam(TupleParam):
 class DictParam(Parameter):
     """A parameter where the value is a dictionary."""
 
+    equatable = True
+
     def coerce(self, instance, value):
         self.check_type(instance, value, dict)
         return super().coerce(instance, value)
+
+    def hashvalue(self, instance):
+        d = self.__get__(instance, None)
+        if d is None:
+            return hash(d)
+        return hash(
+            tuple(
+                (k, array_hash(v) if is_array_like(v) else hash(v))
+                for k, v in d.items()
+            )
+        )
 
 
 class NdarrayParam(Parameter):

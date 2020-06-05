@@ -14,6 +14,18 @@ import warnings
 
 import numpy as np
 
+from nengo.dists import (
+    Choice,
+    CosineSimilarity,
+    Exponential,
+    Gaussian,
+    PDF,
+    Samples,
+    SqrtBeta,
+    SubvectorLength,
+    Uniform,
+    UniformHypersphere,
+)
 from nengo.exceptions import (
     CacheIOError,
     CacheIOWarning,
@@ -108,6 +120,14 @@ def check_seq(tpl):
     return all(Fingerprint.supports(x) for x in tpl)
 
 
+def check_mapping(mapping):
+    """Check that all values in dict are fingerprintable."""
+    return all(
+        isinstance(key, str) and Fingerprint.supports(val)
+        for key, val in mapping.items()
+    )
+
+
 def check_attrs(obj):
     """Check that all attributes of ``obj`` are fingerprintable."""
     attrs = [getattr(obj, x) for x in dir(obj) if not x.startswith("_")]
@@ -180,15 +200,45 @@ class Fingerprint:
         Sigmoid,
         SpikingRectifiedLinear,
     )
+    DISTRIBUTIONS = (
+        Choice,
+        CosineSimilarity,
+        Exponential,
+        Gaussian,
+        PDF,
+        Samples,
+        SqrtBeta,
+        SubvectorLength,
+        Uniform,
+        UniformHypersphere,
+    )
 
     WHITELIST = set(
-        (type(None), bool, float, complex, bytes, list, tuple, np.ndarray, int, str)
+        (
+            type(None),
+            bool,
+            float,
+            complex,
+            bytes,
+            list,
+            tuple,
+            np.ndarray,
+            int,
+            str,
+            dict,
+        )
         + SOLVERS
         + LSTSQ_METHODS
         + NEURON_TYPES
+        + DISTRIBUTIONS
     )
     CHECKS = dict(
-        [(np.ndarray, check_dtype), (tuple, check_seq), (list, check_seq)]
+        [
+            (np.ndarray, check_dtype),
+            (tuple, check_seq),
+            (list, check_seq),
+            (dict, check_mapping),
+        ]
         + [(_x, check_attrs) for _x in SOLVERS + LSTSQ_METHODS + NEURON_TYPES]
     )
 
