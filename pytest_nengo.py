@@ -146,29 +146,40 @@ def pytest_generate_tests(metafunc):
         for m in getattr(metafunc.function, "pytestmark", [])
     ]
 
-    def mark_nl(nl):
-        if nl.__name__ == "Sigmoid":
-            nl = pytest.param(
-                nl,
+    def mark_neuron_type(NeuronType):
+        if NeuronType.__name__ == "Sigmoid":
+            NeuronType = pytest.param(
+                NeuronType,
                 marks=[pytest.mark.filterwarnings("ignore:overflow encountered in exp")]
                 + marks,
             )
-        return nl
+        return NeuronType
 
-    neuron_types = [load_class(n) for n in metafunc.config.getini("nengo_neurons")]
+    all_neuron_types = [load_class(n) for n in metafunc.config.getini("nengo_neurons")]
 
-    if "nl" in metafunc.fixturenames:
-        metafunc.parametrize("nl", [mark_nl(nl) for nl in neuron_types])
-    if "nl_nodirect" in metafunc.fixturenames:
-        nodirect = [mark_nl(n) for n in neuron_types if n.__name__ != "Direct"]
-        metafunc.parametrize("nl_nodirect", nodirect)
-    if "nl_positive" in metafunc.fixturenames:
-        nodirect = [
-            mark_nl(n)
-            for n in neuron_types
-            if n.__name__ != "Direct" and not n.negative
-        ]
-        metafunc.parametrize("nl_positive", nodirect)
+    if "AnyNeuronType" in metafunc.fixturenames:
+        metafunc.parametrize(
+            "AnyNeuronType",
+            [mark_neuron_type(NeuronType) for NeuronType in all_neuron_types],
+        )
+    if "NonDirectNeuronType" in metafunc.fixturenames:
+        metafunc.parametrize(
+            "NonDirectNeuronType",
+            [
+                mark_neuron_type(NeuronType)
+                for NeuronType in all_neuron_types
+                if NeuronType.__name__ != "Direct"
+            ],
+        )
+    if "PositiveNeuronType" in metafunc.fixturenames:
+        metafunc.parametrize(
+            "PositiveNeuronType",
+            [
+                mark_neuron_type(NeuronType)
+                for NeuronType in all_neuron_types
+                if NeuronType.__name__ != "Direct" and not NeuronType.negative
+            ],
+        )
 
 
 def pytest_collection_modifyitems(session, config, items):

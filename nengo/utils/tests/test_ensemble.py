@@ -29,7 +29,7 @@ def test_tuning_curves_1d(Simulator, plt, seed):
 
 
 @pytest.mark.parametrize("dimensions", [1, 2])
-def test_tuning_curves(Simulator, nl_nodirect, plt, seed, dimensions):
+def test_tuning_curves(Simulator, NonDirectNeuronType, plt, seed, dimensions):
     radius = 10
     max_rate = 400
     model = nengo.Network(seed=seed)
@@ -37,7 +37,7 @@ def test_tuning_curves(Simulator, nl_nodirect, plt, seed, dimensions):
         ens = nengo.Ensemble(
             10,
             dimensions=dimensions,
-            neuron_type=nl_nodirect(),
+            neuron_type=NonDirectNeuronType(),
             max_rates=Uniform(200, max_rate),
             radius=radius,
         )
@@ -49,7 +49,7 @@ def test_tuning_curves(Simulator, nl_nodirect, plt, seed, dimensions):
     # Check that eval_points cover up to the radius.
     assert np.abs(radius - np.max(np.abs(eval_points))) <= (2 * radius / dimensions)
 
-    if not nl_nodirect.negative:
+    if not NonDirectNeuronType.negative:
         assert np.all(activities >= 0)
 
     d = np.sqrt(np.sum(np.asarray(eval_points) ** 2, axis=-1))
@@ -71,14 +71,14 @@ def test_tuning_curves_direct_mode(Simulator, plt, seed, dimensions, allclose):
     assert allclose(eval_points, activities)
 
 
-def test_response_curves(Simulator, nl_nodirect, plt, seed):
+def test_response_curves(Simulator, NonDirectNeuronType, plt, seed):
     max_rate = 400
     model = nengo.Network(seed=seed)
     with model:
         ens = nengo.Ensemble(
             10,
             dimensions=10,
-            neuron_type=nl_nodirect(),
+            neuron_type=NonDirectNeuronType(),
             radius=1.5,
             max_rates=Uniform(200, max_rate),
         )
@@ -91,7 +91,7 @@ def test_response_curves(Simulator, nl_nodirect, plt, seed):
     assert eval_points.ndim == 1 and eval_points.size > 0
     assert np.all(eval_points >= -1.0) and np.all(eval_points <= 1.0)
 
-    if not nl_nodirect.negative:
+    if not NonDirectNeuronType.negative:
         assert np.all(activities >= 0.0)
 
     assert np.all(activities <= max_rate)

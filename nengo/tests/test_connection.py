@@ -14,12 +14,12 @@ from nengo.transforms import Dense, NoTransform
 from nengo.utils.testing import signals_allclose
 
 
-def test_args(nl, seed, rng):
+def test_args(AnyNeuronType, seed, rng):
     N = 10
     d1, d2 = 3, 2
 
     with nengo.Network(seed=seed) as model:
-        model.config[nengo.Ensemble].neuron_type = nl()
+        model.config[nengo.Ensemble].neuron_type = AnyNeuronType()
         A = nengo.Ensemble(N, dimensions=d1)
         B = nengo.Ensemble(N, dimensions=d2)
         nengo.Connection(
@@ -32,12 +32,12 @@ def test_args(nl, seed, rng):
         )
 
 
-def test_node_to_neurons(Simulator, nl_nodirect, plt, seed, allclose):
+def test_node_to_neurons(Simulator, NonDirectNeuronType, plt, seed, allclose):
     N = 50
 
     m = nengo.Network(seed=seed)
     with m:
-        m.config[nengo.Ensemble].neuron_type = nl_nodirect()
+        m.config[nengo.Ensemble].neuron_type = NonDirectNeuronType()
         a = nengo.Ensemble(N, dimensions=1)
         inn = nengo.Node(output=np.sin)
         inh = nengo.Node(Piecewise({0: 0, 0.5: 1}))
@@ -63,9 +63,9 @@ def test_node_to_neurons(Simulator, nl_nodirect, plt, seed, allclose):
     assert allclose(sim.data[a_p][-10:], 0, atol=0.1, rtol=0.01)
 
 
-def test_ensemble_to_neurons(Simulator, nl_positive, plt, seed, allclose):
+def test_ensemble_to_neurons(Simulator, PositiveNeuronType, plt, seed, allclose):
     with nengo.Network(seed=seed) as net:
-        net.config[nengo.Ensemble].neuron_type = nl_positive()
+        net.config[nengo.Ensemble].neuron_type = PositiveNeuronType()
         ens = nengo.Ensemble(40, dimensions=1)
         inhibitor = nengo.Ensemble(40, dimensions=1)
         stim = nengo.Node(output=np.sin)
@@ -98,12 +98,12 @@ def test_ensemble_to_neurons(Simulator, nl_positive, plt, seed, allclose):
     assert allclose(sim.data[inhibitor_p][-10:], 1, atol=0.1, rtol=0.01)
 
 
-def test_node_to_ensemble(Simulator, nl_nodirect, plt, seed, allclose):
+def test_node_to_ensemble(Simulator, NonDirectNeuronType, plt, seed, allclose):
     N = 50
 
     m = nengo.Network(seed=seed)
     with m:
-        m.config[nengo.Ensemble].neuron_type = nl_nodirect()
+        m.config[nengo.Ensemble].neuron_type = NonDirectNeuronType()
         input_node = nengo.Node(output=lambda t: [np.sin(t * 3), np.cos(t * 3)])
         a = nengo.Ensemble(N * 1, dimensions=1)
         b = nengo.Ensemble(N * 1, dimensions=1)
@@ -151,12 +151,12 @@ def test_node_to_ensemble(Simulator, nl_nodirect, plt, seed, allclose):
     )
 
 
-def test_neurons_to_ensemble(Simulator, nl_positive, plt, seed):
+def test_neurons_to_ensemble(Simulator, PositiveNeuronType, plt, seed):
     N = 20
 
     m = nengo.Network(seed=seed)
     with m:
-        m.config[nengo.Ensemble].neuron_type = nl_positive()
+        m.config[nengo.Ensemble].neuron_type = PositiveNeuronType()
         a = nengo.Ensemble(N * 2, dimensions=2)
         b = nengo.Ensemble(N, dimensions=1)
         c = nengo.Ensemble(N, dimensions=N * 2)
@@ -182,12 +182,12 @@ def test_neurons_to_ensemble(Simulator, nl_positive, plt, seed):
     assert np.all(sim.data[b_p][-10:] < 0)
 
 
-def test_neurons_to_node(Simulator, nl_nodirect, plt, seed, allclose):
+def test_neurons_to_node(Simulator, NonDirectNeuronType, plt, seed, allclose):
     N = 5
 
     m = nengo.Network(seed=seed)
     with m:
-        m.config[nengo.Ensemble].neuron_type = nl_nodirect()
+        m.config[nengo.Ensemble].neuron_type = NonDirectNeuronType()
         a = nengo.Ensemble(N, dimensions=1, encoders=np.ones((N, 1)))
         out = nengo.Node(lambda t, x: x, size_in=N)
         nengo.Connection(nengo.Node(1), a)
@@ -213,12 +213,12 @@ def test_neurons_to_node(Simulator, nl_nodirect, plt, seed, allclose):
     assert allclose(sim.data[a_spikes], sim.data[out_p])
 
 
-def test_neurons_to_neurons(Simulator, nl_positive, plt, seed, allclose):
+def test_neurons_to_neurons(Simulator, PositiveNeuronType, plt, seed, allclose):
     N1, N2 = 50, 80
 
     m = nengo.Network(seed=seed)
     with m:
-        m.config[nengo.Ensemble].neuron_type = nl_positive()
+        m.config[nengo.Ensemble].neuron_type = PositiveNeuronType()
         a = nengo.Ensemble(N1, dimensions=1)
         b = nengo.Ensemble(N2, dimensions=1)
         inp = nengo.Node(output=1)
@@ -320,7 +320,7 @@ def test_dist_transform(Simulator, seed, allclose):
     assert allclose(w, sim.data[conn].weights)
 
 
-def test_weights(Simulator, nl, plt, seed, allclose):
+def test_weights(Simulator, AnyNeuronType, plt, seed, allclose):
     n1, n2 = 100, 50
 
     def func(t):
@@ -330,7 +330,7 @@ def test_weights(Simulator, nl, plt, seed, allclose):
 
     m = nengo.Network(label="test_weights", seed=seed)
     with m:
-        m.config[nengo.Ensemble].neuron_type = nl()
+        m.config[nengo.Ensemble].neuron_type = AnyNeuronType()
         u = nengo.Node(output=func)
         a = nengo.Ensemble(n1, dimensions=2, radius=1.4)
         b = nengo.Ensemble(n2, dimensions=1)
@@ -353,13 +353,13 @@ def test_weights(Simulator, nl, plt, seed, allclose):
     )
 
 
-def test_vector(Simulator, nl, plt, seed, allclose):
+def test_vector(Simulator, AnyNeuronType, plt, seed, allclose):
     N1, N2 = 50, 50
     transform = [-1, 0.5]
 
     m = nengo.Network(seed=seed)
     with m:
-        m.config[nengo.Ensemble].neuron_type = nl()
+        m.config[nengo.Ensemble].neuron_type = AnyNeuronType()
         u = nengo.Node(output=[0.5, 0.5])
         a = nengo.Ensemble(N1, dimensions=2)
         b = nengo.Ensemble(N2, dimensions=2)
@@ -382,10 +382,10 @@ def test_vector(Simulator, nl, plt, seed, allclose):
     assert allclose(y[-10:], yhat[-10:], atol=0.1, rtol=0.01)
 
 
-def test_dimensionality_errors(nl_nodirect, seed, rng):
+def test_dimensionality_errors(NonDirectNeuronType, seed, rng):
     N = 10
     with nengo.Network(seed=seed) as m:
-        m.config[nengo.Ensemble].neuron_type = nl_nodirect()
+        m.config[nengo.Ensemble].neuron_type = NonDirectNeuronType()
         n01 = nengo.Node(output=[1])
         n02 = nengo.Node(output=[1, 1])
         n21 = nengo.Node(output=lambda t, x: [1], size_in=2)
@@ -449,7 +449,7 @@ def test_dimensionality_errors(nl_nodirect, seed, rng):
             nengo.Connection(e2, e2[[1, 1]], transform=dense22)
 
 
-def test_slicing(Simulator, nl, plt, seed, allclose):
+def test_slicing(Simulator, AnyNeuronType, plt, seed, allclose):
     N = 300
 
     x = np.array([-1, -0.25, 1])
@@ -480,7 +480,7 @@ def test_slicing(Simulator, nl, plt, seed, allclose):
     weight_solver = nengo.solvers.LstsqL2(weights=True)
 
     with nengo.Network(seed=seed) as m:
-        m.config[nengo.Ensemble].neuron_type = nl()
+        m.config[nengo.Ensemble].neuron_type = AnyNeuronType()
 
         u = nengo.Node(output=x)
         a = nengo.Ensemble(N, dimensions=3, radius=1.7)
@@ -507,7 +507,7 @@ def test_slicing(Simulator, nl, plt, seed, allclose):
         plt.plot(t, np.tile(y, (len(t), 1)), "--")
         plt.plot(t, sim.data[p])
 
-    atol = 0.01 if nl is nengo.Direct else 0.1
+    atol = 0.01 if AnyNeuronType is nengo.Direct else 0.1
     for i, [y, p, wp] in enumerate(zip(ys, probes, weight_probes)):
         assert allclose(y, sim.data[p][-20:], atol=atol), "Failed %d" % i
         assert allclose(y, sim.data[wp][-20:], atol=atol), "Weights %d" % i
@@ -547,11 +547,11 @@ def test_neuron_slicing(Simulator, plt, seed, rng, allclose):
     assert allclose(y[-10:], sim.data[bp][-10:], atol=3.0, rtol=0.0)
 
 
-def test_shortfilter(Simulator, nl):
+def test_shortfilter(Simulator, AnyNeuronType):
     # Testing the case where the connection filter is < dt
     m = nengo.Network()
     with m:
-        m.config[nengo.Ensemble].neuron_type = nl()
+        m.config[nengo.Ensemble].neuron_type = AnyNeuronType()
         a = nengo.Ensemble(n_neurons=10, dimensions=1)
         nengo.Connection(a, a, synapse=0)
 
@@ -892,9 +892,9 @@ def test_prepost_errors(Simulator):
         Simulator(model3)
 
 
-def test_directneurons(nl_nodirect):
+def test_directneurons(NonDirectNeuronType):
     with nengo.Network():
-        a = nengo.Ensemble(1, 1, neuron_type=nl_nodirect())
+        a = nengo.Ensemble(1, 1, neuron_type=NonDirectNeuronType())
         b = nengo.Ensemble(1, 1, neuron_type=nengo.Direct())
 
         # cannot connect to or from direct neurons

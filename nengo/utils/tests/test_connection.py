@@ -8,9 +8,9 @@ from nengo.utils.numpy import rms
 
 
 @pytest.mark.parametrize("points_arg", [False, True])
-def test_eval_point_decoding(points_arg, Simulator, nl_nodirect, plt, seed):
+def test_eval_point_decoding(points_arg, Simulator, NonDirectNeuronType, plt, seed):
     with nengo.Network(seed=seed) as model:
-        model.config[nengo.Ensemble].neuron_type = nl_nodirect()
+        model.config[nengo.Ensemble].neuron_type = NonDirectNeuronType()
         a = nengo.Ensemble(200, 2)
         b = nengo.Ensemble(100, 1)
         c = nengo.Connection(a, b, function=lambda x: x[0] * x[1])

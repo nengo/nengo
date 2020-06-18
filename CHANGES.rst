@@ -44,6 +44,8 @@ Release history
   rounding to roughly match the rate specified by its base type. (`#1609`_)
 - Added the ``PoissonSpiking`` neuron type, which emits Poisson-distributed spikes,
   as are commonly used to match biological spiking statistics. (`#1609`_)
+- Added the ``PositiveNeuronType`` test argument to run tests on all neuron types
+  for which ``negative`` is not ``True``. (`#1609`_)
 
 **Changed**
 
@@ -64,6 +66,8 @@ Release history
   state variables and their default initial values. All ``__init__`` methods accept
   an ``initial_state`` dictionary for users to override the default initial state
   values. (`#1609`_)
+- The ``nl`` and ``nl_nodirect`` test arguments have been renamed to ``AnyNeuronType``
+  and ``NonDirectNeuronType``. (`#1609`_)
 
 **Deprecated**
 

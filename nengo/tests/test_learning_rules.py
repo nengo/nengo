@@ -18,7 +18,7 @@ def best_weights(weight_data):
 
 def _test_pes(
     Simulator,
-    nl,
+    AnyNeuronType,
     plt,
     seed,
     allclose,
@@ -35,7 +35,7 @@ def _test_pes(
     vout = np.array(vin) if vout is None else vout
 
     with nengo.Network(seed=seed) as model:
-        model.config[nengo.Ensemble].neuron_type = nl()
+        model.config[nengo.Ensemble].neuron_type = AnyNeuronType()
 
         stim = nengo.Node(output=vin)
         target = nengo.Node(output=vout)
@@ -87,9 +87,9 @@ def _test_pes(
     assert not allclose(weights[0], weights[-1], atol=1e-5, record_rmse=False)
 
 
-def test_pes_ens_ens(Simulator, nl_nodirect, plt, seed, allclose):
+def test_pes_ens_ens(Simulator, NonDirectNeuronType, plt, seed, allclose):
     function = lambda x: [x[1], x[0]]
-    _test_pes(Simulator, nl_nodirect, plt, seed, allclose, function=function)
+    _test_pes(Simulator, NonDirectNeuronType, plt, seed, allclose, function=function)
 
 
 def test_pes_weight_solver(Simulator, plt, seed, allclose):
@@ -479,7 +479,7 @@ def test_learningrule_attr(seed):
             check_rule(c3.learning_rule[key], c3, r3[key])
 
 
-def test_voja_encoders(Simulator, nl_positive, rng, seed, allclose):
+def test_voja_encoders(Simulator, PositiveNeuronType, rng, seed, allclose):
     """Tests that voja changes active encoders to the input."""
     n = 200
     learned_vector = np.asarray([0.3, -0.4, 0.6])
@@ -496,7 +496,7 @@ def test_voja_encoders(Simulator, nl_positive, rng, seed, allclose):
 
     m = nengo.Network(seed=seed)
     with m:
-        m.config[nengo.Ensemble].neuron_type = nl_positive()
+        m.config[nengo.Ensemble].neuron_type = PositiveNeuronType()
         u = nengo.Node(output=learned_vector)
         x = nengo.Ensemble(
             n,
@@ -542,7 +542,7 @@ def test_voja_encoders(Simulator, nl_positive, rng, seed, allclose):
     assert allclose(sim.data[p_enc], sim.data[p_enc_ens])
 
 
-def test_voja_modulate(Simulator, nl_nodirect, seed, allclose):
+def test_voja_modulate(Simulator, NonDirectNeuronType, seed, allclose):
     """Tests that voja's rule can be modulated on/off."""
     n = 200
     learned_vector = np.asarray([0.5])
@@ -553,7 +553,7 @@ def test_voja_modulate(Simulator, nl_nodirect, seed, allclose):
 
     m = nengo.Network(seed=seed)
     with m:
-        m.config[nengo.Ensemble].neuron_type = nl_nodirect()
+        m.config[nengo.Ensemble].neuron_type = NonDirectNeuronType()
         control = nengo.Node(output=control_signal)
         u = nengo.Node(output=learned_vector)
         x = nengo.Ensemble(n, dimensions=len(learned_vector))

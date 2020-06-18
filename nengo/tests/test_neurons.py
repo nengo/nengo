@@ -31,7 +31,7 @@ from nengo.utils.matplotlib import implot, rasterplot
 from nengo.utils.numpy import rms
 
 
-# --- define a composite neuron type, used in `nl` (see `pytest_nengo.py`)
+# --- define a composite neuron type, used in `AnyNeuronType` (see `pytest_nengo.py`)
 class SpikingTanh(RegularSpiking):
     def __init__(self, tau_ref=0.0025, amplitude=1.0, initial_state=None):
         super().__init__(
@@ -421,13 +421,13 @@ def test_spiking_types(base_type, seed, plt, allclose):
         assert allclose(rmse, tols["rmse_target"], atol=0.003, rtol=0.25), spiking_type
 
 
-def test_dt_dependence(Simulator, nl_nodirect, plt, seed, allclose):
+def test_dt_dependence(Simulator, NonDirectNeuronType, plt, seed, allclose):
     """Neurons should not wildly change with different dt."""
     freq = 10 * (2 * np.pi)
     input_signal = lambda t: [np.sin(freq * t), np.cos(freq * t)]
 
     with nengo.Network(seed=seed) as m:
-        m.config[nengo.Ensemble].neuron_type = nl_nodirect()
+        m.config[nengo.Ensemble].neuron_type = NonDirectNeuronType()
         u = nengo.Node(input_signal, size_out=2)
         pre = nengo.Ensemble(80, dimensions=2)
         square = nengo.Ensemble(80, dimensions=2)
@@ -515,11 +515,11 @@ def test_amplitude(Simulator, seed, rng, plt, allclose, Neuron):
     assert (error < 0.02).all()
 
 
-def test_reset(Simulator, nl_nodirect, seed, allclose):
+def test_reset(Simulator, NonDirectNeuronType, seed, allclose):
     """Make sure resetting actually resets."""
     m = nengo.Network(seed=seed)
     with m:
-        m.config[nengo.Ensemble].neuron_type = nl_nodirect()
+        m.config[nengo.Ensemble].neuron_type = NonDirectNeuronType()
         u = nengo.Node(WhiteSignal(0.3, high=10), size_out=2)
         ens = nengo.Ensemble(60, dimensions=2)
         square = nengo.Ensemble(60, dimensions=2)
@@ -595,8 +595,8 @@ def test_direct_mode_nonfinite_value(Simulator):
 
 
 @pytest.mark.parametrize("generic", (True, False))
-def test_gain_bias(rng, nl_nodirect, generic, allclose):
-    if nl_nodirect == Sigmoid and generic:
+def test_gain_bias(rng, NonDirectNeuronType, generic, allclose):
+    if NonDirectNeuronType == Sigmoid and generic:
         # the generic method doesn't work with sigmoid neurons (because they're
         # always positive). that's not a failure, because the sigmoid neurons
         # never need to use the generic method normally, so we'll just skip
@@ -606,30 +606,32 @@ def test_gain_bias(rng, nl_nodirect, generic, allclose):
     n = 100
     max_rates = rng.uniform(300, 400, size=n)
     intercepts = rng.uniform(-0.5, 0.5, size=n)
-    nl = nl_nodirect()
+    neuron_type = NonDirectNeuronType()
     tolerance = 0.1 if generic else 1e-8
 
     if generic:
-        gain, bias = NeuronType.gain_bias(nl, max_rates, intercepts)
+        gain, bias = NeuronType.gain_bias(neuron_type, max_rates, intercepts)
     else:
-        gain, bias = nl.gain_bias(max_rates, intercepts)
+        gain, bias = neuron_type.gain_bias(max_rates, intercepts)
 
-    assert allclose(nl.rates(1, gain, bias), max_rates, atol=tolerance)
+    assert allclose(neuron_type.rates(1, gain, bias), max_rates, atol=tolerance)
 
-    if nl_nodirect == Sigmoid:
-        threshold = 0.5 / nl.tau_ref
+    if NonDirectNeuronType == Sigmoid:
+        threshold = 0.5 / neuron_type.tau_ref
     else:
         threshold = 0
 
     x = (intercepts - tolerance)[np.newaxis, :]
-    assert np.all(nl.rates(x, gain, bias) <= threshold)
+    assert np.all(neuron_type.rates(x, gain, bias) <= threshold)
     x = (intercepts + tolerance)[np.newaxis, :]
-    assert np.all(nl.rates(x, gain, bias) > threshold)
+    assert np.all(neuron_type.rates(x, gain, bias) > threshold)
 
     if generic:
-        max_rates0, intercepts0 = NeuronType.max_rates_intercepts(nl, gain, bias)
+        max_rates0, intercepts0 = NeuronType.max_rates_intercepts(
+            neuron_type, gain, bias
+        )
     else:
-        max_rates0, intercepts0 = nl.max_rates_intercepts(gain, bias)
+        max_rates0, intercepts0 = neuron_type.max_rates_intercepts(gain, bias)
 
     assert allclose(max_rates, max_rates0, atol=tolerance)
     assert allclose(intercepts, intercepts0, atol=tolerance)
@@ -664,8 +666,8 @@ def test_current(rng, allclose):
         current = neuron_type.current(x, gain, bias)
 
 
-def test_rates_shaping(rng, nl_nodirect):
-    neuron_type = nl_nodirect()
+def test_rates_shaping(rng, NonDirectNeuronType):
+    neuron_type = NonDirectNeuronType()
     n_neurons = 20
     gain = rng.rand(n_neurons)
     bias = rng.rand(n_neurons)

@@ -65,14 +65,14 @@ def test_encoder_all_zero(Simulator, seed, allclose):
         )
 
 
-def test_constant_scalar(Simulator, nl, plt, seed, allclose):
+def test_constant_scalar(Simulator, AnyNeuronType, plt, seed, allclose):
     """A Network that represents a constant value."""
     N = 30
     val = 0.5
 
     m = nengo.Network(seed=seed)
     with m:
-        m.config[nengo.Ensemble].neuron_type = nl()
+        m.config[nengo.Ensemble].neuron_type = AnyNeuronType()
         input = nengo.Node(output=val, label="input")
         A = nengo.Ensemble(N, 1)
         nengo.Connection(input, A)
@@ -93,14 +93,14 @@ def test_constant_scalar(Simulator, nl, plt, seed, allclose):
     assert allclose(sim.data[A_p][-10:], val, atol=0.1, rtol=0.01)
 
 
-def test_constant_vector(Simulator, nl, plt, seed, allclose):
+def test_constant_vector(Simulator, AnyNeuronType, plt, seed, allclose):
     """A network that represents a constant 3D vector."""
     N = 30
     vals = [0.6, 0.1, -0.5]
 
     m = nengo.Network(seed=seed)
     with m:
-        m.config[nengo.Ensemble].neuron_type = nl()
+        m.config[nengo.Ensemble].neuron_type = AnyNeuronType()
         input = nengo.Node(output=vals)
         A = nengo.Ensemble(N * len(vals), len(vals))
         nengo.Connection(input, A)
@@ -120,14 +120,14 @@ def test_constant_vector(Simulator, nl, plt, seed, allclose):
     assert allclose(sim.data[A_p][-10:], vals, atol=0.1, rtol=0.01)
 
 
-def test_scalar(Simulator, nl, plt, seed, allclose):
+def test_scalar(Simulator, AnyNeuronType, plt, seed, allclose):
     """A network that represents sin(t)."""
     N = 50
     f = lambda t: np.sin(2 * np.pi * t)
 
     m = nengo.Network(label="test_scalar", seed=seed)
     with m:
-        m.config[nengo.Ensemble].neuron_type = nl()
+        m.config[nengo.Ensemble].neuron_type = AnyNeuronType()
         input = nengo.Node(output=f)
         A = nengo.Ensemble(N, 1, label="A")
         nengo.Connection(input, A)
@@ -147,14 +147,14 @@ def test_scalar(Simulator, nl, plt, seed, allclose):
     )
 
 
-def test_vector(Simulator, nl, plt, seed, allclose):
+def test_vector(Simulator, AnyNeuronType, plt, seed, allclose):
     """A network that represents sin(t), cos(t), cos(t)**2."""
     N = 100
     f = lambda t: [np.sin(6.3 * t), np.cos(6.3 * t), np.cos(6.3 * t) ** 2]
 
     m = nengo.Network(label="test_vector", seed=seed)
     with m:
-        m.config[nengo.Ensemble].neuron_type = nl()
+        m.config[nengo.Ensemble].neuron_type = AnyNeuronType()
         input = nengo.Node(output=f)
         A = nengo.Ensemble(N * 3, 3, radius=1.5)
         nengo.Connection(input, A)
@@ -181,7 +181,7 @@ def test_vector(Simulator, nl, plt, seed, allclose):
     )
 
 
-def test_product(Simulator, nl, plt, seed):
+def test_product(Simulator, AnyNeuronType, plt, seed):
     N = 80
     dt2 = 0.002
     scaling = -0.5
@@ -189,7 +189,7 @@ def test_product(Simulator, nl, plt, seed):
 
     m = nengo.Network(seed=seed)
     with m:
-        m.config[nengo.Ensemble].neuron_type = nl()
+        m.config[nengo.Ensemble].neuron_type = AnyNeuronType()
         sin = nengo.Node(output=f)
         cons = nengo.Node(output=scaling)
         factors = nengo.Ensemble(
@@ -351,12 +351,12 @@ def test_gain_bias(Simulator):
         assert np.array_equal(bias, sim.data[a].bias)
 
 
-def test_noise_gen(Simulator, nl_nodirect, seed, plt, allclose):
+def test_noise_gen(Simulator, NonDirectNeuronType, seed, plt, allclose):
     """Ensure that setting Ensemble.noise generates noise."""
     with nengo.Network(seed=seed) as model:
         intercepts = -0.5
         neg_noise, pos_noise = -5, 5
-        model.config[nengo.Ensemble].neuron_type = nl_nodirect()
+        model.config[nengo.Ensemble].neuron_type = NonDirectNeuronType()
         model.config[nengo.Ensemble].encoders = Choice([[1]])
         model.config[nengo.Ensemble].intercepts = Choice([intercepts])
         pos = nengo.Ensemble(1, 1, noise=WhiteNoise(Uniform(0, pos_noise)))
@@ -381,7 +381,7 @@ def test_noise_gen(Simulator, nl_nodirect, seed, plt, allclose):
     assert not allclose(sim.data[normal_p], sim.data[neg_p], record_rmse=False)
 
 
-def test_noise_copies_ok(Simulator, nl_nodirect, seed, plt, allclose):
+def test_noise_copies_ok(Simulator, NonDirectNeuronType, seed, plt, allclose):
     """Make sure the same noise process works in multiple ensembles.
 
     We test this both with the default system and without.
@@ -389,10 +389,13 @@ def test_noise_copies_ok(Simulator, nl_nodirect, seed, plt, allclose):
 
     process = FilteredNoise(synapse=nengo.Alpha(1.0), dist=Choice([0.5]))
     with nengo.Network(seed=seed) as model:
-        if "spikes" in nl_nodirect.state or RegularSpiking in nl_nodirect.__bases__:
-            neuron_type = nl_nodirect(initial_state={"voltage": Choice([0])})
+        if (
+            "spikes" in NonDirectNeuronType.state
+            or RegularSpiking in NonDirectNeuronType.__bases__
+        ):
+            neuron_type = NonDirectNeuronType(initial_state={"voltage": Choice([0])})
         else:
-            neuron_type = nl_nodirect()
+            neuron_type = NonDirectNeuronType()
         model.config[nengo.Ensemble].neuron_type = neuron_type
         model.config[nengo.Ensemble].encoders = Choice([[1]])
         model.config[nengo.Ensemble].gain = Choice([5])
