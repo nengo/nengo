@@ -31,8 +31,8 @@ Nengo imports or vendorizes several open source libraries.
 
 * `NumPy <https://numpy.org/>`_ - Used under
   `BSD license <https://numpy.org/doc/stable/license.html>`__
-* `Sphinx <http://sphinx-doc.org/>`_ - Used under
-  `BSD license <https://bitbucket.org/birkenfeld/sphinx/src/be5bd373a1a47fb68d70523b6e980e654e070e9f/LICENSE?at=default>`__
+* `Sphinx <https://www.sphinx-doc.org/>`_ - Used under
+  `BSD license <https://github.com/sphinx-doc/sphinx/blob/master/LICENSE>`__
 * `numpydoc <https://github.com/numpy/numpydoc>`_ - Used under
   `BSD license <https://github.com/numpy/numpydoc/blob/master/LICENSE.txt>`__
 * `matplotlib <https://matplotlib.org/>`_ - Used under
