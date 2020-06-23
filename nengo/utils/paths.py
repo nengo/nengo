@@ -2,10 +2,10 @@ import os
 import sys
 
 
-if sys.platform.startswith("win"):
+if sys.platform.startswith("win"):  # pragma: no cover
     config_dir = os.path.expanduser(os.path.join("~", ".nengo"))
     cache_dir = os.path.join(config_dir, "cache")
-else:
+else:  # pragma: no cover
     config_dir = os.path.expanduser(os.path.join("~", ".config", "nengo"))
     cache_dir = os.path.expanduser(os.path.join("~", ".cache", "nengo"))
 

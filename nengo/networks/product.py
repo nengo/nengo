@@ -98,12 +98,12 @@ class Product(nengo.Network):
             nengo.Connection(sq2_out, self.output, transform=-0.5, synapse=None)
 
     @property
-    def A(self):
+    def A(self):  # pragma: no cover
         warnings.warn(DeprecationWarning("Use 'input_a' instead of 'A'."))
         return self.input_a
 
     @property
-    def B(self):
+    def B(self):  # pragma: no cover
         warnings.warn(DeprecationWarning("Use 'input_b' instead of 'B'."))
         return self.input_b
 

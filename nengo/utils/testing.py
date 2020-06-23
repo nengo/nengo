@@ -175,7 +175,7 @@ class ThreadedAssertion:
         for t in threads:
             t.join()
             if not t.assertion_result:
-                raise self.exc_info[1].with_traceback(self.exc_info[2])
+                raise self.exc_info[1]  # .with_traceback(self.exc_info[2])
 
     def init_thread(self, worker):
         pass

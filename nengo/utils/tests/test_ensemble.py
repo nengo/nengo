@@ -4,7 +4,20 @@ import pytest
 
 import nengo
 from nengo.dists import Uniform
-from nengo.utils.ensemble import response_curves, tuning_curves
+from nengo.utils.ensemble import response_curves, tuning_curves, _similarity
+
+
+def test_similarity():
+    """Ensures all cases are run"""
+    encoders = [1, 2, 3]
+    index = 1
+    rows = 1
+    cols = 2
+
+    assert _similarity(encoders, index, rows, cols) == 2.0
+    index = 0
+    cols = 2
+    assert _similarity(encoders, index, rows, cols) == 2.0
 
 
 def plot_tuning_curves(plt, eval_points, activities):

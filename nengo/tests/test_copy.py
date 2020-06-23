@@ -7,7 +7,7 @@ import pytest
 import nengo
 from nengo import spa
 from nengo.exceptions import NetworkContextError, NotAddedToNetworkWarning
-from nengo.params import IntParam, iter_params
+from nengo.params import IntParam, iter_params, NdarrayParam
 from nengo.utils.numpy import is_array_like
 from nengo.utils.progress import TerminalProgressBar
 
@@ -347,11 +347,30 @@ def test_copy_instance_params():
         original.config[nengo.Ensemble].set_param(
             "test", IntParam("test", optional=True)
         )
-        ens = nengo.Ensemble(10, 1)
-        original.config[ens].test = 42
 
-    cp = original.copy()
-    assert cp.config[cp.ensembles[0]].test == 42
+        original.config[nengo.Ensemble].set_param(
+            "test2", NdarrayParam("test2", optional=True)
+        )
+        # THESE ARE THE WRONG TYPE OF PARAMS ^
+        # The right type of params are created on init, how do I edit those?
+
+        # TODO: figure out why this isn't hitting line 221 of config.py
+
+        original.config[nengo.Ensemble].set_param("key", IntParam("key", optional=True))
+
+        ens = nengo.Ensemble(10, 1)
+        original.config[ens].test = 42  # [original]
+
+        original.config[ens].test2 = np.array([original])
+        # assert original in original.config[nengo.Ensemble].get_param("test")
+    # original.config[ens].__setattr__("key", original)
+    pkls = pickle.dumps(original)
+
+    pickle.loads(pkls)
+
+    assert original in original.config[ens].test2
+
+    # cp = original.copy()
 
 
 def test_pickle_model(Simulator, seed, allclose):

@@ -4,17 +4,40 @@ import numpy as np
 import pytest
 
 import nengo
-from nengo.exceptions import MovedError, Unconvertible
+from nengo.exceptions import MovedError, ValidationError, Unconvertible
 from nengo.transforms import NoTransform
 from nengo.utils.builder import (
     full_transform,
     generate_graphviz,
     objs_and_connections,
     remove_passthrough_nodes,
+    _create_replacement_connection,
 )
 
 
+def test_create_replacement_exception():
+    """ensures that _create_replacement_connection throws unconvertible"""
+
+    with nengo.Network():
+
+        class FakeObj:
+            output = None
+
+        class Test:
+            post_obj = FakeObj
+            pre_obj = FakeObj
+            synapse = None
+            function = "not none"
+            transform = None
+
+        c_in = Test
+        c_out = Test
+        with pytest.raises(Unconvertible):
+            _create_replacement_connection(c_in, c_out)
+
+
 def test_full_transform():
+    """Tests full_transforms and its exceptions"""
     N = 30
 
     with nengo.Network():
@@ -25,6 +48,35 @@ def test_full_transform():
         node1 = nengo.Node(output=[0])
         node2 = nengo.Node(output=[0, 0])
         node3 = nengo.Node(output=[0, 0, 0])
+
+        class Test:
+            transform = 1
+
+        conn = Test  # nengo.Connection(node3[2], nengo.Ensemble(1, 1))
+        with pytest.raises(ValidationError):
+            full_transform(conn)
+
+        class FakeObj:
+            contents = [1, 2, 3]
+            size_in = 1
+
+        class FakeDense:
+            def __init__(self):
+                self.init = np.array([[[1], [2], [3]]])
+                self.shape = (1, 1)
+
+        class Test2:
+            transform = FakeDense()
+            function = 0
+            post_slice = []
+            pre_slice = []
+            post_obj = FakeObj
+            pre_obj = FakeObj
+            function_info = np.array("nothing to see here")
+
+        conn = Test2
+        with pytest.raises(ValidationError):
+            full_transform(conn)
 
         # Pre slice with default transform -> 1x3 transform
         conn = nengo.Connection(node3[2], ens1)

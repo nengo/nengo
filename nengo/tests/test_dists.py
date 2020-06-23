@@ -39,6 +39,10 @@ def test_pdf(rng, allclose):
     z = z / z.sum() / dx
     assert allclose(y, z, atol=0.05)
 
+    # length must be the same
+    with pytest.raises(ValidationError):
+        dist = PDF([0, 1], [0, 1, 0])
+
 
 @pytest.mark.parametrize("low,high", [(-2, -1), (-1, 1), (1, 2), (1, -1)])
 def test_uniform(low, high, rng, allclose):
@@ -53,6 +57,15 @@ def test_uniform(low, high, rng, allclose):
         assert np.all(samples > high)
     histogram, _ = np.histogram(samples, bins=5)
     assert allclose(histogram, np.mean(histogram), atol=0.1 * n)
+
+    # test integer = true
+    if low < high:
+        dist = Uniform(low, high, integer=True)
+        samples = dist.sample(n, rng=rng)
+        assert np.all(samples >= low)
+        assert np.all(samples < high)
+        # histogram, _ = np.histogram(samples, bins=5)
+        # assert allclose(histogram, np.mean(histogram), atol=0.1 * n)
 
 
 @pytest.mark.parametrize("mean,std", [(0, 1), (0, 0), (10, 2)])
@@ -115,6 +128,12 @@ def test_hypersphere_warns():
         UniformHypersphere(surface=True, min_magnitude=0.1)
 
 
+def test_hypersphere_validation_error(rng):
+    with pytest.raises(ValueError):
+        dist = UniformHypersphere(surface=True, min_magnitude=0.1)
+        dist.sample(1, d=-1)
+
+
 @pytest.mark.parametrize("weights", [None, [5, 1, 2, 9], [3, 2, 1, 0]])
 def test_choice(weights, rng, allclose):
     n = 1000
@@ -136,6 +155,19 @@ def test_choice(weights, rng, allclose):
     p = np.ones(N) / N if dist.p is None else dist.p
     sterr = 1.0 / np.sqrt(n)  # expected maximum standard error
     assert allclose(p, p_empirical, atol=2 * sterr)
+
+
+def test_choice_validation_errors():
+    # "Number of weights must match number of options"
+    with pytest.raises(ValidationError):
+        Choice([2], [1, 2, 3])
+    # "All weights must be non-negative"
+    with pytest.raises(ValidationError):
+        Choice([2], [-1])
+
+    # "Sum of weights must be positive"
+    with pytest.raises(ValidationError):
+        Choice([1, 2], [0, 0])
 
 
 @pytest.mark.parametrize("shape", [(12, 2), (7, 1), (7,), (1, 1)])

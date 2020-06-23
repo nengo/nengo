@@ -7,6 +7,27 @@ from nengo.builder.signal import Signal
 from nengo.builder.transforms import ConvInc, multiply
 
 
+def test_decstr(rng, allclose):
+    """tests the _decstr functionc for the class ConvInc"""
+
+    shape0 = 16
+    shape1 = 17
+    in_channels = 32
+    out_channels = 64
+    x_shape = (shape0, shape1, in_channels)
+    conv = Convolution(
+        out_channels,
+        x_shape,
+        kernel_size=(4, 4),
+        strides=(1, 1),
+        padding="same",
+        channels_last=True,
+    )
+    assert str(
+        ConvInc(np.array([]), np.array([]), np.array([]), conv)._descstr
+    ).startswith("<bound method ConvInc._descstr of <ConvInc  at ")
+
+
 def test_multiply():
     sca = np.array(4)
     vec = np.array([2, 3])

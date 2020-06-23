@@ -1,9 +1,50 @@
 import time
 
 import pytest
+import numpy as np
 
+import nengo.rc as rc
 from nengo.exceptions import ValidationError
-from nengo.utils.progress import AutoProgressBar, Progress, ProgressBar
+from nengo.utils.progress import (
+    AutoProgressBar,
+    Progress,
+    ProgressBar,
+    _load_class,
+    WriteProgressToFile,
+    get_default_progressbar,
+)
+
+
+def test_load_class():
+    """tests _load_class"""
+    name = "numpy.sin"
+    _load_class(name) == np.sin
+
+
+def test_write_progress_to_file():
+    """tests WriteProgressToFile"""
+    filename = "test_progress_file"
+    prog = WriteProgressToFile(filename)
+
+    class Test:
+        def __init__(self, isfinished):
+            self.finished = isfinished
+
+        def myFunction(self):
+            return 1
+
+        progress = 0
+        name_after = "newname"
+        elapsed_seconds = myFunction
+
+        def eta(self):
+            return 0
+
+    data = Test(False)
+    prog.update(data)
+
+    data = Test(True)
+    prog.update(data)
 
 
 class ProgressBarMock(ProgressBar):
@@ -89,6 +130,35 @@ class TestAutoProgressBar:
             self.elapsed_seconds = lambda: 0
             self.time_start = time_start
             self.finished = False
+
+    def test_get_default_progressbar(self):
+        """tests get_default_progressbar"""
+
+        # create rc finalizer
+
+        progress_mock = self.ProgressMock(0.2)
+        progress_bar = ProgressBarMock()
+        auto_progress = AutoProgressBar(progress_bar, min_eta=10.0)
+
+        auto_progress.update(progress_mock)
+        assert progress_bar.n_update_calls == 0
+        progress_mock.finished = True
+        auto_progress.update(progress_mock)
+        assert progress_bar.n_update_calls >= 1
+        rc.set("progress", "progress_bar", "False")
+        assert not rc.getboolean("progress", "progress_bar")
+        assert str(get_default_progressbar()).startswith(
+            "<nengo.utils.progress.NoProgressBar object at "
+        )
+        rc.set("progress", "progress_bar", "True")
+        assert rc.getboolean("progress", "progress_bar")
+        assert str(get_default_progressbar()).startswith(
+            "<nengo.utils.progress.AutoProgressBar object at "
+        )
+        rc.set("progress", "progress_bar", "NotBool")
+        assert str(get_default_progressbar()).startswith(
+            "<nengo.utils.progress.NoProgressBar object at"
+        )
 
     def test_progress_not_shown_if_eta_below_threshold(self):
         progress_mock = self.ProgressMock(0.2)

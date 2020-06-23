@@ -5,8 +5,6 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 
-from nengo.utils.ensemble import tuning_curves
-
 has_prop_cycle = LooseVersion(matplotlib.__version__) >= "1.5.0"
 
 if has_prop_cycle:
@@ -20,9 +18,9 @@ def get_color_cycle():
         # Apparently the 'color' key may not exist, so have to fail gracefully
         try:
             return [prop["color"] for prop in cycle]
-        except KeyError:
+        except KeyError:  # pragma: no cover
             pass  # Fall back on deprecated axes.color_cycle
-    return matplotlib.rcParams["axes.color_cycle"]
+    return matplotlib.rcParams["axes.color_cycle"]  # pragma: no cover
 
 
 def set_color_cycle(colors, ax=None):
@@ -32,7 +30,7 @@ def set_color_cycle(colors, ax=None):
             plt.rc("axes", prop_cycle=cycler("color", colors))
         else:
             ax.set_prop_cycle("color", colors)
-    else:
+    else:  # pragma: no cover
         if ax is None:
             plt.rc("axes", color_cycle=colors)
         else:
@@ -143,11 +141,11 @@ def rasterplot(time, spikes, ax=None, use_eventplot=False, **kwargs):  # noqa
         ax = plt.gca()
 
     if use_eventplot and not hasattr(ax, "eventplot"):
-        warnings.warn(
+        warnings.warn(  # pragma: no cover
             "Matplotlib version %s does not have 'eventplot'. "
             "Falling back to non-eventplot version." % matplotlib.__version__
         )
-        use_eventplot = False
+        use_eventplot = False  # pragma: no cover
 
     colors = kwargs.pop("colors", None)
     if colors is None:
@@ -200,23 +198,3 @@ def rasterplot(time, spikes, ax=None, use_eventplot=False, **kwargs):  # noqa
     ax.yaxis.set_ticks_position("none")
 
     return ax
-
-
-def plot_tuning_curves(ensemble, sim, connection=None, ax=None):
-    """Plot tuning curves for the given ensemble and simulator.
-
-    If a connection is provided, the decoders will be used to set
-    the colours of the tuning curves.
-    """
-
-    if ax is None:
-        ax = plt.gca()
-
-    evals, t_curves = tuning_curves(ensemble, sim)
-
-    if connection is not None:
-        if connection.dimensions > 1:
-            warnings.warn("Ignoring dimensions > 1 in plot_tuning_curves")
-        cm = plt.cm.ScalarMappable(cmap=plt.cm.coolwarm)
-        set_color_cycle(cm.to_rgba(sim.data[connection].decoders[0]), ax=ax)
-    ax.plot(evals, t_curves)

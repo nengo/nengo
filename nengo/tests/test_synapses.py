@@ -110,6 +110,8 @@ def test_linearfilter(Simulator, plt, seed, allclose):
 
     assert signals_allclose(t, y, yhat, delay=dt, plt=plt, allclose=allclose)
 
+    assert 1.000003000489079 + 4.041015486177555e-15j == synapse.evaluate(2)
+
 
 def test_linearfilter_y0(allclose):
     # --- y0 sets initial state correctly for high-order filter

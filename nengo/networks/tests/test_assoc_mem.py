@@ -1,8 +1,96 @@
 import numpy as np
 import pytest
 
+from nengo.exceptions import ValidationError
 import nengo
 from nengo.networks.assoc_mem import AssociativeMemory
+
+
+def test_repeat_config_warning(seed, rng):
+    """tests a warning is run on repeat config"""
+    with nengo.Network("model", seed=seed):
+        test_am3 = AssociativeMemory([0])
+
+    test_am3.add_threshold_to_outputs()
+    with pytest.warns(UserWarning):
+        test_am3.add_threshold_to_outputs()  # runs a warning
+    test_am3.add_wta_network()
+    with pytest.warns(UserWarning):
+        test_am3.add_wta_network()  # runs a warning
+
+
+def test_add_output_vector(seed, rng):
+    """tests add_output_vector edge case"""
+    with nengo.Network("model", seed=seed):
+        test_am4 = AssociativeMemory([0])
+
+    test_am4.add_threshold_to_outputs()
+    assert test_am4.add_default_output_vector([0]) is None
+
+
+def test_add_output_mapping(seed, rng):
+    """tests add_output_mapping edge cases and errors"""
+    vocab = make_vocab(4, 64, rng)
+
+    with nengo.Network("model", seed=seed):
+        test_am2 = AssociativeMemory(vocab)
+    name = "test"
+    name2 = "test2"
+    output_vectors = np.array([[1, 2], [3, 4], [5, 6], [7, 8]])
+    test_am2.add_output_mapping(name, output_vectors)
+    # same name
+    with pytest.raises(ValidationError):
+        test_am2.add_output_mapping(name, output_vectors)
+
+    test_am2.add_threshold_to_outputs()
+
+    assert (test_am2.add_output_mapping(name2, output_vectors)) is None
+
+
+def test_add_input_mapping(seed, rng):
+    """tests add_input_mapping edge cases and errors"""
+    vocab = make_vocab(4, 64, rng)
+
+    with nengo.Network("model", seed=seed):
+        test_am = AssociativeMemory(vocab)
+    name = "test"
+    name2 = "test2"
+    input_vectors = np.array([[1, 2], [3, 4], [5, 6], [7, 8]])
+    test_am.add_input_mapping(name, input_vectors, input_scales=[1, 2, 3, 4])
+
+    # wrong input scales shape
+    with pytest.raises(ValidationError):
+        test_am.add_input_mapping(name2, input_vectors, input_scales=[1])
+
+    # same name
+    with pytest.raises(ValidationError):
+        test_am.add_input_mapping(name, input_vectors, input_scales=[1, 2, 3, 4])
+
+
+def test_associativememory_errors(seed, rng):
+    """tests multiple errors in AssociativeMemory"""
+    vocab = make_vocab(4, 64, rng)
+
+    with nengo.Network("model", seed=seed):
+        with pytest.raises(ValidationError):
+            AssociativeMemory(vocab, [1])
+
+        class Test:
+            shape = [0]
+
+        with pytest.raises(ValidationError):
+            AssociativeMemory(Test())
+
+        with pytest.raises(ValidationError):
+            AssociativeMemory(vocab, threshold=[1])
+
+
+def test_associativememory_edge_cases(seed, rng):
+    """tests edge_cases in AssociativeMemory"""
+    vocab = make_vocab(4, 64, rng)
+
+    with nengo.Network("model", seed=seed):
+        AssociativeMemory(vocab, threshold=[1, 2, 3, 4])  # iterable threshold
 
 
 def similarity(data, target):

@@ -1,7 +1,13 @@
 import numpy as np
 
 import nengo
+from nengo.networks.product import dot_product_transform
 from nengo.utils.numpy import rms
+
+
+def test_dot_product_transform():
+    """tests the function dot_product_transform"""
+    assert dot_product_transform(2).all() == 1
 
 
 def test_sine_waves(Simulator, plt, seed):

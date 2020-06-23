@@ -23,6 +23,11 @@ def test_signaldict(allclose):
         signaldict[scalar] = np.array(1.0)
 
     signaldict.init(scalar)
+
+    # tests repeat init
+    with pytest.raises(SignalError):
+        signaldict.init(scalar)
+
     assert allclose(signaldict[scalar], np.array(1.0))
     # __getitem__ handles scalars
     assert signaldict[scalar].shape == ()

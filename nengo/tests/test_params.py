@@ -1,9 +1,82 @@
 import numpy as np
 import pytest
 
+
 import nengo
 from nengo import params
-from nengo.exceptions import ObsoleteError, ValidationError
+from nengo.exceptions import ObsoleteError, ValidationError, ConfigError
+from nengo.params import FunctionInfo
+
+
+def test_ndarrayparam_coerce_defaults():
+    """Tests NdarrayParam coerce_defaults if shape is none"""
+    params.NdarrayParam.shape = None
+    assert params.NdarrayParam("name").coerce_defaults is True
+
+
+def test_parameter_get_error():
+    """Tests params get ValidationError"""
+
+    class Test:
+        p = params.Parameter("something", params.Unconfigurable)
+
+    inst = Test()
+    with pytest.raises(ValidationError):
+        inst.p
+
+
+def test_parameter_set_default_error():
+    """Tests params set_default ConfigError"""
+    my_param = params.Parameter("something")
+    with pytest.raises(ConfigError):
+        params.Parameter.set_default(my_param, my_param, my_param)
+
+
+def test_not_equatable():
+    """Tests params.equal() when not equatable"""
+
+    class Test:
+        equatable = False
+        a = params.Parameter("o", default=None)
+        b = params.Parameter("o", default=None)
+
+        def __get__(self, instance, value):
+            return instance
+
+    inst = Test()
+
+    assert params.Parameter.equal(inst, inst.a, inst.b)
+
+
+def test_coerce_value_error():
+    """tests to make sure ValueError is thrown
+     with incorrect coerce usage"""
+    with pytest.raises(ValueError):
+
+        class Test:
+            o = params.Parameter("o", default=None)
+
+        inst = Test()
+
+        inst.o = params.Unconfigurable
+
+
+def test_optional_value_error():
+    """tests to make sure ValueError is thrown when it is not a bool"""
+    with pytest.raises(ValueError):
+        params.Parameter("o", default=None, optional="NotABool")
+
+
+def test_readonly_value_error():
+    """tests to make sure ValueError is thrown when it is not a bool"""
+    with pytest.raises(ValueError):
+        params.Parameter("o", default=None, readonly="NotABool")
+
+
+def test_name_value_error():
+    """tests to make sure ValueError is thrown when it is not a string"""
+    with pytest.raises(ValueError):
+        params.Parameter(123, default=None)  # not string
 
 
 def test_default():
@@ -294,6 +367,8 @@ def test_ndarrayparam_sample_shape():
     class Test:
         ndp = params.NdarrayParam("ndp", default=None, shape=[10, "d2"])
         d2 = 3
+        ndp2 = params.NdarrayParam("ndp2", default=None, shape=("label",))
+        label = "label"
 
     inst = Test()
     # Must be shape (4, 10)
@@ -302,6 +377,11 @@ def test_ndarrayparam_sample_shape():
     with pytest.raises(ValidationError):
         inst.ndp = np.ones((3, 10))
     assert np.all(inst.ndp == np.ones((10, 3)))
+
+    # error here
+
+    with pytest.raises(ValidationError):
+        inst.ndp2 = (1, 2)
 
 
 def test_functionparam():
@@ -312,6 +392,7 @@ def test_functionparam():
 
     inst = Test()
     assert inst.fp is None
+
     inst.fp = np.sin
     assert inst.fp.function is np.sin
     assert inst.fp.size == 1
@@ -321,6 +402,8 @@ def test_functionparam():
     # Not OK: not a function
     with pytest.raises(ValidationError):
         inst.fp = 0
+
+    inst.fp = FunctionInfo(np.sin, 1)
 
 
 def test_iter_params_does_not_list_obsolete_params():

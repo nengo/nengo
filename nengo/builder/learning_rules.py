@@ -517,7 +517,7 @@ def build_learning_rule(model, rule):
     # --- Set up delta signal
     if rule.modifies == "encoders":
         if not conn.is_decoded:
-            ValueError(
+            raise ValueError(
                 "The connection must be decoded in order to use encoder learning."
             )
         post = get_post_ens(conn)

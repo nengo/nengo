@@ -1,10 +1,22 @@
 import logging
 
 import pytest
-
 import nengo
 from nengo.builder import Model
+from nengo.builder.builder import Builder
 from nengo.builder.ensemble import BuiltEnsemble
+
+
+def test_register_builder_warning():
+    """tests a warning for register_builder"""
+
+    class Test:
+        pass
+
+    my_builder = Builder.register(Test)
+    my_builder(1)
+    with pytest.warns(Warning):
+        my_builder(1)  # repeat setup warning
 
 
 def test_seeding(Simulator, allclose):

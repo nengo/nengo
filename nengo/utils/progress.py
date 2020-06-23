@@ -19,7 +19,7 @@ from ..rc import rc
 
 
 if get_ipython() is not None:
-    from IPython.display import display, Javascript
+    from IPython.display import display, Javascript  # pragma: no cover
 
 
 class MemoryLeakWarning(UserWarning):
@@ -645,8 +645,7 @@ class WriteProgressToFile(ProgressBar):
     def update(self, progress):
         if progress.finished:
             text = "{} finished in {}.".format(
-                self.progress.name_after,
-                timestamp2timedelta(progress.elapsed_seconds()),
+                progress.name_after, timestamp2timedelta(progress.elapsed_seconds()),
             )
         else:
             text = "{progress:.0f}%, ETA: {eta}".format(
@@ -777,7 +776,7 @@ def get_default_progressbar():
         pbar = rc.get("progress", "progress_bar")
 
     if pbar.lower() == "auto":
-        if get_ipython() is not None and check_ipy_version((5, 0)):
+        if get_ipython() is not None and check_ipy_version((5, 0)):  # pragma: no cover
             return AutoProgressBar(IPython5ProgressBar())
         else:
             return AutoProgressBar(TerminalProgressBar())
