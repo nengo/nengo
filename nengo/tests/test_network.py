@@ -102,7 +102,7 @@ def test_context_is_threadsafe():
         def finish_thread(self, worker):
             worker.model.__exit__(*worker.exc_info)
 
-    CheckIndependence(n_threads=2)
+    CheckIndependence(n_threads=2).run()
 
 
 def test_get_objects():

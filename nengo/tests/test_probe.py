@@ -182,12 +182,16 @@ def test_slice(Simulator, allclose):
         bp1a = nengo.Probe(b[1], synapse=0.03)
         bp1b = nengo.Probe(b[1:], synapse=0.03)
 
+        bpv = nengo.Probe(b.neurons, "voltage")
+        bpv_a = nengo.Probe(b.neurons[::2], "voltage")
+
     with Simulator(model) as sim:
         sim.run(0.5)
     assert allclose(sim.data[bp][:, 0], sim.data[bp0a][:, 0])
     assert allclose(sim.data[bp][:, 0], sim.data[bp0b][:, 0])
     assert allclose(sim.data[bp][:, 1], sim.data[bp1a][:, 0])
     assert allclose(sim.data[bp][:, 1], sim.data[bp1b][:, 0])
+    assert allclose(sim.data[bpv][:, ::2], sim.data[bpv_a])
 
 
 def test_solver_defaults():

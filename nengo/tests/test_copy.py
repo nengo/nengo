@@ -7,7 +7,7 @@ import pytest
 import nengo
 from nengo import spa
 from nengo.exceptions import NetworkContextError, NotAddedToNetworkWarning
-from nengo.params import IntParam, iter_params
+from nengo.params import IntParam, iter_params, NdarrayParam
 from nengo.utils.numpy import is_array_like
 from nengo.utils.progress import TerminalProgressBar
 
@@ -343,15 +343,29 @@ def test_copy_spa(Simulator):
 
 
 def test_copy_instance_params():
-    with nengo.Network() as original:
-        original.config[nengo.Ensemble].set_param(
+    with nengo.Network() as orig_net:
+        orig_net.config[nengo.Ensemble].set_param(
             "test", IntParam("test", optional=True)
         )
-        ens = nengo.Ensemble(10, 1)
-        original.config[ens].test = 42
+        orig_net.config[nengo.Ensemble].set_param(
+            "test2", NdarrayParam("test2", optional=True)
+        )
 
-    cp = original.copy()
-    assert cp.config[cp.ensembles[0]].test == 42
+        orig_ens = nengo.Ensemble(10, 1)
+        orig_net.config[orig_ens].test = 42
+        orig_net.config[orig_ens].test2 = np.array([49])
+
+    # test copy function
+    copy_net = orig_net.copy()
+    copy_ens = copy_net.ensembles[0]
+    assert copy_net.config[copy_ens].test == 42
+    assert np.array_equal(copy_net.config[copy_ens].test2, np.array([49]))
+
+    # test copy via pickle
+    copy_net = pickle.loads(pickle.dumps(orig_net))
+    copy_ens = copy_net.ensembles[0]
+    assert copy_net.config[copy_ens].test == 42
+    assert np.array_equal(copy_net.config[copy_ens].test2, np.array([49]))
 
 
 def test_pickle_model(Simulator, seed, allclose):

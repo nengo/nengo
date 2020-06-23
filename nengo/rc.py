@@ -155,7 +155,7 @@ class _RC(configparser.SafeConfigParser):
         logger.debug("Reading configuration from {}".format(filename))
         try:
             return configparser.SafeConfigParser.read_file(self, fp, filename)
-        except AttributeError:
+        except AttributeError:  # pragma: no cover
             # pylint: disable=deprecated-method
             return configparser.SafeConfigParser.readfp(self, fp, filename)
 

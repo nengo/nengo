@@ -3,6 +3,7 @@ import pytest
 
 import nengo
 from nengo.builder.neurons import SimNeurons
+from nengo.builder.tests.test_operator import _test_operator_arg_attributes
 
 
 @pytest.mark.parametrize(
@@ -42,3 +43,13 @@ def test_spiking_builders(SpikingType):
         assert np.allclose(sim.signals[sim.model.sig[neurons]["adaptation"]], 2)
         if SpikingType is nengo.RegularSpiking:
             assert np.allclose(sim.signals[sim.model.sig[neurons]["voltage"]], 3)
+
+
+def test_simneurons():
+    argnames = ["neurons", "J", "output"]
+    non_signals = ["neurons"]
+    _, sim = _test_operator_arg_attributes(
+        SimNeurons, argnames, non_signals=non_signals
+    )
+
+    assert str(sim) == "SimNeurons{neurons, J, output}"

@@ -16,7 +16,7 @@ class TestThreadLocalStack:
             def assert_thread(self, worker):
                 assert list(stack) == [2]
 
-        CheckIndependence(n_threads=2)
+        CheckIndependence(n_threads=2).run()
 
     def test_has_length(self):
         stack = ThreadLocalStack()

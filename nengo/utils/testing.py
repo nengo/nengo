@@ -1,5 +1,4 @@
 import itertools
-import sys
 import threading
 
 import numpy as np
@@ -14,7 +13,6 @@ def signals_allclose(  # noqa: C901
     buf=0,
     delay=0,
     plt=None,
-    show=False,
     labels=None,
     individual_results=False,
     allclose=np.allclose,
@@ -39,8 +37,6 @@ def signals_allclose(  # noqa: C901
         Amount of delay (in seconds) to account for when doing comparisons.
     plt : matplotlib.pyplot or mock
         Pyplot interface for plotting the results, unless it's mocked out.
-    show : bool
-        Whether to show the plot immediately.
     labels : list of string, length N
         Labels of each signal to use when plotting.
     individual_results : bool
@@ -117,9 +113,6 @@ def signals_allclose(  # noqa: C901
         ax.set_xlabel("time")
         ax.set_ylabel("error")
 
-        if show:
-            plt.show()
-
     if individual_results:
         if targets.shape[1] == 1:
             return [
@@ -140,6 +133,11 @@ class ThreadedAssertion:
 
     Starts a number of threads, waits for each thread to execute some
     initialization code, and then executes assertions in each thread.
+
+    To use this class, create a derived class that implements ``init_thread``
+    to start each thread running and ``assert_thread`` to check that the thread
+    has run successfully. ``finish_thread`` can be used for any cleanup/shutdown
+    of the thread.
     """
 
     class AssertionWorker(threading.Thread):
@@ -148,8 +146,7 @@ class ThreadedAssertion:
             self.parent = parent
             self.barriers = barriers
             self.n = n
-            self.assertion_result = None
-            self.exc_info = (None, None, None)
+            self.exception = None
 
         def run(self):
             self.parent.init_thread(self)
@@ -160,22 +157,24 @@ class ThreadedAssertion:
 
             try:
                 self.parent.assert_thread(self)
-                self.assertion_result = True
-            except Exception:
-                self.assertion_result = False
-                self.exc_info = sys.exc_info()
+            except Exception as e:
+                self.exception = e
             finally:
                 self.parent.finish_thread(self)
 
     def __init__(self, n_threads):
-        barriers = [threading.Event() for _ in range(n_threads)]
-        threads = [self.AssertionWorker(self, barriers, i) for i in range(n_threads)]
-        for t in threads:
+        self.barriers = [threading.Event() for _ in range(n_threads)]
+        self.threads = [
+            self.AssertionWorker(self, self.barriers, i) for i in range(n_threads)
+        ]
+
+    def run(self):
+        for t in self.threads:
             t.start()
-        for t in threads:
+        for t in self.threads:
             t.join()
-            if not t.assertion_result:
-                raise self.exc_info[1].with_traceback(self.exc_info[2])
+            if t.exception is not None:
+                raise t.exception
 
     def init_thread(self, worker):
         pass

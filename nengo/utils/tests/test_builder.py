@@ -4,17 +4,19 @@ import numpy as np
 import pytest
 
 import nengo
-from nengo.exceptions import MovedError, Unconvertible
+from nengo.exceptions import MovedError, ValidationError, Unconvertible
 from nengo.transforms import NoTransform
 from nengo.utils.builder import (
     full_transform,
     generate_graphviz,
     objs_and_connections,
     remove_passthrough_nodes,
+    _create_replacement_connection,
 )
 
 
 def test_full_transform():
+    """Tests ``full_transform`` and its exceptions"""
     N = 30
 
     with nengo.Network():
@@ -25,6 +27,13 @@ def test_full_transform():
         node1 = nengo.Node(output=[0])
         node2 = nengo.Node(output=[0, 0])
         node3 = nengo.Node(output=[0, 0, 0])
+
+        # error for non-Dense transform
+        conn = nengo.Connection(
+            ens2, ens3, transform=nengo.transforms.Sparse((3, 2), indices=[(0, 0)])
+        )
+        with pytest.raises(ValidationError, match="can only be applied to Dense"):
+            full_transform(conn)
 
         # Pre slice with default transform -> 1x3 transform
         conn = nengo.Connection(node3[2], ens1)
@@ -185,3 +194,26 @@ def test_passthrough_errors():
         nengo.Connection(node, node, synapse=0.01)
     with pytest.raises(Unconvertible):
         remove_passthrough_nodes(*objs_and_connections(model))
+
+
+@pytest.mark.filterwarnings("ignore:'Node.size_out' is being overwritten")
+def test_create_replacement_connection_errors():
+    with nengo.Network():
+        a = nengo.Ensemble(10, 1)
+        b = nengo.Ensemble(10, 1)
+        v = nengo.Node(size_in=1)
+        c1 = nengo.Connection(a, v, synapse=0.005)
+        c2 = nengo.Connection(v, b, synapse=0.003)
+
+        with pytest.raises(Unconvertible, match="Cannot merge two filters"):
+            _create_replacement_connection(c1, c2)
+
+        # set function on c2 (need to set v.output temporarily to avoid API validation)
+        v.output = lambda t, x: x + 1
+        c2.function = lambda x: x ** 2
+        v.output = None
+        c1.synapse = None
+        with pytest.raises(
+            Unconvertible, match="Cannot remove a connection with a function"
+        ):
+            _create_replacement_connection(c1, c2)

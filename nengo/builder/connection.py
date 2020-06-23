@@ -96,7 +96,7 @@ def build_linear_system(model, conn, rng):
     activities = get_activities(model.params[ens], ens, eval_points)
     if np.count_nonzero(activities) == 0:
         raise BuildError(
-            "Building %s: 'activites' matrix is all zero for %s. "
+            "Building %s: 'activities' matrix is all zero for %s. "
             "This is because no evaluation points fall in the firing "
             "ranges of any neurons." % (conn, conn.pre_obj)
         )
@@ -231,13 +231,14 @@ def build_connection(model, conn):
                 "model, or has a size of zero."
                 % (conn, "pre" if is_pre else "post", target)
             )
-        if key not in model.sig[target]:
+        signal = model.sig[target].get(key, None)
+        if signal is None or signal.size == 0:
             raise BuildError(
                 "Building %s: the %r object %s has a %r size of zero."
                 % (conn, "pre" if is_pre else "post", target, key)
             )
 
-        return model.sig[target][key]
+        return signal
 
     model.sig[conn]["in"] = get_prepost_signal(is_pre=True)
     model.sig[conn]["out"] = get_prepost_signal(is_pre=False)

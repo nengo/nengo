@@ -5,6 +5,7 @@ from nengo.exceptions import BuildError
 from nengo.transforms import Convolution
 from nengo.builder.signal import Signal
 from nengo.builder.transforms import ConvInc, multiply
+from nengo.builder.tests.test_operator import _test_operator_arg_attributes
 
 
 def test_multiply():
@@ -106,3 +107,11 @@ def test_convinc_2d(
         y0 = np.moveaxis(y0, -1, 0)
 
     assert allclose(signals[y], y0)
+
+
+def test_convinc_attrs_decstr():
+    argnames = ["W", "X", "Y", "conv"]
+    non_signals = ["conv"]
+    _, sim = _test_operator_arg_attributes(ConvInc, argnames, non_signals=non_signals)
+
+    assert str(sim) == "ConvInc{conv2d(W, X) -> Y}"

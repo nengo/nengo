@@ -1,6 +1,10 @@
 import inspect
 
-from nengo.utils.magic import decorator
+from nengo.utils.magic import (
+    decorator,
+    ObjectProxy,
+    BoundFunctionWrapper,
+)
 
 state = None  # Used to make sure decorators are running
 
@@ -227,4 +231,150 @@ def test_class():
         "        def __init__(self, a, b):\n"
         "            self.a = a\n"
         "            self.b = b\n"
+    )
+
+
+def test_class_decorator():
+    """Test that `decorator` works on a class method"""
+
+    class TestA:
+        @decorator
+        @classmethod
+        def test_decorator(cls, wrapped, instance, args, kwargs):
+            global state
+            state = "run"
+            assert instance is not None
+            assert type(instance).__name__ == "Test"
+            return wrapped(*args, **kwargs)
+
+    class Test:
+        @TestA.test_decorator
+        def f(self, a, b):
+            """Return 1."""
+            return 1
+
+    inst = Test()
+    _test_decorated(inst.f)
+
+    # Make sure introspection works
+    assert inspect.getfullargspec(inst.f).args == ["self", "a", "b"]
+    assert inspect.getsource(inst.f) == (
+        "        @TestA.test_decorator\n"
+        "        def f(self, a, b):\n"
+        '            """Return 1."""\n'
+        "            return 1\n"
+    )
+
+
+def test_instance_decorator():
+    """Test that `decorator` works on a class instance method"""
+
+    class TestA:
+        @decorator
+        def test_decorator(self, wrapped, instance, args, kwargs):
+            global state
+            state = "run"
+            assert instance is not None
+            assert type(instance).__name__ == "Test"
+            return wrapped(*args, **kwargs)
+
+    test_a = TestA()
+
+    class Test:
+        @test_a.test_decorator
+        def f(self, a, b):
+            """Return 1."""
+            return 1
+
+    inst = Test()
+    _test_decorated(inst.f)
+
+    # Make sure introspection works
+    assert inspect.getfullargspec(inst.f).args == ["self", "a", "b"]
+    assert inspect.getsource(inst.f) == (
+        "        @test_a.test_decorator\n"
+        "        def f(self, a, b):\n"
+        '            """Return 1."""\n'
+        "            return 1\n"
+    )
+
+
+def test_objectproxy():
+    """tests functions of ObjectProxy"""
+
+    class Test:
+        """my docstring"""
+
+        __annotations__ = "testannotations"
+        __name__ = "testname"
+
+        testvar = "testval"
+
+    obj = Test()
+    proxy = ObjectProxy(obj)
+
+    # --- test ObjectProxyMethods
+    assert proxy.__dict__ is obj.__dict__
+    assert proxy.__doc__ is obj.__doc__
+    assert proxy.__module__ is obj.__module__
+
+    # --- test ObjectProxy
+    assert proxy.__annotations__ is obj.__annotations__
+    assert proxy.__name__ is obj.__name__
+    assert proxy.__class__ is obj.__class__
+
+    assert set(dir(proxy)) == set(dir(obj))
+    assert hash(proxy) == hash(obj)
+    assert str(proxy) == str(obj)
+
+    proxy.newattr = "newval"  # pylint: disable=assigning-non-slot
+    assert obj.newattr == "newval"
+    assert proxy.newattr == "newval"
+
+    assert repr(proxy).startswith("<ObjectProxy at ")
+
+
+def test_boundfunctionwrapper():
+    """tests functions of BoundFunctionWrapper"""
+
+    class MyParentHelper:
+        def __get__(self, a, b=None):
+            return 0
+
+    class MyParent:
+        __wrapped__ = MyParentHelper
+
+    class MyWrapped:
+        value = 1
+
+    class MyFunction:
+        def __init__(self, b, c, d, e):
+            return None
+
+        def __call__(self, b):
+            return True
+
+    function = MyFunction
+
+    wrapped = MyWrapped
+    parent = MyParent
+
+    instance = BoundFunctionWrapper(wrapped, None, function, "function", parent)
+
+    assert (
+        str(BoundFunctionWrapper.__get__(instance, instance, BoundFunctionWrapper))
+        == "0"
+    )
+
+    instance2 = BoundFunctionWrapper(wrapped, "Not None", 1, "function", parent)
+
+    assert (
+        str(BoundFunctionWrapper.__get__(instance2, instance2, BoundFunctionWrapper))
+        == "<class 'nengo.utils.tests.test_magic"
+        ".test_boundfunctionwrapper.<locals>.MyWrapped'>"
+    )
+
+    assert str(instance(1, 2)).startswith(
+        "<nengo.utils.tests.test_magic."
+        "test_boundfunctionwrapper.<locals>.MyFunction object at "
     )

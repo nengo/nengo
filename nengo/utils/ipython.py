@@ -9,18 +9,14 @@ try:
     from IPython import get_ipython
     from IPython.display import HTML
 
-    if IPython.version_info[0] <= 3:
+    if IPython.version_info[0] <= 3:  # pragma: no cover
         from IPython.nbconvert import PythonExporter
-    else:
-        from nbconvert import PythonExporter
-
-    if IPython.version_info[0] <= 3:
-        # pylint: disable=ungrouped-imports
         from IPython import nbformat
     else:
+        from nbconvert import PythonExporter
         import nbformat
 
-except ImportError:
+except ImportError:  # pragma: no cover
 
     def get_ipython():
         return None
@@ -35,7 +31,7 @@ def check_ipy_version(min_version):
         import IPython  # pylint: disable=import-outside-toplevel
 
         return IPython.version_info >= min_version
-    except ImportError:
+    except ImportError:  # pragma: no cover
         return False
 
 

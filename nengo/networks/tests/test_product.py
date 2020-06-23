@@ -1,6 +1,8 @@
 import numpy as np
+import pytest
 
 import nengo
+from nengo.networks.product import dot_product_transform
 from nengo.utils.numpy import rms
 
 
@@ -70,3 +72,9 @@ def test_direct_mode_with_single_neuron(Simulator, plt, seed):
         plt.yticks((-2, 0, 2))
 
     assert rms(ideal[: len(offset), :] - sim.data[p][offset, :]) < 0.2
+
+
+@pytest.mark.parametrize("dims, scale", [(1, 3), (5, 2.4)])
+def test_dot_product_transform(dims, scale):
+    assert dot_product_transform(dims).shape == (1, dims)
+    assert (dot_product_transform(dims, scale=scale) == scale).all()

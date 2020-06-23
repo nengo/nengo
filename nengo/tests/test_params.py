@@ -3,7 +3,8 @@ import pytest
 
 import nengo
 from nengo import params
-from nengo.exceptions import ObsoleteError, ValidationError
+from nengo.exceptions import ObsoleteError, ValidationError, ConfigError
+from nengo.params import FunctionInfo
 
 
 def test_default():
@@ -29,7 +30,7 @@ def test_optional():
         o = params.Parameter("o", default=1, optional=True)
 
     inst = Test()
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError, match="Parameter is not optional"):
         inst.m = None
     assert inst.m == 1
     inst.o = None
@@ -51,7 +52,7 @@ def test_readonly():
     assert inst.p == 2
     assert inst.r == "set"
     inst.p = 3
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError, match="is read-only and cannot be changed"):
         inst.r = "set again"
     assert inst.p == 3
     assert inst.r == "set"
@@ -85,7 +86,7 @@ def test_boolparam():
     assert not inst.bp
     inst.bp = True
     assert inst.bp
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError, match="[Mm]ust be of type 'bool'"):
         inst.bp = 1
 
 
@@ -294,6 +295,8 @@ def test_ndarrayparam_sample_shape():
     class Test:
         ndp = params.NdarrayParam("ndp", default=None, shape=[10, "d2"])
         d2 = 3
+        ndp2 = params.NdarrayParam("ndp2", default=None, shape=("label",))
+        label = "label"
 
     inst = Test()
     # Must be shape (4, 10)
@@ -302,6 +305,9 @@ def test_ndarrayparam_sample_shape():
     with pytest.raises(ValidationError):
         inst.ndp = np.ones((3, 10))
     assert np.all(inst.ndp == np.ones((10, 3)))
+
+    with pytest.raises(ValidationError, match="not yet initialized; cannot determine"):
+        inst.ndp2 = (1, 2)
 
 
 def test_functionparam():
@@ -312,14 +318,21 @@ def test_functionparam():
 
     inst = Test()
     assert inst.fp is None
+
     inst.fp = np.sin
     assert inst.fp.function is np.sin
     assert inst.fp.size == 1
+
+    inst.fp = FunctionInfo(np.cos, 1)
+    assert inst.fp.function is np.cos
+    assert inst.fp.size == 1
+
     # Not OK: requires two args
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError, match="function.*must accept a single.*argu"):
         inst.fp = lambda x, y: x + y
+
     # Not OK: not a function
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError, match="function.*must be callable"):
         inst.fp = 0
 
 
@@ -415,3 +428,70 @@ def test_frozenobject_missing_arg_repr():
     fobj = TestFO(3)
     assert repr(fobj).startswith("<TestFO at")
     assert fobj._argreprs == "Cannot find 'b'"
+
+
+def test_ndarrayparam_coerce_defaults():
+    """Tests NdarrayParam coerce_defaults if shape is none"""
+    params.NdarrayParam.shape = None
+    assert params.NdarrayParam("name").coerce_defaults is True
+
+
+def test_parameter_get_error():
+    """Tests params get ValidationError"""
+
+    class Test:
+        p = params.Parameter("something", params.Unconfigurable)
+
+    inst = Test()
+    with pytest.raises(ValidationError, match="have no defaults.*ensure the value"):
+        inst.p
+
+
+def test_parameter_set_default_error():
+    """Tests params set_default ConfigError"""
+    my_param = params.Parameter("something")
+    with pytest.raises(ConfigError, match="Parameter.*is not configurable"):
+        params.Parameter.set_default(my_param, my_param, my_param)
+
+
+def test_equal_not_equatable():
+    """Tests params.equal() when not equatable"""
+
+    class Test:
+        param = params.Parameter("param", default=None)
+
+    assert not Test.param.equatable
+
+    a = Test()
+    b = Test()
+
+    obj1, obj2 = np.array([3]), np.array([3])  # equal, but different objects
+    a.param, b.param = obj1, obj1
+    assert Test.param.equal(a, b)
+
+    a.param, b.param = obj1, obj2
+    assert not Test.param.equal(a, b)
+
+
+def test_coerce_value_error():
+    """tests to make sure ValueError is thrown
+     with incorrect coerce usage"""
+
+    class Test:
+        o = params.Parameter("o", default=None)
+
+    inst = Test()
+
+    with pytest.raises(ValueError, match="is not a valid value"):
+        inst.o = params.Unconfigurable
+
+
+def test_parameter_arg_errors():
+    with pytest.raises(ValueError, match="'name' must be a string"):
+        params.Parameter(123, default=None)  # not string
+
+    with pytest.raises(ValueError, match="'optional' must be boolean"):
+        params.Parameter("o", default=None, optional="NotABool")
+
+    with pytest.raises(ValueError, match="'readonly' must be boolean"):
+        params.Parameter("o", default=None, readonly="NotABool")

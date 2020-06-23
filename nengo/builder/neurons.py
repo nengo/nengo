@@ -83,7 +83,7 @@ class SimNeurons(Operator):
 
     @property
     def _descstr(self):
-        return "%s, %s" % (self.neurons, self.J)
+        return "%s, %s, %s" % (self.neurons, self.J, self.output)
 
     def make_step(self, signals, dt, rng):
         J = signals[self.J]

@@ -39,8 +39,14 @@ def test_pdf(rng, allclose):
     z = z / z.sum() / dx
     assert allclose(y, z, atol=0.05)
 
+    with pytest.raises(ValidationError, match="PDF must sum to one"):
+        dist = PDF([0, 1, 2], [0.1, 1.1, 0.1])
 
-@pytest.mark.parametrize("low,high", [(-2, -1), (-1, 1), (1, 2), (1, -1)])
+    with pytest.raises(ValidationError, match="`x` and `p` must be the same length"):
+        dist = PDF([0, 1], [0, 1, 0])
+
+
+@pytest.mark.parametrize("low,high", [(-2, -1), (-4, 1), (1, 2), (1, -1)])
 def test_uniform(low, high, rng, allclose):
     n = 200
     dist = Uniform(low, high)
@@ -53,6 +59,17 @@ def test_uniform(low, high, rng, allclose):
         assert np.all(samples > high)
     histogram, _ = np.histogram(samples, bins=5)
     assert allclose(histogram, np.mean(histogram), atol=0.1 * n)
+
+    # test `integer=true`
+    dist = Uniform(low, high, integer=True)
+    if low < high:
+        samples = dist.sample(n, rng=rng)
+        assert np.all(samples >= low)
+        assert np.all(samples < high)
+        assert np.all(samples % 1 == 0)
+    else:
+        with pytest.raises(ValueError):
+            samples = dist.sample(n, rng=rng)
 
 
 @pytest.mark.parametrize("mean,std", [(0, 1), (0, 0), (10, 2)])
@@ -105,13 +122,16 @@ def test_hypersphere_surface(dimensions, rng, allclose):
     assert allclose(np.mean(samples, axis=0), 0, atol=0.25 / dimensions)
 
 
-def test_hypersphere_dimension_fail():
-    with pytest.raises(ValueError):
-        UniformHypersphere(0).sample(1, 0)
+def test_hypersphere_errors():
+    with pytest.raises(ValidationError, match="Must be of type 'bool'"):
+        UniformHypersphere(0)
+
+    with pytest.raises(ValidationError, match="Dimensions must be a positive integer"):
+        UniformHypersphere().sample(1, d=-1)
 
 
 def test_hypersphere_warns():
-    with pytest.warns(UserWarning):
+    with pytest.warns(UserWarning, match="min_magnitude ignored because surface"):
         UniformHypersphere(surface=True, min_magnitude=0.1)
 
 
@@ -136,6 +156,17 @@ def test_choice(weights, rng, allclose):
     p = np.ones(N) / N if dist.p is None else dist.p
     sterr = 1.0 / np.sqrt(n)  # expected maximum standard error
     assert allclose(p, p_empirical, atol=2 * sterr)
+
+
+def test_choice_errors():
+    with pytest.raises(ValidationError, match="Number of weights.*must match.*options"):
+        Choice([2], [1, 2, 3])
+
+    with pytest.raises(ValidationError, match="All weights must be non-negative"):
+        Choice([2], [-1])
+
+    with pytest.raises(ValidationError, match="Sum of weights must be positive"):
+        Choice([1, 2], [0, 0])
 
 
 @pytest.mark.parametrize("shape", [(12, 2), (7, 1), (7,), (1, 1)])

@@ -278,3 +278,23 @@ def test_ndarrays(Simulator, rng, allclose):
     with pytest.raises(ValidationError):
         with Simulator(net) as sim:
             pass
+
+
+def test_add_input_output_errors():
+    """Ensures warnings and errors are thrown as appropriate"""
+    with nengo.Network():
+        A = nengo.networks.EnsembleArray(n_neurons=10, n_ensembles=3)
+
+    A.add_neuron_input()
+    with pytest.warns(UserWarning, match="neuron_input already exists"):
+        A.add_neuron_input()
+
+    A.add_neuron_output()
+    with pytest.warns(UserWarning, match="neuron_output already exists"):
+        A.add_neuron_output()
+
+    with pytest.raises(ValidationError, match="Must have one function per ensemble"):
+        A.add_output("test", [np.sin] * (A.n_ensembles + 1))
+
+    with pytest.raises(ValidationError, match="'function' must be a callable"):
+        A.add_output("test", "not a function")

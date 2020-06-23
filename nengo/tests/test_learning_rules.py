@@ -6,7 +6,7 @@ from nengo.builder import Builder
 from nengo.builder.operator import Reset, Copy
 from nengo.builder.signal import Signal
 from nengo.dists import UniformHypersphere
-from nengo.exceptions import ValidationError
+from nengo.exceptions import BuildError, ValidationError
 from nengo.learning_rules import LearningRuleTypeParam, PES, BCM, Oja, Voja
 from nengo.processes import WhiteSignal
 from nengo.synapses import Alpha, Lowpass
@@ -706,3 +706,33 @@ def test_null_error():
 
         # works with encoder learning rules (since they don't require a transform)
         nengo.Connection(a.neurons, b, learning_rule_type=Voja(), transform=None)
+
+
+def test_encoder_learning_undecoded_error(Simulator):
+    with nengo.Network() as net:
+        nengo.Connection(
+            nengo.Ensemble(2, 2),
+            nengo.Ensemble(2, 2),
+            solver=nengo.solvers.LstsqL2(weights=True),
+            learning_rule_type=nengo.Voja(),
+        )
+
+    with pytest.raises(ValueError, match="connection must be decoded.*encoder learn"):
+        with Simulator(net):
+            pass
+
+
+def test_bad_learning_rule_modifies(Simulator):
+    class CustomRule(nengo.learning_rules.LearningRuleType):
+        # start with a valid value, then switch once we pass API check
+        modifies = "encoders"
+
+    with nengo.Network() as net:
+        nengo.Connection(
+            nengo.Ensemble(2, 2), nengo.Ensemble(2, 2), learning_rule_type=CustomRule()
+        )
+
+    CustomRule.modifies = "badvalue"  # switch to invalid valie
+    with pytest.raises(BuildError, match="Unknown target 'badvalue'"):
+        with Simulator(net):
+            pass

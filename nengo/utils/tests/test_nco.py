@@ -1,10 +1,12 @@
 import os
+import struct
+
+import pytest
 
 import numpy as np
 from numpy.testing import assert_equal
-import pytest
-
 import nengo.utils.nco as nco
+from nengo.exceptions import CacheIOError
 from nengo.utils.nco import Subfile
 
 
@@ -18,6 +20,15 @@ def testfile(data, tmpdir):
     f = tmpdir.join("file.txt")
     f.write(data)
     return f
+
+
+def write_custom_nco_header(fileobj, magic_string="NCO", version=0):
+    magic_string = magic_string.encode("utf-8")
+    header_format = "@{}sBLLLL".format(len(magic_string))
+    assert struct.calcsize(header_format) == nco.HEADER_SIZE
+
+    header = struct.pack(header_format, magic_string, version, 0, 1, 2, 3)
+    fileobj.write(header)
 
 
 class TestSubfile:
@@ -87,6 +98,32 @@ class TestSubfile:
             sf = Subfile(f, 2, 6)
             sf.seek(8, os.SEEK_END)
             assert sf.read() == ""
+
+    def test_tell(self, data, testfile):
+        with testfile.open() as f:
+            sf = Subfile(f, 2, 6)
+            assert sf.tell() == 0
+            sf.seek(3)
+            assert sf.tell() == 3
+
+    def test_read_errors(self, tmpdir):
+        # use a bad magic string
+        filepath = str(tmpdir.join("bad_magic_cache_file.txt"))
+        with open(filepath, "wb") as fh:
+            write_custom_nco_header(fh, magic_string="BAD")
+
+        with open(filepath, "rb") as fh:
+            with pytest.raises(CacheIOError, match="Not a Nengo cache object file"):
+                nco.read(fh)
+
+        # use a bad version number
+        filepath = str(tmpdir.join("bad_version_cache_file.txt"))
+        with open(filepath, "wb") as fh:
+            write_custom_nco_header(fh, version=255)
+
+        with open(filepath, "rb") as fh:
+            with pytest.raises(CacheIOError, match="NCO protocol version 255 is"):
+                nco.read(fh)
 
 
 def test_nco_roundtrip(tmpdir):

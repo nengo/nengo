@@ -65,6 +65,9 @@ def full_transform(  # noqa: C901
     size_out = conn.post_obj.size_in if slice_post else conn.size_out
     new_transform = np.zeros((size_out, size_in))
 
+    # Dense transforms should not be able to have > 2 axes, but just in case
+    assert transform.ndim <= 2, "connection transform must have <= 2 axes"
+
     if transform.ndim < 2:
         new_transform[
             np.arange(size_out)[post_slice], np.arange(size_in)[pre_slice]
@@ -86,10 +89,6 @@ def full_transform(  # noqa: C901
         #  indices can specify selections of rows and columns, rather than
         #  just individual items
         return new_transform
-    else:
-        raise ValidationError(
-            "Transforms with > 2 dims not supported", attr="transform", obj=conn
-        )
 
 
 def default_n_eval_points(n_neurons, dimensions):

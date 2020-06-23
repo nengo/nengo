@@ -4,7 +4,7 @@ import pytest
 
 import nengo
 from nengo.dists import Uniform
-from nengo.utils.ensemble import response_curves, tuning_curves
+from nengo.utils.ensemble import response_curves, tuning_curves, _similarity
 
 
 def plot_tuning_curves(plt, eval_points, activities):
@@ -116,3 +116,22 @@ def test_response_curves_direct_mode(Simulator, plt, seed, dimensions, allclose)
     assert np.all(eval_points >= -1.0) and np.all(eval_points <= 1.0)
     # eval_points is passed through in direct mode neurons
     assert allclose(eval_points, activities)
+
+
+def test_similarity(rng):
+    """Test _similarity, particularly for cols != 1 since this is untested otherwise"""
+    N = 5
+    D = 4
+    encoders = rng.uniform(-1, 1, size=(N, D))
+    ref_sims = [
+        np.mean(
+            ([np.dot(encoders[i], encoders[i + 1])] if i < N - 1 else [])
+            + ([np.dot(encoders[i], encoders[i - 1])] if i > 0 else [])
+        )
+        for i in range(N)
+    ]
+
+    row_sims = [_similarity(encoders, i, rows=N, cols=1) for i in range(N)]
+    col_sims = [_similarity(encoders, i, rows=1, cols=N) for i in range(N)]
+    assert np.allclose(row_sims, ref_sims)
+    assert np.allclose(col_sims, ref_sims)

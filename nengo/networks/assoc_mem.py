@@ -95,13 +95,6 @@ class AssociativeMemory(nengo.Network):
 
         # --- Check preconditions
         self.n_items = input_vectors.shape[0]
-        if self.n_items != output_vectors.shape[0]:
-            raise ValidationError(
-                "Number of input vectors (%d) does not match number of output "
-                "vectors (%d)" % (self.n_items, output_vectors.shape[0]),
-                attr="input_vectors",
-                obj=self,
-            )
         if threshold.shape[0] != self.n_items:
             raise ValidationError(
                 "Number of threshold values (%d) does not match number of "

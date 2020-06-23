@@ -97,7 +97,27 @@ def broadcast_shape(shape, length):
 
 
 def array(x, dims=None, min_dims=0, readonly=False, **kwargs):
-    """Create numpy array with some extra validation."""
+    """Create numpy array with some extra configuration.
+
+    This is a wrapper around ``np.array``.
+
+    Unlike ``np.array``, the additional single-dimensional indices added by
+    ``dims`` or ``min_dims`` will appear at the *end* of the shape (for example,
+    ``array([1, 2, 3], dims=4).shape == (3, 1, 1, 1)``).
+
+    Parameters
+    ----------
+    dims : int or None
+        If not ``None``, force the output array to have exactly this many indices.
+        If the input has more than this number of indices, this throws an error.
+    min_dims : int
+        Force the output array to have at least this many indices
+        (ignored if ``dims is not None``).
+    readonly : bool
+        Make the output array read-only.
+    **kwargs
+        Additional keyword arguments to pass to ``np.array``.
+    """
 
     y = np.array(x, **kwargs)
     dims = max(min_dims, y.ndim) if dims is None else dims

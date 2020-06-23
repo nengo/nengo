@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 
+from nengo.exceptions import ValidationError
 import nengo
 from nengo.networks.assoc_mem import AssociativeMemory
 
@@ -241,3 +242,101 @@ def test_am_complex(Simulator, plt, seed, rng):
     assert similarity(sim.data[out_p][more_b], vocab[1]) > 0.7
     assert similarity(sim.data[out_p][all_e], vocab[5]) > 0.7
     assert similarity(sim.data[out_p][inhib], np.ones((1, D))) < 0.05
+
+
+def test_repeat_config_warning():
+    """tests a warning is run on repeat config"""
+    with nengo.Network():
+        test_am = AssociativeMemory([0])
+
+    test_am.add_threshold_to_outputs()
+    with pytest.warns(UserWarning, match="already configured with thresholded outputs"):
+        test_am.add_threshold_to_outputs()
+
+    test_am.add_wta_network()
+    with pytest.warns(UserWarning, match="already configured with a WTA network"):
+        test_am.add_wta_network()
+
+
+def test_add_output_mapping(rng):
+    """tests add_output_mapping edge cases and errors"""
+    vocab = make_vocab(4, 64, rng)
+
+    with nengo.Network():
+        test_am = AssociativeMemory(vocab)
+
+    output_vectors = np.array([[1, 2], [3, 4], [5, 6], [7, 8]])
+    test_am.add_output_mapping("test", output_vectors)
+    assert isinstance(test_am.test, nengo.Node)
+
+    with pytest.raises(ValidationError, match="Name .* already exists as a node"):
+        test_am.add_output_mapping("test", output_vectors)
+
+
+def test_add_input_mapping(rng):
+    """tests add_input_mapping edge cases and errors"""
+    vocab = make_vocab(4, 64, rng)
+
+    with nengo.Network():
+        test_am = AssociativeMemory(vocab)
+
+    input_vectors = np.array([[1, 2], [3, 4], [5, 6], [7, 8]])
+    test_am.add_input_mapping("test", input_vectors, input_scales=[1, 2, 3, 4])
+    assert isinstance(test_am.test, nengo.Node)
+
+    with pytest.raises(ValidationError, match="Name .* already exists as a node"):
+        test_am.add_input_mapping("test", input_vectors, input_scales=[1, 2, 3, 4])
+
+    # wrong input scales shape
+    with pytest.raises(ValidationError, match="Number of input_scale values"):
+        test_am.add_input_mapping("test2", input_vectors, input_scales=[1])
+
+
+def test_associativememory_errors(rng):
+    """tests multiple errors in AssociativeMemory"""
+    vocab = make_vocab(4, 64, rng)
+
+    with nengo.Network():
+        with pytest.raises(
+            ValidationError, match="Number of input vectors.*cannot be 0"
+        ):
+            AssociativeMemory(np.zeros((0, 1)))
+
+        with pytest.raises(
+            ValidationError,
+            match="Number of input vectors.*does not match number of output vectors",
+        ):
+            AssociativeMemory(vocab, output_vectors=np.zeros((1, 64)))
+
+        with pytest.raises(
+            ValidationError,
+            match="Number of threshold values.*does not match number of input vectors",
+        ):
+            AssociativeMemory(vocab, threshold=[1])
+
+
+def test_associativememory_edge_cases(seed, rng):
+    """Tests that edge case code runs without error
+
+    TODO: In the future, these features should be tested in an integration test.
+    """
+    vocab = make_vocab(4, 64, rng)
+    out_vectors = rng.uniform(-1, 1, size=(4, 3))
+
+    with nengo.Network(seed=seed):
+        # test that an iterable threshold works
+        am = AssociativeMemory(vocab, threshold=[0.1, 0.2, 0.3, 0.4])
+
+        am.add_threshold_to_outputs()
+
+        # test add_output_mapping works when `thresh_ens is not None`
+        am.add_output_mapping("test", out_vectors)
+        inp, out = am.thresh_ens.output, am.test
+        conn = [c for c in am.out_conns if c.pre is inp and c.post is out][0]
+        assert np.allclose(conn.transform.init, out_vectors.T)
+
+        # test add_default_output_vector works when `thresh_ens is not None`
+        am.add_default_output_vector(np.ones(64))
+        assert len(am.default_vector_inhibit_conns) == 1
+        conn = am.default_vector_inhibit_conns[0]
+        assert conn.pre is am.thresh_ens.output

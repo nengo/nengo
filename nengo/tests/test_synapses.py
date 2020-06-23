@@ -111,6 +111,30 @@ def test_linearfilter(Simulator, plt, seed, allclose):
     assert signals_allclose(t, y, yhat, delay=dt, plt=plt, allclose=allclose)
 
 
+def test_linearfilter_evaluate(plt):
+    tau = 0.02
+    ord1 = LinearFilter([1], [tau, 1])
+    ord2 = LinearFilter([1], [tau ** 2, 2 * tau, 1])
+
+    f = np.logspace(-1, 3, 100)
+    y1 = ord1.evaluate(f)
+    y2 = ord2.evaluate(f)
+
+    plt.subplot(211)
+    plt.semilogx(f, 20 * np.log10(np.abs(y1)))
+    plt.semilogx(f, 20 * np.log10(np.abs(y2)))
+
+    plt.subplot(212)
+    plt.semilogx(f, np.angle(y1))
+    plt.semilogx(f, np.angle(y2))
+
+    jw_tau = 2.0j * np.pi * f * tau
+    y1_ref = 1 / (jw_tau + 1)
+    y2_ref = 1 / (jw_tau ** 2 + 2 * jw_tau + 1)
+    assert np.allclose(y1, y1_ref)
+    assert np.allclose(y2, y2_ref)
+
+
 def test_linearfilter_y0(allclose):
     # --- y0 sets initial state correctly for high-order filter
     synapse = LinearFilter(butter_num, butter_den, analog=False)
