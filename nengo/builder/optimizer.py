@@ -719,8 +719,8 @@ class SimNeuronsMerger(Merger):
         J, J_sigr = SigMerger.merge([op.J for op in ops])
         state = {}
         state_sigr = {}
-        for key in ops[0].state_sigs:
-            st, st_sigr = SigMerger.merge([op.sets[op.state_sigs[key]] for op in ops])
+        for key in ops[0].state_idxs:
+            st, st_sigr = SigMerger.merge([op.sets[op.state_idxs[key]] for op in ops])
             state[key] = st
             state_sigr.update(st_sigr)
         state.update(ops[0].state_extra)

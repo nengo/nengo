@@ -50,7 +50,7 @@ class SimNeurons(Operator):
         self.reads = [J]
         self.updates = []
 
-        self.state_sigs = {}
+        self.state_idxs = {}
         self.state_extra = {}
         if state is not None:
             for name, obj in state.items():
@@ -58,7 +58,7 @@ class SimNeurons(Operator):
                     # The signals actually stored in `self.sets` can be modified by the
                     # optimizer. To allow this possibility, we store the index of the
                     # signal in the sets list instead of storing the signal itself.
-                    self.state_sigs[name] = len(self.sets)
+                    self.state_idxs[name] = len(self.sets)
                     self.sets.append(obj)
                 else:
                     # The only supported extra is a RandomState right now
@@ -70,12 +70,16 @@ class SimNeurons(Operator):
         return self.reads[0]
 
     @property
+    def state(self):
+        return {key: self.sets[idx] for key, idx in self.state_idxs.items()}
+
+    @property
     def _descstr(self):
         return "%s, %s" % (self.neurons, self.J)
 
     def make_step(self, signals, dt, rng):
         J = signals[self.J]
-        state = {name: signals[self.sets[idx]] for name, idx in self.state_sigs.items()}
+        state = {name: signals[sig] for name, sig in self.state.items()}
         state.update(self.state_extra)
 
         def step_simneurons():
