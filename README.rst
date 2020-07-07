@@ -43,7 +43,7 @@ Installation
 Nengo depends on NumPy, and we recommend that you
 install NumPy before installing Nengo.
 If you're not sure how to do this, we recommend using
-`Anaconda <https://store.continuum.io/cshop/anaconda/>`_.
+`Anaconda <https://www.anaconda.com/products/individual>`_.
 
 To install Nengo::
 
@@ -70,17 +70,17 @@ showing how Nengo enables the creation and simulation of
 large-scale neural models in few lines of code.
 
 1. `100 LIF neurons representing a sine wave
-   <https://www.nengo.ai/nengo/examples/many_neurons.html>`_
+   <https://www.nengo.ai/nengo/examples/basic/many_neurons.html>`_
 2. `Computing the square across a neural connection
-   <https://www.nengo.ai/nengo/examples/squaring.html>`_
+   <https://www.nengo.ai/nengo/examples/basic/squaring.html>`_
 3. `Controlled oscillatory dynamics with a recurrent connection
-   <https://www.nengo.ai/nengo/examples/controlled_oscillator.html>`_
+   <https://www.nengo.ai/nengo/examples/dynamics/controlled_oscillator.html>`_
 4. `Learning a communication channel with the PES rule
-   <https://www.nengo.ai/nengo/examples/learn_communication_channel.html>`_
+   <https://www.nengo.ai/nengo/examples/learning/learn_communication_channel.html>`_
 5. `Simple question answering with the Semantic Pointer Architecture
-   <https://www.nengo.ai/nengo/examples/question.html>`_
+   <https://www.nengo.ai/nengo-spa/examples/question.html>`_
 6. `A summary of the principles underlying all of these examples
-   <https://www.nengo.ai/nengo/examples/nef_summary.html>`_
+   <https://www.nengo.ai/nengo/examples/advanced/nef_summary.html>`_
 
 Documentation
 =============
