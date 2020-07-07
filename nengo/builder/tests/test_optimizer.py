@@ -198,11 +198,11 @@ def test_elementwiseincmerger_scalars():
 def test_simneuronsmerger_warning(rng):
     nt = nengo.PoissonSpiking(nengo.Tanh())
     op1 = SimNeurons(
-        nt, J=Signal(shape=(1,)), state={"spikes": Signal(shape=(1,)), "rng": rng}
+        nt, J=Signal(shape=(1,)), output=Signal(shape=(1,)), state={"rng": rng}
     )
 
     op2 = SimNeurons(
-        nt, J=Signal(shape=(1,)), state={"spikes": Signal(shape=(1,)), "rng": rng}
+        nt, J=Signal(shape=(1,)), output=Signal(shape=(1,)), state={"rng": rng}
     )
     assert SimNeuronsMerger.is_mergeable(op1, op2)
     with pytest.warns(UserWarning, match="Extra state has been modified"):

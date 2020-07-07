@@ -717,6 +717,7 @@ class SimNeuronsMerger(Merger):
     @staticmethod
     def merge(ops):
         J, J_sigr = SigMerger.merge([op.J for op in ops])
+        output, out_sigr = SigMerger.merge([op.output for op in ops])
         state = {}
         state_sigr = {}
         for key in ops[0].state_idxs:
@@ -728,11 +729,11 @@ class SimNeuronsMerger(Merger):
             warnings.warn(
                 "Extra state has been modified when merging two or more SimNeurons "
                 "ops associated with %r neuron types. If this causes issues, turn off "
-                "the optimizer." % (type(ops[0].neurons).__name__)
+                "the optimizer." % (type(ops[0].neurons).__name__,)
             )
         return (
-            SimNeurons(ops[0].neurons, J, state=state),
-            Merger.merge_dicts(J_sigr, state_sigr),
+            SimNeurons(ops[0].neurons, J, output, state=state),
+            Merger.merge_dicts(J_sigr, out_sigr, state_sigr),
         )
 
 

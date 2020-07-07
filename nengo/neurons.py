@@ -90,7 +90,7 @@ class NeuronType(FrozenObject):
 
     @property
     def probeable(self):
-        return tuple(self.state)
+        return ("output",) + tuple(self.state)
 
     def current(self, x, gain, bias):
         """Compute current injected in each neuron given input, gain and bias.
@@ -268,7 +268,7 @@ class NeuronType(FrozenObject):
         self.step(dt=1.0, J=J, output=out)
         return out
 
-    def step(self, dt, J, **state):
+    def step(self, dt, J, output, **state):
         """Implements the differential equation for this neuron type.
 
         At a minimum, NeuronType subclasses must implement this method.
@@ -281,6 +281,8 @@ class NeuronType(FrozenObject):
             Simulation timestep.
         J : (n_neurons,) array_like
             Input currents associated with each neuron.
+        output : (n_neurons,) array_like
+            Output activity associated with each neuron (e.g., spikes or firing rates).
         state : {str: array_like}
             State variables associated with the population.
         """
@@ -324,7 +326,7 @@ class Direct(NeuronType):
         """Always returns ``x``."""
         return np.array(x, dtype=float, copy=False, ndmin=1)
 
-    def step(self, dt, J):
+    def step(self, dt, J, output):
         """Raises an error if called.
 
         Rather than calling this function, the simulator will detect that
@@ -350,7 +352,6 @@ class RectifiedLinear(NeuronType):
         These values will override the defaults set in the class's state attribute.
     """
 
-    state = {"output": Choice([0])}
     negative = False
 
     amplitude = NumberParam("amplitude", low=0, low_open=True)
@@ -397,7 +398,7 @@ class SpikingRectifiedLinear(RectifiedLinear):
         These values will override the defaults set in the class's state attribute.
     """
 
-    state = {"output": Choice([0]), "voltage": Uniform(low=0, high=1)}
+    state = {"voltage": Uniform(low=0, high=1)}
     spiking = True
 
     def rates(self, x, gain, bias):
@@ -434,7 +435,6 @@ class Sigmoid(NeuronType):
         These values will override the defaults set in the class's state attribute.
     """
 
-    state = {"output": Choice([0])}
     negative = False
 
     tau_ref = NumberParam("tau_ref", low=0, low_open=True)
@@ -486,8 +486,6 @@ class Tanh(NeuronType):
         Mapping from state variables names to their desired initial value.
         These values will override the defaults set in the class's state attribute.
     """
-
-    state = {"output": Choice([0])}
 
     tau_ref = NumberParam("tau_ref", low=0, low_open=True)
 
@@ -544,7 +542,6 @@ class LIFRate(NeuronType):
         These values will override the defaults set in the class's state attribute.
     """
 
-    state = {"output": Choice([0])}
     negative = False
 
     tau_rc = NumberParam("tau_rc", low=0, low_open=True)
@@ -631,7 +628,6 @@ class LIF(LIFRate):
     """
 
     state = {
-        "output": Choice([0]),
         "voltage": Uniform(low=0, high=1),
         "refractory_time": Choice([0]),
     }
@@ -719,7 +715,7 @@ class AdaptiveLIFRate(LIFRate):
        16.10 (2004): 2101-2124.
     """
 
-    state = {"output": Choice([0]), "adaptation": Choice([0])}
+    state = {"adaptation": Choice([0])}
 
     tau_n = NumberParam("tau_n", low=0, low_open=True)
     inc_n = NumberParam("inc_n", low=0)
@@ -791,7 +787,6 @@ class AdaptiveLIF(LIF):
     """
 
     state = {
-        "output": Choice([0]),
         "voltage": Uniform(low=0, high=1),
         "refractory_time": Choice([0]),
         "adaptation": Choice([0]),
@@ -872,7 +867,6 @@ class Izhikevich(NeuronType):
     """
 
     state = {
-        "output": Choice([0]),
         "voltage": Uniform(low=0, high=1),
         "recovery": Choice([0]),
     }
@@ -956,9 +950,8 @@ class RatesToSpikesNeuronType(NeuronType):
                 % (type(base_type).__name__)
             )
 
-        if "state" not in self.__dict__:
-            # Allow subclasses to initialize self.state
-            self.state = {"output": Choice([0])}
+        # note: copy first, because we don't want to be modifying the class attribute
+        self.state = self.state.copy()
         self.state.update(base_type.state)
 
         super().__init__(initial_state)
@@ -1003,7 +996,7 @@ class RegularSpiking(RatesToSpikesNeuronType):
                 attr="base_type",
                 obj=self,
             )
-        self.state = {"output": Choice([0]), "voltage": Uniform(low=0, high=1)}
+        self.state = {"voltage": Uniform(low=0, high=1)}
         super().__init__(base_type, amplitude=amplitude, initial_state=initial_state)
 
     def step(self, dt, J, output, voltage, **base_state):

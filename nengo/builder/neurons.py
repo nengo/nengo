@@ -17,6 +17,8 @@ class SimNeurons(Operator):
         The `.NeuronType`, which defines a ``step`` function.
     J : Signal
         The input current.
+    output : Signal
+        The neuron output signal that will be set
     state : list, optional
         A list of additional neuron state signals set by ``step``.
     tag : str, optional
@@ -28,6 +30,8 @@ class SimNeurons(Operator):
         The input current.
     neurons : NeuronType
         The `.NeuronType`, which defines a ``step`` function.
+    output : Signal
+        The neuron output signal that will be set.
     state : list
         A list of additional neuron state signals set by ``step``.
     tag : str or None
@@ -35,17 +39,17 @@ class SimNeurons(Operator):
 
     Notes
     -----
-    1. sets ``state``
+    1. sets ``[output] + state``
     2. incs ``[]``
     3. reads ``[J]``
     4. updates ``[]``
     """
 
-    def __init__(self, neurons, J, state=None, tag=None):
+    def __init__(self, neurons, J, output, state=None, tag=None):
         super().__init__(tag=tag)
         self.neurons = neurons
 
-        self.sets = []
+        self.sets = [output]
         self.incs = []
         self.reads = [J]
         self.updates = []
@@ -70,6 +74,10 @@ class SimNeurons(Operator):
         return self.reads[0]
 
     @property
+    def output(self):
+        return self.sets[0]
+
+    @property
     def state(self):
         return {key: self.sets[idx] for key, idx in self.state_idxs.items()}
 
@@ -79,11 +87,12 @@ class SimNeurons(Operator):
 
     def make_step(self, signals, dt, rng):
         J = signals[self.J]
+        output = signals[self.output]
         state = {name: signals[sig] for name, sig in self.state.items()}
         state.update(self.state_extra)
 
         def step_simneurons():
-            self.neurons.step(dt, J, **state)
+            self.neurons.step(dt, J, output, **state)
 
         return step_simneurons
 
@@ -133,7 +142,11 @@ def build_neurons(model, neurontype, neurons):
                 "currently supported." % (key, type(init).__name__)
             )
 
-    model.sig[neurons]["out"] = state["output"]
     model.add_op(
-        SimNeurons(neurons=neurontype, J=model.sig[neurons]["in"], state=state)
+        SimNeurons(
+            neurons=neurontype,
+            J=model.sig[neurons]["in"],
+            output=model.sig[neurons]["out"],
+            state=state,
+        )
     )

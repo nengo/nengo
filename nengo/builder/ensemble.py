@@ -215,6 +215,9 @@ def build_ensemble(model, ens):
         model.sig[ens.neurons]["in"] = Signal(
             shape=ens.n_neurons, name="%s.neuron_in" % ens
         )
+        model.sig[ens.neurons]["out"] = Signal(
+            shape=ens.n_neurons, name="%s.neuron_out" % ens
+        )
         model.sig[ens.neurons]["bias"] = Signal(
             bias, name="%s.bias" % ens, readonly=True
         )
