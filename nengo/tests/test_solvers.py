@@ -427,7 +427,7 @@ def test_compare_solvers(Simulator, plt, seed, allclose):
 
 
 @pytest.mark.slow
-def test_regularization(Simulator, nl_nodirect, plt):
+def test_regularization(Simulator, NonDirectNeuronType, plt):
     # TODO: multiple trials per parameter set, with different seeds
 
     Solvers = [LstsqL2, LstsqL2nz]
@@ -443,7 +443,7 @@ def test_regularization(Simulator, nl_nodirect, plt):
 
     model = nengo.Network("test_regularization")
     with model:
-        model.config[nengo.Ensemble].neuron_type = nl_nodirect()
+        model.config[nengo.Ensemble].neuron_type = NonDirectNeuronType()
         u = nengo.Node(output=input_function)
         up = nengo.Probe(u)
 
@@ -556,7 +556,7 @@ def test_eval_points_static(plt, rng):
 
 
 @pytest.mark.slow
-def test_eval_points(Simulator, nl_nodirect, plt, seed, rng):
+def test_eval_points(Simulator, NonDirectNeuronType, plt, seed, rng):
     n = 100
     d = 5
     filter = 0.08
@@ -581,7 +581,7 @@ def test_eval_points(Simulator, nl_nodirect, plt, seed, rng):
         for i, n_points in enumerate(eval_points):
             model = nengo.Network(seed=seed)
             with model:
-                model.config[nengo.Ensemble].neuron_type = nl_nodirect()
+                model.config[nengo.Ensemble].neuron_type = NonDirectNeuronType()
                 u = nengo.Node(output=x)
                 a = nengo.Ensemble(n * d, dimensions=d, eval_points=points[:n_points])
                 nengo.Connection(u, a, synapse=0)

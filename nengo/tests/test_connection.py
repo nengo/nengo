@@ -32,12 +32,12 @@ def test_args(AnyNeuronType, seed, rng):
         )
 
 
-def test_node_to_neurons(Simulator, NonDirectNeuronType, plt, seed, allclose):
+def test_node_to_neurons(Simulator, PositiveNeuronType, plt, seed, allclose):
     N = 50
 
     m = nengo.Network(seed=seed)
     with m:
-        m.config[nengo.Ensemble].neuron_type = NonDirectNeuronType()
+        m.config[nengo.Ensemble].neuron_type = PositiveNeuronType()
         a = nengo.Ensemble(N, dimensions=1)
         inn = nengo.Node(output=np.sin)
         inh = nengo.Node(Piecewise({0: 0, 0.5: 1}))
