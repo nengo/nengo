@@ -146,7 +146,7 @@ def test_neuron_types():
     check_init_args(RectifiedLinear, ["amplitude", "initial_state"])
     check_repr(RectifiedLinear())
     check_repr(RectifiedLinear(amplitude=2))
-    check_repr(RectifiedLinear(initial_state={"rates": Choice([1.0])}))
+    check_repr(RectifiedLinear(initial_state={"output": Choice([1.0])}))
     assert repr(RectifiedLinear()) == "RectifiedLinear()"
 
     check_init_args(SpikingRectifiedLinear, ["amplitude", "initial_state"])
@@ -158,7 +158,7 @@ def test_neuron_types():
     check_init_args(Sigmoid, ["tau_ref", "initial_state"])
     check_repr(Sigmoid())
     check_repr(Sigmoid(tau_ref=0.1))
-    check_repr(Sigmoid(initial_state={"rates": Choice([1.0])}))
+    check_repr(Sigmoid(initial_state={"output": Choice([1.0])}))
     assert repr(Sigmoid()), "Sigmoid()"
     assert repr(Sigmoid(tau_ref=0.001)) == "Sigmoid(tau_ref=0.001)"
 
@@ -171,7 +171,7 @@ def test_neuron_types():
     check_repr(LIFRate(tau_rc=0.05, amplitude=2))
     check_repr(LIFRate(tau_ref=0.02, amplitude=2))
     check_repr(LIFRate(tau_rc=0.05, tau_ref=0.02, amplitude=2))
-    check_repr(LIFRate(initial_state={"rates": Choice([1.0])}))
+    check_repr(LIFRate(initial_state={"output": Choice([1.0])}))
     assert repr(LIFRate()) == "LIFRate()"
     assert repr(LIFRate(tau_rc=0.01, tau_ref=0)) == "LIFRate(tau_rc=0.01, tau_ref=0)"
 
@@ -280,7 +280,7 @@ def test_neuron_types():
     check_init_args(Tanh, ["tau_ref", "initial_state"])
     check_repr(Tanh())
     check_repr(Tanh(tau_ref=0.1))
-    check_repr(Tanh(initial_state={"rates": Choice([1])}))
+    check_repr(Tanh(initial_state={"output": Choice([1])}))
 
 
 def test_learning_rule_types():

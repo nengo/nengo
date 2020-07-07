@@ -64,8 +64,8 @@ def signal_probe(model, key, probe):
 
 probemap = {
     Ensemble: {"decoded_output": None, "input": "in", "scaled_encoders": "encoders"},
-    Neurons: {"output": None, "spikes": None, "rates": None, "input": "in"},
-    Node: {"output": None},
+    Neurons: {"output": "out", "spikes": "out", "rates": "out", "input": "in"},
+    Node: {"output": "out"},
     Connection: {"output": "weighted", "input": "in"},
     LearningRule: {},  # make LR signals probeable, but no mapping required
 }
@@ -108,7 +108,7 @@ def build_probe(model, probe):
     else:
         raise BuildError("Type %r is not probeable" % type(probe.obj).__name__)
 
-    key = probeables[probe.attr] if probe.attr in probeables else probe.attr
+    key = probeables.get(probe.attr, probe.attr)
     if key is None:
         conn_probe(model, probe)
     else:

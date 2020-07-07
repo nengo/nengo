@@ -17,8 +17,6 @@ class SimNeurons(Operator):
         The `.NeuronType`, which defines a ``step`` function.
     J : Signal
         The input current.
-    output : Signal
-        The neuron output signal that will be set.
     state : list, optional
         A list of additional neuron state signals set by ``step``.
     tag : str, optional
@@ -30,8 +28,6 @@ class SimNeurons(Operator):
         The input current.
     neurons : NeuronType
         The `.NeuronType`, which defines a ``step`` function.
-    output : Signal
-        The neuron output signal that will be set.
     state : list
         A list of additional neuron state signals set by ``step``.
     tag : str or None
@@ -39,7 +35,7 @@ class SimNeurons(Operator):
 
     Notes
     -----
-    1. sets ``[output] + state``
+    1. sets ``state``
     2. incs ``[]``
     3. reads ``[J]``
     4. updates ``[]``
@@ -133,9 +129,7 @@ def build_neurons(model, neurontype, neurons):
                 "currently supported." % (key, type(init).__name__)
             )
 
-    model.sig[neurons]["out"] = (
-        state["spikes"] if neurontype.spiking else state["rates"]
-    )
+    model.sig[neurons]["out"] = state["output"]
     model.add_op(
         SimNeurons(neurons=neurontype, J=model.sig[neurons]["in"], state=state)
     )

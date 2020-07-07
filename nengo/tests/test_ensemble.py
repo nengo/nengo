@@ -390,7 +390,7 @@ def test_noise_copies_ok(Simulator, NonDirectNeuronType, seed, plt, allclose):
     process = FilteredNoise(synapse=nengo.Alpha(1.0), dist=Choice([0.5]))
     with nengo.Network(seed=seed) as model:
         if (
-            "spikes" in NonDirectNeuronType.state
+            NonDirectNeuronType.spiking
             or RegularSpiking in NonDirectNeuronType.__bases__
         ):
             neuron_type = NonDirectNeuronType(initial_state={"voltage": Choice([0])})

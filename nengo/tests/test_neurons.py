@@ -772,3 +772,8 @@ def test_bad_initial_state(rng, Simulator):
     with pytest.raises(BuildError, match="State 'dict' is of type 'dict'. Only"):
         with Simulator(net):
             pass
+
+
+def test_spikes_to_spikes_warning():
+    with pytest.warns(UserWarning, match="type 'LIF', which is a spiking"):
+        nengo.PoissonSpiking(nengo.LIF())
