@@ -100,15 +100,20 @@ class WeakKeyIDDictionary(collections.abc.MutableMapping):
         del self._ref2id[id(ref)]
 
     def get(self, k, default=None):
+        """Return item from dictionary."""
+
         return self._keyvalues[id(k)] if k in self else default
 
     def keys(self):
+        """Return dictionary keys."""
+
         return self._keyrefs.values()
 
     def iterkeys(self):
         return self._keyrefs.values()
 
     def items(self):
+        """Return dictionary key, value pairs."""
         for k in self:
             yield k, self[k]
 
@@ -117,6 +122,7 @@ class WeakKeyIDDictionary(collections.abc.MutableMapping):
             yield k, self[k]
 
     def update(self, in_dict=None):
+        """Update with items from other dictionary."""
         if in_dict is not None:
             for key, value in in_dict.items():
                 self.__setitem__(key, value)
