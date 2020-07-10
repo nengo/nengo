@@ -15,27 +15,6 @@ from nengo.utils.builder import (
 )
 
 
-def test_create_replacement_exception():
-    """ensures that _create_replacement_connection throws unconvertible"""
-
-    with nengo.Network():
-
-        class FakeObj:
-            output = None
-
-        class Test:
-            post_obj = FakeObj
-            pre_obj = FakeObj
-            synapse = None
-            function = "not none"
-            transform = None
-
-        c_in = Test
-        c_out = Test
-        with pytest.raises(Unconvertible):
-            _create_replacement_connection(c_in, c_out)
-
-
 def test_full_transform():
     """Tests full_transforms and its exceptions"""
     N = 30
@@ -237,3 +216,24 @@ def test_passthrough_errors():
         nengo.Connection(node, node, synapse=0.01)
     with pytest.raises(Unconvertible):
         remove_passthrough_nodes(*objs_and_connections(model))
+
+
+def test_create_replacement_exception():
+    """ensures that _create_replacement_connection throws unconvertible"""
+
+    with nengo.Network():
+
+        class FakeObj:
+            output = None
+
+        class Test:
+            post_obj = FakeObj
+            pre_obj = FakeObj
+            synapse = None
+            function = "not none"
+            transform = None
+
+        c_in = Test
+        c_out = Test
+        with pytest.raises(Unconvertible):
+            _create_replacement_connection(c_in, c_out)

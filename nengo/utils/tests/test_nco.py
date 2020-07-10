@@ -23,27 +23,6 @@ def testfile(data, tmpdir):
 
 
 class TestSubfile:
-    def test_tell(self, data, testfile):
-        with testfile.open() as f:
-            assert Subfile(f, 2, 6).tell() == int(data[0])
-            # is it a coincidence this works?
-
-    def test_cacheioerror_when_caching_wrong_file(self, data, testfile):
-        class FakeFile:
-            byte_number = 40
-
-            def __init__(self, byte_number):
-                self.byte_number = byte_number
-
-            def read(self, a):
-                return bytes(self.byte_number)  # return bytes(40) for travis-ci
-
-        with pytest.raises(CacheIOError):
-            try:
-                nco.read(FakeFile(40))
-            except struct.error:
-                nco.read(FakeFile(20))
-
     def test_reads_only_from_start_to_end(self, data, testfile):
         with testfile.open() as f:
             assert Subfile(f, 2, 6).read() == data[2:6]
@@ -110,6 +89,27 @@ class TestSubfile:
             sf = Subfile(f, 2, 6)
             sf.seek(8, os.SEEK_END)
             assert sf.read() == ""
+
+    def test_tell(self, data, testfile):
+        with testfile.open() as f:
+            assert Subfile(f, 2, 6).tell() == int(data[0])
+            # is it a coincidence this works?
+
+    def test_cacheioerror_when_caching_wrong_file(self, data, testfile):
+        class FakeFile:
+            byte_number = 40
+
+            def __init__(self, byte_number):
+                self.byte_number = byte_number
+
+            def read(self, a):
+                return bytes(self.byte_number)  # return bytes(40) for travis-ci
+
+        with pytest.raises(CacheIOError):
+            try:
+                nco.read(FakeFile(40))
+            except struct.error:
+                nco.read(FakeFile(20))
 
 
 def test_nco_roundtrip(tmpdir):

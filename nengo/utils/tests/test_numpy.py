@@ -8,24 +8,6 @@ from nengo.utils.numpy import array_hash, meshgrid_nd, as_shape, broadcast_shape
 from nengo._vendor.scipy import expm
 
 
-def test_as_shape_ValueError():
-    """tests the as shape function's value error"""
-    with pytest.raises(ValueError):
-        as_shape(1.0)  # float is noniterable and noninteger
-
-
-def test_brodcast_shape():
-    """Get the shape returned"""
-    assert broadcast_shape([1], 0) == [1]
-
-
-def test_array():
-    """Tests readonly and validationError"""
-    with pytest.raises(ValidationError):
-        array([1, 2, 3], dims=0)
-    array([1, 2, 3], readonly=True)
-
-
 def test_meshgrid_nd(allclose):
     a = [0, 0, 1]
     b = [1, 2, 3]
@@ -106,3 +88,21 @@ def test_expm(rng, allclose):
     scipy_linalg = pytest.importorskip("scipy.linalg")
     for a in [np.eye(3), rng.randn(10, 10), -10 + rng.randn(10, 10)]:
         assert allclose(scipy_linalg.expm(a), expm(a))
+
+
+def test_as_shape_ValueError():
+    """tests the as shape function's value error"""
+    with pytest.raises(ValueError):
+        as_shape(1.0)  # float is noniterable and noninteger
+
+
+def test_brodcast_shape():
+    """Get the shape returned"""
+    assert broadcast_shape([1], 0) == [1]
+
+
+def test_array():
+    """Tests readonly and validationError"""
+    with pytest.raises(ValidationError):
+        array([1, 2, 3], dims=0)
+    array([1, 2, 3], readonly=True)

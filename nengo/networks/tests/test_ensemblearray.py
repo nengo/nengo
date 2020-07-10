@@ -6,41 +6,6 @@ from nengo.dists import Choice, UniformHypersphere
 from nengo.exceptions import ValidationError
 
 
-def test_add_neuron_input(seed, rng):
-    """Ensures warnings and errors are thrown as appropriate"""
-    dims = 3
-    n_neurons = 60
-    radius = 1.0
-
-    # a = rng.uniform(low=-0.7, high=0.7, size=dims)
-    # b = rng.uniform(low=-0.7, high=0.7, size=dims)
-    # c = np.zeros(2 * dims)
-    # c[::2] = a
-    # c[1::2] = b
-
-    model = nengo.Network(seed=seed)
-    with model:
-        # inputA = nengo.Node(a)
-        # inputB = nengo.Node(b)
-        A = nengo.networks.EnsembleArray(n_neurons, dims, radius=radius)
-
-    A.add_neuron_input()
-    with pytest.warns(UserWarning):
-        A.add_neuron_input()  # reapeat call warning
-    A.add_neuron_output()
-    with pytest.warns(UserWarning):
-        A.add_neuron_output()  # reapeat call warning
-
-    name = "test"
-    function = np.array([np.sin, np.sin])
-    with pytest.raises(ValidationError):
-        A.add_output(name, function)
-
-    function = "notafunction"
-    with pytest.raises(ValidationError):
-        A.add_output(name, function)
-
-
 def test_multidim(Simulator, plt, seed, rng, allclose):
     """Tests with multiple dimensions per ensemble"""
     dims = 3
@@ -313,3 +278,38 @@ def test_ndarrays(Simulator, rng, allclose):
     with pytest.raises(ValidationError):
         with Simulator(net) as sim:
             pass
+
+
+def test_add_neuron_input(seed, rng):
+    """Ensures warnings and errors are thrown as appropriate"""
+    dims = 3
+    n_neurons = 60
+    radius = 1.0
+
+    # a = rng.uniform(low=-0.7, high=0.7, size=dims)
+    # b = rng.uniform(low=-0.7, high=0.7, size=dims)
+    # c = np.zeros(2 * dims)
+    # c[::2] = a
+    # c[1::2] = b
+
+    model = nengo.Network(seed=seed)
+    with model:
+        # inputA = nengo.Node(a)
+        # inputB = nengo.Node(b)
+        A = nengo.networks.EnsembleArray(n_neurons, dims, radius=radius)
+
+    A.add_neuron_input()
+    with pytest.warns(UserWarning):
+        A.add_neuron_input()  # reapeat call warning
+    A.add_neuron_output()
+    with pytest.warns(UserWarning):
+        A.add_neuron_output()  # reapeat call warning
+
+    name = "test"
+    function = np.array([np.sin, np.sin])
+    with pytest.raises(ValidationError):
+        A.add_output(name, function)
+
+    function = "notafunction"
+    with pytest.raises(ValidationError):
+        A.add_output(name, function)

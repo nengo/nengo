@@ -17,6 +17,74 @@ from nengo.utils.filter_design import (
 )
 
 
+@pytest.mark.parametrize("dt", [1e-3, 1e-2, 1e-1])
+def test_cont2discrete_zoh(dt, allclose):
+    """test the function ss2zpk"""
+    taus = np.logspace(-np.log10(dt) - 1, np.log10(dt) + 3, 30)
+
+    # test with lowpass filter, using analytic solution
+    for tau in taus:
+        num, den = [1], [tau, 1]
+        d = -np.expm1(-dt / tau)
+        num0, den0 = [0, d], [1, d - 1]
+        num1, den1, _ = cont2discrete((num, den), dt)
+        assert allclose(num0, num1)
+        assert allclose(den0, den1)
+
+    # test with alpha filter, using analytic solution
+    for tau in taus:
+        num, den = [1], [tau ** 2, 2 * tau, 1]
+        a = dt / tau
+        ea = np.exp(-a)
+        num0 = [0, -a * ea + (1 - ea), ea * (a + ea - 1)]
+        den0 = [1, -2 * ea, ea ** 2]
+        num1, den1, _ = cont2discrete((num, den), dt)
+        assert allclose(num0, num1)
+        assert allclose(den0, den1)
+
+    # test integrative filter, using analytic solution
+    num, den = [1], [1, 0]
+    num0, den0 = [0, dt], [1, -1]
+    num1, den1, _ = cont2discrete((num, den), dt)
+    assert allclose(num0, num1)
+    assert allclose(den0, den1)
+
+    if dt == 1e-3:
+        # test with len(sys) == 3
+        assert (
+            repr(cont2discrete(([1], [1], [1]), 1e-3))
+            == "(array([1.0010005]), array([1.0010005]), 1.0, 0.001)"
+        )
+
+        # test with len(sys) == 5
+        with pytest.raises(ValueError):
+            cont2discrete(([1], [1], [1], [1], [1]), 1e-3)
+
+        # test method gbt and alpha None
+        with pytest.raises(ValueError):
+            cont2discrete(([1], [1], [1]), 1e-3, method="gbt", alpha=None)
+
+        # test method gbt and alpha invalid
+        with pytest.raises(ValueError):
+            cont2discrete(([1], [1], [1]), 1e-3, method="gbt", alpha=2)
+
+        # test method bilinear
+        assert (
+            repr(cont2discrete(([1], [1], [1]), 1e-3, method="bilinear"))
+            == "(array([1.0010005]), array([1.0010005]), 1.0, 0.001)"
+        )
+
+        # test method backward_diff
+        assert (
+            repr(cont2discrete(([1], [1], [1]), 1e-3, method="backward_diff"))
+            == "(array([1.001001]), array([1.001001]), 1.0, 0.001)"
+        )
+
+        # test bad method
+        with pytest.raises(ValueError):
+            cont2discrete(([1], [1], [1]), 1e-3, method="not_a_method")
+
+
 def test_tf2zpk():
     """test the tf2zpk function"""
     (a, b, c) = tf2zpk(1, 2)
@@ -123,71 +191,3 @@ def test_ss2zpk():
     """test the function ss2zpk"""
     predicted = (np.array([0.0]), np.array([1.0]), 1.0)
     assert repr(ss2zpk([1], [1], [1], [1])) == repr(predicted)
-
-
-@pytest.mark.parametrize("dt", [1e-3, 1e-2, 1e-1])
-def test_cont2discrete_zoh(dt, allclose):
-    """test the function ss2zpk"""
-    taus = np.logspace(-np.log10(dt) - 1, np.log10(dt) + 3, 30)
-
-    # test with lowpass filter, using analytic solution
-    for tau in taus:
-        num, den = [1], [tau, 1]
-        d = -np.expm1(-dt / tau)
-        num0, den0 = [0, d], [1, d - 1]
-        num1, den1, _ = cont2discrete((num, den), dt)
-        assert allclose(num0, num1)
-        assert allclose(den0, den1)
-
-    # test with alpha filter, using analytic solution
-    for tau in taus:
-        num, den = [1], [tau ** 2, 2 * tau, 1]
-        a = dt / tau
-        ea = np.exp(-a)
-        num0 = [0, -a * ea + (1 - ea), ea * (a + ea - 1)]
-        den0 = [1, -2 * ea, ea ** 2]
-        num1, den1, _ = cont2discrete((num, den), dt)
-        assert allclose(num0, num1)
-        assert allclose(den0, den1)
-
-    # test integrative filter, using analytic solution
-    num, den = [1], [1, 0]
-    num0, den0 = [0, dt], [1, -1]
-    num1, den1, _ = cont2discrete((num, den), dt)
-    assert allclose(num0, num1)
-    assert allclose(den0, den1)
-
-    if dt == 1e-3:
-        # test with len(sys) == 3
-        assert (
-            repr(cont2discrete(([1], [1], [1]), 1e-3))
-            == "(array([1.0010005]), array([1.0010005]), 1.0, 0.001)"
-        )
-
-        # test with len(sys) == 5
-        with pytest.raises(ValueError):
-            cont2discrete(([1], [1], [1], [1], [1]), 1e-3)
-
-        # test method gbt and alpha None
-        with pytest.raises(ValueError):
-            cont2discrete(([1], [1], [1]), 1e-3, method="gbt", alpha=None)
-
-        # test method gbt and alpha invalid
-        with pytest.raises(ValueError):
-            cont2discrete(([1], [1], [1]), 1e-3, method="gbt", alpha=2)
-
-        # test method bilinear
-        assert (
-            repr(cont2discrete(([1], [1], [1]), 1e-3, method="bilinear"))
-            == "(array([1.0010005]), array([1.0010005]), 1.0, 0.001)"
-        )
-
-        # test method backward_diff
-        assert (
-            repr(cont2discrete(([1], [1], [1]), 1e-3, method="backward_diff"))
-            == "(array([1.001001]), array([1.001001]), 1.0, 0.001)"
-        )
-
-        # test bad method
-        with pytest.raises(ValueError):
-            cont2discrete(([1], [1], [1]), 1e-3, method="not_a_method")

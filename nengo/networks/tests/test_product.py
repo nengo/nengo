@@ -5,11 +5,6 @@ from nengo.networks.product import dot_product_transform
 from nengo.utils.numpy import rms
 
 
-def test_dot_product_transform():
-    """tests the function dot_product_transform"""
-    assert dot_product_transform(2).all() == 1
-
-
 def test_sine_waves(Simulator, plt, seed):
     radius = 2
     dim = 5
@@ -76,3 +71,8 @@ def test_direct_mode_with_single_neuron(Simulator, plt, seed):
         plt.yticks((-2, 0, 2))
 
     assert rms(ideal[: len(offset), :] - sim.data[p][offset, :]) < 0.2
+
+
+def test_dot_product_transform():
+    """tests the function dot_product_transform"""
+    assert dot_product_transform(2).all() == 1

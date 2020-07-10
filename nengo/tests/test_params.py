@@ -8,77 +8,6 @@ from nengo.exceptions import ObsoleteError, ValidationError, ConfigError
 from nengo.params import FunctionInfo
 
 
-def test_ndarrayparam_coerce_defaults():
-    """Tests NdarrayParam coerce_defaults if shape is none"""
-    params.NdarrayParam.shape = None
-    assert params.NdarrayParam("name").coerce_defaults is True
-
-
-def test_parameter_get_error():
-    """Tests params get ValidationError"""
-
-    class Test:
-        p = params.Parameter("something", params.Unconfigurable)
-
-    inst = Test()
-    with pytest.raises(ValidationError):
-        inst.p
-
-
-def test_parameter_set_default_error():
-    """Tests params set_default ConfigError"""
-    my_param = params.Parameter("something")
-    with pytest.raises(ConfigError):
-        params.Parameter.set_default(my_param, my_param, my_param)
-
-
-def test_not_equatable():
-    """Tests params.equal() when not equatable"""
-
-    class Test:
-        equatable = False
-        a = params.Parameter("o", default=None)
-        b = params.Parameter("o", default=None)
-
-        def __get__(self, instance, value):
-            return instance
-
-    inst = Test()
-
-    assert params.Parameter.equal(inst, inst.a, inst.b)
-
-
-def test_coerce_value_error():
-    """tests to make sure ValueError is thrown
-     with incorrect coerce usage"""
-    with pytest.raises(ValueError):
-
-        class Test:
-            o = params.Parameter("o", default=None)
-
-        inst = Test()
-
-        inst.o = params.Unconfigurable
-
-
-def test_optional_value_error():
-    """tests to make sure ValueError is thrown when it is not a bool"""
-    with pytest.raises(ValueError):
-        params.Parameter("o", default=None, optional="NotABool")
-
-
-def test_readonly_value_error():
-    """tests to make sure ValueError is thrown when it is not a bool"""
-    with pytest.raises(ValueError):
-        params.Parameter("o", default=None, readonly="NotABool")
-
-
-def test_name_value_error():
-    """tests to make sure ValueError is thrown when it is not a string"""
-    with pytest.raises(ValueError):
-        params.Parameter(123, default=None)  # not string
-
-
 def test_default():
     """A default value is immediately available, but can be overridden."""
 
@@ -498,3 +427,74 @@ def test_frozenobject_missing_arg_repr():
     fobj = TestFO(3)
     assert repr(fobj).startswith("<TestFO at")
     assert fobj._argreprs == "Cannot find 'b'"
+
+
+def test_ndarrayparam_coerce_defaults():
+    """Tests NdarrayParam coerce_defaults if shape is none"""
+    params.NdarrayParam.shape = None
+    assert params.NdarrayParam("name").coerce_defaults is True
+
+
+def test_parameter_get_error():
+    """Tests params get ValidationError"""
+
+    class Test:
+        p = params.Parameter("something", params.Unconfigurable)
+
+    inst = Test()
+    with pytest.raises(ValidationError):
+        inst.p
+
+
+def test_parameter_set_default_error():
+    """Tests params set_default ConfigError"""
+    my_param = params.Parameter("something")
+    with pytest.raises(ConfigError):
+        params.Parameter.set_default(my_param, my_param, my_param)
+
+
+def test_not_equatable():
+    """Tests params.equal() when not equatable"""
+
+    class Test:
+        equatable = False
+        a = params.Parameter("o", default=None)
+        b = params.Parameter("o", default=None)
+
+        def __get__(self, instance, value):
+            return instance
+
+    inst = Test()
+
+    assert params.Parameter.equal(inst, inst.a, inst.b)
+
+
+def test_coerce_value_error():
+    """tests to make sure ValueError is thrown
+     with incorrect coerce usage"""
+    with pytest.raises(ValueError):
+
+        class Test:
+            o = params.Parameter("o", default=None)
+
+        inst = Test()
+
+        inst.o = params.Unconfigurable
+
+
+def test_optional_value_error():
+    """tests to make sure ValueError is thrown when it is not a bool"""
+    with pytest.raises(ValueError):
+        params.Parameter("o", default=None, optional="NotABool")
+
+
+def test_readonly_value_error():
+    """tests to make sure ValueError is thrown when it is not a bool"""
+    with pytest.raises(ValueError):
+        params.Parameter("o", default=None, readonly="NotABool")
+
+
+def test_name_value_error():
+    """tests to make sure ValueError is thrown when it is not a string"""
+    with pytest.raises(ValueError):
+        params.Parameter(123, default=None)  # not string
