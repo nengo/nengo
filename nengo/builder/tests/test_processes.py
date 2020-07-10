@@ -1,18 +1,11 @@
 import pytest
 from nengo.builder.processes import SimProcess
+from nengo.builder.tests.test_operator import _test_operator_arg_attributes
 
 
-def test_simprocess(seed, rng):
-    """tests the SimProcess class"""
-    process = 0
-    input = 0
-    output = 0
-    t = 0
-    with pytest.raises(ValueError):
-        SimProcess(process, input, output, t, mode="not a mode")
+def test_simprocess():
+    argnames = ["process", "input", "output", "t"]
+    _test_operator_arg_attributes(SimProcess, argnames)
 
-    simp = SimProcess(process, input, output, t)
-
-    simp.sets = []
-
-    assert simp.output is None
+    with pytest.raises(ValueError, match="Unrecognized mode"):
+        _test_operator_arg_attributes(SimProcess, argnames, args={"mode": "badval"})

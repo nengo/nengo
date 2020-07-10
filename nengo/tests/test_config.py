@@ -16,16 +16,22 @@ def test_config_basic():
         "something_else", Parameter("something_else", None)
     )
 
-    with pytest.raises(ConfigError):
+    with pytest.raises(ConfigError, match="'fails' is not a parameter"):
         model.config[nengo.Ensemble].set_param("fails", 1.0)
+
+    with pytest.raises(ConfigError, match="'bias' is already a parameter in"):
+        model.config[nengo.Ensemble].set_param("bias", Parameter("bias", None))
 
     with model:
         a = nengo.Ensemble(50, dimensions=1)
         b = nengo.Ensemble(90, dimensions=1)
         a2b = nengo.Connection(a, b, synapse=0.01)
 
-    with pytest.raises(ConfigError):
+    with pytest.raises(ConfigError, match="Cannot set parameters on an instance"):
         model.config[a].set_param("thing", Parameter("thing", None))
+
+    with pytest.raises(ConfigError, match="Cannot get parameters on an instance"):
+        model.config[a].get_param("bias")
 
     assert model.config[a].something is None
     assert model.config[b].something is None
@@ -42,14 +48,16 @@ def test_config_basic():
 
     with pytest.raises(AttributeError):
         model.config[a].something_else
+    with pytest.raises(AttributeError):
         model.config[a2b].something
     with pytest.raises(AttributeError):
         model.config[a].something_else = 1
+    with pytest.raises(AttributeError):
         model.config[a2b].something = 1
 
-    with pytest.raises(ConfigError):
+    with pytest.raises(ConfigError, match="'str' is not set up for configuration"):
         model.config["a"].something
-    with pytest.raises(ConfigError):
+    with pytest.raises(ConfigError, match="'NoneType' is not set up for configuration"):
         model.config[None].something
 
 
@@ -207,20 +215,20 @@ def test_instance_fallthrough():
 
 
 def test_contains():
-    """tests the contains function"""
-
     class A:
         pass
 
     cfg = nengo.Config(A)
-    with pytest.raises(TypeError):
+    with pytest.raises(TypeError, match="Cannot check if .* is in a config"):
         A in cfg
 
-    model = nengo.Network()
+    net = nengo.Network()
 
-    model.config[nengo.Ensemble].set_param("test2", Parameter("test2", None))
+    net.config[nengo.Ensemble].set_param("test", Parameter("test", None))
+    assert "test" not in net.config[nengo.Ensemble]
 
-    assert model.config[nengo.Ensemble].__contains__("test2") is False
+    net.config[nengo.Ensemble].test = "testval"
+    assert "test" in net.config[nengo.Ensemble]
 
 
 def test_subclass_config():
@@ -255,118 +263,134 @@ def test_subclass_config():
             assert a.p == "value2"
 
 
-def test_classparams_repr():
+def test_classparams_del():
+    """tests ClassParams.__delattr__"""
+    net = nengo.Network()
+    clsparams = net.config[nengo.Ensemble]
+
+    # test that normal instance param can be added/deleted
+    clsparams.set_param("test", Parameter("test", None))
+    clsparams.test = "val"
+    assert "test" in clsparams
+    del clsparams.test
+    assert "test" not in clsparams
+
+    # test that we can set/get/delete underscore attributes regularly
+    clsparams._test = 3
+    assert hasattr(clsparams, "_test") and clsparams._test == 3
+    del clsparams._test
+    assert not hasattr(clsparams, "_test")
+
+
+def test_classparams_str_repr():
     """tests the repr function in classparams class"""
+    clsparams = nengo.Network().config[nengo.Ensemble]
+    clsparams.set_param("test", Parameter("test", None))
+    assert repr(clsparams) == "<ClassParams[Ensemble]{test: None}>"
+    assert str(clsparams) == "No parameters configured for Ensemble."
+
+    clsparams.test = "val"
+    assert str(clsparams) == "Parameters configured for Ensemble:\n  test: val"
+
+
+def test_instanceparams_str_repr():
+    """Test the str and repr functions for InstanceParams class"""
     model = nengo.Network()
     with model:
-        model.config[nengo.Ensemble].set_param("containstest", Parameter("test", None))
-        assert (
-            repr(model.config[nengo.Ensemble])
-            == "<ClassParams[Ensemble]{containstest: None}>"
-        )
+        a = nengo.Ensemble(50, dimensions=1, label="a")
+        model.config[nengo.Ensemble].set_param("prm", nengo.params.Parameter("prm"))
+        model.config[a].prm = "val"
+
+    assert str(model.config[a]) == 'Parameters set for <Ensemble "a">:\n  prm: val'
+    assert repr(model.config[a]) == '<InstanceParams[<Ensemble "a">]{prm: val}>'
 
 
 def test_config_repr():
     """tests the repr function in Config class"""
     model = nengo.Network()
-    with model:  # == "<Config(Connection, Ensemble, Node, Probe)>
-        assert (
-            repr(model.config).startswith("<Config(")
-            and repr(model.config).endswith(")>")
-            and "Connection" in repr(model.config)
-            and "Ensemble" in repr(model.config)
-            and "Node" in repr(model.config)
-            and "Probe" in repr(model.config)
-        )
-        # travis-ci has it in any order
+    r = repr(model.config)  # == "<Config(Connection, Ensemble, Node, Probe)>
+    assert (  # Python <= 3.5 has types in any order
+        r.startswith("<Config(")
+        and r.endswith(")>")
+        and "Connection" in r
+        and "Ensemble" in r
+        and "Node" in r
+        and "Probe" in r
+    )
 
 
-def test_config_exit():
-    """tests the exit function in Config class"""
+def test_config_exit_errors():
+    """Tests ConfigErrors in `Config.__exit__`"""
     model = nengo.Network()
+    with pytest.raises(
+        ConfigError, match="Config.context in bad state; was empty when exiting"
+    ):
+        model.config.__exit__(0, 0, 0)
+
     model2 = nengo.Network()
-    with model:
-        with pytest.raises(ConfigError):
-            model.config.__enter__()
-            model2.config.__exit__(0, 0, 0)
-
-    with pytest.raises(ConfigError):
-        with (model.config):
-            model.config.context.clear()
+    with pytest.raises(
+        ConfigError, match="Config.context in bad state; was expecting current"
+    ):
+        model2.config.__enter__()
+        model.config.__exit__(0, 0, 0)
 
 
-def test_instanceparams_str():
-    """tests the str function in InstanceParams class"""
+def test_instanceparams_str_repr():
+    """Test the str and repr functions for InstanceParams class"""
     model = nengo.Network()
     with model:
-        a = nengo.Ensemble(50, dimensions=1, label="test")
-    assert str(model.config[a]) == 'Parameters set for <Ensemble "test">:'
-    # The right type of params are created on init, how do I edit those?
-    # TODO: figure out why this isn't working
+        a = nengo.Ensemble(50, dimensions=1, label="a")
+        model.config[nengo.Ensemble].set_param("prm", nengo.params.Parameter("prm"))
+        model.config[a].prm = "val"
 
-
-def test_instanceparams_repr():
-    """tests the repr function in InstanceParams class"""
-    model = nengo.Network()
-    with model:
-        a = nengo.Ensemble(50, dimensions=1, label="test")
-        # model.config[nengo.Ensemble].set_param("test", None)
-        model.config[nengo.Ensemble].set_param("test", nengo.params.Parameter("test"))
-        model.config[a].test = "test"
-        # Cannot set parameters on an instance, how do I fill up self._clsparams.params
-    assert repr(model.config[a]) == '<InstanceParams[<Ensemble "test">]{test: test}>'
+    assert str(model.config[a]) == 'Parameters set for <Ensemble "a">:\n  prm: val'
+    assert repr(model.config[a]) == '<InstanceParams[<Ensemble "a">]{prm: val}>'
 
 
 def test_instanceparams_contains():
     """tests the contains function in InstanceParams class"""
     model = nengo.Network()
-    model.config[nengo.Ensemble].set_param("containstest", Parameter("test", None))
+    model.config[nengo.Ensemble].set_param("test", Parameter("test", None))
     with model:
-        a = nengo.Ensemble(50, dimensions=1)
-    "containstest" in model.config[a]
+        a = nengo.Ensemble(5, 1)
+        b = nengo.Ensemble(5, 1)
+        model.config[b].test = 3
+
+    assert "test" not in model.config[a]
+    assert "test" in model.config[b]
 
 
-def test_instanceparams_delattr_configerror():
+def test_instanceparams_del():
     """tests built in params on the delattr function in InstanceParams class"""
-    with pytest.raises(ConfigError):
-        model = nengo.Network()
-        with model:
-            a = nengo.Ensemble(50, dimensions=1)
-        model.config[a].__delattr__("bias")
-
-
-def test_underscore_del_instance_params_exception():
-    """tests that exception is raised for instance params that start with underscore"""
-    with pytest.raises(Exception):
-        model = nengo.Network()
-        model.config[nengo.Ensemble].set_param("_uscore", Parameter("_uscore", None))
-        with model:
-            a = nengo.Ensemble(50, dimensions=1)
-        del model.config[a]._uscore
-
-
-def test_not_configurable_configerror():
-    """tests that exception is raised when
-    using settattr on something that is not configurable"""
-    with pytest.raises(ConfigError):
-        model = nengo.Network()
-        my_param = Parameter("something", Unconfigurable)
-
-        model.config[nengo.Ensemble].set_param("something", my_param)
-        model.config[nengo.Ensemble].something = "other"
-
-
-def test_underscore_del_class_params_exception(request):
-    """test that exception is raised when
-    using parameters that start with underscore in class params"""
     model = nengo.Network()
-    my_param = Parameter("_uscore")
+    with model:
+        a = nengo.Ensemble(5, dimensions=1)
 
-    model.config[nengo.Ensemble].set_param("_uscore", my_param)
+    # test that normal instance param can be added/deleted
+    model.config[nengo.Ensemble].set_param("test", Parameter("test", None))
+    model.config[a].test = "val"
+    assert "test" in model.config[a]
+    del model.config[a].test
+    assert "test" not in model.config[a]
 
-    model.config[nengo.Ensemble]._uscore = "other"
+    # test that built-in parameter cannot be deleted
+    with pytest.raises(ConfigError, match="Cannot configure the built-in parameter"):
+        del model.config[a].bias
 
-    del model.config[nengo.Ensemble]._uscore
+    # test that we can set/get/delete underscore attributes regularly
+    model.config[a]._test = 3
+    assert hasattr(model.config[a], "_test") and model.config[a]._test == 3
+    del model.config[a]._test
+    assert not hasattr(model.config[a], "_test")
+
+
+def test_unconfigurable_configerror():
+    """Tests exception when using settattr on something that is not configurable"""
+    model = nengo.Network()
+    model.config[nengo.Ensemble].set_param("prm", Parameter("prm", Unconfigurable))
+
+    with pytest.raises(ConfigError, match="'prm' is not configurable"):
+        model.config[nengo.Ensemble].prm = "other"
 
 
 def test_reuse_parameters_configerror(request):
@@ -378,60 +402,38 @@ def test_reuse_parameters_configerror(request):
 
     request.addfinalizer(finalizer)
 
-    with pytest.raises(ConfigError):
-        model = nengo.Network()
-        nengo.Ensemble.same = Parameter("param3")
-        model.config[nengo.Ensemble].set_param("same", Parameter("param2"))
+    model = nengo.Network()
+    nengo.Ensemble.same = Parameter("param_a")
+    with pytest.raises(ConfigError, match="'same' is already a parameter in"):
+        model.config[nengo.Ensemble].set_param("same", Parameter("param_b"))
 
 
-def test_no_configures_error():
-    with pytest.raises(TypeError):
-        model = nengo.Network()
-        classes = []
-        assert len(classes) == 0
-        model.config.configures(*classes)
+def test_no_configures_args_error():
+    with pytest.raises(TypeError, match="configures.* takes 1 or more arguments"):
+        nengo.Network().config.configures()
 
 
-def test_not_configurable_config_configerror(request):
-    """test that exception is raised when
-    using default on config class with non configurable"""
+def test_unconfigurable_default_configerror(request):
+    """test exception when using `Config.default` with a unconfigurable parameter"""
 
     def finalizer():
         del nengo.Ensemble.something2
 
     request.addfinalizer(finalizer)
-    with pytest.raises(ConfigError):
-        model = nengo.Network()
-        my_param = Parameter("something2", Unconfigurable)
 
-        nengo.Ensemble.something2 = my_param
+    model = nengo.Network()
+    nengo.Ensemble.something2 = Parameter("something2", Unconfigurable)
+
+    with pytest.raises(ConfigError, match="Unconfigurable parameters have no defaults"):
         model.config.default(nengo.Ensemble, "something2")
 
 
 def test_get_param_on_instance_configerror():
     """test that exception is raised when getting params on instance"""
-    with pytest.raises(Exception):
-        model = nengo.Network()
-        model.config[nengo.Ensemble].set_param(
-            "something", Parameter("something", None)
-        )
-        with model:
-            a = nengo.Ensemble(50, dimensions=1)
-        model.config[a].get_param("something")
-
-
-def test_repr_on_param():
-    """test repr for a param"""
     model = nengo.Network()
-    model.config[nengo.Ensemble].set_param("test", Parameter("test", None))
+    model.config[nengo.Ensemble].set_param("something", Parameter("something", None))
     with model:
         a = nengo.Ensemble(50, dimensions=1)
-    model.config[a].test = "Hello"
-    assert repr(model.config[a].test) == "'Hello'"
 
-
-def test_reuse_default_param_configerror():
-    """test that exception is raised when reusing default params"""
-    with pytest.raises(Exception):
-        model = nengo.Network()
-        model.config[nengo.Ensemble].set_param("bias", Parameter("bias", None))
+    with pytest.raises(ConfigError, match="Cannot get parameters on an instance"):
+        model.config[a].get_param("something")

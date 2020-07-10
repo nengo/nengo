@@ -8,35 +8,25 @@ from nengo.builder import Model
 
 def test_signal_probe(seed):
     """tests the function signal_probe"""
-    func = lambda x: x ** 2
 
-    with nengo.Network(seed=seed):
-        conn = nengo.Connection(
-            nengo.Ensemble(60, 1), nengo.Ensemble(50, 1), function=func
-        )
+    # --- test probing wrong type
+    with nengo.Network() as net:
+        p = nengo.Probe(nengo.Node(0))
 
-    model = Model()
-    with pytest.raises(BuildError):
-        conn.obj = 1
-        probe = build_probe(model, conn)
+    # hack to change probe target without tripping API validation
+    nengo.Probe.target.data[p] = 1
 
-    class FakeObj:
-        pass
+    with pytest.raises(BuildError, match="Type .* is not probeable"):
+        with nengo.Simulator(net):
+            pass
 
-    class FakeProbe:
-        obj = FakeObj()
-        slice = 0  # not none
-        synapse = None
+    # --- test probing wrong attribute
+    with nengo.Network() as net:
+        p = nengo.Probe(nengo.Node(0))
 
-    probe = FakeProbe()
-    key = 1
+    # hack to change probe attr without tripping API validation
+    nengo.Probe.attr.data[p] = "batattr"
 
-    # code is looking for an indexerror, but keyerror is given
-    # if line above this is commented out
-    with pytest.raises(BuildError):
-        signal_probe(model, key, probe)
-
-    model.sig[probe.obj][key] = [1, 2]
-    signal_probe(model, key, probe)
-
-    assert model.sig[probe]["in"] == 1
+    with pytest.raises(BuildError, match="Attribute .* is not probeable"):
+        with nengo.Simulator(net):
+            pass

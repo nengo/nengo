@@ -25,7 +25,7 @@ def test_signaldict(allclose):
     signaldict.init(scalar)
 
     # tests repeat init
-    with pytest.raises(SignalError):
+    with pytest.raises(SignalError, match="Cannot add signal twice"):
         signaldict.init(scalar)
 
     assert allclose(signaldict[scalar], np.array(1.0))

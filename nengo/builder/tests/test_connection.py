@@ -1,110 +1,10 @@
 import numpy as np
-
 import pytest
+
 import nengo
-from nengo.exceptions import BuildError
 from nengo.builder import Model
-from nengo.neurons import Direct
-from nengo.builder.connection import build_linear_system, build_connection
-
-
-def test_build_errors_1(seed, rng):
-    """tests the build errors"""
-
-    func = lambda x: x ** 2
-
-    with nengo.Network(seed=seed) as net:
-        conn = nengo.Connection(
-            nengo.Ensemble(60, 1), nengo.Ensemble(50, 1), function=func
-        )
-
-    model = Model()
-    model.build(net)
-
-    class fakeReturn:
-        def myFunction2(self, write=False):
-            return True
-
-        def __mul__(self, other):
-            return 1
-
-        def __len__(self):
-            return 1
-
-        def __getitem__(self, other):
-            return [0]
-
-        dtype = "float64"
-
-        setflags = myFunction2
-
-    class fakeEval:
-
-        view = fakeReturn
-
-    class fakeEncoders:
-        T = False
-
-    class Test:
-        bias = 0
-        gain = 0
-        encoders = fakeEncoders()
-        eval_points = fakeEval
-
-    model.params[conn.pre_obj] = Test()
-
-    # Building %s: 'activites' matrix is all zero for %s.
-    # with pytest.raises(BuildError):
-
-    with pytest.raises(BuildError):
-        conn.eval_points = np.ndarray((1, 1))
-        conn.function = np.ndarray((1, 1))
-
-        conn.pre_obj.neuron_type = Direct()
-        build_connection(model, conn)
-
-    with pytest.raises(BuildError):
-        model.sig[conn.pre_obj] = []
-        build_connection(model, conn)
-
-    with nengo.Network(seed=seed) as net:
-        conn = nengo.Connection(
-            nengo.Ensemble(60, 1), nengo.Ensemble(50, 1), function=func
-        )
-
-    model = Model()
-    model.build(net)
-
-    with nengo.Network() as net:
-        ens = nengo.Ensemble(1, 1, gain=np.array([0]), bias=np.array([-10]))
-        conn = nengo.Connection(ens, ens)
-        # What is this code doing?
-
-        model.params[conn.pre_obj] = Test()
-
-        conn.eval_points = [[0]]
-
-        with pytest.raises(AssertionError):
-            build_linear_system(model, conn, rng)
-
-
-def test_build_errors_2(Simulator, seed, rng, plt, allclose):
-    n = 200
-
-    m = nengo.Network(seed=seed)
-    with m:
-        u = nengo.Node((1, 2), size_out=2)
-        a = nengo.Ensemble(n, dimensions=2)
-        b = nengo.Ensemble(n, dimensions=2)
-        nengo.Connection(u, a)
-
-        nengo.Connection(
-            a.neurons, b.neurons, transform=1, learning_rule_type=nengo.BCM()
-        )
-
-    with pytest.raises(BuildError):
-        with Simulator(m):
-            pass
+from nengo.builder.connection import build_linear_system
+from nengo.exceptions import BuildError
 
 
 def test_build_linear_system(seed, rng, plt, allclose):
@@ -139,3 +39,18 @@ def test_build_linear_system(seed, rng, plt, allclose):
 
     assert allclose(Xhat, X, atol=1e-1)
     assert allclose(Yhat, func(X), atol=1e-1)
+
+
+def test_build_linear_system_zeroact(seed, rng):
+    eval_points = np.linspace(-0.1, 0.1, 100)[:, None]
+
+    with nengo.Network(seed=seed) as net:
+        a = nengo.Ensemble(5, 1, intercepts=nengo.dists.Choice([0.9]))
+        b = nengo.Ensemble(5, 1, intercepts=nengo.dists.Choice([0.9]))
+
+    model = Model()
+    model.build(net)
+
+    conn = nengo.Connection(a, b, eval_points=eval_points, add_to_container=False)
+    with pytest.raises(BuildError, match="'activities' matrix is all zero"):
+        build_linear_system(model, conn, rng)

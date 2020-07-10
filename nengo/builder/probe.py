@@ -15,7 +15,6 @@ def conn_probe(model, probe):
     output of an object, which may not have a predefined signal).
     """
 
-    # has an unexpected keyword add_to_container
     conn = Connection(
         probe.target,
         probe,

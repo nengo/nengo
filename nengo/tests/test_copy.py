@@ -343,34 +343,29 @@ def test_copy_spa(Simulator):
 
 
 def test_copy_instance_params():
-    with nengo.Network() as original:
-        original.config[nengo.Ensemble].set_param(
+    with nengo.Network() as orig_net:
+        orig_net.config[nengo.Ensemble].set_param(
             "test", IntParam("test", optional=True)
         )
-
-        original.config[nengo.Ensemble].set_param(
+        orig_net.config[nengo.Ensemble].set_param(
             "test2", NdarrayParam("test2", optional=True)
         )
-        # THESE ARE THE WRONG TYPE OF PARAMS ^
-        # The right type of params are created on init, how do I edit those?
 
-        # TODO: figure out why this isn't hitting line 221 of config.py
+        orig_ens = nengo.Ensemble(10, 1)
+        orig_net.config[orig_ens].test = 42
+        orig_net.config[orig_ens].test2 = np.array([49])
 
-        original.config[nengo.Ensemble].set_param("key", IntParam("key", optional=True))
+    # test copy function
+    copy_net = orig_net.copy()
+    copy_ens = copy_net.ensembles[0]
+    assert copy_net.config[copy_ens].test == 42
+    assert np.array_equal(copy_net.config[copy_ens].test2, np.array([49]))
 
-        ens = nengo.Ensemble(10, 1)
-        original.config[ens].test = 42  # [original]
-
-        original.config[ens].test2 = np.array([original])
-        # assert original in original.config[nengo.Ensemble].get_param("test")
-    # original.config[ens].__setattr__("key", original)
-    pkls = pickle.dumps(original)
-
-    pickle.loads(pkls)
-
-    assert original in original.config[ens].test2
-
-    # cp = original.copy()
+    # test copy via pickle
+    copy_net = pickle.loads(pickle.dumps(orig_net))
+    copy_ens = copy_net.ensembles[0]
+    assert copy_net.config[copy_ens].test == 42
+    assert np.array_equal(copy_net.config[copy_ens].test2, np.array([49]))
 
 
 def test_pickle_model(Simulator, seed, allclose):

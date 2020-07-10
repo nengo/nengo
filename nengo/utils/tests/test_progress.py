@@ -7,8 +7,11 @@ import nengo.rc as rc
 from nengo.exceptions import ValidationError
 from nengo.utils.progress import (
     AutoProgressBar,
+    HtmlProgressBar,
+    NoProgressBar,
     Progress,
     ProgressBar,
+    TerminalProgressBar,
     _load_class,
     WriteProgressToFile,
     get_default_progressbar,
@@ -131,62 +134,46 @@ class TestAutoProgressBar:
         assert progress_bar.n_update_calls >= 1
 
     def test_get_default_progressbar(self):
-        """tests get_default_progressbar"""
-
-        # create rc finalizer
-
-        progress_mock = self.ProgressMock(0.2)
-        progress_bar = ProgressBarMock()
-        auto_progress = AutoProgressBar(progress_bar, min_eta=10.0)
-
-        auto_progress.update(progress_mock)
-        assert progress_bar.n_update_calls == 0
-        progress_mock.finished = True
-        auto_progress.update(progress_mock)
-        assert progress_bar.n_update_calls >= 1
         rc.set("progress", "progress_bar", "False")
-        assert not rc.getboolean("progress", "progress_bar")
-        assert str(get_default_progressbar()).startswith(
-            "<nengo.utils.progress.NoProgressBar object at "
-        )
+        assert isinstance(get_default_progressbar(), NoProgressBar)
+
         rc.set("progress", "progress_bar", "True")
-        assert rc.getboolean("progress", "progress_bar")
-        assert str(get_default_progressbar()).startswith(
-            "<nengo.utils.progress.AutoProgressBar object at "
-        )
-        rc.set("progress", "progress_bar", "NotBool")
-        assert str(get_default_progressbar()).startswith(
-            "<nengo.utils.progress.NoProgressBar object at"
-        )
+        assert isinstance(get_default_progressbar(), AutoProgressBar)
+
+        rc.set("progress", "progress_bar", "nengo.utils.progress.HtmlProgressBar")
+        assert isinstance(get_default_progressbar(), HtmlProgressBar)
+
+        rc.set("progress", "progress_bar", "nengo.utils.progress.TerminalProgressBar")
+        assert isinstance(get_default_progressbar(), TerminalProgressBar)
+
+        rc.set("progress", "progress_bar", "nengo.InvalidType")
+        with pytest.warns(UserWarning, match="Could not load progress bar"):
+            assert isinstance(get_default_progressbar(), NoProgressBar)
 
 
-def test_load_class():
-    """tests _load_class"""
-    name = "numpy.sin"
-    _load_class(name) == np.sin
+def test_write_progress_to_file(tmpdir):
+    """Tests the WriteProgressToFile progress bar type"""
 
+    def check_file(filename, startstring):
+        with open(filename, "r") as fh:
+            data = fh.read()
+        assert data.startswith(startstring)
 
-def test_write_progress_to_file():
-    """tests WriteProgressToFile"""
-    filename = "test_progress_file"
-    prog = WriteProgressToFile(filename)
+    filename = str(tmpdir.join("test_write_progress_file.txt"))
+    progress = Progress(name_during="myprog", max_steps=2)
+    bar = WriteProgressToFile(filename)
 
-    class Test:
-        def __init__(self, isfinished):
-            self.finished = isfinished
+    with progress:
+        bar.update(progress)
+        check_file(filename, "0%, ETA")
 
-        def myFunction(self):
-            return 1
+        progress.step()
+        bar.update(progress)
+        check_file(filename, "50%, ETA")
 
-        progress = 0
-        name_after = "newname"
-        elapsed_seconds = myFunction
+        progress.step()
+        bar.update(progress)
+        check_file(filename, "100%, ETA")
 
-        def eta(self):
-            return 0
-
-    data = Test(False)
-    prog.update(data)
-
-    data = Test(True)
-    prog.update(data)
+    bar.update(progress)
+    check_file(filename, "myprog finished in")

@@ -235,78 +235,104 @@ def test_class():
     )
 
 
-def test_decorator():
-    class Test:
-        instance = "Not None"
+def test_class_decorator():
+    """Test that `decorator` works on a class method"""
 
+    class TestA:
         @decorator
-        def myMethod(self):
-            pass
-
-    # TODO: debug some stuff about the decorator
-    # since lines 263-265 aren't being run
-    # wrapped = Test()
-    # wrapped.myMethod()
-    # Can't figure out how to get instance to be None
-
-
-def test_objectproxymethods():
-    """tests functions of ObjectProxyMethods"""
-    my_obj = ObjectProxyMethods()
+        @classmethod
+        def test_decorator(cls, wrapped, instance, args, kwargs):
+            global state
+            state = "run"
+            assert instance is not None
+            assert type(instance).__name__ == "Test"
+            return wrapped(*args, **kwargs)
 
     class Test:
-        __module__ = None
-        __dict__ = None
+        @TestA.test_decorator
+        def f(self, a, b):
+            """Return 1."""
+            return 1
 
-    my_obj.__wrapped__ = Test()
+    inst = Test()
+    _test_decorated(inst.f)
 
-    test = my_obj.__module__
-    assert test is None
+    # Make sure introspection works
+    assert inspect.getfullargspec(inst.f).args == ["self", "a", "b"]
+    assert inspect.getsource(inst.f) == (
+        "        @TestA.test_decorator\n"
+        "        def f(self, a, b):\n"
+        '            """Return 1."""\n'
+        "            return 1\n"
+    )
 
-    test = my_obj.__dict__
-    assert test is None
+
+def test_instance_decorator():
+    """Test that `decorator` works on a class instance method"""
+
+    class TestA:
+        @decorator
+        def test_decorator(self, wrapped, instance, args, kwargs):
+            global state
+            state = "run"
+            assert instance is not None
+            assert type(instance).__name__ == "Test"
+            return wrapped(*args, **kwargs)
+
+    test_a = TestA()
+
+    class Test:
+        @test_a.test_decorator
+        def f(self, a, b):
+            """Return 1."""
+            return 1
+
+    inst = Test()
+    _test_decorated(inst.f)
+
+    # Make sure introspection works
+    assert inspect.getfullargspec(inst.f).args == ["self", "a", "b"]
+    assert inspect.getsource(inst.f) == (
+        "        @test_a.test_decorator\n"
+        "        def f(self, a, b):\n"
+        '            """Return 1."""\n'
+        "            return 1\n"
+    )
 
 
 def test_objectproxy():
     """tests functions of ObjectProxy"""
 
     class Test:
-        __module__ = None
-        __dict__ = None
-        test = 1
+        """my docstring"""
 
-    my_proxy = ObjectProxy(Test())
-    assert (
-        str(dir(my_proxy))
-        == "['__class__', '__delattr__', '__dict__', '__dir__', '__doc__',"
-        " '__eq__', '__format__', '__ge__', '__getattribute__', '__gt__',"
-        " '__hash__', '__init__', '__init_subclass__', '__le__', '__lt__',"
-        " '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__',"
-        " '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__',"
-        " '__weakref__', 'test']"
-        or str(dir(my_proxy))
-        == "['__class__', '__delattr__', '__dict__', '__dir__', '__doc__',"
-        " '__eq__', '__format__', '__ge__', '__getattribute__', '__gt__',"
-        " '__hash__', '__init__', '__le__', '__lt__',"
-        " '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__',"
-        " '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__',"
-        " '__weakref__', 'test']"  # Travis-ci has this one
-    )
+        __annotations__ = "testannotations"
+        __name__ = "testname"
 
-    my_proxy = ObjectProxy(Test())
-    assert hash(my_proxy) == hash(my_proxy)
+        testvar = "testval"
 
-    assert my_proxy.test == 1
-    my_proxy.__wrapped__.test += 1
-    my_proxy.__wrapped__ = None  # there is a slots pylint error when trying to set
-    # an attribute not named __wrapped__
-    assert my_proxy.test == 2
-    assert my_proxy.__wrapped__.__wrapped__ is None
+    obj = Test()
+    proxy = ObjectProxy(obj)
 
-    instance = ObjectProxy(1)
-    assert str(instance) == "1"
+    # --- test ObjectProxyMethods
+    assert proxy.__dict__ is obj.__dict__
+    assert proxy.__doc__ is obj.__doc__
+    assert proxy.__module__ is obj.__module__
 
-    assert repr(instance).startswith("<ObjectProxy at ")
+    # --- test ObjectProxy
+    assert proxy.__annotations__ is obj.__annotations__
+    assert proxy.__name__ is obj.__name__
+    assert proxy.__class__ is obj.__class__
+
+    assert set(dir(proxy)) == set(dir(obj))
+    assert hash(proxy) == hash(obj)
+    assert str(proxy) == str(obj)
+
+    proxy.newattr = "newval"
+    assert obj.newattr == "newval"
+    assert proxy.newattr == "newval"
+
+    assert repr(proxy).startswith("<ObjectProxy at ")
 
 
 def test_boundfunctionwrapper():

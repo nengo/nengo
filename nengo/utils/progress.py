@@ -786,7 +786,7 @@ def get_default_progressbar():
     try:
         return _load_class(pbar)()
     except Exception as e:
-        warnings.warn(str(e))
+        warnings.warn("Could not load progress bar: %s" % e)
         return NoProgressBar()
 
 

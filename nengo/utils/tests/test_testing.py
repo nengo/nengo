@@ -53,71 +53,44 @@ def test_signals_allclose(multiple_targets, rng):
     )
     assert np.array_equal(result, np.zeros(ny, dtype=bool))
 
-    # tests for signals.ndim == 1
-    if multiple_targets:
-
-        def my_function2(t, y, label="sure"):
-            return True
-
-        def my_function3(loc, bbox_to_anchor):
-            return True
-
-        class myPlot:
-            plot = my_function2
-            legend = my_function3
-
-            def set_ylabel(self):
-                return True
-
-            def set_xlabel(self):
-                return True
-
-        def my_function(a, b, c):
-            return myPlot
-
-        def my_function4():
-            return True
-
-        class Test:
-            subplot = my_function
-            show = my_function4
-
-        result = signals_allclose(
-            (1, 2),
-            ((1, 2)),
-            (1, 2),
-            atol=atol,
-            rtol=rtol,
-            individual_results=True,
-            plt=Test,
-            labels="not None",
-            show=True,
-        )
+    # tests for `signals.ndim == 1` and `targets.ndim == 1`
+    if not multiple_targets:
+        assert x.shape[1] == 1
+        assert signals_allclose(t, x[:, 0], y_close[:, 0], atol=atol, rtol=rtol)
+        assert not signals_allclose(t, x[:, 0], y_far[:, 0], atol=atol, rtol=rtol)
 
 
-def test_threadedassertion_errors():
-    """tests threadedassertion throws appropriate errors"""
-    with pytest.raises(AttributeError):
-        ThreadedAssertion(1)
-    a = ThreadedAssertion(0)
-    # there is some magic going on here to
-    # access the run command and get the specific error I want
+def test_threadedassertion():
+    class Test(ThreadedAssertion):
+        def __init__(self, n_threads, assert_inds, **kwargs):
+            self.assert_inds = assert_inds
+            super().__init__(n_threads, **kwargs)
 
-    def function(a, b):
-        return "string"
+        def init_thread(self, worker):
+            worker.init_param = "good"
 
-    class FakeException(BaseException):
-        with_traceback = function
+        def assert_thread(self, worker):
+            assert worker.init_param == "good", "Worker did not init"
 
-    class FakeThreadedAssertion(ThreadedAssertion):
-        exc_info = [0, ValueError("I'm a fancy error message"), FakeException(), 3, 4]
+            if worker.n in self.assert_inds:
+                raise RuntimeError("Worker %d failed properly" % worker.n)
 
-    with pytest.raises(ValueError):
-        a = FakeThreadedAssertion(1)
-    parent = None
-    barriers = None
-    n = 1
-    a.AssertionWorker(parent, barriers, n)
-    # make a subclass of threaded assertion, use assert thread to assert false
-    # then catch the assertion error
-    # profit
+        def finish_thread(self, worker):
+            worker.finish_param = "finished"
+
+    # running with assert_inds=[] should pass
+    test = Test(n_threads=3, assert_inds=[])
+    assert all(thread.finish_param == "finished" for thread in test.threads)
+
+    with pytest.raises(RuntimeError, match="Worker 1 failed properly"):
+        Test(n_threads=3, assert_inds=[1])
+
+    test = Test(n_threads=3, assert_inds=[1], run_on_init=False)
+    with pytest.raises(RuntimeError, match="Worker 1 failed properly"):
+        test.run()
+    assert all(thread.finish_param == "finished" for thread in test.threads)
+
+    test = Test(n_threads=3, assert_inds=[2], run_on_init=False)
+    with pytest.raises(RuntimeError, match="Worker 2 failed properly"):
+        test.run()
+    assert all(thread.finish_param == "finished" for thread in test.threads)

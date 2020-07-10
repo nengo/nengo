@@ -1,7 +1,6 @@
 import numpy as np
 import pytest
 
-
 import nengo
 from nengo import params
 from nengo.exceptions import ObsoleteError, ValidationError, ConfigError
@@ -31,7 +30,7 @@ def test_optional():
         o = params.Parameter("o", default=1, optional=True)
 
     inst = Test()
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError, match="Parameter is not optional"):
         inst.m = None
     assert inst.m == 1
     inst.o = None
@@ -53,7 +52,7 @@ def test_readonly():
     assert inst.p == 2
     assert inst.r == "set"
     inst.p = 3
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError, match="is read-only and cannot be changed"):
         inst.r = "set again"
     assert inst.p == 3
     assert inst.r == "set"
@@ -87,7 +86,7 @@ def test_boolparam():
     assert not inst.bp
     inst.bp = True
     assert inst.bp
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError, match="[Mm]ust be of type 'bool'"):
         inst.bp = 1
 
 
@@ -307,9 +306,7 @@ def test_ndarrayparam_sample_shape():
         inst.ndp = np.ones((3, 10))
     assert np.all(inst.ndp == np.ones((10, 3)))
 
-    # error here
-
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError, match="not yet initialized; cannot determine"):
         inst.ndp2 = (1, 2)
 
 
@@ -325,14 +322,18 @@ def test_functionparam():
     inst.fp = np.sin
     assert inst.fp.function is np.sin
     assert inst.fp.size == 1
-    # Not OK: requires two args
-    with pytest.raises(ValidationError):
-        inst.fp = lambda x, y: x + y
-    # Not OK: not a function
-    with pytest.raises(ValidationError):
-        inst.fp = 0
 
-    inst.fp = FunctionInfo(np.sin, 1)
+    inst.fp = FunctionInfo(np.cos, 1)
+    assert inst.fp.function is np.cos
+    assert inst.fp.size == 1
+
+    # Not OK: requires two args
+    with pytest.raises(ValidationError, match="function.*must accept a single.*argu"):
+        inst.fp = lambda x, y: x + y
+
+    # Not OK: not a function
+    with pytest.raises(ValidationError, match="function.*must be callable"):
+        inst.fp = 0
 
 
 def test_iter_params_does_not_list_obsolete_params():
@@ -442,59 +443,55 @@ def test_parameter_get_error():
         p = params.Parameter("something", params.Unconfigurable)
 
     inst = Test()
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError, match="have no defaults.*ensure the value"):
         inst.p
 
 
 def test_parameter_set_default_error():
     """Tests params set_default ConfigError"""
     my_param = params.Parameter("something")
-    with pytest.raises(ConfigError):
+    with pytest.raises(ConfigError, match="Parameter.*is not configurable"):
         params.Parameter.set_default(my_param, my_param, my_param)
 
 
-def test_not_equatable():
+def test_equal_not_equatable():
     """Tests params.equal() when not equatable"""
 
     class Test:
-        equatable = False
-        a = params.Parameter("o", default=None)
-        b = params.Parameter("o", default=None)
+        param = params.Parameter("param", default=None)
 
-        def __get__(self, instance, value):
-            return instance
+    assert not Test.param.equatable
 
-    inst = Test()
+    a = Test()
+    b = Test()
 
-    assert params.Parameter.equal(inst, inst.a, inst.b)
+    obj1, obj2 = np.array([3]), np.array([3])  # equal, but different objects
+    a.param, b.param = obj1, obj1
+    assert Test.param.equal(a, b)
+
+    a.param, b.param = obj1, obj2
+    assert not Test.param.equal(a, b)
 
 
 def test_coerce_value_error():
     """tests to make sure ValueError is thrown
      with incorrect coerce usage"""
-    with pytest.raises(ValueError):
 
-        class Test:
-            o = params.Parameter("o", default=None)
+    class Test:
+        o = params.Parameter("o", default=None)
 
-        inst = Test()
+    inst = Test()
 
+    with pytest.raises(ValueError, match="is not a valid value"):
         inst.o = params.Unconfigurable
 
 
-def test_optional_value_error():
-    """tests to make sure ValueError is thrown when it is not a bool"""
-    with pytest.raises(ValueError):
+def test_parameter_arg_errors():
+    with pytest.raises(ValueError, match="'name' must be a string"):
+        params.Parameter(123, default=None)  # not string
+
+    with pytest.raises(ValueError, match="'optional' must be boolean"):
         params.Parameter("o", default=None, optional="NotABool")
 
-
-def test_readonly_value_error():
-    """tests to make sure ValueError is thrown when it is not a bool"""
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="'readonly' must be boolean"):
         params.Parameter("o", default=None, readonly="NotABool")
-
-
-def test_name_value_error():
-    """tests to make sure ValueError is thrown when it is not a string"""
-    with pytest.raises(ValueError):
-        params.Parameter(123, default=None)  # not string

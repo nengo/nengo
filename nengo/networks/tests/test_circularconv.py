@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 
 import nengo
+from nengo.exceptions import ValidationError
 from nengo.networks.circularconvolution import circconv, transform_in, transform_out
 from nengo.utils.numpy import rms
 
@@ -93,3 +94,8 @@ def test_old_input_deprecation_warning():
             assert c.A is c.input_a
         with pytest.warns(DeprecationWarning):
             assert c.B is c.input_b
+
+
+def test_transform_in_align_error():
+    with pytest.raises(ValidationError, match="'align' must be either"):
+        transform_in(dims=3, align="badval", invert=False)

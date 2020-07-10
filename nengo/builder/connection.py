@@ -94,7 +94,12 @@ def build_linear_system(model, conn, rng):
     eval_points = get_eval_points(model, conn, rng)
     ens = conn.pre_obj
     activities = get_activities(model.params[ens], ens, eval_points)
-    assert np.count_nonzero(activities) > 0, "Activities are all 0"
+    if np.count_nonzero(activities) == 0:
+        raise BuildError(
+            "Building %s: 'activities' matrix is all zero for %s. "
+            "This is because no evaluation points fall in the firing "
+            "ranges of any neurons." % (conn, conn.pre_obj)
+        )
 
     targets = get_targets(conn, eval_points, dtype=rc.float_dtype)
     return eval_points, activities, targets
@@ -332,6 +337,7 @@ def build_connection(model, conn):
                 tag="%s" % conn,
             )
         )
+
     # Build learning rules
     if conn.learning_rule is not None:
         # TODO: provide a general way for transforms to expose learnable params

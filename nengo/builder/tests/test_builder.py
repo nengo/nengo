@@ -1,6 +1,7 @@
 import logging
 
 import pytest
+
 import nengo
 from nengo.builder import Model
 from nengo.builder.builder import Builder
@@ -132,13 +133,13 @@ def test_build_twice():
     assert model.params[ens] is built_ens
 
 
-def test_register_builder_warning():
-    """tests a warning for register_builder"""
+def test_register_builder_twice_warning():
+    """Tests warning for registering a builder twice"""
 
     class Test:
         pass
 
     my_builder = Builder.register(Test)
     my_builder(1)
-    with pytest.warns(Warning):
+    with pytest.warns(Warning, match="Type .* already has a builder. Overwriting"):
         my_builder(1)  # repeat setup warning

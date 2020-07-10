@@ -1,62 +1,61 @@
 import pytest
 
-from nengo.builder.learning_rules import SimVoja, build_learning_rule
+from nengo.builder.learning_rules import SimBCM, SimOja, SimPES, SimVoja
+from nengo.builder.tests.test_operator import _test_operator_arg_attributes
 from nengo.exceptions import BuildError
 
 
+def test_simpes():
+    argnames = [
+        "pre_filtered",
+        "error",
+        "delta",
+        "learning_rate",
+        "encoders",
+    ]
+    args, sim = _test_operator_arg_attributes(SimPES, argnames)
+
+    assert str(sim) == "SimPES{pre=pre_filtered, error=error -> delta}"
+
+
+def test_simbcm():
+    argnames = [
+        "pre_filtered",
+        "post_filtered",
+        "theta",
+        "delta",
+        "learning_rate",
+    ]
+    args, sim = _test_operator_arg_attributes(SimBCM, argnames)
+
+    assert str(sim) == "SimBCM{pre=pre_filtered, post=post_filtered -> delta}"
+
+
+def test_simoja():
+    argnames = [
+        "pre_filtered",
+        "post_filtered",
+        "weights",
+        "delta",
+        "learning_rate",
+        "beta",
+    ]
+    args, sim = _test_operator_arg_attributes(SimOja, argnames)
+
+    assert str(sim) == "SimOja{pre=pre_filtered, post=post_filtered -> delta}"
+
+
 def test_simvoja():
+    argnames = [
+        "pre_decoded",
+        "post_filtered",
+        "scaled_encoders",
+        "delta",
+        "scale",
+        "learning_signal",
+        "learning_rate",
+    ]
+    args, sim = _test_operator_arg_attributes(SimVoja, argnames)
+    assert sim.weights is args["scaled_encoders"]
 
-    mysim = SimVoja(1, 2, 3, 4, 5, 6, 7)
-    assert mysim.weights == 3
-
-    assert str(mysim._descstr).startswith(
-        "<bound method SimVoja._descstr of <SimVoja  at "
-    )
-
-
-def test_build_learning_rule():
-    class FakeTarget:
-        shape = (1, 2)
-
-    class FakeSig:
-        def __getitem__(self, other):
-            return {"encoders": FakeTarget()}
-
-    class FakeParams:
-        def __getitem__(self, other):
-            return True
-
-        def __setitem__(self, a, b):
-            return True
-
-    class FakeModel:
-        def fake_add_op(self, other):
-            return True
-
-        sig = FakeSig()
-        add_op = fake_add_op
-        params = FakeParams()
-
-        def fake_build(self, a, b):
-            return True
-
-        build = fake_build
-
-    class FakeEnsembleHolder:
-        ensemble = 0
-
-    class FakeConnection:
-        is_decoded = False
-        post_obj = FakeEnsembleHolder()
-
-    class FakeRule:
-        def __init__(self, mod):
-            self.modifies = mod
-
-        connection = FakeConnection()
-        learning_rule_type = 0
-
-    with pytest.raises(ValueError):
-        build_learning_rule(FakeModel(), FakeRule("encoders"))
-    with pytest.raises(BuildError):
-        build_learning_rule(FakeModel(), FakeRule("Unknown target"))
+    assert str(sim) == "SimVoja{pre=pre_decoded, post=post_filtered -> delta}"

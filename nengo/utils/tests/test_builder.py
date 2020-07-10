@@ -16,7 +16,7 @@ from nengo.utils.builder import (
 
 
 def test_full_transform():
-    """Tests full_transforms and its exceptions"""
+    """Tests `full_transform` and its exceptions"""
     N = 30
 
     with nengo.Network():
@@ -28,33 +28,11 @@ def test_full_transform():
         node2 = nengo.Node(output=[0, 0])
         node3 = nengo.Node(output=[0, 0, 0])
 
-        class Test:
-            transform = 1
-
-        conn = Test  # nengo.Connection(node3[2], nengo.Ensemble(1, 1))
-        with pytest.raises(ValidationError):
-            full_transform(conn)
-
-        class FakeObj:
-            contents = [1, 2, 3]
-            size_in = 1
-
-        class FakeDense:
-            def __init__(self):
-                self.init = np.array([[[1], [2], [3]]])
-                self.shape = (1, 1)
-
-        class Test2:
-            transform = FakeDense()
-            function = 0
-            post_slice = []
-            pre_slice = []
-            post_obj = FakeObj
-            pre_obj = FakeObj
-            function_info = np.array("nothing to see here")
-
-        conn = Test2
-        with pytest.raises(ValidationError):
+        # error for non-Dense transform
+        conn = nengo.Connection(
+            ens2, ens3, transform=nengo.transforms.Sparse((3, 2), indices=[(0, 0)])
+        )
+        with pytest.raises(ValidationError, match="can only be applied to Dense"):
             full_transform(conn)
 
         # Pre slice with default transform -> 1x3 transform
@@ -218,22 +196,24 @@ def test_passthrough_errors():
         remove_passthrough_nodes(*objs_and_connections(model))
 
 
-def test_create_replacement_exception():
-    """ensures that _create_replacement_connection throws unconvertible"""
-
+@pytest.mark.filterwarnings("ignore:'Node.size_out' is being overwritten")
+def test_create_replacement_connection_errors():
     with nengo.Network():
+        a = nengo.Ensemble(10, 1)
+        b = nengo.Ensemble(10, 1)
+        v = nengo.Node(size_in=1)
+        c1 = nengo.Connection(a, v, synapse=0.005)
+        c2 = nengo.Connection(v, b, synapse=0.003)
 
-        class FakeObj:
-            output = None
+        with pytest.raises(Unconvertible, match="Cannot merge two filters"):
+            _create_replacement_connection(c1, c2)
 
-        class Test:
-            post_obj = FakeObj
-            pre_obj = FakeObj
-            synapse = None
-            function = "not none"
-            transform = None
-
-        c_in = Test
-        c_out = Test
-        with pytest.raises(Unconvertible):
-            _create_replacement_connection(c_in, c_out)
+        # set function on c2 (need to set v.output temporarily to avoid API validation)
+        v.output = lambda t, x: x + 1
+        c2.function = lambda x: x ** 2
+        v.output = None
+        c1.synapse = None
+        with pytest.raises(
+            Unconvertible, match="Cannot remove a connection with a function"
+        ):
+            _create_replacement_connection(c1, c2)

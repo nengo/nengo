@@ -1081,7 +1081,7 @@ def test_zero_activities_error(Simulator):
         a.bias = np.zeros(10)
         nengo.Connection(a, nengo.Node(size_in=1))
 
-    with pytest.raises(BuildError):
+    with pytest.raises(BuildError, match="'activities' matrix is all zero"):
         with Simulator(model):
             pass
 
@@ -1136,3 +1136,18 @@ def test_learning_rule_equality():
         assert conn0.learning_rule[0] != conn1.learning_rule
         assert conn1.learning_rule_type[0] == conn0.learning_rule_type
         assert conn1.learning_rule[0] == conn1.learning_rule[1]
+
+
+def test_learning_transform_shape_error(Simulator):
+    with nengo.Network() as net:
+        a = nengo.Ensemble(10, dimensions=2)
+        b = nengo.Ensemble(10, dimensions=2)
+        nengo.Connection(
+            a.neurons, b.neurons, transform=1, learning_rule_type=nengo.BCM()
+        )
+
+    with pytest.raises(
+        BuildError, match="'transform' must be a 2-dimensional array for learning"
+    ):
+        with Simulator(net):
+            pass

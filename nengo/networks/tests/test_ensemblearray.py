@@ -280,36 +280,21 @@ def test_ndarrays(Simulator, rng, allclose):
             pass
 
 
-def test_add_neuron_input(seed, rng):
+def test_add_input_output_errors():
     """Ensures warnings and errors are thrown as appropriate"""
-    dims = 3
-    n_neurons = 60
-    radius = 1.0
-
-    # a = rng.uniform(low=-0.7, high=0.7, size=dims)
-    # b = rng.uniform(low=-0.7, high=0.7, size=dims)
-    # c = np.zeros(2 * dims)
-    # c[::2] = a
-    # c[1::2] = b
-
-    model = nengo.Network(seed=seed)
-    with model:
-        # inputA = nengo.Node(a)
-        # inputB = nengo.Node(b)
-        A = nengo.networks.EnsembleArray(n_neurons, dims, radius=radius)
+    with nengo.Network():
+        A = nengo.networks.EnsembleArray(n_neurons=10, n_ensembles=3)
 
     A.add_neuron_input()
-    with pytest.warns(UserWarning):
-        A.add_neuron_input()  # reapeat call warning
+    with pytest.warns(UserWarning, match="neuron_input already exists"):
+        A.add_neuron_input()
+
     A.add_neuron_output()
-    with pytest.warns(UserWarning):
-        A.add_neuron_output()  # reapeat call warning
+    with pytest.warns(UserWarning, match="neuron_output already exists"):
+        A.add_neuron_output()
 
-    name = "test"
-    function = np.array([np.sin, np.sin])
-    with pytest.raises(ValidationError):
-        A.add_output(name, function)
+    with pytest.raises(ValidationError, match="Must have one function per ensemble"):
+        A.add_output("test", [np.sin] * (A.n_ensembles + 1))
 
-    function = "notafunction"
-    with pytest.raises(ValidationError):
-        A.add_output(name, function)
+    with pytest.raises(ValidationError, match="'function' must be a callable"):
+        A.add_output("test", "not a function")

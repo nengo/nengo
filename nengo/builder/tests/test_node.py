@@ -1,21 +1,21 @@
 import pytest
 
-from nengo.builder.node import build_node
+import nengo
 from nengo.exceptions import BuildError
 
 
-def test_build_node_error():
+def test_build_node_error(Simulator):
     """Tests a build error for the build_node function"""
 
-    class FakeOutput:
-        astype = 0
+    class BadOutputType:
+        pass
 
-    class FakeNode:
-        output = FakeOutput()
-        size_in = 0
+    with nengo.Network() as net:
+        n = nengo.Node(0)
 
-    model = 0
-    node = FakeNode
+    # hack to change node type without tripping API validation
+    nengo.Node.output.data[n] = BadOutputType()
 
-    with pytest.raises(BuildError):
-        build_node(model, node)
+    with pytest.raises(BuildError, match="Invalid node output type"):
+        with nengo.Simulator(net):
+            pass

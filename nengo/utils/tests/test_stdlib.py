@@ -145,37 +145,32 @@ def test_weakkeydefaultdict():
     assert len(d) == 0
 
 
-def test_make_weakkeydict_from_dict():
-    o = C()
-    d = WeakKeyIDDictionary({o: 364})
-    assert d[o] == 364
+def test_weakkeyiddictionary_init():
+    obj = C()
+    val = 364
+
+    # construct from dictionary
+    d = WeakKeyIDDictionary({obj: val})
+    assert d[obj] == val
+
+    # construct from another WeakKeyIDDictionary
+    d2 = WeakKeyIDDictionary(d)
+    assert d2[obj] == val
 
 
-def test_make_weakkeydict_from_weakkeydict():
-    o = C()
-    d1 = WeakKeyIDDictionary({o: 364})
-    d2 = WeakKeyIDDictionary(d1)
-    assert d1[o] == 364
-    assert d2[o] == 364
-
-
-def test_weakkeydict_popitem(key1=C(), key2=C(), value1="v1", value2="v2"):
+def test_weakkeydict_popitem(key1=C(), key2=C(), val1="v1", val2="v2"):
     d = WeakKeyIDDictionary()
-    d[key1] = value1
-    d[key2] = value2
+    d[key1] = val1
+    d[key2] = val2
+
     assert len(d) == 2
-    k, v = d.popitem()
+    k1, v1 = d.popitem()
     assert len(d) == 1
-    if k is key1:
-        assert v is value1
-    else:
-        assert v is value2
-    k, v = d.popitem()
+    assert k1 in (key1, key2) and v1 is (val1 if k1 is key1 else val2)
+
+    k2, v2 = d.popitem()
     assert len(d) == 0
-    if k is key1:
-        assert v is value1
-    else:
-        assert v is value2
+    assert k2 is (key2 if k1 is key1 else key1) and v2 is (val1 if k2 is key1 else val2)
 
 
 def test_weakkeydict_setdefault(key=C(), value1="v1", value2="v2"):
@@ -198,55 +193,32 @@ def test_weakkeydict_update():
     in_d = {C(): 1, C(): 2, C(): 3}
     d = WeakKeyIDDictionary()
     d.update(in_d)
+
     assert len(d) == len(in_d)
     for k in d.keys():
         assert k in in_d, "mysterious new key appeared in weak dict"
         v = in_d.get(k)
-        assert v is d[k]
-        assert v is d.get(k)
+        assert v is d[k] and v is d.get(k)
     for k in in_d.keys():
         assert k in d, "original key disappeared in weak dict"
         v = in_d[k]
-        assert v is d[k]
-        assert v is d.get(k)
+        assert v is d[k] and v is d.get(k)
 
 
-def test_weakkeyiddict_contains():
-    d = WeakKeyIDDictionary()
-    assert (None in d) is False
+def test_weakkeyiddict_contains_none():
+    assert (None in WeakKeyIDDictionary()) is False
 
 
 def test_weakkeyiddict_iter_functions():
     """Tests iterkeys and iteritems"""
-    d = WeakKeyIDDictionary()
     in_d = {C(): 1, C(): 2, C(): 3}
-    d.update(in_d)
-    assert repr(d.iterkeys()).startswith(repr(d._keyrefs.values())[0:43])
+    d = WeakKeyIDDictionary(in_d)
 
-    results = list(d.iteritems())
-    start = "(<nengo.utils.tests.test_stdlib.C object "
-    end = [
-        "1)",
-        "2)",
-        "3)",
-    ]
-    end2 = [  # ending for travis-ci
-        "3)",
-        "1)",
-        "2)",
-    ]
-    for i, value in enumerate(results):
-        assert str(value).startswith(start)
-        assert str(value).endswith(end[i]) or str(value).endswith(end2[i])
-
-
-def test_weakkeyiddict_update_kwargs():
-    """tests weakkeyiddict_update"""
-    WeakKeyIDDictionary()  # d =
-    # d.update(in_dict=None, keyrefs=1)
-    # the word keyrefs is passed as a string to weakref.ref,
-    # but weakref can't use strings
-    # TODO: should update, except kwargs
+    # copy, otherwise `d` will change size during iteration as references are removed
+    in_d2 = dict(in_d)
+    for k, v in d.iteritems():
+        assert k in in_d
+        assert in_d2.pop(k) == v
 
 
 def test_weakkeydict_delitem():
@@ -264,6 +236,7 @@ def test_weakkeydict_delitem():
 def test_weakkeydict_bad_delitem():
     d = WeakKeyIDDictionary()
     o = C()
+
     # An attempt to delete an object that isn't there should raise KeyError.
     with pytest.raises(KeyError):
         del d[o]
@@ -309,9 +282,14 @@ def test_weakset():
     del k
     assert len(s) == 0
 
-    # class Dict(dict):
-    #     pass
-    # obj = Dict(red=1, green=2, blue=3)  # this object is weak referenceable
-    # s = WeakSet(obj)
-    # the word red is passed as a string to weakref.ref, but weakref can't use strings
-    # TODO: should update, except kwargs
+
+def test_weakset_init():
+    k = C()
+
+    # init from a list
+    s = WeakSet([k])
+    assert k in s
+
+    # init from another weakset
+    s2 = WeakSet(s)
+    assert k in s2
