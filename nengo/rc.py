@@ -148,16 +148,10 @@ class _RC(configparser.SafeConfigParser):
 
     def read_file(self, fp, filename=None):
         if filename is None:
-            if hasattr(fp, "name"):
-                filename = fp.name
-            else:
-                filename = "<???>"
+            filename = fp.name if hasattr(fp, "name") else "<???>"
+
         logger.debug("Reading configuration from {}".format(filename))
-        try:
-            return configparser.SafeConfigParser.read_file(self, fp, filename)
-        except AttributeError:  # pragma: no cover
-            # pylint: disable=deprecated-method
-            return configparser.SafeConfigParser.readfp(self, fp, filename)
+        return configparser.SafeConfigParser.read_file(self, fp, filename)
 
     def read(self, filenames):
         logger.debug("Reading configuration files {}".format(filenames))
