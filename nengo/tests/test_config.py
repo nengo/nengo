@@ -1,8 +1,10 @@
+import pickle
+
 import pytest
 
 import nengo
 import nengo.synapses
-from nengo.config import SupportDefaultsMixin
+from nengo.config import ClassParams, InstanceParams, SupportDefaultsMixin
 from nengo.exceptions import ConfigError, ReadonlyError
 from nengo.params import Default, Parameter, Unconfigurable
 from nengo.utils.testing import ThreadedAssertion
@@ -437,3 +439,38 @@ def test_get_param_on_instance_configerror():
 
     with pytest.raises(ConfigError, match="Cannot get parameters on an instance"):
         model.config[a].get_param("something")
+
+
+def test_config_pickle(tmp_path):
+    # --- test ClassParams
+    clsconfig = ClassParams(nengo.Ensemble)
+    clsconfig.max_rates = nengo.dists.Choice([0])
+
+    picklefile = str(tmp_path / "config0.pkl")
+    with open(picklefile, "wb") as fh:
+        pickle.dump(clsconfig, fh)
+
+    del fh
+
+    with open(picklefile, "rb") as fh:
+        clsconfig2 = pickle.load(fh)
+
+    assert clsconfig2.max_rates == nengo.dists.Choice([0])
+
+    # --- test InstanceParams
+    clsconfig.set_param("dummy", Parameter("dummy", default=None, optional=True))
+
+    ens = nengo.Ensemble(10, 1, add_to_container=False)
+    insconfig = InstanceParams(ens, clsconfig)
+    insconfig.dummy = nengo.dists.Choice([3])
+
+    picklefile = str(tmp_path / "config1.pkl")
+    with open(picklefile, "wb") as fh:
+        pickle.dump(insconfig, fh)
+
+    del fh
+
+    with open(picklefile, "rb") as fh:
+        insconfig2 = pickle.load(fh)
+
+    assert insconfig2.dummy == nengo.dists.Choice([3])
