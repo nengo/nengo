@@ -2,7 +2,7 @@ import numpy as np
 
 from nengo.builder import Builder, Operator, Signal
 from nengo.exceptions import BuildError
-from nengo.neurons import NeuronType
+from nengo.neurons import NeuronType, RatesToSpikesNeuronType
 from nengo.utils.numpy import is_array_like
 
 
@@ -98,7 +98,7 @@ class SimNeurons(Operator):
 
 
 @Builder.register(NeuronType)
-def build_neurons(model, neurontype, neurons):
+def build_neurons(model, neurontype, neurons, input_sig=None, output_sig=None):
     """Builds a `.NeuronType` object into a model.
 
     This function adds a `.SimNeurons` operator connecting the input current to the
@@ -119,7 +119,10 @@ def build_neurons(model, neurontype, neurons):
     Does not modify ``model.params[]`` and can therefore be called
     more than once with the same `.NeuronType` instance.
     """
-    dtype = model.sig[neurons]["in"].dtype
+    input_sig = model.sig[neurons]["in"] if input_sig is None else input_sig
+    output_sig = model.sig[neurons]["out"] if output_sig is None else output_sig
+
+    dtype = input_sig.dtype
     n_neurons = neurons.size_in
     rng = np.random.RandomState(model.seeds[neurons.ensemble] + 1)
     state_init = neurontype.make_state(n_neurons, rng=rng, dtype=dtype)
@@ -143,10 +146,44 @@ def build_neurons(model, neurontype, neurons):
             )
 
     model.add_op(
-        SimNeurons(
-            neurons=neurontype,
-            J=model.sig[neurons]["in"],
-            output=model.sig[neurons]["out"],
-            state=state,
-        )
+        SimNeurons(neurons=neurontype, J=input_sig, output=output_sig, state=state)
     )
+
+
+@Builder.register(RatesToSpikesNeuronType)
+def build_rates_to_spikes(model, neurontype, neurons):
+    """Builds a `.RatesToSpikesNeuronType` object into a model.
+
+    This function adds two `.SimNeurons` operators. The first one handles
+    simulating the base_type, converting input signals into rates. The second
+    one takes those rates as input and emits spikes.
+
+    Parameters
+    ----------
+    model : Model
+        The model to build into.
+    neurontype : RatesToSpikesNeuronType
+        Neuron type to build.
+    neuron : Neurons
+        The neuron population object corresponding to the neuron type.
+
+    Notes
+    -----
+    Does not modify ``model.params[]`` and can therefore be called
+    more than once with the same `.NeuronType` instance.
+    """
+
+    in_sig = model.sig[neurons]["in"]
+    out_sig = model.sig[neurons]["out"]
+    rate_sig = Signal(
+        shape=model.sig[neurons]["in"].shape, name="%s.rate_out" % (neurons,),
+    )
+    model.sig[neurons]["rate_out"] = rate_sig
+
+    # build the base neuron type
+    build_neurons(
+        model, neurontype.base_type, neurons, input_sig=in_sig, output_sig=rate_sig
+    )
+
+    # apply the RatesToSpikes conversion to output of base neuron type
+    build_neurons(model, neurontype, neurons, input_sig=rate_sig, output_sig=out_sig)

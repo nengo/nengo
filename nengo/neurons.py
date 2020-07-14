@@ -939,6 +939,8 @@ class RatesToSpikesNeuronType(NeuronType):
     spiking = True
 
     def __init__(self, base_type, amplitude=1.0, initial_state=None):
+        super().__init__(initial_state)
+
         self.base_type = base_type
         self.amplitude = amplitude
         self.negative = base_type.negative
@@ -950,11 +952,14 @@ class RatesToSpikesNeuronType(NeuronType):
                 % (type(base_type).__name__)
             )
 
-        # note: copy first, because we don't want to be modifying the class attribute
-        self.state = self.state.copy()
-        self.state.update(base_type.state)
-
-        super().__init__(initial_state)
+        for s in self.state:
+            if s in self.base_type.state:
+                raise ValidationError(
+                    "%s and %s have overlapping state variable (%s)"
+                    % (self, self.base_type, s),
+                    attr="state",
+                    obj=self,
+                )
 
     def gain_bias(self, max_rates, intercepts):
         return self.base_type.gain_bias(max_rates, intercepts)
@@ -964,6 +969,10 @@ class RatesToSpikesNeuronType(NeuronType):
 
     def rates(self, x, gain, bias):
         return self.base_type.rates(x, gain, bias)
+
+    @property
+    def probeable(self):
+        return ("output", "rate_out") + tuple(self.state) + tuple(self.base_type.state)
 
 
 class RegularSpiking(RatesToSpikesNeuronType):
@@ -989,21 +998,11 @@ class RegularSpiking(RatesToSpikesNeuronType):
        Functions. arXiv preprint arXiv:2002.03553. (https://arxiv.org/abs/2002.03553)
     """
 
-    def __init__(self, base_type, amplitude=1.0, initial_state=None):
-        if "voltage" in base_type.state:
-            raise ValidationError(
-                "Cannot already have a 'voltage' state variable",
-                attr="base_type",
-                obj=self,
-            )
-        self.state = {"voltage": Uniform(low=0, high=1)}
-        super().__init__(base_type, amplitude=amplitude, initial_state=initial_state)
+    state = {"voltage": Uniform(low=0, high=1)}
 
-    def step(self, dt, J, output, voltage, **base_state):
-        # Sets output to the desired rates
-        self.base_type.step(dt, J, output=output, **base_state)
-
-        voltage += dt * output
+    def step(self, dt, J, output, voltage):
+        # Note: J is the desired output rate, not the input current
+        voltage += dt * J
         n_spikes = np.floor(voltage)
         output[...] = (self.amplitude / dt) * n_spikes
         voltage -= n_spikes
@@ -1036,17 +1035,16 @@ class StochasticSpiking(RatesToSpikesNeuronType):
         return state
 
     def step(self, dt, J, output, rng, **base_state):
-        self.base_type.step(dt, J, output=output, **base_state)
-
+        # Note: J is the desired output rate, not the input current
         if self.negative:
-            frac, n_spikes = np.modf(dt * np.abs(output))
+            frac, n_spikes = np.modf(dt * np.abs(J))
         else:
-            frac, n_spikes = np.modf(dt * output)
+            frac, n_spikes = np.modf(dt * J)
 
         n_spikes += rng.random_sample(size=frac.shape) < frac
 
         if self.negative:
-            output[...] = (self.amplitude / dt) * n_spikes * np.sign(output)
+            output[...] = (self.amplitude / dt) * n_spikes * np.sign(J)
         else:
             output[...] = (self.amplitude / dt) * n_spikes
 
@@ -1074,13 +1072,12 @@ class PoissonSpiking(RatesToSpikesNeuronType):
         return state
 
     def step(self, dt, J, output, rng, **base_state):
-        self.base_type.step(dt, J, output=output, **base_state)
-
+        # Note: J is the desired output rate, not the input current
         if self.negative:
             output[...] = (
                 (self.amplitude / dt)
-                * rng.poisson(np.abs(output) * dt, output.size)
-                * np.sign(output)
+                * rng.poisson(np.abs(J) * dt, output.size)
+                * np.sign(J)
             )
         else:
-            output[...] = (self.amplitude / dt) * rng.poisson(output * dt, output.size)
+            output[...] = (self.amplitude / dt) * rng.poisson(J * dt, output.size)
