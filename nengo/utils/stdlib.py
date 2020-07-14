@@ -121,14 +121,10 @@ class WeakKeyIDDictionary(collections.abc.MutableMapping):
         for k in self:
             yield k, self[k]
 
-    def update(self, in_dict=None, **kwargs):
+    def update(self, in_dict):
         """Update with items from other dictionary."""
-
-        if in_dict is not None:
-            for key, value in in_dict.items():
-                self.__setitem__(key, value)
-        if len(kwargs) > 0:
-            self.update(kwargs)
+        for key, value in in_dict.items():
+            self.__setitem__(key, value)
 
 
 class WeakSet(collections.abc.MutableSet):
