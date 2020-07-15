@@ -195,15 +195,16 @@ def tf2ss(num, den):
     if M > K:
         msg = "Improper transfer function. `num` is longer than `den`."
         raise ValueError(msg)
-    assert not (M == 0 or K == 0)  # Not a Null system
+    if M == 0 or K == 0:  # Null system
+        return array([], float), array([], float), array([], float), array([], float)
 
     # pad numerator to have same number of columns has denominator
     num = r_["-1", zeros((num.shape[0], K - M), num.dtype), num]
 
-    assert num.shape[-1] > 0
-    D = num[:, 0]
-    # else:
-    #     D = array([], float)
+    if num.shape[-1] > 0:
+        D = num[:, 0]
+    else:
+        D = array([], float)
 
     if K == 1:
         return array([], float), array([], float), array([], float), D
@@ -332,10 +333,16 @@ def ss2tf(A, B, C, D, input=0):
     if D.shape[-1] != 0:
         D = D[:, input]
 
-    den = poly(A)
+    try:
+        den = poly(A)
+    except ValueError:
+        den = 1
 
-    assert not ((product(B.shape, axis=0) == 0) and (product(C.shape, axis=0) == 0))
-    assert not ((product(D.shape, axis=0) == 0) and (product(A.shape, axis=0) == 0))
+    if (product(B.shape, axis=0) == 0) and (product(C.shape, axis=0) == 0):
+        num = np.ravel(D)
+        if (product(D.shape, axis=0) == 0) and (product(A.shape, axis=0) == 0):
+            den = []
+        return num, den
 
     num_states = A.shape[0]
     type_test = A[:, 0] + B[:, 0] + C[0, :] + D
