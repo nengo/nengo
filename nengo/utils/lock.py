@@ -18,10 +18,10 @@ class FileLock:
         try:
             self._lock.acquire()
             self._acquired = True
-        except (portalocker.AlreadyLocked, portalocker.LockException):
+        except (portalocker.AlreadyLocked, portalocker.LockException) as e:
             raise TimeoutError(
                 "Could not acquire lock '{filename}'.".format(filename=self.filename)
-            )
+            ) from e
 
     def release(self):
         self._lock.release()

@@ -134,7 +134,7 @@ def test_decoder_cache(tmpdir):
 
         solver_args = get_solver_test_args()
         solver_args["gain"] *= 2
-        decoders3, solver_info3 = cache.wrap_solver(solver_mock)(**solver_args)
+        decoders3, _ = cache.wrap_solver(solver_mock)(**solver_args)
         assert SolverMock.n_calls[solver_mock] == 2
         assert np.any(decoders1 != decoders3)
 

@@ -974,6 +974,9 @@ class RatesToSpikesNeuronType(NeuronType):
     def rates(self, x, gain, bias):
         return self.base_type.rates(x, gain, bias)
 
+    def step(self, dt, J, output, **state):
+        raise NotImplementedError("Subclasses must implement step")
+
     @property
     def probeable(self):
         return ("output", "rate_out") + tuple(self.state) + tuple(self.base_type.state)

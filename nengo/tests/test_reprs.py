@@ -79,12 +79,13 @@ def check_init_args(cls, args):
 
 
 def check_repr(obj):
+    """Tests that repr gives back what is needed to create the object."""
     # some reprs need these in the local namespace
     array = np.array
     int64 = np.int64
     assert array
     assert int64
-    assert eval(repr(obj)) == obj
+    assert eval(repr(obj)) == obj  # pylint: disable = eval-used
 
 
 def test_core_objects():

@@ -151,7 +151,7 @@ def test_shape_or_none():
     assert _shape_or_none(None) == (None,) * 2
 
 
-def test_restore():
+def test_restore(allclose):
     """test the _restore function and errors"""
 
     class Test:
@@ -159,7 +159,7 @@ def test_restore():
 
     M = Test
     shape = (0, 0)
-    _restore(M, shape) == np.zeros(shape)
+    assert allclose(_restore(M, shape), np.zeros(shape))
     with pytest.raises(ValueError):
         M = np.array([1, 2])
         shape = (1, 2)

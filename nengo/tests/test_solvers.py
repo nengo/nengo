@@ -46,14 +46,14 @@ class Factory:
     def __str__(self):
         try:
             inst = self()
-        except Exception:
+        except Exception:  # pylint: disable = broad-except
             inst = "%s(args=%s, kwargs=%s)" % (self.klass, self.args, self.kwargs)
         return str(inst)
 
     def __repr__(self):
         try:
             inst = self()
-        except Exception:
+        except Exception:  # pylint: disable = broad-except
             inst = "<%r instance>" % (self.klass.__name__)
         return repr(inst)
 

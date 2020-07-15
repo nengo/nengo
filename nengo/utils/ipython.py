@@ -28,9 +28,9 @@ assert get_ipython
 def check_ipy_version(min_version):
     """Check that ipython version is >= ``min_version``."""
     try:
-        import IPython  # pylint: disable=import-outside-toplevel
+        import IPython as ipy  # pylint: disable=import-outside-toplevel
 
-        return IPython.version_info >= min_version
+        return ipy.version_info >= min_version
     except ImportError:  # pragma: no cover
         return False
 
@@ -126,7 +126,7 @@ def export_py(nb, dest_path=None):
     Optionally saves script to dest_path.
     """
     exporter = PythonExporter()
-    body, resources = exporter.from_notebook_node(nb)
+    body, _ = exporter.from_notebook_node(nb)
 
     # Remove all lines with get_ipython
     while "get_ipython()" in body:

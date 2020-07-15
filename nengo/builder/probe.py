@@ -43,8 +43,10 @@ def signal_probe(model, key, probe):
 
     try:
         sig = model.sig[probe.obj][key]
-    except (IndexError, KeyError):
-        raise BuildError("Attribute %r is not probeable on %s." % (key, probe.obj))
+    except (IndexError, KeyError) as e:
+        raise BuildError(
+            "Attribute %r is not probeable on %s." % (key, probe.obj)
+        ) from e
 
     if sig is None:
         raise BuildError(
@@ -104,11 +106,11 @@ def build_probe(model, probe):
     # find the right parent class in `objtypes`, using `isinstance`
     for nengotype, probeables in probemap.items():
         if isinstance(probe.obj, nengotype):
+            key = probeables.get(probe.attr, probe.attr)
             break
     else:
         raise BuildError("Type %r is not probeable" % type(probe.obj).__name__)
 
-    key = probeables.get(probe.attr, probe.attr)
     if key is None:
         conn_probe(model, probe)
     else:

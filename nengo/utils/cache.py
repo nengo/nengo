@@ -64,8 +64,8 @@ def human2bytes(s):
     assert letter in symbols
     num = float(num)
     prefix = {symbols[0]: 1}
-    for i, s in enumerate(symbols[1:]):
-        prefix[s] = 1 << (i + 1) * 10
+    for i, symbol in enumerate(symbols[1:]):
+        prefix[symbol] = 1 << (i + 1) * 10
     return int(num * prefix[letter])
 
 

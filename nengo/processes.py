@@ -284,13 +284,13 @@ class PiecewiseDataParam(DictParam):
             if callable(value):
                 try:
                     value = np.ravel(value(time))
-                except Exception:
+                except Exception as e:
                     raise ValidationError(
                         "callable object for time step %.3f "
                         "should return a numerical constant" % time,
                         attr="data",
                         obj=instance,
-                    )
+                    ) from e
             else:
                 value = np.ravel(value)
                 data[time] = value
@@ -299,7 +299,7 @@ class PiecewiseDataParam(DictParam):
             # make sure this is the same size as previous items
             if size != size_out and size_out is not None:
                 raise ValidationError(
-                    "time %g has size %d instead of %d" % (time, size, size_out),
+                    "time %g has size %d instead of %s" % (time, size, size_out),
                     attr="data",
                     obj=instance,
                 )

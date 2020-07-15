@@ -825,10 +825,10 @@ class SimPyFunc(Operator):
 
                     output[...] = y
 
-                except (TypeError, ValueError):
+                except (TypeError, ValueError) as e:
                     raise SimulationError(
                         "Function %r returned a value "
                         "%r of invalid type %r" % (function_name(self.fn), y, type(y))
-                    )
+                    ) from e
 
         return step_simpyfunc

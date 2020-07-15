@@ -91,8 +91,6 @@ def test_unsupported(xfail, testdir):
 class MockSimulator:
     """A Simulator that does not support any tests."""
 
-    pass
-
 
 def test_pyargs(testdir):
     # mark all the tests as unsupported

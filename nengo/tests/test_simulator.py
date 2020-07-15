@@ -17,6 +17,8 @@ from nengo.utils.progress import ProgressBar
 
 
 def test_steps(Simulator, allclose):
+    """Tests stepping through a simple simulation, ensuring that
+    steps are tracked and steps take the right amount of time"""
     dt = 0.001
     m = nengo.Network(label="test_steps")
     with Simulator(m, dt=dt) as sim:
@@ -35,7 +37,7 @@ def test_steps(Simulator, allclose):
 
 @pytest.mark.parametrize("bits", ["16", "32", "64"])
 def test_dtype(Simulator, request, seed, bits):
-    # Ensure dtype is set back to default after the test, even if it fails
+    # Ensures dtype is set back to default after the test, even if it fails
     request.addfinalizer(
         lambda: rc.set("precision", "bits", str(RC_DEFAULTS["precision"]["bits"]))
     )
@@ -345,10 +347,11 @@ def test_simulator_progress_bars(Simulator):
 
     with nengo.Network() as model:
         for _ in range(3):
-            [nengo.Ensemble(10, 1) for i in range(3)]
+            for _ in range(3):
+                nengo.Ensemble(10, 1)
             with nengo.Network():
-                [nengo.Ensemble(10, 1) for i in range(3)]
-
+                for _ in range(3):
+                    nengo.Ensemble(10, 1)
     build_invariants = ProgressBarInvariants()
     with Simulator(model, progress_bar=build_invariants) as sim:
         run_invariants = ProgressBarInvariants()

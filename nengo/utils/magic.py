@@ -96,7 +96,7 @@ class ObjectProxy(metaclass=ObjectProxyMeta):
     except ``__call__``.
     """
 
-    __slots__ = "__wrapped__"
+    __slots__ = ["__wrapped__"]
 
     def __init__(self, wrapped):
         object.__setattr__(self, "__wrapped__", wrapped)

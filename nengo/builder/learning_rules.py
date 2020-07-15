@@ -70,7 +70,7 @@ class SimPES(Operator):
     def __init__(
         self, pre_filtered, error, delta, learning_rate, encoders=None, tag=None
     ):
-        super(SimPES, self).__init__(tag=tag)
+        super().__init__(tag=tag)
 
         self.learning_rate = learning_rate
 

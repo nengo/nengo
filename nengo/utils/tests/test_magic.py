@@ -6,17 +6,18 @@ from nengo.utils.magic import (
     BoundFunctionWrapper,
 )
 
-state = None  # Used to make sure decorators are running
+
+class RunState:
+    state = None  # Used to make sure decorators are running
 
 
 def _test_decorated(obj):
-    global state
 
     # Make sure decorator works
-    state = "not run"
+    RunState.state = "not run"
     obj(0, 0)
-    assert state == "run"
-    state = "not run"
+    assert RunState.state == "run"
+    RunState.state = "not run"
 
     # Make sure decorated function looks like non-decorated
     assert obj.__name__ == "f"
@@ -28,8 +29,7 @@ def test_function():
 
     @decorator
     def test_decorator(wrapped, instance, args, kwargs):
-        global state
-        state = "run"
+        RunState.state = "run"
         assert instance is None
         return wrapped(*args, **kwargs)
 
@@ -55,8 +55,7 @@ def test_boundfunction():
 
     @decorator
     def test_decorator(wrapped, instance, args, kwargs):
-        global state
-        state = "run"
+        RunState.state = "run"
         assert instance is not None
         assert type(instance).__name__ == "Test"
         return wrapped(*args, **kwargs)
@@ -85,8 +84,7 @@ def test_staticmethod():
 
     @decorator
     def test_decorator(wrapped, instance, args, kwargs):
-        global state
-        state = "run"
+        RunState.state = "run"
         assert instance is None
         return wrapped(*args, **kwargs)
 
@@ -140,8 +138,7 @@ def test_classmethod():
 
     @decorator
     def test_decorator(wrapped, instance, args, kwargs):
-        global state
-        state = "run"
+        RunState.state = "run"
         valid_names = {"TestBeforeStaticmethod", "TestAfterStaticmethod"}
         assert (
             instance is None
@@ -200,8 +197,7 @@ def test_class():
 
     @decorator
     def test_decorator(wrapped, instance, args, kwargs):
-        global state
-        state = "run"
+        RunState.state = "run"
         assert instance is None
         inst = wrapped(*args, **kwargs)
         inst.ran = True
@@ -241,8 +237,7 @@ def test_class_decorator():
         @decorator
         @classmethod
         def test_decorator(cls, wrapped, instance, args, kwargs):
-            global state
-            state = "run"
+            RunState.state = "run"
             assert instance is not None
             assert type(instance).__name__ == "Test"
             return wrapped(*args, **kwargs)
@@ -272,8 +267,7 @@ def test_instance_decorator():
     class TestA:
         @decorator
         def test_decorator(self, wrapped, instance, args, kwargs):
-            global state
-            state = "run"
+            RunState.state = "run"
             assert instance is not None
             assert type(instance).__name__ == "Test"
             return wrapped(*args, **kwargs)

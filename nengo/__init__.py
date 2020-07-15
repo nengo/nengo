@@ -10,7 +10,7 @@ in the `examples` directory of the source code repository.
 import logging
 import sys
 
-from .version import version as __version__
+from nengo.version import version as __version__
 
 if sys.version_info < (3, 5):
     raise ImportError(
@@ -36,12 +36,12 @@ There are two options for getting Nengo working:
 del sys
 
 # Nengo namespace (API)
-from .base import Process
-from .config import Config
-from .connection import Connection
-from .ensemble import Ensemble
-from .node import Node
-from .neurons import (
+from nengo.base import Process
+from nengo.config import Config
+from nengo.connection import Connection
+from nengo.ensemble import Ensemble
+from nengo.node import Node
+from nengo.neurons import (
     AdaptiveLIF,
     AdaptiveLIFRate,
     Direct,
@@ -56,15 +56,16 @@ from .neurons import (
     StochasticSpiking,
     Tanh,
 )
-from .network import Network
-from .learning_rules import PES, BCM, Oja, Voja
-from .params import Default
-from .probe import Probe
-from .rc import rc, RC_DEFAULTS
-from .simulator import Simulator
-from .synapses import Alpha, LinearFilter, Lowpass, Triangle
-from .transforms import Convolution, Dense, Sparse
-from . import dists, exceptions, networks, presets, processes, spa, utils
+from nengo.network import Network
+from nengo.learning_rules import PES, BCM, Oja, Voja
+from nengo.params import Default
+from nengo.probe import Probe
+from nengo.rc import rc, RC_DEFAULTS
+from nengo.simulator import Simulator
+from nengo.synapses import Alpha, LinearFilter, Lowpass, Triangle
+from nengo.transforms import Convolution, Dense, Sparse
+from nengo import dists, exceptions, networks, presets, processes, utils
+from nengo import spa  # pylint: disable=cyclic-import
 
 logger = logging.getLogger(__name__)
 try:

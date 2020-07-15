@@ -215,7 +215,7 @@ def test_whitesignal_high_dt(Simulator, high, dt, seed, plt, allclose):
 
 @pytest.mark.parametrize("high,dt", [(501, 0.001), (500, 0.002)])
 def test_whitesignal_nyquist(Simulator, dt, high, seed):
-    # check that high cannot exceed nyquist frequency
+    """Check that ``high`` cannot exceed nyquist frequency."""
     process = WhiteSignal(1.0, high=high)
     with nengo.Network() as model:
         nengo.Node(process, size_out=1)
@@ -368,7 +368,7 @@ class TestPiecewise:
         assert allclose(f[t == 0.1], [0.0])
         assert allclose(f[t == 0.15], [0.0])
 
-    def test_lists(self, Simulator, allclose):
+    def test_lists_in_data(self, Simulator, allclose):
         t, f = self.run_sim({0.05: [1, 0], 0.1: [0, 1]}, "zero", Simulator)
         assert allclose(f[t == 0.001], [0.0, 0.0])
         assert allclose(f[t == 0.025], [0.0, 0.0])

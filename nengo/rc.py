@@ -91,7 +91,7 @@ RC_FILES = [
 ]
 
 
-class _RC(ConfigParser):
+class _RC(ConfigParser):  # pylint: disable=too-many-ancestors
     """Allows reading from and writing to Nengo RC settings.
 
     This object is a :class:`configparser.ConfigParser`, which means that
@@ -151,11 +151,11 @@ class _RC(ConfigParser):
         if filename is None:
             filename = fp.name if hasattr(fp, "name") else "<???>"
 
-        logger.debug("Reading configuration from {}".format(filename))
+        logger.debug("Reading configuration from %s", filename)
         return super().read_file(fp, filename)
 
     def read(self, filenames):
-        logger.debug("Reading configuration files {}".format(filenames))
+        logger.debug("Reading configuration files %s", filenames)
         return super().read(filenames)
 
     def reload_rc(self, filenames=None):

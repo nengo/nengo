@@ -332,7 +332,7 @@ def test_frozen():
 
 
 def test_synapse_subclass(Simulator):
-    class MySynapse(Synapse):
+    class MySynapse(Synapse):  # pylint: disable=abstract-method
         pass
 
     with nengo.Network() as net:

@@ -2,12 +2,14 @@ import warnings
 
 import numpy as np
 
-import nengo
+from nengo.connection import Connection
 from nengo.exceptions import ObsoleteError
+from nengo.network import Network
 from nengo.networks.ensemblearray import EnsembleArray
+from nengo.node import Node
 
 
-class Product(nengo.Network):
+class Product(Network):
     """Computes the element-wise product of two equally sized vectors.
 
     The network used to calculate the product is described in
@@ -69,9 +71,9 @@ class Product(nengo.Network):
         super().__init__(**kwargs)
 
         with self:
-            self.input_a = nengo.Node(size_in=dimensions, label="input_a")
-            self.input_b = nengo.Node(size_in=dimensions, label="input_b")
-            self.output = nengo.Node(size_in=dimensions, label="output")
+            self.input_a = Node(size_in=dimensions, label="input_a")
+            self.input_b = Node(size_in=dimensions, label="input_b")
+            self.output = Node(size_in=dimensions, label="output")
 
             self.sq1 = EnsembleArray(
                 max(1, n_neurons // 2),
@@ -87,15 +89,15 @@ class Product(nengo.Network):
             )
 
             tr = 1.0 / np.sqrt(2.0)
-            nengo.Connection(self.input_a, self.sq1.input, transform=tr, synapse=None)
-            nengo.Connection(self.input_b, self.sq1.input, transform=tr, synapse=None)
-            nengo.Connection(self.input_a, self.sq2.input, transform=tr, synapse=None)
-            nengo.Connection(self.input_b, self.sq2.input, transform=-tr, synapse=None)
+            Connection(self.input_a, self.sq1.input, transform=tr, synapse=None)
+            Connection(self.input_b, self.sq1.input, transform=tr, synapse=None)
+            Connection(self.input_a, self.sq2.input, transform=tr, synapse=None)
+            Connection(self.input_b, self.sq2.input, transform=-tr, synapse=None)
 
             sq1_out = self.sq1.add_output("square", np.square)
-            nengo.Connection(sq1_out, self.output, transform=0.5, synapse=None)
+            Connection(sq1_out, self.output, transform=0.5, synapse=None)
             sq2_out = self.sq2.add_output("square", np.square)
-            nengo.Connection(sq2_out, self.output, transform=-0.5, synapse=None)
+            Connection(sq2_out, self.output, transform=-0.5, synapse=None)
 
     @property
     def A(self):  # pragma: no cover

@@ -1,11 +1,13 @@
 import numpy as np
 
-import nengo
+from nengo.connection import Connection
 from nengo.exceptions import ObsoleteError
-from nengo.networks import EnsembleArray
+from nengo.network import Network
+from nengo.networks.ensemblearray import EnsembleArray
+from nengo.node import Node
 
 
-class InputGatedMemory(nengo.Network):
+class InputGatedMemory(Network):
     """Stores a given vector in memory, with input controlled by a gate.
 
     Parameters
@@ -73,7 +75,7 @@ class InputGatedMemory(nengo.Network):
         with self:
             # integrator to store value
             self.mem = EnsembleArray(n_neurons, dimensions, label="mem")
-            nengo.Connection(
+            Connection(
                 self.mem.output,
                 self.mem.input,
                 transform=feedback,
@@ -82,10 +84,10 @@ class InputGatedMemory(nengo.Network):
 
             # calculate difference between stored value and input
             self.diff = EnsembleArray(n_neurons, dimensions, label="diff")
-            nengo.Connection(self.mem.output, self.diff.input, transform=-1)
+            Connection(self.mem.output, self.diff.input, transform=-1)
 
             # feed difference into integrator
-            nengo.Connection(
+            Connection(
                 self.diff.output,
                 self.mem.input,
                 transform=difference_gain,
@@ -94,9 +96,9 @@ class InputGatedMemory(nengo.Network):
 
             # gate difference (if gate==0, update stored value,
             # otherwise retain stored value)
-            self.gate = nengo.Node(size_in=1)
+            self.gate = Node(size_in=1)
             self.diff.add_neuron_input()
-            nengo.Connection(
+            Connection(
                 self.gate,
                 self.diff.neuron_input,
                 transform=np.ones((n_total_neurons, 1)) * -10,
@@ -104,8 +106,8 @@ class InputGatedMemory(nengo.Network):
             )
 
             # reset input (if reset=1, remove all values, and set to 0)
-            self.reset = nengo.Node(size_in=1)
-            nengo.Connection(
+            self.reset = Node(size_in=1)
+            Connection(
                 self.reset,
                 self.mem.add_neuron_input(),
                 transform=np.ones((n_total_neurons, 1)) * -3,

@@ -321,6 +321,7 @@ def test_dist_transform(Simulator, seed, allclose):
 
 
 def test_weights(Simulator, AnyNeuronType, plt, seed, allclose):
+    """Tests connections using a solver with weights"""
     n1, n2 = 100, 50
 
     def func(t):

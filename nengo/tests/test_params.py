@@ -68,7 +68,7 @@ def test_obsoleteparam():
 
     # cannot be read
     with pytest.raises(ObsoleteError):
-        inst.ab
+        print(inst.ab)
 
     # can only be assigned Unconfigurable
     inst.ab = params.Unconfigurable
@@ -401,6 +401,8 @@ def test_configure_all_nengo_parameters():
 
 
 def test_frozenobject_reprs():
+    """Params should only show in repr if their values differ from defaults."""
+
     class TestFO(params.FrozenObject):
         a = params.NumberParam("a", default=3, readonly=True)
         b = params.NumberParam("b")
@@ -410,8 +412,6 @@ def test_frozenobject_reprs():
             self.a = a
             self.b = b
 
-    # test that parameters are only shown in repr if their values are different
-    # than the default, for both parameter defaults and argument defaults
     assert repr(TestFO(3)) == "TestFO()"
     assert repr(TestFO(2)) == "TestFO(a=2)"
     assert repr(TestFO(2, b=3)) == "TestFO(a=2, b=3)"
@@ -444,7 +444,7 @@ def test_parameter_get_error():
 
     inst = Test()
     with pytest.raises(ValidationError, match="have no defaults.*ensure the value"):
-        inst.p
+        print(inst.p)
 
 
 def test_parameter_set_default_error():

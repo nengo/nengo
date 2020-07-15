@@ -188,6 +188,7 @@ def test_none(Simulator, seed):
     def input_function(t):
         if t < 0.005:
             return [1]
+        return None
 
     with model:
         u = nengo.Node(output=input_function)

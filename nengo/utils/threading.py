@@ -2,7 +2,7 @@ from collections.abc import Sequence
 import threading
 
 
-class ThreadLocalStack(threading.local, Sequence):
+class ThreadLocalStack(threading.local, Sequence):  # pylint: disable=too-many-ancestors
     def __init__(self, maxsize=None):
         super().__init__()
         self.maxsize = maxsize

@@ -260,7 +260,7 @@ class Fingerprint:
         try:
             self.fingerprint.update(pickle.dumps(obj, pickle.HIGHEST_PROTOCOL))
         except Exception as err:
-            raise FingerprintError(str(err))
+            raise FingerprintError() from err
 
     def __str__(self):
         return self.fingerprint.hexdigest()
@@ -370,7 +370,7 @@ class CacheIndex:
     def __getitem__(self, key):
         return self._index[key]
 
-    def __setitem__(self, key):
+    def __setitem__(self, key, value):
         raise TypeError("Index is readonly.")
 
     def __delitem__(self, key):
@@ -462,7 +462,7 @@ class WriteableCacheIndex(CacheIndex):
         with self._lock:
             try:
                 self._load_index_file()
-            except Exception:
+            except (FileNotFoundError, EOFError):
                 logger.exception("Decoder cache index corrupted. Reinitializing cache.")
                 # If we can't load the index file, the cache is corrupted,
                 # so we invalidate it (delete all files in the cache)
@@ -604,7 +604,7 @@ class DecoderCache:
                     "Decoder cache could not acquire lock and was "
                     "set to readonly mode."
                 )
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             self.readonly = True
             self._index = None
             logger.debug("Could not acquire lock because: %s", e)
@@ -616,8 +616,8 @@ class DecoderCache:
         self._in_context = False
         self._close_fd()
         if self._index is not None:
-            rval = self._index.__exit__(exc_type, exc_value, traceback)
-            return rval
+            return self._index.__exit__(exc_type, exc_value, traceback)
+        return None
 
     @staticmethod
     def get_default_dir():
@@ -705,7 +705,7 @@ class DecoderCache:
         self._close_fd()
 
         fileinfo = []
-        excess = -limit
+        excess = -1 * limit
         for path in self.get_files():
             stat = safe_stat(path)
             if stat is not None:
@@ -772,7 +772,7 @@ class DecoderCache:
                 with open(path, "rb") as f:
                     f.seek(start)
                     info, decoders = nco.read(f)
-            except Exception as err:
+            except (KeyError, FileNotFoundError, struct.error) as err:
                 if isinstance(err, KeyError):
                     logger.debug("Cache miss [%s].", key)
                 else:

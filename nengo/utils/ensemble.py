@@ -1,6 +1,6 @@
 import numpy as np
 
-from . import numpy as npext
+from . import numpy as npext  # pylint: disable = reimported
 
 
 def tuning_curves(ens, sim, inputs=None):
@@ -197,7 +197,7 @@ def sorted_neurons(ensemble, sim, iterations=100, seed=None):
     indices = np.arange(N)
     rng = np.random.RandomState(seed)
 
-    for k in range(iterations):
+    for _ in range(iterations):
         target = rng.randint(0, N, N)  # pick random swap targets
         for i in range(N):
             j = target[i]

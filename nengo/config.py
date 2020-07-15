@@ -479,8 +479,8 @@ class SupportDefaultsMixin:
         if rc["exceptions"].getboolean("simplified"):
             try:
                 super().__setattr__(name, val)
-            except ValidationError:
+            except ValidationError as e:
                 exc_info = sys.exc_info()
-                raise exc_info[1].with_traceback(None)
+                raise exc_info[1].with_traceback(None) from e
         else:
             super().__setattr__(name, val)

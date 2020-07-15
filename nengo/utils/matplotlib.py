@@ -61,12 +61,12 @@ def axis_size(ax=None):
     return bbox.width * fig.dpi, bbox.height * fig.dpi
 
 
-def implot(plt, x, y, Z, ax=None, colorbar=True, **kwargs):
+def implot(plt_, x, y, Z, ax=None, colorbar=True, **kwargs):
     """Image plot of general data (like imshow but with non-pixel axes).
 
     Parameters
     ----------
-    plt : plot object
+    plt_ : plot object
         Plot object, typically ``matplotlib.pyplot``.
     x : (M,) array_like
         Vector of x-axis points, must be linear (equally spaced).
@@ -81,7 +81,7 @@ def implot(plt, x, y, Z, ax=None, colorbar=True, **kwargs):
     **kwargs
         Additional arguments for ``ax.imshow``.
     """
-    ax = plt.gca() if ax is None else ax
+    ax = plt_.gca() if ax is None else ax
 
     def is_linear(x):
         diff = np.diff(x)
@@ -90,7 +90,7 @@ def implot(plt, x, y, Z, ax=None, colorbar=True, **kwargs):
     assert is_linear(x) and is_linear(y)
     image = ax.imshow(Z, aspect="auto", extent=(x[0], x[-1], y[-1], y[0]), **kwargs)
     if colorbar:
-        plt.colorbar(image, ax=ax)
+        plt_.colorbar(image, ax=ax)
 
 
 def rasterplot(time, spikes, ax=None, use_eventplot=False, **kwargs):  # noqa

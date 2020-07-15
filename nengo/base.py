@@ -1,9 +1,9 @@
-from copy import copy
+from copy import copy as std_copy
 import warnings
 
 import numpy as np
 
-import nengo
+import nengo  # pylint: disable=cyclic-import
 from nengo.config import SupportDefaultsMixin
 from nengo.exceptions import NotAddedToNetworkWarning, ValidationError
 from nengo.params import (
@@ -134,7 +134,7 @@ class NengoObject(SupportDefaultsMixin, metaclass=NetworkMember):
             # We warn when copying since we can't change add_to_container.
             # However, we deal with it here, so we ignore the warning.
             warnings.simplefilter("ignore", category=NotAddedToNetworkWarning)
-            c = copy(self)
+            c = std_copy(self)
         if add_to_container:
             nengo.Network.add(c)
         return c
@@ -178,7 +178,7 @@ class ObjView:
             self.slice = key
 
     def copy(self):
-        return copy(self)
+        return std_copy(self)
 
     def __len__(self):
         return self.size_out

@@ -175,8 +175,7 @@ def test_sparse(use_dist, use_scipy, Simulator, rng, seed, plt, monkeypatch, all
 @pytest.mark.parametrize("encoders", (True, False))
 @pytest.mark.parametrize("decoders", (True, False))
 def test_sparse_nef(encoders, decoders, Simulator):
-    # Sparse transforms currently don't work with NEF connections,
-    # so just check the errors
+    """Sparse transforms currently don't work with NEF connections."""
 
     with nengo.Network() as net:
         transform = nengo.transforms.Sparse((2, 2), indices=[[0, 1], [1, 0]])

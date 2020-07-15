@@ -10,13 +10,13 @@ from nengo.exceptions import CacheIOError
 from nengo.utils.nco import Subfile
 
 
-@pytest.fixture
-def data():
+@pytest.fixture(name="data")
+def fixture_data():
     return "0123456789\n123456789"
 
 
-@pytest.fixture
-def testfile(data, tmpdir):
+@pytest.fixture(name="testfile")
+def fixture_testfile(data, tmpdir):
     f = tmpdir.join("file.txt")
     f.write(data)
     return f

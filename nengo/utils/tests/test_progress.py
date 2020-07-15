@@ -72,8 +72,8 @@ class TestProgress:
 
         try:
             with Progress(max_steps=10) as p2:
-                raise Exception()
-        except Exception:
+                raise UnboundLocalError()
+        except UnboundLocalError:
             pass
         assert not p2.success
 
@@ -174,10 +174,6 @@ class TestAutoProgressBar:
 
         rc["progress"]["progress_bar"] = "nengo.utils.progress.TerminalProgressBar"
         assert isinstance(get_default_progressbar(), TerminalProgressBar)
-
-        rc["progress"]["progress_bar"] = "nengo.InvalidType"
-        with pytest.warns(UserWarning, match="Could not load progress bar"):
-            assert isinstance(get_default_progressbar(), NoProgressBar)
 
 
 def test_write_progress_to_file(tmpdir):

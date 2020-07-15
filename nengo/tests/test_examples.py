@@ -10,11 +10,11 @@ try:
     from nengo.utils.ipython import export_py, iter_cells, load_notebook
 except ImportError as err:
 
-    def export_py(err=err, *args, **kwargs):
-        raise err
+    def export_py(*args, import_err=err, **kwargs):
+        raise import_err
 
-    def load_notebook(err=err, *args, **kwargs):
-        raise err
+    def load_notebook(*args, import_err=err, **kwargs):
+        raise import_err
 
 
 # Monkeypatch _pytest.capture.DontReadFromInput
@@ -52,7 +52,7 @@ too_slow = [
 all_examples, slow_examples, fast_examples = [], [], []
 
 for subdir, _, files in os.walk(examples_dir):
-    if (os.path.sep + ".") in subdir:
+    if os.path.sep + "." in subdir:
         continue
     files = [f for f in files if f.endswith(".ipynb")]
     examples = [os.path.join(subdir, os.path.splitext(f)[0]) for f in files]

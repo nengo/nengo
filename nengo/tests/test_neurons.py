@@ -342,6 +342,7 @@ def test_sigmoid_response_curves(Simulator, max_rate, intercept, allclose):
 
 
 def test_tanh_invalid():
+    """Ensures validation error is thrown when given a large max rate."""
     tanh = Tanh(tau_ref=0.5)
     with pytest.raises(ValidationError, match="Max rates must be below"):
         tanh.gain_bias(max_rates=np.array([100]), intercepts=np.array([0]))
@@ -752,9 +753,9 @@ def test_bad_initial_state(rng, Simulator):
             if bad_state:
                 self.state = {"in": nengo.dists.Choice([0])}
 
-        def make_state(self, *args, **kwargs):  # pylint: disable=signature-differs
+        def make_state(self, n_neurons, rng=np.random, dtype=None):
             if self.bad_state:
-                return super().make_state(*args, **kwargs)
+                return super().make_state(n_neurons, rng=np.random, dtype=None)
             return {"rng": rng, "dict": {}}
 
     with nengo.Network() as net:

@@ -21,7 +21,9 @@ def test_checked_call():
     def func2(a, b=0, **kwargs):
         return a + b
 
-    def func3(a, b=0, c=0, *args, **kwargs):
+    def func3(
+        a, b=0, c=0, *args, **kwargs
+    ):  # pylint: disable=keyword-arg-before-vararg
         return a + b + c + sum(args)
 
     func4 = lambda x=[0]: sum(x)
@@ -110,8 +112,8 @@ def test_groupby(hashable, force_list, rng):
 
 def test_timer():
     with Timer() as timer:
-        for i in range(1000):
-            2 + 2
+        for _ in range(1000):
+            _ = 2 + 2
     assert timer.duration > 0.0
     assert timer.duration < 1.0  # Pretty bad worst case
 
@@ -140,7 +142,7 @@ def test_weakkeydefaultdict():
     d[o] = "changed"
     for index in d:
         assert index == o
-    del index
+    del index  # pylint: disable=undefined-loop-variable
     del o
     assert len(d) == 0
 
@@ -199,7 +201,7 @@ def test_weakkeydict_update():
         assert k in in_d, "mysterious new key appeared in weak dict"
         v = in_d.get(k)
         assert v is d[k] and v is d.get(k)
-    for k in in_d.keys():
+    for k in in_d:
         assert k in d, "original key disappeared in weak dict"
         v = in_d[k]
         assert v is d[k] and v is d.get(k)
@@ -229,14 +231,14 @@ def test_weakkeydict_bad_delitem():
     with pytest.raises(KeyError):
         del d[o]
     with pytest.raises(KeyError):
-        d[o]
+        print(d[o])
 
     # If a key isn't of a weakly referencable type, __getitem__ and __delitem__ raise
     # keyerror, __setitem__ raises a TypeError
     with pytest.raises(KeyError):
         del d[13]
     with pytest.raises(KeyError):
-        d[13]
+        print(d[13])
     with pytest.raises(TypeError):
         d[13] = 13
 

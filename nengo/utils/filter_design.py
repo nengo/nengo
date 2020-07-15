@@ -209,7 +209,7 @@ def tf2ss(num, den):
     if K == 1:
         return array([], float), array([], float), array([], float), D
 
-    frow = -array([den[1:]])
+    frow = -1 * array([den[1:]])
     A = r_[frow, eye(K - 2, K - 1)]
     B = eye(K - 1, 1)
     C = num[:, 1:] - num[:, 0] * den[1:]
@@ -226,6 +226,7 @@ def _none_to_empty_2d(arg):
 def _atleast_2d_or_none(arg):
     if arg is not None:
         return atleast_2d(arg)
+    return None
 
 
 def _shape_or_none(M):
@@ -239,6 +240,7 @@ def _choice_not_none(*args):
     for arg in args:
         if arg is not None:
             return arg
+    return None
 
 
 def _restore(M, shape):
@@ -491,10 +493,10 @@ def cont2discrete(sys, dt, method="zoh", alpha=None):  # noqa: C901
         cd = cd.transpose()
         dd = d + alpha * np.dot(c, bd)
 
-    elif method == "bilinear" or method == "tustin":
+    elif method in ("bilinear", "tustin"):
         return cont2discrete(sys, dt, method="gbt", alpha=0.5)
 
-    elif method == "euler" or method == "forward_diff":
+    elif method in ("euler", "forward_diff"):
         return cont2discrete(sys, dt, method="gbt", alpha=0.0)
 
     elif method == "backward_diff":

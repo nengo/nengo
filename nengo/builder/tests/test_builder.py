@@ -122,6 +122,7 @@ def test_seed_override(seed, allclose):
 
 
 def test_build_twice():
+    """Tests warning for building an object twice"""
     model = nengo.builder.Model()
     ens = nengo.Ensemble(10, 1, add_to_container=False)
     model.seeds[ens] = 0

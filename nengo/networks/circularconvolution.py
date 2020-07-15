@@ -2,9 +2,11 @@ import warnings
 
 import numpy as np
 
-import nengo
+from nengo.connection import Connection
 from nengo.exceptions import ObsoleteError, ValidationError
+from nengo.network import Network
 from nengo.networks.product import Product
+from nengo.node import Node
 
 
 def circconv(a, b, invert_a=False, invert_b=False, axis=-1):
@@ -86,7 +88,7 @@ def dft_half(n):
     return np.exp((-2.0j * np.pi / n) * (w[:, None] * x[None, :]))
 
 
-class CircularConvolution(nengo.Network):
+class CircularConvolution(Network):
     r"""Compute the circular convolution of two vectors.
 
     The circular convolution :math:`c` of vectors :math:`a` and :math:`b`
@@ -201,22 +203,16 @@ class CircularConvolution(nengo.Network):
         tr_out = transform_out(dimensions)
 
         with self:
-            self.input_a = nengo.Node(size_in=dimensions, label="input_a")
-            self.input_b = nengo.Node(size_in=dimensions, label="input_b")
+            self.input_a = Node(size_in=dimensions, label="input_a")
+            self.input_b = Node(size_in=dimensions, label="input_b")
             self.product = Product(
                 n_neurons, tr_out.shape[1], input_magnitude=input_magnitude * 2
             )
-            self.output = nengo.Node(size_in=dimensions, label="output")
+            self.output = Node(size_in=dimensions, label="output")
 
-            nengo.Connection(
-                self.input_a, self.product.input_a, transform=tr_a, synapse=None
-            )
-            nengo.Connection(
-                self.input_b, self.product.input_b, transform=tr_b, synapse=None
-            )
-            nengo.Connection(
-                self.product.output, self.output, transform=tr_out, synapse=None
-            )
+            Connection(self.input_a, self.product.input_a, transform=tr_a, synapse=None)
+            Connection(self.input_b, self.product.input_b, transform=tr_b, synapse=None)
+            Connection(self.product.output, self.output, transform=tr_out, synapse=None)
 
     @property
     def A(self):

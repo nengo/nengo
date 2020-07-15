@@ -49,18 +49,18 @@ def test_config_basic():
     assert model.config[a].something is None
 
     with pytest.raises(AttributeError):
-        model.config[a].something_else
+        print(model.config[a].something_else)
     with pytest.raises(AttributeError):
-        model.config[a2b].something
+        print(model.config[a2b].something)
     with pytest.raises(AttributeError):
         model.config[a].something_else = 1
     with pytest.raises(AttributeError):
         model.config[a2b].something = 1
 
     with pytest.raises(ConfigError, match="'str' is not set up for configuration"):
-        model.config["a"].something
+        print(model.config["a"].something)
     with pytest.raises(ConfigError, match="'NoneType' is not set up for configuration"):
-        model.config[None].something
+        print(model.config[None].something)
 
 
 def test_network_nesting():
@@ -183,7 +183,7 @@ def test_external_class():
     # Default still works like Nengo object
     assert inst.thing == "hey"
     with pytest.raises(ConfigError):
-        config[inst].thing
+        print(config[inst].thing)
 
 
 def test_instance_fallthrough():
@@ -222,7 +222,7 @@ def test_contains():
 
     cfg = nengo.Config(A)
     with pytest.raises(TypeError, match="Cannot check if .* is in a config"):
-        A in cfg
+        print(A in cfg)
 
     net = nengo.Network()
 

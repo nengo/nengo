@@ -18,7 +18,7 @@ def test_signaldict(allclose):
 
     # Both __getitem__ and __setitem__ raise KeyError
     with pytest.raises(KeyError):
-        signaldict[scalar]
+        print(signaldict[scalar])
     with pytest.raises(KeyError):
         signaldict[scalar] = np.array(1.0)
 
@@ -181,16 +181,16 @@ def test_signal_slicing(rng):
     a = Signal(x.copy())
     b = Signal(y.copy())
 
-    for i in range(100):
+    for _ in range(100):
         si0, si1 = rng.randint(0, len(slices), size=2)
         s0, s1 = slices[si0], slices[si1]
         assert np.array_equiv(a[s0].initial_value, x[s0])
         assert np.array_equiv(b[s0, s1].initial_value, y[s0, s1])
 
     with pytest.raises(ValueError):
-        a[[0, 2]]
+        print(a[[0, 2]])
     with pytest.raises(ValueError):
-        b[[0, 1], [3, 4]]
+        print(b[[0, 1], [3, 4]])
 
 
 def test_commonsig_readonly():
@@ -281,7 +281,7 @@ def test_signal_slice_reshape(sig_type):
     if sig_type == "sparse_scipy":
         pytest.importorskip("scipy.sparse")
 
-    sig, dense = make_signal(
+    sig, _ = make_signal(
         sig_type,
         shape=(3, 3),
         indices=np.asarray([[0, 0], [0, 2], [1, 1], [2, 2]]),
@@ -296,7 +296,7 @@ def test_signal_slice_reshape(sig_type):
         assert sig.may_share_memory(sig_slice)
     else:
         with pytest.raises(SignalError, match="sparse Signal"):
-            sig[:2]
+            print(sig[:2])
 
     # check reshaping
     if sig_type == "dense":
@@ -314,7 +314,7 @@ def test_signal_properties(sig_type):
     if sig_type == "sparse_scipy":
         pytest.importorskip("scipy.sparse")
 
-    sig, dense = make_signal(
+    sig, _ = make_signal(
         sig_type,
         shape=(3, 3),
         indices=np.asarray([[0, 0], [0, 2], [1, 1], [2, 2]]),

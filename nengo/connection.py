@@ -185,7 +185,7 @@ class ConnectionFunctionParam(Parameter):
             )
 
     def check_function_can_be_applied(self, conn, function_info):
-        function, size = function_info
+        function, _ = function_info
         type_pre = type(conn.pre_obj).__name__
 
         if function is not None:

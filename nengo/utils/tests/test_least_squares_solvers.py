@@ -27,7 +27,7 @@ def run_solver(solver, m=30, n=20, d=1, cond=10, sys_rng=np.random, **kwargs):
 
     # solve system
     y = np.dot(A, x)
-    x2, info = solver(A, y, **kwargs)
+    x2, _ = solver(A, y, **kwargs)
 
     return x, x2
 

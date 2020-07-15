@@ -4,6 +4,7 @@ from datetime import timedelta
 from html import escape
 import importlib
 import os
+from shutil import get_terminal_size
 import sys
 import threading
 import time
@@ -12,7 +13,6 @@ import warnings
 
 import numpy as np
 
-from .stdlib import get_terminal_size
 from .ipython import check_ipy_version, get_ipython
 from ..exceptions import ValidationError
 from ..rc import rc
@@ -193,7 +193,6 @@ class ProgressBar:
 
         Indicates that not further updates will be made.
         """
-        pass
 
 
 class NoProgressBar(ProgressBar):
@@ -426,8 +425,8 @@ class HtmlProgressBar(ProgressBar):  # pragma: no cover
             self._handle.update(self._js_update(progress))
 
     class _HtmlBase:
-        def __init__(self, uuid):
-            self.uuid = uuid
+        def __init__(self, my_uuid):
+            self.uuid = my_uuid
 
         def __repr__(self):
             return (
@@ -782,11 +781,7 @@ def get_default_progressbar():
     if pbar.lower() == "none":
         return NoProgressBar()
 
-    try:
-        return _load_class(pbar)()
-    except Exception as e:
-        warnings.warn("Could not load progress bar: %s" % e)
-        return NoProgressBar()
+    return _load_class(pbar)()
 
 
 def to_progressbar(progress_bar):

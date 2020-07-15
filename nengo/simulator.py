@@ -403,7 +403,7 @@ class Simulator:
         with ProgressTracker(
             progress_bar, Progress("Simulating", "Simulation", steps)
         ) as pt:
-            for i in range(steps):
+            for _ in range(steps):
                 self.step()
                 pt.total_progress.step()
 

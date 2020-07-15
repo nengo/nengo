@@ -137,14 +137,14 @@ class Parameter:
 
         try:
             return self.data[instance]
-        except KeyError:
+        except KeyError as e:
             if not self.configurable:
                 raise ValidationError(
                     "Unconfigurable parameters have no defaults. Please ensure the"
                     " value of the parameter is set before trying to access it.",
                     attr=self.name,
                     obj=instance,
-                )
+                ) from e
             return self.default
 
     def __set__(self, instance, value):
@@ -230,10 +230,11 @@ class ObsoleteParam(Parameter):
         super().__init__(name, optional=True)
 
     def __get__(self, instance, type_):
-        if instance is None:
-            # Return self so default can be inspected
-            return self
-        self.raise_error()
+        if instance is not None:
+            self.raise_error()
+
+        # Return self so default can be inspected
+        return self
 
     def coerce(self, instance, value):
         if value is not Unconfigurable:
@@ -372,10 +373,10 @@ class TupleParam(Parameter):
         if value is not None:
             try:
                 value = tuple(value)
-            except TypeError:
+            except TypeError as e:
                 raise ValidationError(
                     "Value must be castable to a tuple", attr=self.name, obj=instance
-                )
+                ) from e
 
             if self.length is not None and len(value) != self.length:
                 raise ValidationError(
@@ -498,13 +499,13 @@ class NdarrayParam(Parameter):
         else:
             try:
                 ndarray = np.array(ndarray, dtype=self.dtype)
-            except (ValueError, TypeError):
+            except (ValueError, TypeError) as e:
                 raise ValidationError(
                     "Must be a %s NumPy array (got type %r)"
                     % (self.dtype, type(ndarray).__name__),
                     attr=self.name,
                     obj=instance,
-                )
+                ) from e
 
         if self.readonly:
             ndarray.setflags(write=False)

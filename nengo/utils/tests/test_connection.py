@@ -47,4 +47,4 @@ def test_eval_point_decoding(points_arg, Simulator, NonDirectNeuronType, plt, se
     # Generous error check, just to make sure it's in the right ballpark.
     # Also make sure error is above zero, i.e. y != z
     error = rms(decoded - targets, axis=1).mean()
-    assert error < 0.1 and error > 1e-8
+    assert 1e-8 < error < 0.1

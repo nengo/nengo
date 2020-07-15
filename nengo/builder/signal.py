@@ -304,11 +304,11 @@ class Signal:
         try:
             # this raises AttributeError if cannot reshape without copying
             initial_value.shape = shape
-        except AttributeError:
+        except AttributeError as e:
             raise SignalError(
                 "Reshaping %s to %s would require the array to be copied "
                 "(because it is not contiguous), which is not supported" % (self, shape)
-            )
+            ) from e
         return Signal(
             initial_value,
             name="%s.reshape(%s)" % (self.name, shape),

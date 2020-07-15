@@ -1,8 +1,11 @@
-import nengo
+from nengo.connection import Connection
+from nengo.ensemble import Ensemble
 from nengo.exceptions import ObsoleteError
+from nengo.network import Network
+from nengo.node import Node
 
 
-class Integrator(nengo.Network):
+class Integrator(Network):
     """An ensemble that accumulates input and maintains state.
 
     This is accomplished through scaling the input signal and recurrently
@@ -35,11 +38,9 @@ class Integrator(nengo.Network):
         super().__init__(**kwargs)
 
         with self:
-            self.input = nengo.Node(size_in=dimensions)
-            self.ensemble = nengo.Ensemble(n_neurons, dimensions=dimensions)
-            nengo.Connection(self.ensemble, self.ensemble, synapse=recurrent_tau)
-            nengo.Connection(
-                self.input, self.ensemble, transform=recurrent_tau, synapse=None
-            )
+            self.input = Node(size_in=dimensions)
+            self.ensemble = Ensemble(n_neurons, dimensions=dimensions)
+            Connection(self.ensemble, self.ensemble, synapse=recurrent_tau)
+            Connection(self.input, self.ensemble, transform=recurrent_tau, synapse=None)
 
         self.output = self.ensemble

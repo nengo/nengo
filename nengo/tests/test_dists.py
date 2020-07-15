@@ -137,6 +137,7 @@ def test_hypersphere_warns():
 
 @pytest.mark.parametrize("weights", [None, [5, 1, 2, 9], [3, 2, 1, 0]])
 def test_choice(weights, rng, allclose):
+    """Tests the choice function with weights"""
     n = 1000
     choices = [[1, 1], [1, -1], [-1, 1], [-1, -1]]
     N = len(choices)
