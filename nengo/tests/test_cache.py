@@ -364,6 +364,8 @@ def test_supported_fingerprinting(cls, monkeypatch):
     # patch so we can instantiate various solvers without the proper libraries
     monkeypatch.setitem(sys.modules, "scipy", Mock())
     monkeypatch.setitem(sys.modules, "scipy.optimize", Mock())
+    monkeypatch.setitem(sys.modules, "scipy.sparse", Mock())
+    monkeypatch.setitem(sys.modules, "scipy.sparse.linalg", Mock())
     monkeypatch.setitem(sys.modules, "sklearn", Mock())
     monkeypatch.setitem(sys.modules, "sklearn.linear_model", Mock())
     monkeypatch.setitem(sys.modules, "sklearn.utils", Mock())
