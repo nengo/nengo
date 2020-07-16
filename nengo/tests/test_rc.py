@@ -1,5 +1,3 @@
-import os
-
 from nengo import rc
 
 

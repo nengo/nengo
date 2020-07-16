@@ -1,8 +1,5 @@
-import pytest
-
 from nengo.builder.learning_rules import SimBCM, SimOja, SimPES, SimVoja
 from nengo.builder.tests.test_operator import _test_operator_arg_attributes
-from nengo.exceptions import BuildError
 
 
 def test_simpes():

@@ -1,9 +1,7 @@
 import pytest
 import nengo
 
-from nengo.builder.probe import signal_probe, build_probe
 from nengo.exceptions import BuildError
-from nengo.builder import Model
 
 
 def test_signal_probe(seed):

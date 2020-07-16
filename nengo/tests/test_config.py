@@ -295,18 +295,6 @@ def test_classparams_str_repr():
     assert str(clsparams) == "Parameters configured for Ensemble:\n  test: val"
 
 
-def test_instanceparams_str_repr():
-    """Test the str and repr functions for InstanceParams class"""
-    model = nengo.Network()
-    with model:
-        a = nengo.Ensemble(50, dimensions=1, label="a")
-        model.config[nengo.Ensemble].set_param("prm", nengo.params.Parameter("prm"))
-        model.config[a].prm = "val"
-
-    assert str(model.config[a]) == 'Parameters set for <Ensemble "a">:\n  prm: val'
-    assert repr(model.config[a]) == '<InstanceParams[<Ensemble "a">]{prm: val}>'
-
-
 def test_config_repr():
     """tests the repr function in Config class"""
     model = nengo.Network()

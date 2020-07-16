@@ -2,7 +2,6 @@ import inspect
 
 from nengo.utils.magic import (
     decorator,
-    ObjectProxyMethods,
     ObjectProxy,
     BoundFunctionWrapper,
 )
@@ -328,7 +327,7 @@ def test_objectproxy():
     assert hash(proxy) == hash(obj)
     assert str(proxy) == str(obj)
 
-    proxy.newattr = "newval"
+    proxy.newattr = "newval"  # pylint: disable=assigning-non-slot
     assert obj.newattr == "newval"
     assert proxy.newattr == "newval"
 

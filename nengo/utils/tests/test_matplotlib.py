@@ -2,7 +2,6 @@ import numpy as np
 import pytest
 
 import nengo
-import matplotlib.pyplot as plt
 from nengo.utils.matplotlib import rasterplot, set_color_cycle
 
 

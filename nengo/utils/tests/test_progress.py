@@ -1,20 +1,18 @@
 import time
 
 import pytest
-import numpy as np
 
 import nengo.rc as rc
 from nengo.exceptions import ValidationError
 from nengo.utils.progress import (
     AutoProgressBar,
+    get_default_progressbar,
     HtmlProgressBar,
     NoProgressBar,
     Progress,
     ProgressBar,
     TerminalProgressBar,
-    _load_class,
     WriteProgressToFile,
-    get_default_progressbar,
 )
 
 
