@@ -29,7 +29,9 @@ def test_rasterplot_onetime(plt):
 
 
 def test_set_color_cycle(plt):
-    """Tests if KeyError thrown"""
+    if plt.__file__ == "/dev/null":
+        pytest.skip("Only runs when plotting is enabled")
+
     slopes = np.array([-0.4, 0.3, 0.5])
     t = np.linspace(0, 1)
     y = t[:, None] * slopes
