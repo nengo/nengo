@@ -140,7 +140,7 @@ def rasterplot(time, spikes, ax=None, use_eventplot=False, **kwargs):  # noqa
     assert time.ndim == 1, "`time` must be 1-D array of simulation time points"
     assert spikes.ndim == 2, "`spikes` must be 2-D array of shape (n_times, n_neurons)"
 
-    n_times, n_neurons = spikes.shape
+    n_times, n_neurons = spikes.shape  # pylint: disable=unpacking-non-sequence
     assert n_times == time.size, "`len(time)` must match `len(spikes)`"
 
     if ax is None:
