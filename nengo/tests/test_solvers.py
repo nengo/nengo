@@ -188,9 +188,9 @@ def test_subsolvers(Solver, seed, rng, tol=1e-2):
     A, b = get_system(2000, 100, 5, rng=rng)
     x0, _ = Solver(solver=lstsq.Cholesky())(A, b, rng=get_rng())
 
-    subsolvers = [lstsq.Conjgrad, lstsq.BlockConjgrad]
+    subsolvers = [lstsq.Conjgrad(tol=tol), lstsq.BlockConjgrad(tol=tol)]
     for subsolver in subsolvers:
-        x, _ = Solver(solver=subsolver(tol=tol))(A, b, rng=get_rng())
+        x, _ = Solver(solver=subsolver)(A, b, rng=get_rng())
         rel_rmse = rms(x - x0) / rms(x0)
         assert rel_rmse < 5 * tol
         # the above 5 * tol is just a heuristic; the main purpose of this
@@ -349,18 +349,22 @@ def test_subsolvers_L2(rng, allclose):
         assert allclose(x0, x, atol=1e-5, rtol=1e-3), "Solver %s" % solver.__name__
 
 
+@pytest.mark.slow
 @pytest.mark.filterwarnings("ignore:Objective did not converge.")
-def test_subsolvers_L1(rng):
+def test_subsolvers_L1(rng, allclose):
     pytest.importorskip("sklearn")
 
     A, B = get_system(m=2000, n=1000, d=10, rng=rng)
 
     l1 = 1e-4
     with Timer() as t:
-        LstsqL1(l1=l1, l2=0)(A, B, rng=rng)
+        x, info = LstsqL1(l1=l1, l2=0)(A, B, rng=rng)
     logging.info("duration: %0.3f", t.duration)
 
-    # TODO: add assertions
+    Ax = np.dot(A, x)
+    assert rms(Ax - B) < 2e-2
+    assert allclose(Ax, B, atol=0.2, record_rmse=False)
+    assert np.max(info["rmses"]) < 3e-2
 
 
 @pytest.mark.slow

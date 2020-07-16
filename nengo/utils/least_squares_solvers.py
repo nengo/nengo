@@ -114,6 +114,10 @@ class ConjgradScipy(LeastSquaresSolver):
     atol = NumberParam("atol", low=0)
 
     def __init__(self, tol=1e-4, atol=1e-8):
+        import scipy.sparse.linalg  # pylint: disable=import-outside-toplevel
+
+        assert scipy.sparse.linalg
+
         super().__init__()
         self.tol = tol
         self.atol = atol
@@ -160,6 +164,10 @@ class LSMRScipy(LeastSquaresSolver):
     tol = NumberParam("tol", low=0)
 
     def __init__(self, tol=1e-4):
+        import scipy.sparse.linalg  # pylint: disable=import-outside-toplevel
+
+        assert scipy.sparse.linalg
+
         super().__init__()
         self.tol = tol
 
@@ -282,7 +290,7 @@ class BlockConjgrad(LeastSquaresSolver):
         Rsold = np.dot(R.T, R)
         AP = np.zeros((n, d))
 
-        maxiters = int(n / d)
+        maxiters = int(n / d) + 1
         for i in range(maxiters):
             AP = G(P)
             alpha = np.linalg.solve(np.dot(P.T, AP), Rsold)
