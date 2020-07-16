@@ -754,7 +754,7 @@ def test_bad_initial_state(rng, Simulator):
             if bad_state:
                 self.state = {"in": nengo.dists.Choice([0])}
 
-        def make_state(self, *args, **kwargs):
+        def make_state(self, *args, **kwargs):  # pylint: disable=signature-differs
             if self.bad_state:
                 return super().make_state(*args, **kwargs)
             return {"rng": rng, "dict": {}}

@@ -271,7 +271,7 @@ def rmse(x, y, axis=None, keepdims=False):  # pragma: no cover
 
 if hasattr(np.fft, "rfftfreq"):
     rfftfreq = np.fft.rfftfreq
-else:  # pragma: no cover
+else:
 
     def rfftfreq(n, d=1.0):
         return np.abs(np.fft.fftfreq(n=n, d=d)[: n // 2 + 1])

@@ -11,14 +11,10 @@ try:
 
     if IPython.version_info[0] <= 3:  # pragma: no cover
         from IPython.nbconvert import PythonExporter
-    else:  # pragma: no cover
-        from nbconvert import PythonExporter
-
-    if IPython.version_info[0] <= 3:
-        # pylint: disable=ungrouped-imports
-        from IPython import nbformat  # pragma: no cover
+        from IPython import nbformat
     else:
-        import nbformat  # pragma: no cover
+        from nbconvert import PythonExporter
+        import nbformat
 
 except ImportError:  # pragma: no cover
 

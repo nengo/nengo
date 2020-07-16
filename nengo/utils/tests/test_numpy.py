@@ -1,9 +1,11 @@
+import importlib
 import itertools
 
 import numpy as np
 import pytest
 
 from nengo.exceptions import ValidationError
+import nengo.utils.numpy as npext
 from nengo.utils.numpy import array_hash, meshgrid_nd, as_shape, broadcast_shape, array
 from nengo._vendor.scipy import expm
 
@@ -114,3 +116,13 @@ def test_array():
 
     with pytest.raises(ValidationError, match="Input cannot be cast to array"):
         array([[1, 2, 3]], dims=1)
+
+
+def test_rfftfreq_fallback(monkeypatch):
+    np_rfftfreq = np.fft.rfftfreq
+    monkeypatch.delattr(np.fft, "rfftfreq")
+    importlib.reload(npext)
+
+    for n in (3, 4, 8, 9):
+        for d in (1.0, 3.4, 9.8):
+            assert np.allclose(npext.rfftfreq(n, d=d), np_rfftfreq(n, d=d))
