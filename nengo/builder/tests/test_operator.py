@@ -156,6 +156,14 @@ def test_dotinc_op(rng):
 
 
 def test_sparsedotinc_op():
+    argnames = ["A", "X", "Y"]
+    args = {
+        "A": Signal(SparseMatrix(indices=[(0, 0)], data=[1], shape=(3, 3)), name="Av"),
+        "X": Signal(np.ones((3,)), name="Xv"),
+        "Y": Signal(np.ones((3,)), name="Yv"),
+    }
+    _test_operator_arg_attributes(DotInc, argnames, args=args)
+
     A = Signal(np.ones(2))
     X = Signal(np.ones(2))
     Y = Signal(np.ones(2))
