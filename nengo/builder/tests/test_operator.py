@@ -3,17 +3,22 @@ import pytest
 
 from nengo.builder import Signal
 from nengo.builder.operator import (
-    SparseDotInc,
-    Operator,
+    BsrDotInc,
     Copy,
-    ElementwiseInc,
-    reshape_dot,
     DotInc,
+    ElementwiseInc,
+    Operator,
+    Reset,
+    reshape_dot,
+    SimPyFunc,
+    SparseDotInc,
+    TimeUpdate,
 )
 from nengo.exceptions import BuildError
+from nengo.transforms import SparseMatrix
 
 
-def _test_operator_arg_attributes(OperatorType, argnames, args=None):
+def _test_operator_arg_attributes(OperatorType, argnames, args=None, non_signals=()):
     args = {} if args is None else args
     for argname in argnames:
         args.setdefault(argname, argname)
@@ -22,16 +27,47 @@ def _test_operator_arg_attributes(OperatorType, argnames, args=None):
     for argname in argnames:
         assert getattr(sim, argname) == args[argname]
 
+    signals = set()
+    signals.update(sim.sets)
+    signals.update(sim.incs)
+    signals.update(sim.reads)
+    signals.update(sim.updates)
+    for argname in argnames:
+        if argname in non_signals:
+            continue
+
+        signal = args[argname]
+        assert signal in signals, "%r not added to sets/incs/reads/updates" % argname
+        signals.remove(signal)
+
+    assert len(signals) == 0, "Extra signals in sets/incs/reads/updates: %r" % signals
+
     return args, sim
 
 
-def test_operator_repr():
-    """tests repr for the Operator class"""
+def test_operator_str_repr():
+    assert str(Operator(tag="hi")) == "Operator{ 'hi'}"
     assert repr(Operator(tag="hi")).startswith("<Operator 'hi' at ")
 
 
-def test_copy_operator(rng):
-    """tests the Copy class in the operator file"""
+def test_timeupdate_op():
+    argnames = ["step", "time"]
+    _, sim = _test_operator_arg_attributes(TimeUpdate, argnames)
+    assert str(sim) == "TimeUpdate{}"
+
+
+def test_reset_op():
+    argnames = ["dst"]
+    _, sim = _test_operator_arg_attributes(Reset, argnames, args={"dst": "dval"})
+    assert str(sim) == "Reset{dval}"
+
+
+def test_copy_op(rng):
+    argnames = ["src", "dst"]
+    args = {"src": "sval", "dst": "dval"}
+    _, sim = _test_operator_arg_attributes(Copy, argnames, args=args)
+    assert str(sim) == "Copy{sval -> dval, inc=False}"
+
     cp = Copy(1, 2)
     signals = [1, 2, [1, 2, 3]]
     dt = 0
@@ -40,8 +76,12 @@ def test_copy_operator(rng):
         cp.make_step(signals, dt, rng)
 
 
-def test_elementwiseinc_builderror(rng):
-    """tests the ElementwiseInc class for a build error"""
+def test_elementwiseinc_op(rng):
+    argnames = ["A", "X", "Y"]
+    args = {"A": "Av", "X": "Xv", "Y": "Yv"}
+    _, sim = _test_operator_arg_attributes(ElementwiseInc, argnames, args=args)
+    assert str(sim) == "ElementwiseInc{Av, Xv -> Yv}"
+
     ew = ElementwiseInc(0, 1, 2)
     signals = [np.array([1]), np.array([2]), np.array([5, 6])]
     dt = 0
@@ -50,7 +90,6 @@ def test_elementwiseinc_builderror(rng):
 
 
 def test_reshape_dot(rng):
-    """tests the reshape_dot function"""
     scalar = np.array(1)
     vec = [np.ones(i) for i in range(4)]
     mat11 = np.ones((1, 1))
@@ -91,32 +130,48 @@ def test_reshape_dot(rng):
         reshape_dot(A=mat23, X=mat33, Y=vec[2])
 
 
-def test_dotinc(rng):
-    """tests the DotInc class BuildErrors"""
+def test_dotinc_op(rng):
+    argnames = ["A", "X", "Y"]
+    args = {
+        "A": Signal(np.ones((3, 3)), name="Av"),
+        "X": Signal(np.ones((3,)), name="Xv"),
+        "Y": Signal(np.ones((3,)), name="Yv"),
+    }
+    _, sim = _test_operator_arg_attributes(DotInc, argnames, args=args)
+    assert (
+        str(sim)
+        == "DotInc{Signal(name=Av, shape=(3, 3)), Signal(name=Xv, shape=(3,)) -> Signal(name=Yv, shape=(3,))}"
+    )
 
-    class Test:
-        ndim = 2
-        reshape = None
-        shape = np.array([1, 2])
-        initial_value = 2
-
-        def __init__(self, ndim):
-            self.ndim = ndim
-
-        def __getitem__(self, other):
-            return 1
-
+    A = Signal(np.ones((2, 2)))
+    X = Signal(np.ones((2, 2)))
+    Y = Signal(np.ones(2))
     with pytest.raises(BuildError, match="X must be a column vector"):
-        DotInc(Test(2), Test(2), Test(2))
+        DotInc(A, X, Y)
 
+    X = Signal(np.ones(2))
+    Y = Signal(np.ones((2, 2)))
     with pytest.raises(BuildError, match="Y must be a column vector"):
-        DotInc(Test(2), Test(1), Test(2))
+        DotInc(A, X, Y)
 
 
-def test_sparsedotinc_builderror():
+def test_sparsedotinc_op():
     A = Signal(np.ones(2))
     X = Signal(np.ones(2))
     Y = Signal(np.ones(2))
 
     with pytest.raises(BuildError, match="must be a sparse Signal"):
         SparseDotInc(A, X, Y)
+
+
+def test_simpyfunc_op():
+    def my_func(t, x):
+        return x
+
+    argnames = ["output", "t", "x", "fn"]
+    args = {"output": "outv", "t": "tv", "x": "xv", "fn": my_func}
+    non_signals = ["fn"]
+    _, sim = _test_operator_arg_attributes(
+        SimPyFunc, argnames, args=args, non_signals=non_signals
+    )
+    assert str(sim) == "SimPyFunc{xv -> outv, fn='my_func'}"
