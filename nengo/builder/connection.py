@@ -265,11 +265,8 @@ def build_connection(model, conn):
             model.add_op(SimPyFunc(in_signal, conn.function, None, sliced_in))
     elif isinstance(conn.pre_obj, Ensemble):  # Normal decoded connection
         eval_points, decoders, solver_info = model.build(conn.solver, conn, rng)
-        if conn.solver.weights:
+        if isinstance(conn.post_obj, Ensemble) and conn.solver.weights:
             model.sig[conn]["out"] = model.sig[conn.post_obj.neurons]["in"]
-
-            # weight solvers only allowed on ensemble->ensemble connections
-            assert isinstance(conn.post_obj, Ensemble)
 
             encoders = model.params[conn.post_obj].scaled_encoders.T
             encoders = encoders[conn.post_slice]

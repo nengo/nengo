@@ -68,6 +68,10 @@ Release history
   values. (`#1609`_)
 - The ``nl`` and ``nl_nodirect`` test arguments have been renamed to ``AnyNeuronType``
   and ``NonDirectNeuronType``. (`#1609`_)
+- Weight solvers (i.e. those with ``weights=True``) are now allowed on all connections.
+  For connections that are not between ``Ensembles``, though, weight solvers have the
+  same effects as solvers with ``weights=False``, and a warning will be raised.
+  (`#1626 <https://github.com/nengo/nengo/pull/1626>`__)
 
 **Deprecated**
 

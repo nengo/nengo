@@ -44,15 +44,7 @@ class ProbeSolverParam(SolverParam):
     def coerce(self, conn, solver):
         if solver is ConnectionDefault:
             solver = Config.default(Connection, "solver")
-        solver = super().coerce(conn, solver)
-        if solver is not None and solver.weights:
-            raise ValidationError(
-                "weight solvers only work for ensemble to "
-                "ensemble connections, not probes",
-                attr=self.name,
-                obj=conn,
-            )
-        return solver
+        return super().coerce(conn, solver)
 
 
 class Probe(NengoObject):

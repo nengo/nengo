@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 
 from nengo.base import NengoObject, NengoObjectParam, ObjView
@@ -122,20 +124,21 @@ class ConnectionSolverParam(SolverParam):
     def coerce(self, conn, solver):
         solver = super().coerce(conn, solver)
         if solver is not None:
+            # it's true that setting the solver on any connection without a pre Ensemble
+            # has no effect, but we only warn when ``weights=True`` because in this case
+            # we can be sure that it's not the default solver
             if solver.weights and not isinstance(conn.pre_obj, Ensemble):
-                raise ValidationError(
-                    "weight solvers only work for connections from ensembles "
-                    "(got %r)" % type(conn.pre_obj).__name__,
-                    attr=self.name,
-                    obj=conn,
+                warnings.warn(
+                    "For connections from objects other than Ensembles, setting the "
+                    "solver has no effect"
                 )
+
             if solver.weights and not isinstance(conn.post_obj, Ensemble):
-                raise ValidationError(
-                    "weight solvers only work for connections to ensembles "
-                    "(got %r)" % type(conn.post_obj).__name__,
-                    attr=self.name,
-                    obj=conn,
+                warnings.warn(
+                    "For connections to objects other than Ensembles, setting "
+                    "`weights=True` on a solver has no effect"
                 )
+
         return solver
 
 
@@ -162,7 +165,7 @@ class ConnectionFunctionParam(Parameter):
         if not isinstance(conn.eval_points, np.ndarray):
             raise ValidationError(
                 "In order to set 'function' to specific points, 'eval_points' "
-                "must be also be set to specific points.",
+                "must also be set to specific points.",
                 attr=self.name,
                 obj=conn,
             )

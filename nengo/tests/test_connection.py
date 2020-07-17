@@ -353,6 +353,42 @@ def test_weights(Simulator, AnyNeuronType, plt, seed, allclose):
     )
 
 
+@pytest.mark.filterwarnings(
+    "ignore:For connections from.*setting the solver has no effect",
+    "ignore:For connections to.*setting `weights=True` on a solver has no effect",
+)
+def test_configure_weight_solver(Simulator, seed, plt, allclose):
+    """Ensures that connections that don't use the weight solver ignore it"""
+    n1, n2 = 100, 101
+    function = lambda x: x ** 2
+
+    with nengo.Network(seed=seed) as net:
+        net.config[nengo.Connection].solver = nengo.solvers.LstsqL2(weights=True)
+
+        u = nengo.Node(lambda t: np.sin(8 * t))
+        a = nengo.Ensemble(n1, 1)
+        b = nengo.Ensemble(n2, 1)
+        v = nengo.Node(size_in=1)
+        up = nengo.Probe(u, synapse=nengo.Alpha(0.01))
+        vp = nengo.Probe(v, synapse=nengo.Alpha(0.01))
+
+        nengo.Connection(u, a)
+        ens_conn = nengo.Connection(a, b, function=function)
+        nengo.Connection(b, v)
+
+    with nengo.Simulator(net) as sim:
+        sim.run(1.0)
+
+    t = sim.trange()
+    x = sim.data[up]
+    y = function(x)
+    z = sim.data[vp]
+    assert sim.data[ens_conn].weights.shape == (n2, n1)
+    assert signals_allclose(
+        t, y, z, buf=0.01, delay=0.015, atol=0.05, rtol=0.05, plt=plt, allclose=allclose
+    )
+
+
 def test_vector(Simulator, AnyNeuronType, plt, seed, allclose):
     N1, N2 = 50, 50
     transform = [-1, 0.5]
@@ -721,16 +757,24 @@ def test_boolean_indexing(Simulator, rng, plt, allclose):
 
 
 def test_set_weight_solver():
-    with nengo.Network():
-        a = nengo.Ensemble(10, 2)
-        b = nengo.Ensemble(10, 2)
-        nengo.Connection(a, b, solver=LstsqL2(weights=True))
-        with pytest.raises(ValidationError):
-            nengo.Connection(a.neurons, b, solver=LstsqL2(weights=True))
-        with pytest.raises(ValidationError):
-            nengo.Connection(a, b.neurons, solver=LstsqL2(weights=True))
-        with pytest.raises(ValidationError):
-            nengo.Connection(a.neurons, b.neurons, solver=LstsqL2(weights=True))
+    with nengo.Network() as net:
+        # set default Gaussian transform to avoid transform errors
+        net.config[nengo.Connection].transform = nengo.dists.Gaussian(0, 1)
+
+        ens = nengo.Ensemble(10, 2)
+        node = nengo.Node(lambda t, x: x, size_in=2, size_out=2)
+
+        nengo.Connection(ens, ens, solver=LstsqL2(weights=True))
+
+        with pytest.warns(
+            UserWarning, match="For connections from.*setting the solver has no effect"
+        ):
+            nengo.Connection(node, ens, solver=LstsqL2(weights=True))
+
+        with pytest.warns(
+            UserWarning, match="For connections to.*setting `weights=True`.*no effect"
+        ):
+            nengo.Connection(ens, node, solver=LstsqL2(weights=True))
 
 
 def test_set_learning_rule():
@@ -752,7 +796,9 @@ def test_set_learning_rule():
         )
 
         n = nengo.Node(output=lambda t, x: t * x, size_in=2)
-        with pytest.raises(ValidationError):
+        with pytest.raises(
+            ValidationError, match="'pre' must be of type 'Ensemble'.*PES"
+        ):
             nengo.Connection(n, a, learning_rule_type=nengo.PES())
 
 
@@ -764,15 +810,22 @@ def test_set_function(Simulator):
         d = nengo.Node(size_in=1)
 
         # Function only OK from node or ensemble
-        with pytest.raises(ValidationError):
+        with pytest.raises(
+            ValidationError, match="function can only be set.*Ensemble or Node"
+        ):
             nengo.Connection(a.neurons, b, function=lambda x: x)
 
         # Function and transform must match up
-        with pytest.raises(ValidationError):
+        with pytest.raises(
+            ValidationError,
+            match="Shape of initial value.*does not match expected shape",
+        ):
             nengo.Connection(a, b, function=lambda x: x[0] * x[1], transform=np.eye(2))
 
         # No functions allowed on passthrough nodes
-        with pytest.raises(ValidationError):
+        with pytest.raises(
+            ValidationError, match="Cannot apply functions to passthrough nodes"
+        ):
             nengo.Connection(d, c, function=lambda x: [1])
 
         # These initial functions have correct dimensionality
@@ -803,7 +856,10 @@ def test_set_eval_points(Simulator):
         # ConnEvalPoints parameter checks that pre is an ensemble
         nengo.Connection(a, b, eval_points=[[0, 0], [0.5, 1]])
         nengo.Connection(a, b, eval_points=nengo.dists.Uniform(0, 1))
-        with pytest.raises(ValidationError):
+        with pytest.raises(
+            ValidationError,
+            match="eval_points are only valid on connections from ensembles",
+        ):
             nengo.Connection(a.neurons, b, eval_points=[[0, 0], [0.5, 1]])
 
     with Simulator(model):
@@ -898,9 +954,9 @@ def test_directneurons(NonDirectNeuronType):
         b = nengo.Ensemble(1, 1, neuron_type=nengo.Direct())
 
         # cannot connect to or from direct neurons
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError, match="must have size_in > 0"):
             nengo.Connection(a, b.neurons)
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError, match="must have size_out > 0"):
             nengo.Connection(b.neurons, a)
 
 
@@ -1023,19 +1079,25 @@ def test_connectionfunctionparam_array(Simulator, seed):
         b = nengo.Ensemble(10, 1)
 
         # eval points not set raises error
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError, match="'eval_points' must also be set"):
             nengo.Connection(a, b, function=points_1d)
 
         # wrong ndims raises error
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError, match="array must be 2D"):
             nengo.Connection(a, b, eval_points=points_1d, function=points_v)
 
         # wrong number of points raises error
-        with pytest.raises(ValidationError):
+        with pytest.raises(
+            ValidationError,
+            match="Number of eval.*must match number of function points",
+        ):
             nengo.Connection(a, b, eval_points=points_50, function=points_1d)
 
         # wrong output dims raises error
-        with pytest.raises(ValidationError):
+        with pytest.raises(
+            ValidationError,
+            match="Transform output size.*not equal to connection output",
+        ):
             nengo.Connection(a, b, eval_points=points_1d, function=points_2d)
 
         nengo.Connection(a, b, eval_points=points_1d, function=points_1d)
