@@ -352,15 +352,12 @@ def test_delay(Simulator, plt):
 
 def test_args(Simulator):
     class Fn:
-        def __init__(self):
-            self.last_x = None
-
         def __call__(self, t, x):
             assert isinstance(t, float)
             assert isinstance(x, np.ndarray)
-            assert self.last_x is not x  # x should be a new copy on each call
-            self.last_x = x
             assert x[0] == t
+            with pytest.raises(ValueError, match="destination is read-only"):
+                x[:] = 0
 
     with nengo.Network() as model:
         u = nengo.Node(lambda t: t)
@@ -424,3 +421,19 @@ def test_invalid_values(Simulator, badval):
     with Simulator(model) as sim:
         with pytest.raises(SimulationError):
             sim.run(0.01)
+
+
+@pytest.mark.parametrize("class_level", [True, False])
+def test_check_output_off(class_level, Simulator):
+    def node_fn(t):
+        return np.inf if t > 0.002 else 0
+
+    with nengo.Network() as model:
+        node = nengo.Node(node_fn)
+        model.config[nengo.Node if class_level else node].check_output = False
+        probe = nengo.Probe(node)
+
+    with Simulator(model) as sim:
+        sim.run(0.005)
+
+    assert np.array_equal(sim.data[probe][[0, -1]].ravel(), [0, np.inf])
