@@ -92,14 +92,6 @@ class NeuronType(FrozenObject):
     def probeable(self):
         return tuple(self.state)
 
-    @property
-    def step_math(self):
-        warnings.warn(
-            "'step_math' has been renamed to 'step'. This alias will be removed "
-            "in Nengo 4.0"
-        )
-        return self.step
-
     def current(self, x, gain, bias):
         """Compute current injected in each neuron given input, gain and bias.
 
@@ -293,6 +285,13 @@ class NeuronType(FrozenObject):
             State variables associated with the population.
         """
         raise NotImplementedError("Neurons must provide step")
+
+    def step_math(self, dt, J, **state):
+        warnings.warn(
+            "'step_math' has been renamed to 'step'. This alias will be removed "
+            "in Nengo 4.0"
+        )
+        return self.step(dt, J, **state)
 
 
 class NeuronTypeParam(Parameter):
