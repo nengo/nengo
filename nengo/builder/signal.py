@@ -281,8 +281,9 @@ class Signal:
         other : Signal
             The other signal we are investigating.
         """
-        return (self.is_view or other.is_view) and np.may_share_memory(
-            self.initial_value, other.initial_value
+        return (self is other) or (
+            (self.is_view or other.is_view)
+            and np.may_share_memory(self.initial_value, other.initial_value)
         )
 
     def reshape(self, *shape):

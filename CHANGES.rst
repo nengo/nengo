@@ -93,8 +93,11 @@ Release history
   (`#1541 <https://github.com/nengo/nengo/issues/1541>`__,
   `#1607 <https://github.com/nengo/nengo/pull/1607>`__)
 - Fixed a bug in the validation of ``Choice`` distributions. (`#1630`_)
+- Fixed a bug where a ``Signal`` did not register as sharing memory with itself.
+  (`#1627`_)
 
 .. _#1609: https://github.com/nengo/nengo/pull/1609
+.. _#1627: https://github.com/nengo/nengo/pull/1627
 .. _#1628: https://github.com/nengo/nengo/pull/1628
 .. _#1629: https://github.com/nengo/nengo/pull/1629
 .. _#1630: https://github.com/nengo/nengo/pull/1630

@@ -221,6 +221,25 @@ def test_signal_offset():
     assert s[1:].offset == value.strides[1]
 
 
+def test_may_share_memory(rng):
+    def may_share_memory(a, b):
+        a_b, b_a = a.may_share_memory(b), b.may_share_memory(a)
+        assert a_b == b_a  # check commutative property
+        return a_b
+
+    sig_a = Signal(initial_value=rng.rand(3, 4))
+    sig_b = Signal(initial_value=rng.rand(3, 4))
+    assert may_share_memory(sig_a, sig_a)
+    assert may_share_memory(sig_b, sig_b)
+    assert not may_share_memory(sig_a, sig_b)
+
+    assert may_share_memory(sig_a[0:2, :], sig_a)
+    assert may_share_memory(sig_a[0:2, :], sig_a[1:3, :])
+    assert not may_share_memory(sig_a[0, :], sig_a[1, :])
+    assert not may_share_memory(sig_a[0:2, :], sig_b)
+    assert not may_share_memory(sig_a[0:2, :], sig_b[1:3, :])
+
+
 def make_signal(sig_type, shape, indices, data):
     dense = np.zeros(shape)
     dense[indices[:, 0], indices[:, 1]] = data
