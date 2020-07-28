@@ -287,7 +287,8 @@ ci_scripts:
       - matplotlib
   - template: deploy
 
-codecov_yml: {}
+codecov_yml:
+  abs_target: 100%
 
 pre_commit_config_yaml:
   exclude:
