@@ -1,4 +1,4 @@
-import collections
+from collections import namedtuple
 import warnings
 
 import numpy as np
@@ -24,7 +24,7 @@ built_attrs = [
 ]
 
 
-class BuiltEnsemble(collections.namedtuple("BuiltEnsemble", built_attrs)):
+class BuiltEnsemble(namedtuple("BuiltEnsemble", built_attrs)):
     """Collects the parameters generated in `.build_ensemble`.
 
     These are stored here because in the majority of cases the equivalent

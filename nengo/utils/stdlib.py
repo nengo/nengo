@@ -1,6 +1,7 @@
 """Functions that extend the Python Standard Library."""
 
-import collections
+from collections import namedtuple
+from collections.abc import Hashable, MutableMapping, MutableSet
 import inspect
 import itertools
 import os
@@ -10,7 +11,7 @@ import time
 import weakref
 
 
-class WeakKeyDefaultDict(collections.abc.MutableMapping):
+class WeakKeyDefaultDict(MutableMapping):
     """WeakKeyDictionary that allows to define a default."""
 
     def __init__(self, default_factory, items=None, **kwargs):
@@ -39,7 +40,7 @@ class WeakKeyDefaultDict(collections.abc.MutableMapping):
         return len(self._data)
 
 
-class WeakKeyIDDictionary(collections.abc.MutableMapping):
+class WeakKeyIDDictionary(MutableMapping):
     """WeakKeyDictionary that uses object ID to hash.
 
     This ignores the ``__eq__`` and ``__hash__`` functions on objects,
@@ -127,7 +128,7 @@ class WeakKeyIDDictionary(collections.abc.MutableMapping):
             self.__setitem__(key, value)
 
 
-class WeakSet(collections.abc.MutableSet):
+class WeakSet(MutableSet):
     """Uses weak references to store the items in the set."""
 
     def __init__(self, items=None):
@@ -153,7 +154,7 @@ class WeakSet(collections.abc.MutableSet):
             del self._data[key]
 
 
-CheckedCall = collections.namedtuple("CheckedCall", ("value", "invoked"))
+CheckedCall = namedtuple("CheckedCall", ("value", "invoked"))
 
 
 def checked_call(func, *args, **kwargs):
@@ -231,7 +232,7 @@ def groupby(objects, key, hashable=None, force_list=True):
         # get first item without advancing iterator, and see if key is hashable
         objects, objects2 = itertools.tee(iter(objects))
         item0 = next(objects2)
-        hashable = isinstance(key(item0), collections.abc.Hashable)
+        hashable = isinstance(key(item0), Hashable)
 
     if hashable:
         # use a dictionary to sort by hash (faster)

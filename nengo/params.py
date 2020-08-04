@@ -1,4 +1,4 @@
-import collections
+from collections import namedtuple, OrderedDict
 import inspect
 
 import numpy as np
@@ -559,7 +559,7 @@ class NdarrayParam(Parameter):
         return ndarray
 
 
-FunctionInfo = collections.namedtuple("FunctionInfo", ["function", "size"])
+FunctionInfo = namedtuple("FunctionInfo", ["function", "size"])
 
 
 class FunctionParam(Parameter):
@@ -614,7 +614,7 @@ class FrozenObject:
     _param_init_order = []
 
     def __init__(self):
-        self._paramdict = collections.OrderedDict(
+        self._paramdict = OrderedDict(
             (k, v)
             for k, v in inspect.getmembers(type(self))
             if isinstance(v, Parameter) and not isinstance(v, ObsoleteParam)

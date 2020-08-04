@@ -1,6 +1,6 @@
 """Helper functions for backends generating their own Builder system."""
 
-import collections
+from collections import defaultdict
 
 import numpy as np
 
@@ -237,8 +237,8 @@ def remove_passthrough_nodes(  # noqa: C901
 
 def find_all_io(connections):
     """Build up a list of all inputs and outputs for each object."""
-    inputs = collections.defaultdict(list)
-    outputs = collections.defaultdict(list)
+    inputs = defaultdict(list)
+    outputs = defaultdict(list)
     for c in connections:
         inputs[c.post_obj].append(c)
         outputs[c.pre_obj].append(c)

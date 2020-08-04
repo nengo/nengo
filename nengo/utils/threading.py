@@ -1,8 +1,8 @@
-import collections
+from collections.abc import Sequence
 import threading
 
 
-class ThreadLocalStack(threading.local, collections.Sequence):
+class ThreadLocalStack(threading.local, Sequence):
     def __init__(self, maxsize=None):
         super().__init__()
         self.maxsize = maxsize

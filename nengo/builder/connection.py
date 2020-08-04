@@ -1,4 +1,4 @@
-import collections
+from collections import namedtuple
 
 import numpy as np
 
@@ -19,7 +19,7 @@ from nengo.utils.numpy import is_integer, is_iterable
 built_attrs = ["eval_points", "solver_info", "weights", "transform"]
 
 
-class BuiltConnection(collections.namedtuple("BuiltConnection", built_attrs)):
+class BuiltConnection(namedtuple("BuiltConnection", built_attrs)):
     """Collects the parameters generated in `.build_connection`.
 
     These are stored here because in the majority of cases the equivalent

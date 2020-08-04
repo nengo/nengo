@@ -1,4 +1,4 @@
-import collections
+from collections import namedtuple
 import sys
 import time
 
@@ -20,7 +20,7 @@ from nengo.utils.progress import (
 )
 
 
-Update = collections.namedtuple(
+Update = namedtuple(
     "Update", ("name_during", "name_after", "n_steps", "max_steps", "finished")
 )
 

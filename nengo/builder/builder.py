@@ -1,4 +1,4 @@
-import collections
+from collections import defaultdict
 import warnings
 
 import numpy as np
@@ -85,7 +85,7 @@ class Model:
         self.seeds = {}
         self.seeded = {}
 
-        self.sig = collections.defaultdict(dict)
+        self.sig = defaultdict(dict)
         self.sig["common"][0] = Signal(
             np.array(0.0, dtype=rc.float_dtype), readonly=True, name="ZERO"
         )

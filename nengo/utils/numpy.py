@@ -1,7 +1,7 @@
 """
 Extra functions to extend the capabilities of Numpy.
 """
-import collections
+from collections.abc import Iterable
 import logging
 
 import warnings
@@ -43,7 +43,7 @@ def is_iterable(obj):
     if isinstance(obj, np.ndarray):
         return obj.ndim > 0  # 0-d arrays give error if iterated over
     else:
-        return isinstance(obj, collections.abc.Iterable)
+        return isinstance(obj, Iterable)
 
 
 def is_number(obj, check_complex=False):
