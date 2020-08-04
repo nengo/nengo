@@ -44,7 +44,7 @@ def test_validation_error(request):
         )
     )
 
-    nengo.rc.set("exceptions", "simplified", "False")
+    nengo.rc["exceptions"]["simplified"] = "False"
 
     with nengo.Network():
         with pytest.raises(ValidationError) as excinfo:
@@ -67,7 +67,7 @@ def test_validation_error(request):
         ],
     )
 
-    nengo.rc.set("exceptions", "simplified", "True")
+    nengo.rc["exceptions"]["simplified"] = "True"
 
     with pytest.raises(ValidationError) as excinfo:
         nengo.dists.PDF(x=[1, 1], p=[0.1, 0.2])

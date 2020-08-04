@@ -627,7 +627,7 @@ class DecoderCache:
         -------
         str
         """
-        return rc.get("decoder_cache", "path")
+        return rc["decoder_cache"]["path"]
 
     def _close_fd(self):
         if self._fd is not None:
@@ -698,7 +698,7 @@ class DecoderCache:
             return
 
         if limit is None:
-            limit = rc.get("decoder_cache", "size")
+            limit = rc["decoder_cache"]["size"]
         if isinstance(limit, str):
             limit = human2bytes(limit)
 
@@ -849,8 +849,8 @@ class NoDecoderCache:
 
 def get_default_decoder_cache():
     """Get default decoder implementation based on config settings."""
-    if rc.getboolean("decoder_cache", "enabled"):
-        decoder_cache = DecoderCache(rc.getboolean("decoder_cache", "readonly"))
+    if rc["decoder_cache"].getboolean("enabled"):
+        decoder_cache = DecoderCache(rc["decoder_cache"].getboolean("readonly"))
     else:
         decoder_cache = NoDecoderCache()
     return decoder_cache

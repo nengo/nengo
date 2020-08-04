@@ -163,19 +163,19 @@ class TestAutoProgressBar:
         assert progress_bar.closed
 
     def test_get_default_progressbar(self):
-        rc.set("progress", "progress_bar", "False")
+        rc["progress"]["progress_bar"] = "False"
         assert isinstance(get_default_progressbar(), NoProgressBar)
 
-        rc.set("progress", "progress_bar", "True")
+        rc["progress"]["progress_bar"] = "True"
         assert isinstance(get_default_progressbar(), AutoProgressBar)
 
-        rc.set("progress", "progress_bar", "nengo.utils.progress.HtmlProgressBar")
+        rc["progress"]["progress_bar"] = "nengo.utils.progress.HtmlProgressBar"
         assert isinstance(get_default_progressbar(), HtmlProgressBar)
 
-        rc.set("progress", "progress_bar", "nengo.utils.progress.TerminalProgressBar")
+        rc["progress"]["progress_bar"] = "nengo.utils.progress.TerminalProgressBar"
         assert isinstance(get_default_progressbar(), TerminalProgressBar)
 
-        rc.set("progress", "progress_bar", "nengo.InvalidType")
+        rc["progress"]["progress_bar"] = "nengo.InvalidType"
         with pytest.warns(UserWarning, match="Could not load progress bar"):
             assert isinstance(get_default_progressbar(), NoProgressBar)
 
@@ -243,8 +243,8 @@ def test_progress_tracker():
 
 
 def test_to_progress_bar(request, tmpdir):
-    def finalizer(val=rc.get("progress", "progress_bar")):
-        rc.set("progress", "progress_bar", val)
+    def finalizer(val=rc["progress"]["progress_bar"]):
+        rc["progress"]["progress_bar"] = val
 
     request.addfinalizer(finalizer)
 
@@ -253,7 +253,7 @@ def test_to_progress_bar(request, tmpdir):
         assert isinstance(to_progressbar(val), NoProgressBar)
 
     # test true value
-    rc.set("progress", "progress_bar", "nengo.utils.progress.HtmlProgressBar")
+    rc["progress"]["progress_bar"] = "nengo.utils.progress.HtmlProgressBar"
     assert isinstance(to_progressbar(True), HtmlProgressBar)
 
     progress_bar = WriteProgressToFile(str(tmpdir.join("dummyfile.txt")))

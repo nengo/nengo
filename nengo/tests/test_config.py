@@ -466,12 +466,12 @@ def test_config_pickle(tmp_path):
 
 @pytest.mark.parametrize("simplified", [False, True])
 def test_supportdefaultsmixin_exceptions(request, simplified):
-    def finalizer(val=nengo.rc.get("exceptions", "simplified")):
-        nengo.rc.set("exceptions", "simplified", val)
+    def finalizer(val=nengo.rc["exceptions"]["simplified"]):
+        nengo.rc["exceptions"]["simplified"] = val
 
     request.addfinalizer(finalizer)
 
-    nengo.rc.set("exceptions", "simplified", str(simplified))
+    nengo.rc["exceptions"]["simplified"] = str(simplified)
 
     class MyClass(SupportDefaultsMixin):
         p = Parameter("p", default="baba", readonly=True)

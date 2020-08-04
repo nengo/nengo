@@ -476,7 +476,7 @@ class SupportDefaultsMixin:
         if val is Default:
             val = Config.default(type(self), name)
 
-        if rc.getboolean("exceptions", "simplified"):
+        if rc["exceptions"].getboolean("simplified"):
             try:
                 super().__setattr__(name, val)
             except ValidationError:

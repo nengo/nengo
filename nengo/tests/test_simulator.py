@@ -49,7 +49,7 @@ def test_dtype(Simulator, request, seed, bits):
         nengo.Connection(u, a)
         p = nengo.Probe(a)
 
-    rc.set("precision", "bits", bits)
+    rc["precision"]["bits"] = bits
     with Simulator(model) as sim:
         sim.step()
 

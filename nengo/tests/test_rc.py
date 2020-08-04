@@ -14,5 +14,5 @@ def test_read_file(tmp_path):
     with open(filepath, "r") as fh:
         rc.read_file(fh)
 
-    assert rc.getint("test_rc_section", "setting0") == 3
-    assert rc.getint("test_rc_section", "setting1") == 5
+    assert int(rc["test_rc_section"]["setting0"]) == 3
+    assert int(rc["test_rc_section"]["setting1"]) == 5

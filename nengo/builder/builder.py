@@ -114,7 +114,7 @@ class Model:
         the ``operators`` attribute.
         """
         self.operators.append(op)
-        if rc.getboolean("nengo.Simulator", "fail_fast"):
+        if rc["nengo.Simulator"].getboolean("fail_fast"):
             # Fail fast by trying make_step with a temporary sigdict
             signals = SignalDict()
             op.init_signals(signals)

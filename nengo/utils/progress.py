@@ -432,9 +432,8 @@ class HtmlProgressBar(ProgressBar):  # pragma: no cover
         def __repr__(self):
             return (
                 "HtmlProgressBar cannot be displayed. Please use the "
-                "TerminalProgressBar. It can be enabled with "
-                "`nengo.rc.set('progress', 'progress_bar', "
-                "'nengo.utils.progress.TerminalProgressBar')`."
+                "TerminalProgressBar. It can be enabled with `nengo.rc['progress']"
+                "['progress_bar'] = 'nengo.utils.progress.TerminalProgressBar'`."
             )
 
         def _repr_html_(self):
@@ -767,13 +766,13 @@ def get_default_progressbar():
     ``ProgressBar``
     """
     try:
-        pbar = rc.getboolean("progress", "progress_bar")
+        pbar = rc["progress"].getboolean("progress_bar")
         if pbar:
             pbar = "auto"
         else:
             pbar = "none"
     except ValueError:
-        pbar = rc.get("progress", "progress_bar")
+        pbar = rc["progress"]["progress_bar"]
 
     if pbar.lower() == "auto":
         if get_ipython() is not None and check_ipy_version((5, 0)):  # pragma: no cover
