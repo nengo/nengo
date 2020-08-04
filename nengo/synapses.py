@@ -286,6 +286,8 @@ class LinearFilter(Synapse):
 
         if LinearFilter.NoX.check(A, B, C, D, X):
             return LinearFilter.NoX(A, B, C, D, X)
+        if LinearFilter.OneXScalar.check(A, B, C, D, X):
+            return LinearFilter.OneXScalar(A, B, C, D, X)
         elif LinearFilter.OneX.check(A, B, C, D, X):
             return LinearFilter.OneX(A, B, C, D, X)
         elif LinearFilter.NoD.check(A, B, C, D, X):
@@ -355,6 +357,20 @@ class LinearFilter(Synapse):
         @classmethod
         def check(cls, A, B, C, D, X):
             return super().check(A, B, C, D, X) and (len(A) == 1 and (D == 0).all())
+
+    class OneXScalar(OneX):
+        """Step for systems with one state element, no passthrough, and a size-1 input.
+
+        Using the builtin float math improves performance.
+        """
+
+        def __call__(self, t, signal):
+            self.X[:] = self.a * self.X.item() + self.b * signal.item()
+            return self.X[0]
+
+        @classmethod
+        def check(cls, A, B, C, D, X):
+            return super().check(A, B, C, D, X) and X.size == 1
 
     class NoD(Step):
         """Step for systems with no passthrough matrix (D).
