@@ -647,7 +647,7 @@ def test_function_output_size(Simulator, plt, seed, allclose):
     with Simulator(model) as sim:
         sim.run(0.2)
     t = sim.trange()
-    x = nengo.Lowpass(0.03).filt(sim.data[up].clip(0, np.inf), dt=sim.dt)
+    x = nengo.Lowpass(0.03).filt(np.maximum(sim.data[up], 0), dt=sim.dt)
     y = sim.data[bp]
 
     plt.plot(t, x, "k")

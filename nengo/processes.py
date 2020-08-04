@@ -7,7 +7,7 @@ from nengo.dists import DistributionParam, Gaussian
 from nengo.exceptions import ValidationError
 from nengo.params import BoolParam, DictParam, EnumParam, NdarrayParam, NumberParam
 from nengo.synapses import LinearFilter, Lowpass, SynapseParam
-from nengo.utils.numpy import array_hash, is_number, rfftfreq
+from nengo.utils.numpy import array_hash, clip, is_number, rfftfreq
 
 
 class WhiteNoise(Process):
@@ -454,7 +454,7 @@ class Piecewise(Process):
         if self.interpolation == "zero":
 
             def step_piecewise(t):
-                ti = (np.searchsorted(tp, t + 0.5 * dt) - 1).clip(-1, len(yp) - 1)
+                ti = clip(np.searchsorted(tp, t + 0.5 * dt) - 1, -1, len(yp) - 1)
                 if ti == -1:
                     return np.zeros(shape_out)
                 return np.ravel(yp[ti](t)) if callable(yp[ti]) else yp[ti]

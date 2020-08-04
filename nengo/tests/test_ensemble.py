@@ -263,7 +263,7 @@ def test_gain_bias_warning(Simulator, seed):
 )
 def test_eval_points_heuristic(Simulator, neurons, dims, seed):
     def heuristic(neurons, dims):
-        return max(np.clip(500 * dims, 750, 2500), 2 * neurons)
+        return max(npext.clip(500 * dims, 750, 2500), 2 * neurons)
 
     model = nengo.Network(seed=seed)
     with model:

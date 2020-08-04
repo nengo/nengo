@@ -108,7 +108,9 @@ def default_n_eval_points(n_neurons, dimensions):
         For a connection, this would be the number of dimensions in the
         ``pre`` ensemble.
     """
-    return max(np.clip(500 * dimensions, 750, 2500), 2 * n_neurons)
+    from nengo.utils.numpy import clip  # pylint: disable=import-outside-toplevel
+
+    return max(clip(500 * dimensions, 750, 2500), 2 * n_neurons)
 
 
 def objs_and_connections(network):

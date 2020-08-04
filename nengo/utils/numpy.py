@@ -33,6 +33,16 @@ maxseed = np.iinfo(np.uint32).max
 maxint = np.iinfo(np.int32).max
 
 
+# numpy 1.17 introduced a slowdown to clip, so
+# use nengo.utils.numpy.clip instead of np.clip
+# This has persisted through 1.19 at least
+clip = (
+    np.core.umath.clip
+    if tuple(int(st) for st in np.__version__.split(".")) >= (1, 17, 0)
+    else np.clip
+)
+
+
 def is_integer(obj):
     """Check if ``obj`` is an integer type."""
     return isinstance(obj, (int, np.integer))

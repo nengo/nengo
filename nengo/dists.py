@@ -255,7 +255,7 @@ class Exponential(Distribution):
         shape = self._sample_shape(n, d)
         x = rng.exponential(self.scale, shape) + self.shift
         high = np.nextafter(self.high, np.asarray(-np.inf, dtype=x.dtype))
-        return np.clip(x, self.shift, high)
+        return npext.clip(x, self.shift, high)
 
 
 class UniformHypersphere(Distribution):
