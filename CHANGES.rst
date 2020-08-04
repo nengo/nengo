@@ -49,6 +49,7 @@ Release history
 
 **Changed**
 
+- Nengo is now compatible with Python 3.8. (`#1628`_)
 - The default Connection transform is now ``None``, meaning that there will be
   no transform applied. This only changes behavior when learning on a
   neuron-neuron connection with the default scalar transform. In that situation
@@ -92,6 +93,7 @@ Release history
   `#1607 <https://github.com/nengo/nengo/pull/1607>`__)
 
 .. _#1609: https://github.com/nengo/nengo/pull/1609
+.. _#1628: https://github.com/nengo/nengo/pull/1628
 
 3.0.0 (November 18, 2019)
 =========================

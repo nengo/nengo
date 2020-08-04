@@ -213,7 +213,7 @@ def test_write_progress_to_file(tmpdir):
 )
 def test_progress_tracker():
     update_interval = 0.001
-    sleep_interval = 7 * update_interval
+    sleep_interval = 20 * update_interval
     stages = 4
     steps = 3
     total_progress = Progress(name_during="total_prog", max_steps=stages)

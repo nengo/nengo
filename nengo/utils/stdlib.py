@@ -6,7 +6,6 @@ import inspect
 import itertools
 import os
 import shutil
-import sys
 import time
 import weakref
 
@@ -284,17 +283,15 @@ class Timer:
 
     """
 
-    TIMER = time.clock if sys.platform == "win32" else time.time
-
     def __init__(self):
         self.start = None
         self.end = None
         self.duration = None
 
     def __enter__(self):
-        self.start = Timer.TIMER()
+        self.start = time.perf_counter()
         return self
 
     def __exit__(self, type, value, traceback):
-        self.end = Timer.TIMER()
+        self.end = time.perf_counter()
         self.duration = self.end - self.start

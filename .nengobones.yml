@@ -59,6 +59,7 @@ setup_py:
     - "Programming Language :: Python :: 3.5"
     - "Programming Language :: Python :: 3.6"
     - "Programming Language :: Python :: 3.7"
+    - "Programming Language :: Python :: 3.8"
     - "Topic :: Scientific/Engineering :: Artificial Intelligence"
 
 setup_cfg:
@@ -255,6 +256,8 @@ travis_yml:
       if: "branch =~ ^release-candidate-*"
     - dist: bionic
       python: 3.7
+    - dist: bionic
+      python: 3.8
   pypi_user: tbekolay
   deploy_dists:
     - sdist

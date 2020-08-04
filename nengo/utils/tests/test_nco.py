@@ -54,6 +54,12 @@ class TestSubfile:
         with testfile.open() as f:
             assert Subfile(f, 2, 14).readline(15) == data[2:11]
 
+    def test_readinto(self, data, testfile):
+        b = bytearray(4)
+        with testfile.open("rb") as f:
+            assert Subfile(f, 2, 6).readinto(b) == 4
+        assert b == b"2345"
+
     def test_seek(self, data, testfile):
         with testfile.open() as f:
             sf = Subfile(f, 2, 6)

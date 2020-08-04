@@ -158,7 +158,6 @@ def test_am_wta(Simulator, plt, seed, rng):
     assert similarity(sim.data[utils_p][more_b], np.array([1, 0, 1, 1])) < 0.001
 
 
-@pytest.mark.xfail(reason="This test is not consistent", strict=False)
 def test_am_complex(Simulator, plt, seed, rng):
     """Complex auto-associative memory test.
 

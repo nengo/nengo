@@ -83,6 +83,7 @@ def assert_noexceptions(nb_file, tmpdir):
 @pytest.mark.example
 @pytest.mark.parametrize("nb_file", fast_examples)
 @pytest.mark.filterwarnings("ignore:Creating new attribute 'memory_location'")
+@pytest.mark.filterwarnings("ignore:Matplotlib is currently using agg")
 def test_fast_noexceptions(nb_file, tmpdir):
     """Ensure that no cells raise an exception."""
     pytest.importorskip("IPython", minversion="3.0")

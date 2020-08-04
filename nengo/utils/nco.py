@@ -71,6 +71,11 @@ class Subfile:
         self.max_size -= size
         return self.fileobj.read(size)
 
+    def readinto(self, b):
+        size = self.fileobj.readinto(b)
+        self.max_size -= size
+        return size
+
     def readline(self, size=None):
         size = min(size, self.max_size) if size is not None else self.max_size
         data = self.fileobj.readline(size)
