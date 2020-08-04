@@ -334,13 +334,15 @@ class SignalDict(dict):
             if isinstance(key, Signal) and key.base is not key:
                 # return a view on the base signal
                 base = dict.__getitem__(self, key.base)
-                return np.ndarray(
+                retval = np.ndarray(
                     buffer=base,
                     dtype=key.dtype,
                     shape=key.shape,
                     offset=key.offset,
                     strides=key.strides,
                 )
+                dict.__setitem__(self, key, retval)
+                return retval
             else:
                 raise
 
