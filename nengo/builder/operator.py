@@ -717,9 +717,9 @@ class BsrDotInc(DotInc):
         X = signals[self.X]
         A = signals[self.A]
         Y = signals[self.Y]
+        mat_A = self.bsr_matrix((A, self.indices, self.indptr))
 
         def step_dotinc():
-            mat_A = self.bsr_matrix((A, self.indices, self.indptr))
             inc = mat_A.dot(X)
             if self.reshape:
                 inc = inc.reshape(Y.shape)

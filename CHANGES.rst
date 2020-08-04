@@ -73,6 +73,7 @@ Release history
   For connections that are not between ``Ensembles``, though, weight solvers have the
   same effects as solvers with ``weights=False``, and a warning will be raised.
   (`#1626 <https://github.com/nengo/nengo/pull/1626>`__)
+- Various improvements to simulation speed. (`#1629`_)
 
 **Deprecated**
 
@@ -95,6 +96,7 @@ Release history
 
 .. _#1609: https://github.com/nengo/nengo/pull/1609
 .. _#1628: https://github.com/nengo/nengo/pull/1628
+.. _#1629: https://github.com/nengo/nengo/pull/1629
 .. _#1630: https://github.com/nengo/nengo/pull/1630
 
 3.0.0 (November 18, 2019)
