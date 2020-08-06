@@ -91,9 +91,11 @@ Release history
 - Fixed a bug where the ``LstsqDrop`` solver errored when solving for zero weights.
   (`#1541 <https://github.com/nengo/nengo/issues/1541>`__,
   `#1607 <https://github.com/nengo/nengo/pull/1607>`__)
+- Fixed a bug in the validation of ``Choice`` distributions. (`#1630`_)
 
 .. _#1609: https://github.com/nengo/nengo/pull/1609
 .. _#1628: https://github.com/nengo/nengo/pull/1628
+.. _#1630: https://github.com/nengo/nengo/pull/1630
 
 3.0.0 (November 18, 2019)
 =========================

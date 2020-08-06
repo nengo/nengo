@@ -387,7 +387,7 @@ def test_noise_copies_ok(Simulator, NonDirectNeuronType, seed, plt, allclose):
     We test this both with the default system and without.
     """
 
-    process = FilteredNoise(synapse=nengo.Alpha(1.0), dist=Choice([0.5]))
+    process = FilteredNoise(synapse=nengo.Alpha(1.0), dist=Choice([[0.5]]))
     with nengo.Network(seed=seed) as model:
         if (
             NonDirectNeuronType.spiking

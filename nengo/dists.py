@@ -354,7 +354,7 @@ class Choice(Distribution):
 
     @property
     def dimensions(self):
-        return np.prod(self.options.shape[1:])
+        return 0 if self.options.ndim == 1 else np.prod(self.options.shape[1:])
 
     def sample(self, n, d=None, rng=np.random):
         if d is not None and self.dimensions != d:

@@ -168,6 +168,9 @@ def test_choice_errors():
     with pytest.raises(ValidationError, match="Sum of weights must be positive"):
         Choice([1, 2], [0, 0])
 
+    with pytest.raises(ValidationError, match="Options must be of dimensionality 1"):
+        Choice([0]).sample(n=2, d=1)
+
 
 @pytest.mark.parametrize("shape", [(12, 2), (7, 1), (7,), (1, 1)])
 def test_samples(shape, rng, allclose):
