@@ -311,26 +311,35 @@ class Process(FrozenObject):
         size_out = self.default_size_out if d is None else d
         shape_out = as_shape(shape_in[:-1] + (size_out,))
         dt = self.default_dt if dt is None else dt
-        rng = self.get_rng(rng)
-        state = self.make_state(shape_in, shape_out, dt)
-        step = self.make_step(shape_in, shape_out, dt, rng, state, **kwargs)
+        state_rng = self.get_rng(rng, offset=1)  # offset matches `.run_steps`
+        step_rng = self.get_rng(rng)
+        state = self.make_state(shape_in, shape_out, dt, rng=state_rng)
+        step = self.make_step(shape_in, shape_out, dt, step_rng, state, **kwargs)
         output = np.zeros((len(x),) + shape_out) if copy else x
         for i, xi in enumerate(x):
             output[i] = step((i + 1) * dt, xi)
         return output
 
-    def get_rng(self, rng):
+    def get_rng(self, seed_or_rng, offset=0):
         """Get a properly seeded independent RNG for the process step.
 
         Parameters
         ----------
-        rng : `numpy.random.RandomState`
-            The parent random number generator to use if the seed is not set.
+        seed_or_rng : int or `numpy.random.RandomState`
+            The parent seed or random number generator to use if the seed is not set.
+        offset : int, optional
+            Offset to add to the chosen seed for the random number generator.
         """
-        seed = rng.randint(maxint) if self.seed is None else self.seed
-        return np.random.RandomState(seed)
+        seed = self.seed
+        if seed is None:
+            seed = (
+                seed_or_rng.randint(maxint)
+                if hasattr(seed_or_rng, "randint")
+                else seed_or_rng
+            )
+        return np.random.RandomState(seed + offset)
 
-    def make_state(self, shape_in, shape_out, dt, dtype=None):
+    def make_state(self, shape_in, shape_out, dt, rng, dtype=None):
         """Get a dictionary of signals to represent the state of this process.
 
         The builder uses this to allocate memory for the process state, so
@@ -346,6 +355,11 @@ class Process(FrozenObject):
             The shape of the output signal.
         dt : float
             The simulation timestep.
+        rng : `numpy.random.RandomState`
+            Random number generator to use for state initialization.
+
+            .. versionadded:: 3.1.0
+
         dtype : `numpy.dtype`
             The data type requested by the builder. If `None`, then this
             function is free to choose the best type for the signals involved.
@@ -425,9 +439,10 @@ class Process(FrozenObject):
         shape_in = as_shape(0)
         shape_out = as_shape(self.default_size_out if d is None else d)
         dt = self.default_dt if dt is None else dt
-        rng = self.get_rng(rng)
-        state = self.make_state(shape_in, shape_out, dt)
-        step = self.make_step(shape_in, shape_out, dt, rng, state, **kwargs)
+        state_rng = self.get_rng(rng, offset=1)  # offset matches `.apply`
+        step_rng = self.get_rng(rng)
+        state = self.make_state(shape_in, shape_out, dt, rng=state_rng)
+        step = self.make_step(shape_in, shape_out, dt, step_rng, state, **kwargs)
         output = np.zeros((n_steps,) + shape_out)
         for i in range(n_steps):
             output[i] = step((i + 1) * dt)

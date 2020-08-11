@@ -304,7 +304,7 @@ class LinearSystem(Process):
             default_dt=self.default_dt,
         )
 
-    def make_state(self, shape_in, shape_out, dt, dtype=None, x0=None):
+    def make_state(self, shape_in, shape_out, dt, rng, dtype=None, x0=None):
         dtype = rc.float_dtype if dtype is None else np.dtype(dtype)
         if dtype.kind != "f":
             raise ValidationError(

@@ -251,9 +251,9 @@ def test_linearfilter_extras(allclose):
     # Throw an error if non-float dtype
     shape = (1,)
     with pytest.raises(ValidationError, match="Only float data types"):
-        synapse.make_state(shape, shape, dt=0.001, dtype=np.int32)
+        synapse.make_state(shape, shape, dt=0.001, rng=None, dtype=np.int32)
     with pytest.raises(ValidationError, match="Only float data types"):
-        synapse.make_state(shape, shape, dt=0.001, dtype=np.complex64)
+        synapse.make_state(shape, shape, dt=0.001, rng=None, dtype=np.complex64)
 
 
 def test_linearfilter_den():

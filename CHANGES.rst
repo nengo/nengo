@@ -103,6 +103,9 @@ Release history
   modestly slower than the previous ``UniformHypersphere``, but if build times are a
   concern, the user may opt for the ``"tfww"`` method on ``ScatteredHypersphere``.
   (`#1611`_)
+- Added ``rng`` argument to ``Process.make_state``, for processes that use randomness
+  in their initialization. Any custom processes overriding ``make_state`` will need to
+  add this argument to the signature. (`#1611`_)
 
 **Deprecated**
 
