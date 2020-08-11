@@ -73,6 +73,8 @@ Release history
   For connections that are not between ``Ensembles``, though, weight solvers have the
   same effects as solvers with ``weights=False``, and a warning will be raised.
   (`#1626 <https://github.com/nengo/nengo/pull/1626>`__)
+- Updated nengo-sphinx-theme requirement for building Nengo documentation.
+  (`#1631 <https://github.com/nengo/nengo/pull/1631>`__)
 
 **Deprecated**
 

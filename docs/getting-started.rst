@@ -93,7 +93,7 @@ Python's own package manager, ``pip``.
 - Running the test suite requires
   pytest, Matplotlib, and Jupyter.
 - Building the documentation requires
-  Sphinx, NumPyDoc and guzzle_sphinx_theme.
+  Sphinx, NumPyDoc and nengo_sphinx_theme.
 
 These additional dependencies can be installed
 through ``pip`` when installing Nengo.
