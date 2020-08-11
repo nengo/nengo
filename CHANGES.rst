@@ -48,6 +48,9 @@ Release history
   form. If passing systems in transfer function form, they should be passed as a
   ``(numerator, denominator)`` tuple; the separate ``den`` argument is deprecated.
   (`#1650`_)
+- Added ``rng`` argument to ``Process.make_state``, for processes that use randomness
+  in their initialization. Any custom processes overriding ``make_state`` will need to
+  add this argument to the signature. (`#1650`_)
 
 **Fixed**
 

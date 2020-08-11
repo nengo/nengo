@@ -40,7 +40,9 @@ def build_node(model, node):
         sig_out = sig_in
     elif isinstance(node.output, Process):
         sig_out = Signal(shape=node.size_out, name=f"{node}.out")
-        model.build(node.output, sig_in, sig_out, mode="set")
+        model.build(
+            node.output, sig_in, sig_out, mode="set", seed_or_rng=model.seeds[node]
+        )
     elif callable(node.output):
         sig_out = (
             Signal(shape=node.size_out, name=f"{node}.out")

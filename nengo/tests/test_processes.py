@@ -52,6 +52,39 @@ class QueueProcess(Process):
         return step
 
 
+class StateStepRngProcess(Process):
+    """A process that uses RNGs to initialize the state, and in the step"""
+
+    def make_state(self, shape_in, shape_out, dt, rng, dtype=None):
+        assert shape_in in [(0,), shape_out]
+        (size_out,) = shape_out
+        return {"X": Gaussian(0, 1).sample(size_out, rng=rng)}
+
+    def make_step(self, shape_in, shape_out, dt, rng, state):
+        assert shape_in in [(0,), shape_out]
+        (size_in,) = shape_in
+        (size_out,) = shape_out
+
+        X = state["X"]
+        alpha = 1.0 / np.sqrt(dt)
+        dist = Gaussian(0, 1)
+
+        if size_in > 0:
+
+            def step(_, x):
+                X[:] += x
+                X[:] += alpha * dist.sample(size_out, rng=rng)
+                return X
+
+        else:
+
+            def step(_):
+                X[:] += alpha * dist.sample(size_out, rng=rng)
+                return X
+
+        return step
+
+
 def test_time(Simulator, allclose):
     t_run = 1.0
     c = 2.0
@@ -364,6 +397,27 @@ def test_seed(Simulator, seed, allclose):
     assert not allclose(
         sim1.data[ep], sim2.data[ep], record_rmse=False, print_fail=0, **tols
     )
+
+
+def test_statestep_seed(Simulator, seed, allclose):
+    runtime = 0.2
+    dims = 3
+    seeded_process = StateStepRngProcess(seed=seed)
+    seeded_y = seeded_process.run(runtime, d=dims)
+    nt = len(seeded_y)
+
+    # seeded process `.run` and `.apply` (with 0 input) equal
+    assert allclose(seeded_process.apply(np.zeros((nt, dims)), d=dims), seeded_y)
+
+    # seeded process `.run` the same as when run in a Node
+    with nengo.Network() as net:
+        u = nengo.Node(seeded_process, size_out=dims)
+        up = nengo.Probe(u)
+
+    with Simulator(net) as sim:
+        sim.run(runtime)
+
+    assert allclose(sim.data[up], seeded_y)
 
 
 def test_present_input(Simulator, rng, allclose):
@@ -709,7 +763,7 @@ class TestLinearSystem:
         u = rng.uniform(-1, 1, size=shape_in)
         x0 = rng.uniform(-1, 1, size=shape_state)
 
-        state = sys.make_state(shape_in, shape_out, dt, x0=x0)
+        state = sys.make_state(shape_in, shape_out, dt, rng=None, x0=x0)
         assert state["X"].shape == shape_state
         assert np.allclose(state["X"], x0)
 
@@ -877,7 +931,7 @@ class TestLinearSystem:
 
         sys = LinearSystem((np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)), None))
         with pytest.raises(ValidationError, match="dtype: Only float data types"):
-            sys.make_state((2,), (2,), dt=0.001, dtype=np.int32)
+            sys.make_state((2,), (2,), dt=0.001, rng=None, dtype=np.int32)
 
     def test_equivalent_formats(self):
         tau0, tau1 = 0.01, 0.02

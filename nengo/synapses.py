@@ -67,10 +67,10 @@ class Synapse(Process):
             seed=seed,
         )
 
-    def make_state(self, shape_in, shape_out, dt, dtype=None, y0=None):
+    def make_state(self, shape_in, shape_out, dt, rng, dtype=None, y0=None):
         raise NotImplementedError("Synapse must implement make_state")
 
-    def filt(self, x, dt=None, axis=0, y0=0, copy=True, filtfilt=False):
+    def filt(self, x, dt=None, axis=0, y0=0, copy=True, filtfilt=False, rng=np.random):
         """Filter ``x`` with this synapse model.
 
         Parameters
@@ -90,6 +90,11 @@ class Synapse(Process):
         filtfilt : bool, optional
             If True, runs the process forward then backward on the signal,
             for zero-phase filtering (like Matlab's ``filtfilt``).
+        rng : `numpy.random.RandomState`, optional
+            Random number generator to fix any randomness in the synapse. Ignored if
+            ``synapse.seed is not None``.
+
+            .. versionadded:: 3.1.0
         """
         # This function is very similar to `Process.apply`, but allows for
         # a) filtering along any axis, and b) zero-phase filtering (filtfilt).
@@ -98,8 +103,12 @@ class Synapse(Process):
         filt_view = np.rollaxis(filtered, axis=axis)  # rolled view on filtered
 
         shape_in = shape_out = as_shape(filt_view[0].shape, min_dim=1)
-        state = self.make_state(shape_in, shape_out, dt, dtype=filtered.dtype, y0=y0)
-        step = self.make_step(shape_in, shape_out, dt, rng=None, state=state)
+        state_rng = self.get_rng(rng, offset=1)
+        step_rng = self.get_rng(rng)
+        state = self.make_state(
+            shape_in, shape_out, dt, rng=state_rng, dtype=filtered.dtype, y0=y0
+        )
+        step = self.make_step(shape_in, shape_out, dt, rng=step_rng, state=state)
 
         for i, signal_in in enumerate(filt_view):
             filt_view[i] = step(i * dt, signal_in)
@@ -242,12 +251,14 @@ class LinearFilter(LinearSystem, Synapse):
         return y
 
     def make_state(  # pylint: disable=arguments-renamed
-        self, shape_in, shape_out, dt, dtype=None, y0=0
+        self, shape_in, shape_out, dt, rng, dtype=None, y0=0
     ):
         assert shape_in == shape_out
 
         # call LinearSystem's `make_state`
-        state = super().make_state(shape_in + (1,), shape_out + (1,), dt, dtype=dtype)
+        state = super().make_state(
+            shape_in + (1,), shape_out + (1,), dt, rng, dtype=dtype
+        )
         X = state["X"]
 
         # initialize X using y0 as steady-state output
@@ -848,7 +859,7 @@ class Triangle(Synapse):
 
         return n_taps, n0, ndiff
 
-    def make_state(self, shape_in, shape_out, dt, dtype=None, y0=0):
+    def make_state(self, shape_in, shape_out, dt, rng, dtype=None, y0=0):
         assert shape_in == shape_out
         dtype = rc.float_dtype if dtype is None else np.dtype(dtype)
 
