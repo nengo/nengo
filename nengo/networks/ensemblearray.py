@@ -6,8 +6,8 @@ from nengo.connection import Connection
 from nengo.dists import Samples
 from nengo.ensemble import Ensemble
 from nengo.exceptions import ValidationError
-from nengo.neurons import Direct
 from nengo.network import Network
+from nengo.neurons import Direct
 from nengo.node import Node
 from nengo.utils.network import with_self
 from nengo.utils.numpy import is_iterable
@@ -228,10 +228,10 @@ class EnsembleArray(Network):
 
         .. testcode::
 
-           ea.add_output('output', None, solver=nengo.solvers.Lstsq())
+           ea.add_output("lstsq_output", None, solver=nengo.solvers.Lstsq())
 
-        creates a new output with the decoders of each connection solved for
-        with the `.Lstsq` solver.
+        creates a new output at ``ea.lstsq_output`` with the decoders
+        of each connection solved for with the `.Lstsq` solver.
 
         Parameters
         ----------
@@ -250,6 +250,14 @@ class EnsembleArray(Network):
             should stay as None, and synaptic filtering should be performed in
             the connection from the output node.
         """
+        if hasattr(self, name):
+            raise ValidationError(
+                "Cannot add output %r; there is already an attribute by this name"
+                % (name,),
+                attr="name",
+                obj=self,
+            )
+
         dims_per_ens = self.dimensions_per_ensemble
 
         # get output size for each ensemble
@@ -258,7 +266,7 @@ class EnsembleArray(Network):
         if is_iterable(function) and all(callable(f) for f in function):
             if len(list(function)) != self.n_ensembles:
                 raise ValidationError(
-                    "Must have one function per ensemble", attr="function"
+                    "Must have one function per ensemble", attr="function", obj=self
                 )
 
             for i, func in enumerate(function):
@@ -273,6 +281,7 @@ class EnsembleArray(Network):
             raise ValidationError(
                 "'function' must be a callable, list of callables, or None",
                 attr="function",
+                obj=self,
             )
 
         output = Node(output=None, size_in=sizes.sum(), label=name)

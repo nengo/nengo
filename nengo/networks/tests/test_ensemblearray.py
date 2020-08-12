@@ -293,6 +293,12 @@ def test_add_input_output_errors():
     with pytest.warns(UserWarning, match="neuron_output already exists"):
         A.add_neuron_output()
 
+    A.add_output("my_output", np.sin)
+    with pytest.raises(ValidationError, match="Cannot add output.*already an attr"):
+        A.add_output("my_output", np.sin)
+    with pytest.raises(ValidationError, match="Cannot add output.*already an attr"):
+        A.add_output("neuron_input", np.sin)
+
     with pytest.raises(ValidationError, match="Must have one function per ensemble"):
         A.add_output("test", [np.sin] * (A.n_ensembles + 1))
 
