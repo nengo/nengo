@@ -74,6 +74,8 @@ Release history
   same effects as solvers with ``weights=False``, and a warning will be raised.
   (`#1626 <https://github.com/nengo/nengo/pull/1626>`__)
 - Various improvements to simulation speed. (`#1629`_)
+- ``EnsembleArray`` now returns an error if ``add_output`` would overwrite an existing
+  attribute. (`#1611`_)
 
 **Deprecated**
 
@@ -95,6 +97,7 @@ Release history
 - Fixed a bug in the validation of ``Choice`` distributions. (`#1630`_)
 
 .. _#1609: https://github.com/nengo/nengo/pull/1609
+.. _#1611: https://github.com/nengo/nengo/pull/1611
 .. _#1628: https://github.com/nengo/nengo/pull/1628
 .. _#1629: https://github.com/nengo/nengo/pull/1629
 .. _#1630: https://github.com/nengo/nengo/pull/1630
