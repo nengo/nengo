@@ -615,6 +615,7 @@ class FrozenObject:
     _param_init_order = []
 
     _argrepr_filter = set()
+    _copy_filter = None  # defaults to _argrepr_filter
 
     def __init__(self):
         self._paramdict = dict(
@@ -665,19 +666,23 @@ class FrozenObject:
             return f"<{type(self).__name__} at 0x{id(self):x}>"
         return f"{type(self).__name__}({', '.join(self._argreprs)})"
 
+    def _init_args_defaults(self):
+        spec = inspect.getfullargspec(type(self).__init__)
+        defaults = {}
+        if spec.defaults is not None:
+            defaults.update(zip(spec.args[-len(spec.defaults) :], spec.defaults))
+
+        args = spec.args[1:]  # start at 1 to drop `self`
+        return args, defaults
+
     @property
     def _argreprs(self):
         if self.__argreprs is not None:
             return self.__argreprs
 
         # get arguments to display from __init__ functions
-        spec = inspect.getfullargspec(type(self).__init__)
-        defaults = {}
-        if spec.defaults is not None:
-            defaults.update(zip(spec.args[-len(spec.defaults) :], spec.defaults))
-
-        # start at 1 to drop `self`
-        args = [arg for arg in spec.args[1:] if arg not in self._argrepr_filter]
+        args, defaults = self._init_args_defaults()
+        args = [arg for arg in args if arg not in self._argrepr_filter]
 
         self.__argreprs = []
         for arg in args:
@@ -700,3 +705,25 @@ class FrozenObject:
                 self.__argreprs.append(f"{arg}={value!r}")
 
         return self.__argreprs
+
+    def copy(self, **kwargs):
+        """Create a copy of the FrozenObject, with specified parameters changed.
+
+        Parameters
+        ----------
+        **kwargs
+            Parameters and their new values to be changed in the new object.
+        """
+        copy_filter = (
+            self._argrepr_filter if self._copy_filter is None else self._copy_filter
+        )
+
+        args, defaults = self._init_args_defaults()
+        args = [arg for arg in args if arg not in copy_filter]
+
+        # set defaults based on this existing object
+        for arg in args:
+            defaults[arg] = getattr(self, arg)
+
+        defaults.update(kwargs)
+        return type(self)(**defaults)
