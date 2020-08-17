@@ -265,6 +265,7 @@ travis_yml:
   slack_notifications: "bWVmSjW3kLZEEmJxpEmcrxlOFMVK24pYbgTZ2pjra0KMmwA2OJ11BsjdDW0fDE\
     Vd4JJGkxV3vOghsufRTrKE10reLHSM0Jtum8PYvlYk7riE8yUish0VCwxa8gYZpsH41Q7IlJQB04y5XxwY\
     MqSnDepOAmB8C5babwYJkzfF5Dw="
+  bones_install: git+https://github.com/nengo/nengo-bones@2020-resolver#egg=nengo-bones
 
 ci_scripts:
   - template: static
