@@ -209,27 +209,6 @@ def test_weakkeyiddict_contains_none():
     assert (None in WeakKeyIDDictionary()) is False
 
 
-def test_weakkeyiddict_iter_functions():
-    """Tests iterkeys and iteritems"""
-    in_d = {C(): 1, C(): 2, C(): 3}
-    d = WeakKeyIDDictionary(in_d)
-
-    keys = list(in_d)
-    for key in d.iterkeys():
-        assert key in keys, "WeakKeyIDDictionary has extra key %d" % (key,)
-        keys.remove(key)
-
-    assert len(keys) == 0, "Keys not found in WeakKeyIDDictionary: %r" % (keys,)
-
-    # copy, otherwise `d` will change size during iteration as references are removed
-    in_d2 = dict(in_d)
-    for k, v in d.iteritems():
-        assert k in in_d
-        assert in_d2.pop(k) == v
-
-    assert len(in_d2) == 0, "Keys not found in WeakKeyIDDictionary: %r" % (in_d2,)
-
-
 def test_weakkeydict_delitem():
     d = WeakKeyIDDictionary()
     o1 = C()
@@ -252,11 +231,11 @@ def test_weakkeydict_bad_delitem():
     with pytest.raises(KeyError):
         d[o]
 
-    # If a key isn't of a weakly referencable type, __getitem__ and
-    # __setitem__ raise TypeError.  __delitem__ should too.
-    with pytest.raises(TypeError):
+    # If a key isn't of a weakly referencable type, __getitem__ and __delitem__ raise
+    # keyerror, __setitem__ raises a TypeError
+    with pytest.raises(KeyError):
         del d[13]
-    with pytest.raises(TypeError):
+    with pytest.raises(KeyError):
         d[13]
     with pytest.raises(TypeError):
         d[13] = 13

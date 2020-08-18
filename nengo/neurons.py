@@ -647,6 +647,10 @@ class LIF(LIFRate):
         self.min_voltage = min_voltage
 
     def step(self, dt, J, output, voltage, refractory_time):
+        # look these up once to avoid repeated parameter accesses
+        tau_rc = self.tau_rc
+        min_voltage = self.min_voltage
+
         # reduce all refractory times by dt
         refractory_time -= dt
 
@@ -659,20 +663,20 @@ class LIF(LIFRate):
         # update voltage using discretized lowpass filter
         # since v(t) = v(0) + (J - v(0))*(1 - exp(-t/tau)) assuming
         # J is constant over the interval [t, t + dt)
-        voltage -= (J - voltage) * np.expm1(-delta_t / self.tau_rc)
+        voltage -= (J - voltage) * np.expm1(-delta_t / tau_rc)
 
         # determine which neurons spiked (set them to 1/dt, else 0)
         spiked_mask = voltage > 1
         output[:] = spiked_mask * (self.amplitude / dt)
 
         # set v(0) = 1 and solve for t to compute the spike time
-        t_spike = dt + self.tau_rc * np.log1p(
+        t_spike = dt + tau_rc * np.log1p(
             -(voltage[spiked_mask] - 1) / (J[spiked_mask] - 1)
         )
 
         # set spiked voltages to zero, refractory times to tau_ref, and
         # rectify negative voltages to a floor of min_voltage
-        voltage[voltage < self.min_voltage] = self.min_voltage
+        voltage[voltage < min_voltage] = min_voltage
         voltage[spiked_mask] = 0
         refractory_time[spiked_mask] = self.tau_ref + t_spike
 

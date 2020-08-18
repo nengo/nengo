@@ -67,7 +67,6 @@ class WeakKeyIDDictionary(MutableMapping):
         return len(self._keyrefs)
 
     def __delitem__(self, k):
-        assert weakref.ref(k)
         if k in self:
             del self._keyrefs[id(k)]
             del self._keyvalues[id(k)]
@@ -77,15 +76,10 @@ class WeakKeyIDDictionary(MutableMapping):
             raise KeyError(str(k))
 
     def __getitem__(self, k):
-        assert weakref.ref(k)
-        if k in self:
-            return self._keyvalues[id(k)]
-        else:
-            raise KeyError(str(k))
+        return self._keyvalues[id(k)]
 
     def __setitem__(self, k, v):
         ref = weakref.ref(k, self.__free_value)  # add callback
-        assert ref
         self._keyrefs[id(k)] = k
         self._keyvalues[id(k)] = v
         self._ref2id[id(ref)] = id(k)
@@ -102,22 +96,15 @@ class WeakKeyIDDictionary(MutableMapping):
     def get(self, k, default=None):
         """Return item from dictionary."""
 
-        return self._keyvalues[id(k)] if k in self else default
+        return self._keyvalues.get(id(k), default)
 
     def keys(self):
         """Return dictionary keys."""
 
         return self._keyrefs.values()
 
-    def iterkeys(self):
-        return self._keyrefs.values()
-
     def items(self):
         """Return dictionary key, value pairs."""
-        for k in self:
-            yield k, self[k]
-
-    def iteritems(self):
         for k in self:
             yield k, self[k]
 

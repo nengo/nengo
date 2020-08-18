@@ -134,14 +134,18 @@ class Parameter:
         if instance is None:
             # Return self so default can be inspected
             return self
-        if not self.configurable and instance not in self.data:
-            raise ValidationError(
-                "Unconfigurable parameters have no defaults. Please ensure the"
-                " value of the parameter is set before trying to access it.",
-                attr=self.name,
-                obj=instance,
-            )
-        return self.data.get(instance, self.default)
+
+        try:
+            return self.data[instance]
+        except KeyError:
+            if not self.configurable:
+                raise ValidationError(
+                    "Unconfigurable parameters have no defaults. Please ensure the"
+                    " value of the parameter is set before trying to access it.",
+                    attr=self.name,
+                    obj=instance,
+                )
+            return self.default
 
     def __set__(self, instance, value):
         self.data[instance] = self.coerce(instance, value)
