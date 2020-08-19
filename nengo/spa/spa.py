@@ -85,7 +85,7 @@ class SPA(nengo.Network):
         warnings.warn(
             DeprecationWarning(
                 "The nengo.spa module is deprecated. Please switch to using the "
-                "Nengo SPA project <https://www.nengo.ai/nengo-spa/>."
+                "NengoSPA project <https://www.nengo.ai/nengo-spa/>."
             )
         )
 

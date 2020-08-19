@@ -20,7 +20,7 @@ Generation 2: NEO (Java) -> Nengo (Java) -> Nengo GUI (Piccolo2D)
 
 Generation 3: Nengo scripting layer (Jython) -> Nengo Theano backend (Python)
 
-Generation 4: Nengo AP -> Nengo reference implementation (Python, Jython, Theano, PyNN)
+Generation 4: Nengo API -> Nengo reference implementation (Python, Jython, Theano, PyNN)
 
 Generation 5: Nengo 2.0
 

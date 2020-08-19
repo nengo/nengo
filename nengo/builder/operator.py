@@ -549,7 +549,7 @@ class DotInc(Operator):
     Implements ``Y[...] += np.dot(A, X)``.
 
     .. note:: Currently, this only supports matrix-vector multiplies
-              for compatibility with Nengo OCL.
+              for compatibility with NengoOCL.
 
     Parameters
     ----------
@@ -659,7 +659,7 @@ class BsrDotInc(DotInc):
     .. note:: Requires SciPy.
 
     .. note:: Currently, this only supports matrix-vector multiplies
-              for compatibility with Nengo OCL.
+              for compatibility with NengoOCL.
 
     Parameters
     ----------
