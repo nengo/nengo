@@ -209,7 +209,7 @@ def test_write_progress_to_file(tmpdir):
 
 
 @pytest.mark.skipif(
-    sys.platform == "win32", reason="Threading in Windows is less reliable",
+    sys.platform == "win32", reason="Threading in Windows is less reliable"
 )
 def test_progress_tracker():
     update_interval = 0.001

@@ -644,7 +644,7 @@ class WriteProgressToFile(ProgressBar):
     def update(self, progress):
         if progress.finished:
             text = "{} finished in {}.".format(
-                progress.name_after, timestamp2timedelta(progress.elapsed_seconds()),
+                progress.name_after, timestamp2timedelta(progress.elapsed_seconds())
             )
         else:
             text = "{progress:.0f}%, ETA: {eta}".format(

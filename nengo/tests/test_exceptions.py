@@ -105,7 +105,10 @@ def test_readonly_error():
         excinfo.traceback,
         [
             ("test_readonly_error", "Frozen()"),
-            ("__init__", "raise ReadonlyError(attr=p, obj=self, msg=msg)",),
+            (
+                "__init__",
+                "raise ReadonlyError(attr=p, obj=self, msg=msg)",
+            ),
         ],
     )
 

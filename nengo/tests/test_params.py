@@ -474,8 +474,7 @@ def test_equal_not_equatable():
 
 
 def test_coerce_value_error():
-    """tests to make sure ValueError is thrown
-     with incorrect coerce usage"""
+    """tests to make sure ValueError is thrown with incorrect coerce usage"""
 
     class Test:
         o = params.Parameter("o", default=None)

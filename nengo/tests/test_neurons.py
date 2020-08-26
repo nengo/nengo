@@ -693,9 +693,7 @@ def test_rates_shaping(rng, NonDirectNeuronType):
         rates = neuron_type.rates(x, gain, bias)
 
 
-@pytest.mark.parametrize(
-    "neuron_type", [nengo.LIF, nengo.SpikingRectifiedLinear],
-)
+@pytest.mark.parametrize("neuron_type", [nengo.LIF, nengo.SpikingRectifiedLinear])
 @pytest.mark.filterwarnings("ignore:divide by zero")
 def test_initial_state(neuron_type, Simulator, seed, plt, allclose):
     n = 50

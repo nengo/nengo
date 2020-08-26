@@ -176,7 +176,7 @@ def build_rates_to_spikes(model, neurontype, neurons):
     in_sig = model.sig[neurons]["in"]
     out_sig = model.sig[neurons]["out"]
     rate_sig = Signal(
-        shape=model.sig[neurons]["in"].shape, name="%s.rate_out" % (neurons,),
+        shape=model.sig[neurons]["in"].shape, name="%s.rate_out" % (neurons,)
     )
     model.sig[neurons]["rate_out"] = rate_sig
 

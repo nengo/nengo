@@ -321,7 +321,7 @@ def build_connection(model, conn):
 
         model.add_op(
             ElementwiseInc(
-                gains, weighted, sliced_out, tag="%s.gains_elementwiseinc" % conn,
+                gains, weighted, sliced_out, tag="%s.gains_elementwiseinc" % conn
             )
         )
     else:
