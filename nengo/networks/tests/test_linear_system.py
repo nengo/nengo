@@ -26,6 +26,7 @@ def _test_linear_system_network(
     synapse,
     NetworkType,
     Simulator,
+    allclose,
     seed=0,
     plt=None,
     dt=None,
@@ -51,6 +52,35 @@ def _test_linear_system_network(
             nengo.Connection(inp, ref, synapse=None)
             nengo.Connection(inp, subnet.input, synapse=None)
 
+        # This is a "trick" for getting the output without needing to filter it.
+        # It is equivalent to taking subnet.state_input as x since it is already
+        # filtered. The main drawback of this approach is if input is spiking and D != 0
+        # then it won't get filtered. Also, even when D is 0, it's worth noting that
+        # this is creating a connection from input to output that goes through a filter
+        # but doesn't get represented using neurons -- although this is just a linear
+        # transformation that could be combined with weights elsewhere.
+        # [ x <- filt(Ax + Bu) and y <- Cx + Du ] => [ y <- filt(CAx + CBu) + Du ]
+        # This also works for getting the state without filtering it.
+        # Note the output synapse needs to be initialized to Cx0 in this case, to mimic
+        # what we would get from computing C.dot(filt(Ax))) with filt initialized to x0.
+        output_nonfilt = nengo.Node(size_in=subnet.system.output_size)
+        A, B, C, D = subnet.mapped_system.ss
+        nengo.Connection(
+            subnet.state_output,
+            output_nonfilt,
+            transform=C.dot(A),
+            synapse=subnet.synapse.copy(initial_output=C.dot(subnet.mapped_system.x0)),
+        )
+        if subnet.input is not None:
+            nengo.Connection(
+                subnet.input, output_nonfilt, transform=C.dot(B), synapse=subnet.synapse
+            )
+            if "D" in subnet.ss_connections:
+                nengo.Connection(
+                    subnet.input, output_nonfilt, transform=D, synapse=None
+                )
+        output_nonfilt_p = nengo.Probe(output_nonfilt, synapse=None)
+
     with Simulator(net, dt=0.001 if dt is None else dt, progress_bar=False) as sim:
         sim.run(simtime)
 
@@ -59,6 +89,7 @@ def _test_linear_system_network(
     u = sim.data[input_p] if input_p else None
     x = sim.data[state_p]
     y = sim.data[output_p]
+    y_nonfilt = sim.data[output_nonfilt_p]
 
     if plt is not None:
         plt.plot(t, ref, "-", label="ref")
@@ -66,7 +97,10 @@ def _test_linear_system_network(
             plt.plot(t, u, ":", label="u")
         plt.plot(t, x, "-.", label="x")
         plt.plot(t, y, "--", label="y")
+        plt.plot(t, y_nonfilt, "--", label="y (unfiltered)")
         plt.legend()
+
+    assert allclose(probe_synapse.filt(y_nonfilt, dt=sim.dt), y, atol=0.1)
 
     return sim.trange(), ref, u, x, y
 
@@ -79,7 +113,9 @@ def _test_linear_system_network(
         (LinearSystemNetwork, nengo.Alpha(0.01), None, 0.15),
     ],
 )
-def test_autonomous_oscillator(NetworkType, synapse, dt, tol, Simulator, seed, plt):
+def test_autonomous_oscillator(
+    NetworkType, synapse, dt, tol, Simulator, seed, plt, allclose
+):
     omega = 4 * np.pi
     A = [[0, -omega], [omega, 0]]
     C = np.eye(2)
@@ -91,12 +127,13 @@ def test_autonomous_oscillator(NetworkType, synapse, dt, tol, Simulator, seed, p
         synapse,
         NetworkType,
         Simulator,
+        allclose=allclose,
         dt=dt,
         seed=seed,
         plt=plt,
         n_neurons=200,
     )
-    e = npext.rms(y - ref, axis=0) / npext.rms(ref, axis=0)
+    e = npext.nrmse(y, ref, axis=0)
     assert (e < tol).all()
 
 
@@ -108,7 +145,9 @@ def test_autonomous_oscillator(NetworkType, synapse, dt, tol, Simulator, seed, p
         (LinearSystemNetwork, nengo.Alpha(0.01), None, 0.15),
     ],
 )
-def test_attractor_oscillator(NetworkType, synapse, dt, tol, Simulator, seed, plt):
+def test_attractor_oscillator(
+    NetworkType, synapse, dt, tol, Simulator, seed, plt, allclose
+):
     inp_freqs = np.array([7.0, -15.0])
     omega = 4 * np.pi
     gain = -2.5
@@ -124,13 +163,14 @@ def test_attractor_oscillator(NetworkType, synapse, dt, tol, Simulator, seed, pl
         synapse,
         NetworkType,
         Simulator,
+        allclose=allclose,
         dt=dt,
         input_f=lambda t: np.sin(inp_freqs * t),
         seed=seed,
         plt=plt,
         n_neurons=200,
     )
-    e = npext.rms(y - ref, axis=0) / npext.rms(ref, axis=0)
+    e = npext.nrmse(y, ref, axis=0)
     assert (e < tol).all()
 
 
