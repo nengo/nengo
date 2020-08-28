@@ -138,7 +138,7 @@ docs_conf_py:
   intersphinx_mapping:
     scipy: 'https://docs.scipy.org/doc/scipy/reference'
     sklearn: 'https://scikit-learn.org/dev'
-  analytics_id: UA-41658423-2
+  tagmanager_id: GTM-KWCR2HN
   extensions:
     - nengo_sphinx_theme.ext.autoautosummary
     - nengo_sphinx_theme.ext.resolvedefaults

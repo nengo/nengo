@@ -124,7 +124,7 @@ html_favicon = os.path.join("_static", "favicon.ico")
 html_theme_options = {
     "nengo_logo": "general-full-light.svg",
     "nengo_logo_color": "#a8acaf",
-    "analytics_id": "UA-41658423-2",
+    "tagmanager_id": "GTM-KWCR2HN",
 }
 html_redirects = [
     ("backend_api.html", "backend-api.html"),
