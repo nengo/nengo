@@ -41,7 +41,7 @@ if np.__version__ >= '1.14':
 # -- sphinx.ext.intersphinx
 intersphinx_mapping = {
     "nengo": ("https://www.nengo.ai/nengo/", None),
-    "numpy": ("https://docs.scipy.org/doc/numpy", None),
+    "numpy": ("https://numpy.org/doc/stable", None),
     "python": ("https://docs.python.org/3", None),
     "scipy": ("https://docs.scipy.org/doc/scipy/reference", None),
     "sklearn": ("https://scikit-learn.org/dev", None),
