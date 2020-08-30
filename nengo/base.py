@@ -246,13 +246,13 @@ class Process(FrozenObject):
 
     Parameters
     ----------
-    default_size_in : int
+    default_size_in : int, optional
         Sets the default size in for nodes using this process.
-    default_size_out : int
+    default_size_out : int, optional
         Sets the default size out for nodes running this process. Also,
         if ``d`` is not specified in `~.Process.run` or `~.Process.run_steps`,
         this will be used.
-    default_dt : float
+    default_dt : float, optional
         If ``dt`` is not specified in `~.Process.run`, `~.Process.run_steps`,
         `~.Process.ntrange`, or `~.Process.trange`, this will be used.
     seed : int, optional
@@ -301,7 +301,7 @@ class Process(FrozenObject):
             Output dimensionality. If None, ``default_size_out`` will be used.
         dt : float, optional
             Simulation timestep. If None, ``default_dt`` will be used.
-        rng : `numpy.random.RandomState`
+        rng : `numpy.random.RandomState`, optional
             Random number generator used for stochstic processes.
         copy : bool, optional
             If True, a new output array will be created for output.
@@ -360,7 +360,7 @@ class Process(FrozenObject):
 
             .. versionadded:: 3.1.0
 
-        dtype : `numpy.dtype`
+        dtype : `numpy.dtype`, optional
             The data type requested by the builder. If `None`, then this
             function is free to choose the best type for the signals involved.
 
@@ -412,7 +412,7 @@ class Process(FrozenObject):
             Output dimensionality. If None, ``default_size_out`` will be used.
         dt : float, optional
             Simulation timestep. If None, ``default_dt`` will be used.
-        rng : `numpy.random.RandomState`
+        rng : `numpy.random.RandomState`, optional
             Random number generator used for stochstic processes.
         """
         dt = self.default_dt if dt is None else dt
@@ -433,7 +433,7 @@ class Process(FrozenObject):
             Output dimensionality. If None, ``default_size_out`` will be used.
         dt : float, optional
             Simulation timestep. If None, ``default_dt`` will be used.
-        rng : `numpy.random.RandomState`
+        rng : `numpy.random.RandomState`, optional
             Random number generator used for stochstic processes.
         """
         shape_in = as_shape(0)
