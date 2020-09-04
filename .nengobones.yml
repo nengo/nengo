@@ -98,6 +98,7 @@ setup_cfg:
       - spa
     disable:
       - missing-docstring
+      - redefined-outer-name
     known_third_party:
       - mpl_toolkits
       - pytest_allclose
