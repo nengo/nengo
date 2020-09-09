@@ -3,7 +3,9 @@
 Used by nengo.rc in order to present file sizes to users in
 human-readable formats.
 
-This code adapted from https://goo.gl/zeJZl under the MIT License.
+This code adapted from
+https://web.archive.org/web/20200817051754/http://code.activestate.com/recipes/578019-bytes-to-human-human-to-bytes-converter/?in=user-4178764
+under the MIT License.
 """
 
 
