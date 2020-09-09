@@ -14,11 +14,12 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.mathjax",
     "sphinx.ext.todo",
-    "sphinx.ext.viewcode",
     "nbsphinx",
     "nengo_sphinx_theme",
     "nengo_sphinx_theme.ext.backoff",
     "nengo_sphinx_theme.ext.redirects",
+    "nengo_sphinx_theme.ext.sourcelinks",
+    "notfound.extension",
     "numpydoc",
     "nengo_sphinx_theme.ext.autoautosummary",
     "nengo_sphinx_theme.ext.resolvedefaults",
@@ -50,11 +51,15 @@ intersphinx_mapping = {
 # -- sphinx.ext.todo
 todo_include_todos = True
 
-# -- numpydoc config
-numpydoc_show_class_members = False
-
 # -- nbsphinx
 nbsphinx_timeout = -1
+
+# -- notfound.extension
+notfound_template = "404.html"
+notfound_urls_prefix = "/nengo/"
+
+# -- numpydoc config
+numpydoc_show_class_members = False
 
 # -- nengo_sphinx_theme.ext.autoautosummary
 autoautosummary_change_modules = {
@@ -89,6 +94,10 @@ autoautosummary_change_modules = {
         "nengo.builder.signal.Signal",
     ],
 }
+
+# -- nengo_sphinx_theme.ext.sourcelinks
+sourcelinks_module = "nengo"
+sourcelinks_url = "https://github.com/nengo/nengo"
 
 # -- sphinx
 nitpicky = True
