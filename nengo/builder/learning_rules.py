@@ -1,7 +1,7 @@
 import numpy as np
 
 from nengo.builder import Builder, Operator, Signal
-from nengo.builder.operator import Copy, Reset
+from nengo.builder.operator import Copy, DotInc, Reset
 from nengo.connection import LearningRule
 from nengo.ensemble import Ensemble
 from nengo.exceptions import BuildError
@@ -35,10 +35,6 @@ class SimPES(Operator):
         The synaptic weight change to be applied, :math:`\Delta \omega_{ij}`.
     learning_rate : float
         The scalar learning rate, :math:`\kappa`.
-    encoders : Signal, optional
-        If not None, multiply the error signal by these post-synaptic
-        encoders (in the case that we want to learn a neuron-to-neuron
-        weight matrix instead of decoder weights).
     tag : str, optional
         A label associated with the operator, for debugging purposes.
 
@@ -52,10 +48,6 @@ class SimPES(Operator):
         The synaptic weight change to be applied, :math:`\Delta \omega_{ij}`.
     learning_rate : float
         The scalar learning rate, :math:`\kappa`.
-    encoders : Signal, optional
-        If not None, multiply the error signal by these post-synaptic
-        encoders (in the case that we want to learn a neuron-to-neuron
-        weight matrix instead of decoder weights).
     tag : str, optional
         A label associated with the operator, for debugging purposes.
 
@@ -63,29 +55,23 @@ class SimPES(Operator):
     -----
     1. sets ``[]``
     2. incs ``[]``
-    3. reads ``[pre_filtered, error, encoders]``
+    3. reads ``[pre_filtered, error]``
     4. updates ``[delta]``
     """
 
-    def __init__(
-        self, pre_filtered, error, delta, learning_rate, encoders=None, tag=None
-    ):
+    def __init__(self, pre_filtered, error, delta, learning_rate, tag=None):
         super().__init__(tag=tag)
 
         self.learning_rate = learning_rate
 
         self.sets = []
         self.incs = []
-        self.reads = [pre_filtered, error] + ([] if encoders is None else [encoders])
+        self.reads = [pre_filtered, error]
         self.updates = [delta]
 
     @property
     def delta(self):
         return self.updates[0]
-
-    @property
-    def encoders(self):
-        return None if len(self.reads) < 3 else self.reads[2]
 
     @property
     def error(self):
@@ -106,16 +92,8 @@ class SimPES(Operator):
         n_neurons = pre_filtered.shape[0]
         alpha = -self.learning_rate * dt / n_neurons
 
-        if self.encoders is None:
-
-            def step_simpes():
-                np.outer(alpha * error, pre_filtered, out=delta)
-
-        else:
-            encoders = signals[self.encoders]
-
-            def step_simpes():
-                np.outer(alpha * np.dot(encoders, error), pre_filtered, out=delta)
+        def step_simpes():
+            np.outer(alpha * error, pre_filtered, out=delta)
 
         return step_simpes
 
@@ -720,16 +698,23 @@ def build_pes(model, pes, rule):
     acts = build_or_passthrough(model, pes.pre_synapse, model.sig[conn.pre_obj]["out"])
 
     if conn.is_decoded:
-        encoders = None
+        local_error = error
     else:
+        # multiply error by post encoders to get a per-neuron error
+        #   i.e. local_error = dot(encoders, error)
         post = get_post_ens(conn)
+        if conn.post_slice is not None and not isinstance(conn.post_slice, slice):
+            raise BuildError(
+                "PES learning rule does not support advanced indexing on non-decoded "
+                "connections"
+            )
         encoders = model.sig[post]["encoders"][:, conn.post_slice]
 
-    model.add_op(
-        SimPES(
-            acts, error, model.sig[rule]["delta"], pes.learning_rate, encoders=encoders
-        )
-    )
+        local_error = Signal(shape=(post.n_neurons,))
+        model.add_op(Reset(local_error))
+        model.add_op(DotInc(encoders, error, local_error, tag="PES:encode"))
+
+    model.add_op(SimPES(acts, local_error, model.sig[rule]["delta"], pes.learning_rate))
 
     # expose these for probes
     model.sig[rule]["error"] = error

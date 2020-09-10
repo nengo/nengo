@@ -141,7 +141,7 @@ def test_linearfilter_y0(allclose):
     v = 9.81
     x = v * np.ones(10)
     assert allclose(synapse.filt(x, y0=v), v)
-    assert not allclose(synapse.filt(x, y0=0), v, record_rmse=False)
+    assert not allclose(synapse.filt(x, y0=0), v, record_rmse=False, print_fail=0)
 
     # --- y0 does not work for high-order synapse when DC gain is zero
     synapse = LinearFilter([1, 0], [1, 1])
@@ -286,7 +286,7 @@ def test_combined_delay(Simulator, allclose):
     # for sys1, this comes from two levels of filtering
     # for sys2, this comes from one level of filtering + delay in sys2
     assert allclose(sim.data[p1][:2], 0)
-    assert not allclose(sim.data[p1][2], 0, record_rmse=False)
+    assert not allclose(sim.data[p1][2], 0, record_rmse=False, print_fail=0)
 
 
 def test_synapseparam():

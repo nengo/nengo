@@ -3,7 +3,7 @@ from nengo.builder.tests.test_operator import _test_operator_arg_attributes
 
 
 def test_simpes():
-    argnames = ["pre_filtered", "error", "delta", "learning_rate", "encoders"]
+    argnames = ["pre_filtered", "error", "delta", "learning_rate"]
     non_signals = ["learning_rate"]
     _, sim = _test_operator_arg_attributes(SimPES, argnames, non_signals=non_signals)
 

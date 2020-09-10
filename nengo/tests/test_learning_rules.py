@@ -84,7 +84,9 @@ def _test_pes(
     tend = t > 0.4
     assert allclose(sim.data[post_p][tend], vout, atol=0.05)
     assert allclose(sim.data[error_p][tend], 0, atol=0.05)
-    assert not allclose(weights[0], weights[-1], atol=1e-5, record_rmse=False)
+    assert not allclose(
+        weights[0], weights[-1], atol=1e-5, record_rmse=False, print_fail=0
+    )
 
 
 def test_pes_ens_ens(Simulator, NonDirectNeuronType, plt, seed, allclose):
@@ -284,6 +286,21 @@ def test_pes_cycle(Simulator):
         pass
 
 
+def test_pes_adv_idx(Simulator):
+    with nengo.Network() as net:
+        pre = nengo.Ensemble(10, 1)
+        post = nengo.Ensemble(10, 1)
+        nengo.Connection(
+            pre.neurons,
+            post.neurons[[0, 2, 3]],
+            learning_rule_type=nengo.PES(),
+            transform=np.ones((3, pre.n_neurons)),
+        )
+
+    with pytest.raises(BuildError, match="does not support advanced indexing"):
+        Simulator(net)
+
+
 @pytest.mark.parametrize(
     "rule_type, solver",
     [
@@ -332,7 +349,7 @@ def test_unsupervised(Simulator, rule_type, solver, seed, rng, plt, allclose):
     plt.ylabel("Weights")
 
     assert not allclose(
-        sim.data[weights_p][0], sim.data[weights_p][-1], record_rmse=False
+        sim.data[weights_p][0], sim.data[weights_p][-1], record_rmse=False, print_fail=0
     )
 
 
@@ -393,7 +410,10 @@ def test_dt_dependence(Simulator, plt, learning_rule, seed, rng, allclose):
 
     assert allclose(trans_data[0], trans_data[1], atol=3e-3)
     assert not allclose(
-        sim.data[m.weights_p][0], sim.data[m.weights_p][-1], record_rmse=False
+        sim.data[m.weights_p][0],
+        sim.data[m.weights_p][-1],
+        record_rmse=False,
+        print_fail=0,
     )
 
 
@@ -574,7 +594,9 @@ def test_voja_modulate(Simulator, NonDirectNeuronType, seed, allclose):
 
     # Check that encoders changed during first 0.5s
     i = np.where(tend)[0][0]  # first time point after changeover
-    assert not allclose(sim.data[p_enc][0], sim.data[p_enc][i], record_rmse=False)
+    assert not allclose(
+        sim.data[p_enc][0], sim.data[p_enc][i], record_rmse=False, print_fail=0
+    )
 
 
 def test_frozen():

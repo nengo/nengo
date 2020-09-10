@@ -377,8 +377,12 @@ def test_noise_gen(Simulator, NonDirectNeuronType, seed, plt, allclose):
 
     assert np.sum(sim.data[pos_p], axis=0) >= np.sum(sim.data[normal_p], axis=0)
     assert np.sum(sim.data[normal_p], axis=0) >= np.sum(sim.data[neg_p], axis=0)
-    assert not allclose(sim.data[normal_p], sim.data[pos_p], record_rmse=False)
-    assert not allclose(sim.data[normal_p], sim.data[neg_p], record_rmse=False)
+    assert not allclose(
+        sim.data[normal_p], sim.data[pos_p], record_rmse=False, print_fail=0
+    )
+    assert not allclose(
+        sim.data[normal_p], sim.data[neg_p], record_rmse=False, print_fail=0
+    )
 
 
 def test_noise_copies_ok(Simulator, NonDirectNeuronType, seed, plt, allclose):

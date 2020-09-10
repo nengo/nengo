@@ -299,7 +299,7 @@ def test_probe_cache(Simulator, allclose):
         sim.run_steps(10)
         ub = np.array(sim.data[up])
 
-    assert not allclose(ua, ub, atol=1e-1, record_rmse=False)
+    assert not allclose(ua, ub, atol=1e-1, record_rmse=False, print_fail=0)
 
 
 def test_invalid_run_time(Simulator):

@@ -610,10 +610,8 @@ def test_operators():
         repr(SimPyFunc(sig, lambda x: 0.0, True, sig, tag="tag")),
         "<SimPyFunc 'tag' at 0x*>",
     )
-    assert fnmatch(repr(SimPES(sig, sig, sig, sig, 0.1)), "<SimPES at 0x*>")
-    assert fnmatch(
-        repr(SimPES(sig, sig, sig, sig, 0.1, tag="tag")), "<SimPES 'tag' at 0x*>"
-    )
+    assert fnmatch(repr(SimPES(sig, sig, sig, 0.1)), "<SimPES at 0x*>")
+    assert fnmatch(repr(SimPES(sig, sig, sig, 0.1, tag="tag")), "<SimPES 'tag' at 0x*>")
     assert fnmatch(repr(SimBCM(sig, sig, sig, sig, 0.1)), "<SimBCM at 0x*>")
     assert fnmatch(
         repr(SimBCM(sig, sig, sig, sig, 0.1, tag="tag")), "<SimBCM 'tag' at 0x*>"
