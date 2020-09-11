@@ -563,6 +563,9 @@ class Connection(NengoObject):
     @property
     def is_decoded(self):
         return not (
+            # TODO: We should require pre to be Ensemble here. A weight solver with
+            # pre==Neurons and weights=True will ignore the solver, but care about
+            # solver.weights here
             self.solver.weights
             or (
                 isinstance(self.pre_obj, Neurons) and isinstance(self.post_obj, Neurons)

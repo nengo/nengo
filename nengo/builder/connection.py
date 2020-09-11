@@ -269,6 +269,7 @@ def build_connection(model, conn):
         if isinstance(conn.post_obj, Ensemble) and conn.solver.weights:
             model.sig[conn]["out"] = model.sig[conn.post_obj.neurons]["in"]
 
+            # TODO: use encoders here
             encoders = model.params[conn.post_obj].scaled_encoders.T
             encoders = encoders[conn.post_slice]
 
@@ -279,6 +280,9 @@ def build_connection(model, conn):
         in_signal = slice_signal(model, in_signal, conn.pre_slice)
 
     # Build transform
+    # TODO: this first case should only execute if we've used the solver.
+    # Passing a non-compositional solver with weights=True to e.g. a neuron->neuron
+    # connection results in an error.
     if conn.solver.weights and not conn.solver.compositional:
         # special case for non-compositional weight solvers, where
         # the solver is solving for the full weight matrix. so we don't
@@ -300,7 +304,8 @@ def build_connection(model, conn):
     # Store the weighted-filtered output in case we want to probe it
     model.sig[conn]["weighted"] = weighted
 
-    if isinstance(conn.post_obj, Neurons):
+    # TODO: do this branch for post_obj==Ensemble and weight solver (that is used!)
+    if isinstance(conn.post_obj, Neurons) or not conn.is_decoded:
         # Apply neuron gains (we don't need to do this if we're connecting to
         # an Ensemble, because the gains are rolled into the encoders)
         gains = Signal(
