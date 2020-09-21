@@ -46,7 +46,7 @@ class LearningRuleType(FrozenObject, SupportDefaultsMixin):
     * ``'post'``: vector error signal in post-object space
     * ``'mid'``: vector error signal in the ``conn.size_mid`` space
     * ``'pre_state'``: vector error signal in pre-synaptic ensemble space
-    * ``'post_state'``: vector error signal in pre-synaptic ensemble space
+    * ``'post_state'``: vector error signal in post-synaptic ensemble space
 
     The difference between ``'post_state'`` and ``'post'`` is that with the
     former, if a ``Neurons`` object is passed, it will use the dimensionality

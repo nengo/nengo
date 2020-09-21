@@ -31,6 +31,7 @@ def _test_pes(
     function=None,
     transform=np.array(1.0),
     rate=1e-3,
+    post_slice=None,
 ):
     vout = np.array(vin) if vout is None else vout
 
@@ -45,9 +46,16 @@ def _test_pes(
 
         nengo.Connection(stim, pre)
 
-        postslice = post[: target.size_out] if target.size_out < stim.size_out else post
         pre = pre.neurons if pre_neurons else pre
-        post = post.neurons if post_neurons else postslice
+        if post_slice is None:
+            post_decoded = post
+            post = post.neurons if post_neurons else post
+        else:
+            # if post_neurons and post_slice then we're doing the slicing in the
+            # neuron space, so leave the decoded output un-sliced
+            post_decoded = post if post_neurons else post[post_slice]
+            post = post.neurons if post_neurons else post
+            post = post[post_slice]
 
         conn = nengo.Connection(
             pre,
@@ -60,10 +68,10 @@ def _test_pes(
             conn.solver = nengo.solvers.LstsqL2(weights=True)
 
         nengo.Connection(target, error, transform=-1)
-        nengo.Connection(postslice, error)
+        nengo.Connection(post_decoded, error)
         nengo.Connection(error, conn.learning_rule)
 
-        post_p = nengo.Probe(postslice, synapse=0.03)
+        post_p = nengo.Probe(post_decoded, synapse=0.03)
         error_p = nengo.Probe(error, synapse=0.03)
 
         weights_p = nengo.Probe(conn, "weights", sample_every=0.01)
@@ -106,7 +114,15 @@ def test_pes_ens_slice(Simulator, plt, seed, allclose):
     vout = [vin[0] ** 2 + vin[1] ** 2]
     function = lambda x: [x[0] - x[1]]
     _test_pes(
-        Simulator, nengo.LIF, plt, seed, allclose, vin=vin, vout=vout, function=function
+        Simulator,
+        nengo.LIF,
+        plt,
+        seed,
+        allclose,
+        vin=vin,
+        vout=vout,
+        function=function,
+        post_slice=slice(0, 1),
     )
 
 
@@ -124,6 +140,24 @@ def test_pes_neuron_neuron(Simulator, plt, seed, rng, allclose):
         n=n,
         transform=initial_weights,
         rate=7e-4,
+    )
+
+
+def test_pes_neuron_neuron_slice(Simulator, plt, seed, rng, allclose):
+    n = 200
+    initial_weights = rng.uniform(high=4e-4, size=(n // 2, n))
+    _test_pes(
+        Simulator,
+        nengo.LIF,
+        plt,
+        seed,
+        allclose,
+        pre_neurons=True,
+        post_neurons=True,
+        n=n,
+        transform=initial_weights,
+        rate=7e-4,
+        post_slice=slice(0, n // 2),
     )
 
 

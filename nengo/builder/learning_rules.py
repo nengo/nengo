@@ -708,9 +708,17 @@ def build_pes(model, pes, rule):
                 "PES learning rule does not support advanced indexing on non-decoded "
                 "connections"
             )
-        encoders = model.sig[post]["encoders"][:, conn.post_slice]
 
-        local_error = Signal(shape=(post.n_neurons,))
+        encoders = model.sig[post]["encoders"]
+        # slice along neuron dimension if connecting to a neuron object, otherwise
+        # slice along state dimension
+        encoders = (
+            encoders[:, conn.post_slice]
+            if isinstance(conn.post_obj, Ensemble)
+            else encoders[conn.post_slice, :]
+        )
+
+        local_error = Signal(shape=(encoders.shape[0],))
         model.add_op(Reset(local_error))
         model.add_op(DotInc(encoders, error, local_error, tag="PES:encode"))
 

@@ -95,12 +95,15 @@ Release history
 - Fixed a bug in the validation of ``Choice`` distributions. (`#1630`_)
 - Fixed a bug where a ``Signal`` did not register as sharing memory with itself.
   (`#1627`_)
+- Fixed a shape error when applying PES learning to a neuron-to-neuron connection with a
+  slice on the post-synaptic neurons. (`#1640`_)
 
 .. _#1609: https://github.com/nengo/nengo/pull/1609
 .. _#1627: https://github.com/nengo/nengo/pull/1627
 .. _#1628: https://github.com/nengo/nengo/pull/1628
 .. _#1629: https://github.com/nengo/nengo/pull/1629
 .. _#1630: https://github.com/nengo/nengo/pull/1630
+.. _#1640: https://github.com/nengo/nengo/pull/1640
 
 3.0.0 (November 18, 2019)
 =========================
