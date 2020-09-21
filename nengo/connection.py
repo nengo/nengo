@@ -60,7 +60,14 @@ class ConnectionLearningRuleTypeParam(LearningRuleTypeParam):
             if not isinstance(conn.post_obj, Ensemble):
                 raise ValidationError(
                     "'post' must be of type 'Ensemble' (got %r) "
-                    "for learning rule '%s'" % (type(conn.pre_obj).__name__, rule),
+                    "for learning rule '%s'" % (type(conn.post_obj).__name__, rule),
+                    attr=self.name,
+                    obj=conn,
+                )
+            if conn._to_neurons:
+                raise ValidationError(
+                    "Cannot use an encoder learning rule with a direct neural "
+                    "connection (since encoders are not used in that case).",
                     attr=self.name,
                     obj=conn,
                 )
@@ -91,10 +98,10 @@ class ConnectionLearningRuleTypeParam(LearningRuleTypeParam):
 
         if rule.modifies == "weights":
             # If the rule modifies 'weights', then it must have full weights
-            if conn.is_decoded:
+            if not conn._to_neurons:
                 raise ValidationError(
-                    "Learning rule '%s' can not be applied to decoded "
-                    "connections. Try setting solver.weights to True or "
+                    "Learning rule '%s' can only be applied on connections to neurons. "
+                    "Try setting `solver.weights` to True or "
                     "connecting between two Neurons objects." % rule,
                     attr=self.name,
                     obj=conn,
@@ -411,10 +418,6 @@ class Connection(NengoObject):
 
     Attributes
     ----------
-    is_decoded : bool
-        True if and only if the connection is decoded. This will not occur
-        when ``solver.weights`` is True or both pre and post are
-        `~nengo.ensemble.Neurons`.
     function : callable
         The given function.
     function_size : int
@@ -562,11 +565,24 @@ class Connection(NengoObject):
 
     @property
     def is_decoded(self):
+        warnings.warn(
+            "is_decoded is deprecated; directly check the pre/post objects for the "
+            "properties of interest instead",
+            DeprecationWarning,
+        )
         return not (
             self.solver.weights
             or (
                 isinstance(self.pre_obj, Neurons) and isinstance(self.post_obj, Neurons)
             )
+        )
+
+    @property
+    def _to_neurons(self):
+        return isinstance(self.post_obj, Neurons) or (
+            isinstance(self.pre_obj, Ensemble)
+            and isinstance(self.post_obj, Ensemble)
+            and self.solver.weights
         )
 
     @property

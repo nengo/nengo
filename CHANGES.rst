@@ -79,6 +79,9 @@ Release history
 
 - ``NeuronType.step`` replaces the ``NeuronType.step_math`` method,
   which will be removed in Nengo 4.0.0. (`#1609`_)
+- ``Connection.is_decoded`` is deprecated, as the definition of whether a Connection
+  is decoded or not was ambiguous. Instead we recommend directly checking the pre/post
+  objects for the properties of interest. (`#1640`_)
 
 **Fixed**
 
@@ -97,6 +100,12 @@ Release history
   (`#1627`_)
 - Fixed a shape error when applying PES learning to a neuron-to-neuron connection with a
   slice on the post-synaptic neurons. (`#1640`_)
+- Fixed a shape error when applying PES learning to a neuron->ensemble connection with
+  a weight solver. (`#1640`_)
+- Fixed a shape error when applying PES learning to an ensemble->neuron connection.
+  (`#1640`_)
+- Fixed a shape error when applying PES learning with a slice on the pre-synaptic
+  object. (`#1640`_)
 
 .. _#1609: https://github.com/nengo/nengo/pull/1609
 .. _#1627: https://github.com/nengo/nengo/pull/1627

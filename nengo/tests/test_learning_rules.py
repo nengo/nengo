@@ -177,6 +177,23 @@ def test_pes_neuron_ens(Simulator, plt, seed, rng, allclose):
     )
 
 
+def test_pes_ens_neurons(Simulator, plt, seed, rng, allclose):
+    n = 200
+    initial_weights = np.ones((n, 2))
+    _test_pes(
+        Simulator,
+        nengo.LIF,
+        plt,
+        seed,
+        allclose,
+        pre_neurons=False,
+        post_neurons=True,
+        n=n,
+        transform=initial_weights,
+        rate=1e-4,
+    )
+
+
 def test_pes_transform(Simulator, seed, allclose):
     """Test behaviour of PES when function and transform both defined."""
     n = 200
@@ -333,6 +350,51 @@ def test_pes_adv_idx(Simulator):
 
     with pytest.raises(BuildError, match="does not support advanced indexing"):
         Simulator(net)
+
+
+@pytest.mark.parametrize("pre_neurons", (True, False))
+@pytest.mark.parametrize("post_neurons", (True, False))
+@pytest.mark.parametrize("weight_solver", (True, False))
+@pytest.mark.parametrize("pre_slice", (True, False))
+@pytest.mark.parametrize("post_slice", (True, False))
+def test_pes_pre_post_varieties(
+    Simulator, pre_neurons, post_neurons, weight_solver, pre_slice, post_slice
+):
+
+    with nengo.Network() as net:
+        pre = nengo.Ensemble(10, 12)
+        post = nengo.Ensemble(20, 22)
+        pre_size = pre.n_neurons if pre_neurons else pre.dimensions
+        post_size = post.n_neurons if post_neurons else post.dimensions
+        if pre_slice:
+            pre_size //= 2
+            pre_slice = slice(0, pre_size)
+        else:
+            pre_slice = slice(None)
+        if post_slice:
+            post_size //= 2
+            post_slice = slice(0, post_size)
+        else:
+            post_slice = slice(None)
+
+        nengo.Connection(
+            (pre.neurons if pre_neurons else pre)[pre_slice],
+            (post.neurons if post_neurons else post)[post_slice],
+            solver=nengo.solvers.LstsqL2(weights=weight_solver),
+            learning_rule_type=nengo.PES(),
+            transform=np.ones((post_size, pre_size)),
+        )
+
+    apply_encoders = post_neurons or (
+        not pre_neurons and not post_neurons and weight_solver
+    )
+
+    with Simulator(net) as sim:
+        assert (
+            any(op.tag == "PES:encode" for op in sim.model.operators) == apply_encoders
+        )
+
+        sim.step()
 
 
 @pytest.mark.parametrize(
@@ -765,18 +827,15 @@ def test_null_error():
         nengo.Connection(a.neurons, b, learning_rule_type=Voja(), transform=None)
 
 
-def test_encoder_learning_undecoded_error(Simulator):
-    with nengo.Network() as net:
-        nengo.Connection(
-            nengo.Ensemble(2, 2),
-            nengo.Ensemble(2, 2),
-            solver=nengo.solvers.LstsqL2(weights=True),
-            learning_rule_type=nengo.Voja(),
-        )
-
-    with pytest.raises(ValueError, match="connection must be decoded.*encoder learn"):
-        with Simulator(net):
-            pass
+def test_encoder_learning_undecoded_error():
+    with nengo.Network():
+        with pytest.raises(ValidationError, match="encoders are not used"):
+            nengo.Connection(
+                nengo.Ensemble(2, 2),
+                nengo.Ensemble(2, 2),
+                solver=nengo.solvers.LstsqL2(weights=True),
+                learning_rule_type=nengo.Voja(),
+            )
 
 
 def test_bad_learning_rule_modifies(Simulator):

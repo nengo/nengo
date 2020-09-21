@@ -1,9 +1,10 @@
 import numpy as np
 
 from nengo.builder import Builder, Operator, Signal
+from nengo.builder.connection import slice_signal
 from nengo.builder.operator import Copy, DotInc, Reset
 from nengo.connection import LearningRule
-from nengo.ensemble import Ensemble
+from nengo.ensemble import Ensemble, Neurons
 from nengo.exceptions import BuildError
 from nengo.learning_rules import BCM, Oja, PES, Voja
 from nengo.node import Node
@@ -494,10 +495,6 @@ def build_learning_rule(model, rule):
 
     # --- Set up delta signal
     if rule.modifies == "encoders":
-        if not conn.is_decoded:
-            raise ValueError(
-                "The connection must be decoded in order to use encoder learning."
-            )
         post = get_post_ens(conn)
         target = model.sig[post]["encoders"]
         tag = "encoders += delta"
@@ -695,15 +692,23 @@ def build_pes(model, pes, rule):
     model.sig[rule]["in"] = error  # error connection will attach here
 
     # Filter pre-synaptic activities with pre_synapse
-    acts = build_or_passthrough(model, pes.pre_synapse, model.sig[conn.pre_obj]["out"])
+    acts = build_or_passthrough(
+        model,
+        pes.pre_synapse,
+        slice_signal(
+            model,
+            model.sig[conn.pre_obj]["out"],
+            conn.pre_slice,
+        )
+        if isinstance(conn.pre_obj, Neurons)
+        else model.sig[conn.pre_obj]["out"],
+    )
 
-    if conn.is_decoded:
-        local_error = error
-    else:
+    if conn._to_neurons:
         # multiply error by post encoders to get a per-neuron error
         #   i.e. local_error = dot(encoders, error)
         post = get_post_ens(conn)
-        if conn.post_slice is not None and not isinstance(conn.post_slice, slice):
+        if not isinstance(conn.post_slice, slice):
             raise BuildError(
                 "PES learning rule does not support advanced indexing on non-decoded "
                 "connections"
@@ -721,6 +726,8 @@ def build_pes(model, pes, rule):
         local_error = Signal(shape=(encoders.shape[0],))
         model.add_op(Reset(local_error))
         model.add_op(DotInc(encoders, error, local_error, tag="PES:encode"))
+    else:
+        local_error = error
 
     model.add_op(SimPES(acts, local_error, model.sig[rule]["delta"], pes.learning_rate))
 

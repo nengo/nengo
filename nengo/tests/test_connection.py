@@ -1015,10 +1015,12 @@ def test_connectionlearningruletypeparam():
         a = nengo.Ensemble(10, 1)
         b = nengo.Ensemble(11, 1)
 
-        with pytest.raises(ValueError):  # need a 2D transform for BCM
+        with pytest.raises(
+            ValidationError, match="can only be applied on connections to neurons"
+        ):
             nengo.Connection(a, b, learning_rule_type=nengo.BCM())
 
-        with pytest.raises(ValueError):  # transform must be correct shape
+        with pytest.raises(ValidationError, match="does not match expected shape"):
             nengo.Connection(
                 a, b, transform=np.ones((10, 11)), learning_rule_type=nengo.BCM()
             )
@@ -1214,3 +1216,9 @@ def test_learning_transform_shape_error(Simulator):
     ):
         with Simulator(net):
             pass
+
+
+def test_is_decoded_deprecation():
+    with pytest.warns(DeprecationWarning, match="is_decoded is deprecated"):
+        with nengo.Network():
+            assert nengo.Connection(nengo.Node(0), nengo.Node(size_in=1)).is_decoded
