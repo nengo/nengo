@@ -1,6 +1,7 @@
 import errno
 import multiprocessing
 import os
+import pickle
 import sys
 from subprocess import CalledProcessError
 
@@ -178,6 +179,19 @@ def test_corrupted_decoder_cache_index(tmp_path):
     with DecoderCache(cache_dir=cache_dir):
         pass
     assert len(os.listdir(cache_dir)) == 2  # index, index.lock
+
+
+def test_too_new_decoder_cache_index(tmp_path):
+    cache_dir = str(tmp_path)
+
+    # Write index with super large version numbers
+    with open(os.path.join(cache_dir, CacheIndex._INDEX), "wb") as f:
+        pickle.dump((1000, 1000), f)
+
+    with DecoderCache(cache_dir=cache_dir) as cache:
+        solver_mock = SolverMock()
+        cache.wrap_solver(solver_mock)(**get_solver_test_args())
+        assert SolverMock.n_calls[solver_mock] == 1
 
 
 def test_decoder_cache_invalidation(tmp_path):

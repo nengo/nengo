@@ -33,6 +33,11 @@ Release history
 - Removed ``nengo.utils.graphs.graph`` (this was a small utility function for building
   graphs that was only used in tests). (`#1654`_)
 
+**Fixed**
+
+- Fixed a bug with a problematic cache index breaking decoder solvers. The solver now
+  avoids using the cache, rather than crashing. (`#1649`_)
+
 .. _#1649: https://github.com/nengo/nengo/pull/1649
 .. _#1654: https://github.com/nengo/nengo/pull/1654
 
