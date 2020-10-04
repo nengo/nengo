@@ -643,11 +643,11 @@ class SparseDotInc(DotInc):
     """
 
     def __init__(self, A, X, Y, tag=None):
-        if not A.sparse:
-            raise BuildError("%s: A must be a sparse Signal")
-
         # Disallow reshaping
         super().__init__(A, X, Y, reshape=False, tag=tag)
+
+        if not A.sparse:
+            raise BuildError("%s: A must be a sparse Signal" % self)
 
 
 class BsrDotInc(DotInc):
