@@ -1,4 +1,5 @@
 from nengo.builder import Builder, Signal
+from nengo.builder.connection import slice_signal
 from nengo.builder.operator import Copy, Reset
 from nengo.connection import Connection, LearningRule
 from nengo.ensemble import Ensemble, Neurons
@@ -54,7 +55,7 @@ def signal_probe(model, key, probe):
         )
 
     if probe.slice is not None:
-        sig = sig[probe.slice]
+        sig = slice_signal(model, sig, probe.slice)
 
     if probe.synapse is None:
         model.sig[probe]["in"] = sig

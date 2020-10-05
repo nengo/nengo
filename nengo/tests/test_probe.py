@@ -258,3 +258,17 @@ def test_update_timing(Simulator, allclose):
 
     assert allclose(sim.data[sig_p][0], 0)
     assert allclose(sim.data[sig_p][1:], 2)
+
+
+def test_neuron_probe(Simulator, allclose):
+    with nengo.Network() as net:
+        ens = nengo.Ensemble(100, 1)
+        p = nengo.Probe(ens.neurons)
+        p_slice = nengo.Probe(ens.neurons[::2])
+        p_adv = nengo.Probe(ens.neurons[list(range(0, ens.n_neurons, 2))])
+
+    with Simulator(net) as sim:
+        sim.run_steps(100)
+
+    assert allclose(sim.data[p][:, ::2], sim.data[p_slice])
+    assert allclose(sim.data[p_slice], sim.data[p_adv])
