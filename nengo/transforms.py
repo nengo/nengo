@@ -487,13 +487,10 @@ class Convolution(Transform):
             output_shape += 1
         output_shape /= self.strides
         output_shape = tuple(np.ceil(output_shape).astype(rc.int_dtype))
-        output_shape = (
-            output_shape + (self.n_filters,)
-            if self.channels_last
-            else (self.n_filters,) + output_shape
-        )
 
-        return ChannelShape(output_shape, channels_last=self.channels_last)
+        return ChannelShape.from_space_and_channels(
+            output_shape, n_filters, channels_last=self.channels_last
+        )
 
 
 class ChannelShape:
@@ -503,13 +500,37 @@ class ChannelShape:
 
     Parameters
     ----------
-    shape : tuple of int
+    shape : iterable of int
         Signal shape
     channels_last : bool, optional
         If True (default), the last item in ``shape`` represents the channels,
         and the rest are spatial dimensions. Otherwise, the first item in
         ``shape`` is the channel dimension.
     """
+
+    @classmethod
+    def from_space_and_channels(cls, spatial_shape, n_channels, channels_last=True):
+        """Create a ChannelShape from a spatial shape and number of channels.
+
+        .. versionadded:: 3.2.0
+
+        Parameters
+        ----------
+        spatial_shape : iterable of int
+            The spatial part of the shape (not including channels).
+        n_channels : int
+            The number of channels.
+        channels_last : bool, optional
+            If True (default), the last item in ``shape`` represents the channels,
+            and the rest are spatial dimensions. Otherwise, the first item in
+            ``shape`` is the channel dimension.
+        """
+        shape = (
+            tuple(spatial_shape) + (n_channels,)
+            if channels_last
+            else (n_channels,) + tuple(spatial_shape)
+        )
+        return cls(shape, channels_last=channels_last)
 
     def __init__(self, shape, channels_last=True):
         self.shape = tuple(shape)
