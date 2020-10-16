@@ -26,6 +26,8 @@ Release history
 
 - Added ``ChannelShape.from_space_and_channels`` to easily construct a ``ChannelShape``
   from a spatial shape and number of channels. (`#1648`_)
+- Added the ``ConvolutionTranspose`` transform to perform transpose convolution; this
+  can be used to achieve various forms of upsampling in deep networks. (`#1648`_)
 
 .. _#1648: https://github.com/nengo/nengo/pull/1648
 

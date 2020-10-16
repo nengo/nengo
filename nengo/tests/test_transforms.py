@@ -10,16 +10,29 @@ from nengo.exceptions import BuildError, ValidationError
 @pytest.mark.parametrize("padding", ("same", "valid"))
 @pytest.mark.parametrize("channels_last", (True, False))
 @pytest.mark.parametrize("fixed_kernel", (True, False))
+@pytest.mark.parametrize("transpose", (True, False))
 def test_convolution(
-    dimensions, padding, channels_last, fixed_kernel, Simulator, allclose, rng, seed
+    dimensions,
+    padding,
+    channels_last,
+    fixed_kernel,
+    transpose,
+    Simulator,
+    allclose,
+    rng,
+    seed,
 ):
     input_d = 4
     input_channels = 2
     output_channels = 5
     kernel_d = 3
-    kernel_size = (kernel_d,) if dimensions == 1 else (kernel_d, kernel_d)
-    output_d = input_d - kernel_d // 2 * 2 if padding == "valid" else input_d
+    output_d = (
+        input_d
+        if padding == "same"
+        else input_d + (1 if transpose else -1) * (kernel_d // 2 * 2)
+    )
 
+    kernel_size = (kernel_d,) if dimensions == 1 else (kernel_d, kernel_d)
     input_shape = (input_d, input_channels)
     kernel_shape = (kernel_d, input_channels, output_channels)
     output_shape = (output_d, output_channels)
@@ -33,26 +46,36 @@ def test_convolution(
         input_shape = tuple(np.roll(input_shape, 1))
         output_shape = tuple(np.roll(output_shape, 1))
 
-    with nengo.Network(seed=seed) as net:
-        x = rng.randn(*input_shape)
-        w = rng.randn(*kernel_shape) if fixed_kernel else nengo.dists.Uniform(-0.1, 0.1)
+    x = rng.randn(*input_shape)
+    w = rng.randn(*kernel_shape) if fixed_kernel else nengo.dists.Uniform(-0.1, 0.1)
 
+    if transpose:
+        transform = nengo.transforms.ConvolutionTranspose(
+            output_channels,
+            input_shape,
+            init=w,
+            padding=padding,
+            kernel_size=kernel_size,
+            strides=(1,) if dimensions == 1 else (1, 1),
+            channels_last=channels_last,
+        )
+    else:
+        transform = nengo.Convolution(
+            output_channels,
+            input_shape,
+            init=w,
+            padding=padding,
+            kernel_size=kernel_size,
+            strides=(1,) if dimensions == 1 else (1, 1),
+            channels_last=channels_last,
+        )
+
+    assert transform.output_shape.shape == output_shape
+
+    with nengo.Network(seed=seed) as net:
         a = nengo.Node(np.ravel(x))
         b = nengo.Node(size_in=np.prod(output_shape))
-        conn = nengo.Connection(
-            a,
-            b,
-            synapse=None,
-            transform=nengo.Convolution(
-                output_channels,
-                input_shape,
-                init=w,
-                padding=padding,
-                kernel_size=kernel_size,
-                strides=(1,) if dimensions == 1 else (1, 1),
-                channels_last=channels_last,
-            ),
-        )
+        conn = nengo.Connection(a, b, synapse=None, transform=transform)
         p = nengo.Probe(b)
 
         # check error handling
@@ -75,7 +98,15 @@ def test_convolution(
     if dimensions == 1:
         x = x[:, None, :]
         weights = weights[:, None, :, :]
-    truth = conv2d.conv2d(x[None, ...], weights, pad=padding.upper())[0]
+
+    if transpose:
+        outsize = (output_d, 1) if dimensions == 1 else (output_d, output_d)
+        truth = conv2d.conv2d_gradx(
+            weights, x[None, ...], xsize=outsize, pad=padding.upper()
+        )[0]
+    else:
+        truth = conv2d.conv2d(x[None, ...], weights, pad=padding.upper())[0]
+
     if not channels_last:
         truth = np.moveaxis(truth, -1, 0)
 
@@ -109,6 +140,26 @@ def test_convolution_nef(encoders, decoders, Simulator):
 def test_convolution_invalid():
     with pytest.raises(ValidationError, match="exceeds the spatial size"):
         nengo.transforms.Convolution(n_filters=2, input_shape=(3, 2, 1))
+
+    # valid output shape
+    nengo.transforms.ConvolutionTranspose(
+        n_filters=2, input_shape=(3, 2, 1), output_shape=(5, 4, 2)
+    )
+    with pytest.raises(ValidationError, match="number of dimensions"):
+        # too many dims in output shape
+        nengo.transforms.ConvolutionTranspose(
+            n_filters=2, input_shape=(3, 2, 1), output_shape=(5, 4, 2, 1)
+        )
+    with pytest.raises(ValidationError, match="number of channels"):
+        # too many channels in output shape
+        nengo.transforms.ConvolutionTranspose(
+            n_filters=2, input_shape=(3, 2, 1), output_shape=(5, 4, 3)
+        )
+    with pytest.raises(ValidationError, match="not a valid output shape"):
+        # too many rows in output shape
+        nengo.transforms.ConvolutionTranspose(
+            n_filters=2, input_shape=(3, 2, 1), output_shape=(6, 4, 2)
+        )
 
 
 @pytest.mark.parametrize("use_dist", (False, True))
