@@ -106,6 +106,11 @@ def test_convolution_nef(encoders, decoders, Simulator):
             pass
 
 
+def test_convolution_invalid():
+    with pytest.raises(ValidationError, match="exceeds the spatial size"):
+        nengo.transforms.Convolution(n_filters=2, input_shape=(3, 2, 1))
+
+
 @pytest.mark.parametrize("use_dist", (False, True))
 @pytest.mark.parametrize("use_scipy", (False, True))
 def test_sparse(use_dist, use_scipy, Simulator, rng, seed, plt, monkeypatch, allclose):

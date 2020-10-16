@@ -431,6 +431,21 @@ class Convolution(Transform):
                     attr="init",
                 )
 
+        exceeded_size = [
+            self.kernel_size[i] > self.input_shape.spatial_shape[i]
+            for i in range(self.dimensions)
+        ]
+        if self.padding == "valid" and any(exceeded_size):
+            i = exceeded_size.index(True)
+            raise ValidationError(
+                "Kernel size for spatial dimension %d (%d) exceeds the spatial size of "
+                "that dimension (%d); with the requested 'valid' padding, this will "
+                "result in an empty output."
+                % (i, self.kernel_size[i], self.input_shape.spatial_shape[i]),
+                attr="padding",
+                obj=self,
+            )
+
     @property
     def _argreprs(self):
         argreprs = [
