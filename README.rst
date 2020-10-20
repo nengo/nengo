@@ -62,8 +62,9 @@ If you'd like to install Nengo from source,
 please read the `developer installation instructions
 <https://www.nengo.ai/nengo/contributing.html#developer-installation>`_.
 
-Nengo is tested to work on Python 3.5 and above.
+Nengo is tested to work on Python 3.6 and above.
 Python 2.7 and Python 3.4 were supported up to and including Nengo 2.8.0.
+Python 3.5 was supported up to and including Nengo 3.1.
 
 Examples
 ========

@@ -369,10 +369,10 @@ def test_noise_gen(Simulator, NonDirectNeuronType, seed, plt, allclose):
         sim.run(0.06)
 
     t = sim.trange()
-    plt.title("intercepts=%d" % intercepts)
-    plt.plot(t, sim.data[pos_p], c="b", label="noise=%d" % pos_noise)
+    plt.title(f"intercepts={intercepts}")
+    plt.plot(t, sim.data[pos_p], c="b", label=f"noise={pos_noise}")
     plt.plot(t, sim.data[normal_p], c="k", label="no noise")
-    plt.plot(t, sim.data[neg_p], c="r", label="noise=%d" % neg_noise)
+    plt.plot(t, sim.data[neg_p], c="r", label=f"noise={neg_noise}")
     plt.legend(loc="best")
 
     assert np.sum(sim.data[pos_p], axis=0) >= np.sum(sim.data[normal_p], axis=0)

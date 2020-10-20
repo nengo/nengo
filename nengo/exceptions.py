@@ -23,11 +23,11 @@ class ValidationError(NengoException, ValueError):
 
     def __str__(self):
         if self.obj is None:
-            return "{}: {}".format(self.attr, super().__str__())
+            return f"{self.attr}: {super().__str__()}"
         klassname = (
             self.obj.__name__ if inspect.isclass(self.obj) else type(self.obj).__name__
         )
-        return "{}.{}: {}".format(klassname, self.attr, super().__str__())
+        return f"{klassname}.{self.attr}: {super().__str__()}"
 
 
 class ConvergenceError(NengoException, RuntimeError):
@@ -39,7 +39,7 @@ class ReadonlyError(ValidationError):
 
     def __init__(self, attr, obj=None, msg=None):
         if msg is None:
-            msg = "%s is read-only and cannot be changed" % attr
+            msg = f"{attr} is read-only and cannot be changed"
         super().__init__(msg, attr, obj)
 
 
@@ -56,13 +56,13 @@ class ObsoleteError(NengoException):
         super().__init__(msg)
 
     def __str__(self):
-        return "Obsolete%s: %s%s" % (
-            "" if self.since is None else " since %s" % self.since,
-            super().__str__(),
-            "\nFor more information, please visit %s" % self.url
+        since_txt = "" if self.since is None else f" since {self.since}"
+        url_txt = (
+            f"\nFor more information, please visit {self.url}"
             if self.url is not None
-            else "",
+            else ""
         )
+        return f"Obsolete{since_txt}: {super().__str__()}{url_txt}"
 
 
 class MovedError(NengoException):
@@ -76,7 +76,7 @@ class MovedError(NengoException):
         super().__init__()
 
     def __str__(self):
-        return "This feature has been moved to %s" % self.location
+        return f"This feature has been moved to {self.location}"
 
 
 class ConfigError(NengoException, ValueError):
@@ -132,10 +132,10 @@ class NotAddedToNetworkWarning(NengoWarning):
 
     def __str__(self):
         return (
-            "{obj} was not added to the network. When copying objects, "
+            f"{self.obj} was not added to the network. When copying objects, "
             "use the copy method on the object instead of Python's copy "
             "module. When unpickling objects, they have to be added to "
-            "networks manually.".format(obj=self.obj)
+            "networks manually."
         )
 
 

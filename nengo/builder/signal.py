@@ -75,7 +75,7 @@ class Signal:
         if np.any(
             np.isnan(self._initial_value.data if self.sparse else self._initial_value)
         ):
-            raise SignalError("%r contains NaNs." % self)
+            raise SignalError(f"{self!r} contains NaNs.")
 
         if self.sparse:
             assert initial_value.ndim == 2
@@ -155,12 +155,10 @@ class Signal:
 
         view = self._initial_value[item]
         offset = npext.array_offset(view) - npext.array_offset(self._initial_value)
-        return Signal(
-            view, name="%s[%s]" % (self.name, item), base=self.base, offset=offset
-        )
+        return Signal(view, name=f"{self.name}[{item}]", base=self.base, offset=offset)
 
     def __repr__(self):
-        return "Signal(name=%s, shape=%s)" % (self._name, self.shape)
+        return f"Signal(name={self._name}, shape={self.shape})"
 
     @property
     def base(self):
@@ -212,7 +210,7 @@ class Signal:
     @property
     def name(self):
         """(str) Name of the signal. Primarily used for debugging."""
-        return self._name if self._name is not None else ("0x%x" % id(self))
+        return self._name if self._name is not None else (f"0x{id(self):x}")
 
     @name.setter
     def name(self, name):
@@ -307,12 +305,12 @@ class Signal:
             initial_value.shape = shape
         except AttributeError as e:
             raise SignalError(
-                "Reshaping %s to %s would require the array to be copied "
-                "(because it is not contiguous), which is not supported" % (self, shape)
+                f"Reshaping {self} to {shape} would require the array to be copied "
+                "(because it is not contiguous), which is not supported"
             ) from e
         return Signal(
             initial_value,
-            name="%s.reshape(%s)" % (self.name, shape),
+            name=f"{self.name}.reshape({shape})",
             base=self.base,
             offset=self.offset,
         )
@@ -361,7 +359,7 @@ class SignalDict(dict):
         """Pretty-print the signals and current values."""
         sio = StringIO()
         for k in self:
-            sio.write("%s %s\n" % (repr(k), repr(self[k])))
+            sio.write(f"{repr(k)} {repr(self[k])}\n")
         return sio.getvalue()
 
     def init(self, signal):

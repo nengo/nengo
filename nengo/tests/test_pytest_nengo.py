@@ -21,12 +21,12 @@ def test_unsupported(xfail, testdir):
 
         @pytest.mark.parametrize("param", (True, False))
         def test_unsupported(param):
-            print("test_unsupported param=%s ran" % param)
+            print(f"test_unsupported param={param} ran")
             assert param
 
         @pytest.mark.parametrize("param", (True, False))
         def test_unsupported_all(param):
-            print("test_unsupported_all param=%s ran" % param)
+            print(f"test_unsupported_all param={param} ran")
             assert False
 
         def test_supported():

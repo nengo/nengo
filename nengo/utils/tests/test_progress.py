@@ -175,7 +175,7 @@ class TestAutoProgressBar:
         assert isinstance(get_default_progressbar(), TerminalProgressBar)
 
 
-def test_write_progress_to_file(tmpdir):
+def test_write_progress_to_file(tmp_path):
     """Tests the WriteProgressToFile progress bar type"""
 
     def check_file(filename, startstring):
@@ -183,7 +183,7 @@ def test_write_progress_to_file(tmpdir):
             data = fh.read()
         assert data.startswith(startstring)
 
-    filename = str(tmpdir.join("test_write_progress_file.txt"))
+    filename = tmp_path / "test_write_progress_file.txt"
     progress = Progress(name_during="myprog", max_steps=2)
     bar = WriteProgressToFile(filename)
 
@@ -220,14 +220,12 @@ def test_progress_tracker():
     assert not progress_bar.closed
     with tracker:
         for i in range(stages):
-            sub_progress = tracker.next_stage(
-                name_during="stage%d" % i, max_steps=steps
-            )
+            sub_progress = tracker.next_stage(name_during=f"stage{i}", max_steps=steps)
             with sub_progress:
                 for j in range(steps):
                     sub_progress.step()
                     time.sleep(sleep_interval)
-                    assert progress_bar.updates[-1].name_during == "stage%d" % i
+                    assert progress_bar.updates[-1].name_during == f"stage{i}"
                     assert progress_bar.updates[-1].n_steps == j + 1
 
             time.sleep(sleep_interval)
@@ -237,7 +235,7 @@ def test_progress_tracker():
     assert progress_bar.closed
 
 
-def test_to_progress_bar(request, tmpdir):
+def test_to_progress_bar(request, tmp_path):
     def finalizer(val=rc["progress"]["progress_bar"]):
         rc["progress"]["progress_bar"] = val
 
@@ -251,5 +249,5 @@ def test_to_progress_bar(request, tmpdir):
     rc["progress"]["progress_bar"] = "nengo.utils.progress.HtmlProgressBar"
     assert isinstance(to_progressbar(True), HtmlProgressBar)
 
-    progress_bar = WriteProgressToFile(str(tmpdir.join("dummyfile.txt")))
+    progress_bar = WriteProgressToFile(tmp_path / "dummyfile.txt")
     assert to_progressbar(progress_bar) is progress_bar

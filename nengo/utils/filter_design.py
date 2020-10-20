@@ -524,6 +524,6 @@ def cont2discrete(sys, dt, method="zoh", alpha=None):  # noqa: C901
         dd = d
 
     else:
-        raise ValueError("Unknown transformation method '%s'" % method)
+        raise ValueError(f"Unknown transformation method '{method}'")
 
     return ad, bd, cd, dd, dt

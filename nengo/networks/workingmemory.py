@@ -59,7 +59,7 @@ class InputGatedMemory(Network):
         difference_gain=1.0,
         recurrent_synapse=0.1,
         difference_synapse=None,
-        **kwargs
+        **kwargs,
     ):
 
         if "net" in kwargs:

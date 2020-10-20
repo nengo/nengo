@@ -46,13 +46,9 @@ def test_dts(Simulator, seed, rng):
         t = sim.trange(sample_every=dt2)
         x = sim.data[ap]
 
-        assert len(t) == len(x), "dt=%f, dt2=%f, tend=%f, nt=%d, nx=%d" % (
-            dt,
-            dt2,
-            tend,
-            len(t),
-            len(x),
-        )
+        assert len(t) == len(
+            x
+        ), f"dt={dt}, dt2={dt2}, tend={tend}, nt={len(t)}, nx={len(x)}"
 
 
 def test_large(Simulator, seed, allclose):
@@ -67,7 +63,7 @@ def test_large(Simulator, seed, allclose):
     with model:
         probes = []
         for i in range(n):
-            xi = nengo.Node(label="x%d" % i, output=input_fn)
+            xi = nengo.Node(label=f"x{i}", output=input_fn)
             probes.append(nengo.Probe(xi, "output"))
 
     with Simulator(model) as sim:

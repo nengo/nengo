@@ -86,18 +86,12 @@ class Operator:
         self._updates = None
 
     def __repr__(self):
-        return "<%s%s at 0x%x>" % (
-            type(self).__name__,
-            "" if self.tag is None else " %r" % self.tag,
-            id(self),
-        )
+        tag_txt = "" if self.tag is None else f" '{self.tag}'"
+        return f"<{type(self).__name__}{tag_txt} at 0x{id(self):x}>"
 
     def __str__(self):
-        return "%s{%s%s}" % (
-            type(self).__name__,
-            self._descstr,
-            "" if self.tag is None else " %r" % self.tag,
-        )
+        tag_txt = "" if self.tag is None else f" '{self.tag}'"
+        return f"{type(self).__name__}{{{self._descstr}{tag_txt}}}"
 
     @property
     def _descstr(self):
@@ -385,12 +379,11 @@ class Copy(Operator):
     @property
     def _descstr(self):
         def sigstring(sig, sl):
-            return "%s%s" % (sig, ("[%s]" % (sl,)) if sl is not None else "")
+            return f"{sig}{f'[{sl}]' if sl is not None else ''}"
 
-        return "%s -> %s, inc=%s" % (
-            sigstring(self.src, self.src_slice),
-            sigstring(self.dst, self.dst_slice),
-            self.inc,
+        return (
+            f"{sigstring(self.src, self.src_slice)} -> "
+            f"{sigstring(self.dst, self.dst_slice)}, inc={self.inc}"
         )
 
     def make_step(self, signals, dt, rng):
@@ -422,8 +415,8 @@ class Copy(Operator):
 
         elif repeats:
             raise BuildError(
-                "%s: Cannot have repeated indices in "
-                "``dst_slice`` when copy is not an increment" % self
+                f"{self}: Cannot have repeated indices in "
+                "``dst_slice`` when copy is not an increment"
             )
         else:
 
@@ -489,7 +482,7 @@ class ElementwiseInc(Operator):
 
     @property
     def _descstr(self):
-        return "%s, %s -> %s" % (self.A, self.X, self.Y)
+        return f"{self.A}, {self.X} -> {self.Y}"
 
     def make_step(self, signals, dt, rng):
         A = signals[self.A]
@@ -505,7 +498,7 @@ class ElementwiseInc(Operator):
             if not (da in [1, dy] and dx in [1, dy] and max(da, dx) == dy):
                 raise BuildError(
                     "Incompatible shapes in ElementwiseInc: "
-                    "Trying to do %s += %s * %s" % (Yshape, Ashape, Xshape)
+                    f"Trying to do {Yshape} += {Ashape} * {Xshape}"
                 )
 
         def step_elementwiseinc():
@@ -535,9 +528,7 @@ def reshape_dot(A, X, Y, tag=None):
         incshape = ashape[:-1] + xshape[:-2] + xshape[-1:]
 
     if (badshape or incshape != Y.shape) and incshape != ():
-        raise BuildError(
-            "shape mismatch in %s: %s x %s -> %s" % (tag, A.shape, X.shape, Y.shape)
-        )
+        raise BuildError(f"shape mismatch in {tag}: {A.shape} x {X.shape} -> {Y.shape}")
 
     # Reshape to handle case when np.dot(A, X) and Y are both scalars
     return A.dot(X).size == Y.size == 1
@@ -614,7 +605,7 @@ class DotInc(Operator):
 
     @property
     def _descstr(self):
-        return "%s, %s -> %s" % (self.A, self.X, self.Y)
+        return f"{self.A}, {self.X} -> {self.Y}"
 
     def make_step(self, signals, dt, rng):
         X = signals[self.X]
@@ -643,11 +634,11 @@ class SparseDotInc(DotInc):
     """
 
     def __init__(self, A, X, Y, tag=None):
-        if not A.sparse:
-            raise BuildError("%s: A must be a sparse Signal")
-
         # Disallow reshaping
         super().__init__(A, X, Y, reshape=False, tag=tag)
+
+        if not A.sparse:
+            raise BuildError(f"{self}: A must be a sparse Signal")
 
 
 class BsrDotInc(DotInc):
@@ -802,7 +793,7 @@ class SimPyFunc(Operator):
 
     @property
     def _descstr(self):
-        return "%s -> %s, fn=%r" % (self.x, self.output, function_name(self.fn))
+        return f"{self.x} -> {self.output}, fn='{function_name(self.fn)}'"
 
     def make_step(self, signals, dt, rng):
         fn = self.fn
@@ -819,16 +810,16 @@ class SimPyFunc(Operator):
                     # required since Numpy turns None into NaN
                     if y is None or not np.all(np.isfinite(y)):
                         raise SimulationError(
-                            "Function %r returned non-finite value"
-                            % function_name(self.fn)
+                            f"Function '{function_name(self.fn)}' returned "
+                            "non-finite value"
                         )
 
                     output[...] = y
 
                 except (TypeError, ValueError) as e:
                     raise SimulationError(
-                        "Function %r returned a value "
-                        "%r of invalid type %r" % (function_name(self.fn), y, type(y))
+                        f"Function '{function_name(self.fn)}' returned a value "
+                        f"{y!r} of invalid type {type(y)!r}"
                     ) from e
 
         return step_simpyfunc

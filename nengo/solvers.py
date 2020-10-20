@@ -409,22 +409,21 @@ def _add_nnls_param_docs(l2=False):
         Amount of regularization, as a fraction of the neuron activity.\
     """
 
-    docstring = """
+    docstring = f"""
     .. note:: Requires
               `SciPy <https://docs.scipy.org/doc/scipy/reference/>`_.
 
     Parameters
     ----------
     weights : bool, optional
-        If False, solve for decoders. If True, solve for weights.{reg_param}
+        If False, solve for decoders. If True, solve for weights.\
+{reg_param if l2 else ""}
 
     Attributes
-    ----------{reg_attr}
+    ----------{reg_attr if l2 else ""}
     weights : bool
         If False, solve for decoders. If True, solve for weights.
-    """.format(
-        reg_param=reg_param if l2 else "", reg_attr=reg_attr if l2 else ""
-    )
+    """
 
     def _actually_add_nnls_param_docs(cls):
         cls.__doc__ += docstring

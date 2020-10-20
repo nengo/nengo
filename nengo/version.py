@@ -7,9 +7,10 @@ a release version. Release versions are git tagged with the version.
 """
 
 name = "nengo"
-version_info = (3, 1, 1)  # (major, minor, patch)
+version_info = (3, 2, 0)  # (major, minor, patch)
 dev = 0
 
+# use old string formatting, so that this can still run in Python <= 3.5
 version = "{v}{dev}".format(
     v=".".join(str(v) for v in version_info),
     dev=(".dev%d" % dev) if dev is not None else "",

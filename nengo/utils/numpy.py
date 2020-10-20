@@ -87,7 +87,7 @@ def as_shape(x, min_dim=0):
     elif is_integer(x):
         shape = (x,)
     else:
-        raise ValueError("%r cannot be safely converted to a shape" % x)
+        raise ValueError(f"{x!r} cannot be safely converted to a shape")
 
     if len(shape) < min_dim:
         shape = tuple([1] * (min_dim - len(shape))) + shape
@@ -136,7 +136,7 @@ def array(x, dims=None, min_dims=0, readonly=False, **kwargs):
         y.shape = shape
     elif y.ndim > dims:
         raise ValidationError(
-            "Input cannot be cast to array with %d dimensions" % dims, attr="dims"
+            f"Input cannot be cast to array with {dims} dimensions", attr="dims"
         )
 
     if readonly:

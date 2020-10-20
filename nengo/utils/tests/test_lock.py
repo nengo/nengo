@@ -1,5 +1,4 @@
 import multiprocessing
-import os.path
 import sys
 import time
 
@@ -25,8 +24,8 @@ def acquire_lock_and_idle(filename):
         time.sleep(1.0)
 
 
-def test_can_acquire_filelock_at_most_once(tmpdir):
-    filename = os.path.join(str(tmpdir), "lock")
+def test_can_acquire_filelock_at_most_once(tmp_path):
+    filename = tmp_path / "lock"
     lock = FileLock(filename, timeout=0.01, poll=0.01)
     lock.acquire()
     p = multiprocessing.Process(target=acquire_lock, args=(filename,))
@@ -37,11 +36,11 @@ def test_can_acquire_filelock_at_most_once(tmpdir):
 
 
 @pytest.mark.filterwarnings("ignore::ResourceWarning")
-def test_process_termination_releases_lock(tmpdir):
-    filename = os.path.join(str(tmpdir), "lock")
+def test_process_termination_releases_lock(tmp_path):
+    filename = tmp_path / "lock"
     p = multiprocessing.Process(target=acquire_lock_and_idle, args=(filename,))
     p.start()
-    while p.is_alive() and not os.path.exists(filename):
+    while p.is_alive() and not filename.exists():
         time.sleep(0.2)
     assert p.is_alive()
 
@@ -55,8 +54,8 @@ def test_process_termination_releases_lock(tmpdir):
     lock.release()
 
 
-def test_released_filelock_can_be_reacquired(tmpdir):
-    filename = os.path.join(str(tmpdir), "lock")
+def test_released_filelock_can_be_reacquired(tmp_path):
+    filename = tmp_path / "lock"
     lock = FileLock(filename, timeout=0.01, poll=0.01)
     lock.acquire()
     lock.release()
@@ -64,8 +63,8 @@ def test_released_filelock_can_be_reacquired(tmpdir):
     lock.release()
 
 
-def test_can_release_filelock_multiple_times(tmpdir):
-    filename = os.path.join(str(tmpdir), "lock")
+def test_can_release_filelock_multiple_times(tmp_path):
+    filename = tmp_path / "lock"
     lock = FileLock(filename, timeout=0.01, poll=0.01)
     lock.release()
     lock.acquire()
@@ -73,14 +72,14 @@ def test_can_release_filelock_multiple_times(tmpdir):
     lock.release()
 
 
-def test_filelock_supports_with_statement(tmpdir):
-    filename = os.path.join(str(tmpdir), "lock")
+def test_filelock_supports_with_statement(tmp_path):
+    filename = tmp_path / "lock"
     with FileLock(filename):
         pass
 
 
-def test_filelock_gets_released_on_lock_deletion(tmpdir):
-    filename = os.path.join(str(tmpdir), "lock")
+def test_filelock_gets_released_on_lock_deletion(tmp_path):
+    filename = tmp_path / "lock"
     lock = FileLock(filename, timeout=0.01, poll=0.01)
     lock.acquire()
     del lock

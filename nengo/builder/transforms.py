@@ -18,9 +18,7 @@ def multiply(x, y):
     elif x.ndim == 2 and y.ndim == 2:
         return np.dot(x, y)
     else:
-        raise BuildError(
-            "Tensors not supported (x.ndim=%d, y.ndim=%d)" % (x.ndim, y.ndim)
-        )
+        raise BuildError(f"Tensors not supported (x.ndim={x.ndim}, y.ndim={y.ndim})")
 
 
 @Builder.register(Dense)
@@ -35,15 +33,15 @@ def build_dense(model, transform, sig_in, decoders=None, encoders=None, rng=np.r
         weights = multiply(encoders.astype(rc.float_dtype).T, weights)
 
     # Add operator for applying weights
-    weight_sig = Signal(weights, readonly=True, name="%s.weights" % transform)
+    weight_sig = Signal(weights, readonly=True, name=f"{transform}.weights")
     weighted = Signal(
         shape=transform.size_out if encoders is None else weights.shape[0],
-        name="%s.weighted" % transform,
+        name=f"{transform}.weighted",
     )
     model.add_op(Reset(weighted))
 
     op = ElementwiseInc if weights.ndim < 2 else DotInc
-    model.add_op(op(weight_sig, sig_in, weighted, tag="%s.apply_weights" % transform))
+    model.add_op(op(weight_sig, sig_in, weighted, tag=f"{transform}.apply_weights"))
 
     return weighted, weight_sig
 
@@ -63,16 +61,16 @@ def build_sparse(model, transform, sig_in, decoders=None, encoders=None, rng=np.
     assert encoders is None
 
     # Add output signal
-    weighted = Signal(shape=transform.size_out, name="%s.weighted" % transform)
+    weighted = Signal(shape=transform.size_out, name=f"{transform}.weighted")
     model.add_op(Reset(weighted))
 
     weights = transform.sample(rng=rng)
     assert weights.ndim == 2
 
     # Add operator for applying weights
-    weight_sig = Signal(weights, name="%s.weights" % transform, readonly=True)
+    weight_sig = Signal(weights, name=f"{transform}.weights", readonly=True)
     model.add_op(
-        SparseDotInc(weight_sig, sig_in, weighted, tag="%s.apply_weights" % transform)
+        SparseDotInc(weight_sig, sig_in, weighted, tag=f"{transform}.apply_weights")
     )
 
     return weighted, weight_sig
@@ -96,13 +94,13 @@ def build_convolution(
     assert encoders is None
 
     weights = transform.sample(rng=rng)
-    weight_sig = Signal(weights, readonly=True, name="%s.weights" % transform)
-    weighted = Signal(shape=transform.size_out, name="%s.weighted" % transform)
+    weight_sig = Signal(weights, readonly=True, name=f"{transform}.weights")
+    weighted = Signal(shape=transform.size_out, name=f"{transform}.weighted")
     model.add_op(Reset(weighted))
 
     model.add_op(
         ConvInc(
-            weight_sig, sig_in, weighted, transform, tag="%s.apply_weights" % transform
+            weight_sig, sig_in, weighted, transform, tag=f"{transform}.apply_weights"
         )
     )
 
@@ -172,7 +170,7 @@ class ConvInc(Operator):
 
     @property
     def _descstr(self):
-        return "conv2d(%s, %s) -> %s" % (self.W, self.X, self.Y)
+        return f"conv2d({self.W}, {self.X}) -> {self.Y}"
 
     def make_step(self, signals, dt, rng):
         if self.conv.dimensions > 2:

@@ -396,7 +396,7 @@ def test_configure_all_nengo_parameters():
                 assert getattr(net.config[obj], name) == val
 
             except Exception:
-                print("Error setting %s.%s" % (obj, name))
+                print(f"Error setting {obj}.{name}")
                 raise
 
 

@@ -225,10 +225,10 @@ class Neurons:
         return self.ensemble.n_neurons
 
     def __repr__(self):
-        return "<Neurons at 0x%x of %r>" % (id(self), self.ensemble)
+        return f"<Neurons at 0x{id(self):x} of {self.ensemble!r}>"
 
     def __str__(self):
-        return "<Neurons of %s>" % self.ensemble
+        return f"<Neurons of {self.ensemble}>"
 
     def __eq__(self, other):
         return type(self) == type(other) and self.ensemble is other.ensemble

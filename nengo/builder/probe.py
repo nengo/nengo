@@ -87,14 +87,10 @@ def signal_probe(model, key, probe):
     try:
         sig = model.sig[probe.obj][key]
     except (IndexError, KeyError) as e:
-        raise BuildError(
-            "Attribute %r is not probeable on %s." % (key, probe.obj)
-        ) from e
+        raise BuildError(f"Attribute '{key}' is not probeable on {probe.obj}.") from e
 
     if sig is None:
-        raise BuildError(
-            "Attribute %r on %s is None, cannot be probed" % (key, probe.obj)
-        )
+        raise BuildError(f"Attribute '{key}' on {probe.obj} is None, cannot be probed")
 
     if probe.slice is not None:
         sig = slice_signal(model, sig, probe.slice)
@@ -152,7 +148,7 @@ def build_probe(model, probe):
             key = probeables.get(probe.attr, probe.attr)
             break
     else:
-        raise BuildError("Type %r is not probeable" % type(probe.obj).__name__)
+        raise BuildError(f"Type '{type(probe.obj).__name__}' is not probeable")
 
     if key is None:
         conn_probe(model, probe)

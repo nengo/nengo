@@ -129,7 +129,7 @@ def test_gaussian_whitenoise(Simulator, rms, seed, plt, allclose):
 
     trange = sim.trange()
     plt.subplot(2, 1, 1)
-    plt.title("First two dimensions of white noise process, rms=%.1f" % rms)
+    plt.title(f"First two dimensions of white noise process, rms={rms:.1f}")
     plt.plot(trange, values[:, :2])
     plt.xlim(right=trange[-1])
     plt.subplot(2, 1, 2)
@@ -157,7 +157,7 @@ def test_whitesignal_rms(Simulator, rms, seed, plt, allclose):
 
     trange = sim.trange()
     plt.subplot(2, 1, 1)
-    plt.title("First two D of white noise process, rms=%.1f" % rms)
+    plt.title(f"First two D of white noise process, rms={rms:.1f}")
     plt.plot(trange, values[:, :2])
     plt.xlim(right=trange[-1])
     plt.subplot(2, 1, 2)
@@ -201,7 +201,7 @@ def test_whitesignal_high_dt(Simulator, high, dt, seed, plt, allclose):
 
     trange = sim.trange()
     plt.subplot(2, 1, 1)
-    plt.title("First two D of white noise process, high=%d Hz" % high)
+    plt.title(f"First two D of white noise process, high={high} Hz")
     plt.plot(trange, values[:, :2])
     plt.xlim(right=trange[-1])
     plt.subplot(2, 1, 2)

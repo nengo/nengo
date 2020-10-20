@@ -484,7 +484,7 @@ class OpMerger:
     def register(cls, optype):
         def register(merger):
             if optype in cls.mergers:
-                warnings.warn("Merger for operator type {} overwritten.".format(optype))
+                warnings.warn(f"Merger for operator type {optype} overwritten.")
             cls.mergers[optype] = merger
             return merger
 
@@ -559,7 +559,7 @@ class CopyMerger(Merger):
         offset = 0
         merged_slice = []
         for sig, sl in zip(signals, slices):
-            assert isinstance(sl, list), "Expecting a list of indices, got %s" % sl
+            assert isinstance(sl, list), f"Expecting a list of indices, got {sl}"
             merged_slice.extend([i + offset for i in sl])
             offset += sig.size
         return merged_slice
@@ -683,16 +683,14 @@ class DotIncMerger(Merger):
             raise NotImplementedError("A.ndim should be > 2")
         indptr = np.arange(len(ops) + 1, dtype=rc.int_dtype)
         indices = np.arange(len(ops), dtype=rc.int_dtype)
-        name = "bsr_merged<{first}, ..., {last}>".format(
-            first=ops[0].A.name, last=ops[-1].A.name
-        )
+        name = f"bsr_merged<{ops[0].A.name}, ..., {ops[-1].A.name}>"
         readonly = all([o.A.readonly for o in ops])
         A = Signal(data, name=name, readonly=readonly)
         A_sigr = {}
         for i, s in enumerate([o.A for o in ops]):
             A_sigr[s] = Signal(
                 data[i],
-                name="%s[%i]" % (s.name, i),
+                name=f"{s.name}[{i}]",
                 base=A,
                 offset=i * A.itemsize * np.prod(A.shape[1:]),
             )
@@ -739,8 +737,8 @@ class SimNeuronsMerger(Merger):
         if any(len(op.state_extra) > 0 for op in ops[1:]):
             warnings.warn(
                 "Extra state has been modified when merging two or more SimNeurons "
-                "ops associated with %r neuron types. If this causes issues, turn off "
-                "the optimizer." % (type(ops[0].neurons).__name__,)
+                f"ops associated with '{type(ops[0].neurons).__name__}' neuron types. "
+                "If this causes issues, turn off the optimizer."
             )
         return (
             SimNeurons(ops[0].neurons, J, output, state=state),

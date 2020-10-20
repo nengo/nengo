@@ -1,21 +1,20 @@
-import os
+import pathlib
 import sys
 
 if sys.platform.startswith("win"):  # pragma: no cover
-    config_dir = os.path.expanduser(os.path.join("~", ".nengo"))
-    cache_dir = os.path.join(config_dir, "cache")
+    config_dir = pathlib.Path.home() / ".nengo"
+    cache_dir = config_dir / "cache"
 else:
-    config_dir = os.path.expanduser(os.path.join("~", ".config", "nengo"))
-    cache_dir = os.path.expanduser(os.path.join("~", ".cache", "nengo"))
+    config_dir = pathlib.Path.home() / ".config" / "nengo"
+    cache_dir = pathlib.Path.home() / ".cache" / "nengo"
 
-decoder_cache_dir = os.path.join(cache_dir, "decoders")
-install_dir = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), os.pardir, os.pardir)
-)
-examples_dir = os.path.join(install_dir, "docs", "examples")
+decoder_cache_dir = cache_dir / "decoders"
+install_dir = pathlib.Path(__file__).parents[2]
+data_dir = install_dir / "nengo" / "data"
+examples_dir = install_dir / "docs" / "examples"
 
 nengorc = {
-    "system": os.path.join(install_dir, "nengo-data", "nengorc"),
-    "user": os.path.join(config_dir, "nengorc"),
-    "project": os.path.abspath(os.path.join(os.curdir, "nengorc")),
+    "system": install_dir / "nengo-data" / "nengorc",
+    "user": config_dir / "nengorc",
+    "project": pathlib.Path.cwd() / "nengorc",
 }

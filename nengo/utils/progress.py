@@ -94,7 +94,7 @@ class Progress:
     def __init__(self, name_during="", name_after=None, max_steps=None):
         if max_steps is not None and max_steps <= 0:
             raise ValidationError(
-                "must be at least 1 (got %d)" % (max_steps,), attr="max_steps"
+                f"must be at least 1 (got {max_steps})", attr="max_steps"
             )
         self.n_steps = 0
         self.max_steps = max_steps
@@ -218,10 +218,8 @@ class TerminalProgressBar(ProgressBar):
         sys.stdout.flush()
 
     def _get_in_progress_line(self, progress):
-        line = "[{{}}] ETA: {eta}".format(eta=timestamp2timedelta(progress.eta()))
-        percent_str = " {}... {}% ".format(
-            progress.name_during, int(100 * progress.progress)
-        )
+        line = f"[{{}}] ETA: {timestamp2timedelta(progress.eta())}"
+        percent_str = f" {progress.name_during}... {int(100 * progress.progress)}% "
         width, _ = get_terminal_size()
         progress_width = max(0, width - len(line))
         progress_str = (int(progress_width * progress.progress) * "#").ljust(
@@ -245,10 +243,8 @@ class TerminalProgressBar(ProgressBar):
         progressed with the processing.
         """
         duration = progress.elapsed_seconds()
-        line = "[{{}}] duration: {duration}".format(
-            duration=timestamp2timedelta(duration)
-        )
-        text = " {}... ".format(progress.name_during)
+        line = f"[{{}}] duration: {timestamp2timedelta(duration)}"
+        text = f" {progress.name_during}... "
         width, _ = get_terminal_size()
         marker = ">>>>"
         progress_width = max(0, width - len(line) + 2)
@@ -264,9 +260,8 @@ class TerminalProgressBar(ProgressBar):
 
     def _get_finished_line(self, progress):
         width, _ = get_terminal_size()
-        line = "{} finished in {}.".format(
-            progress.name_after, timestamp2timedelta(progress.elapsed_seconds())
-        ).ljust(width)
+        elapsed_seconds = timestamp2timedelta(progress.elapsed_seconds())
+        line = f"{progress.name_after} finished in {elapsed_seconds}.".ljust(width)
         return "\r" + line
 
     def close(self):
@@ -380,7 +375,7 @@ class VdomProgressBar(ProgressBar):  # pragma: no cover
 
     def _get_known_steps_fill_style(self, progress):
         return {
-            "width": "{:.0f}%".format(100.0 * progress.progress),
+            "width": f"{100.0 * progress.progress:.0f}%",
             "animation": "none",
             "backgroundColor": "#bdd2e6",
             "backgroundImage": "none",
@@ -506,9 +501,9 @@ class HtmlProgressBar(ProgressBar):  # pragma: no cover
             finish = ""
 
         return Javascript(
-            """
+            f"""
               (function () {{
-                  var root = document.getElementById('{uuid}');
+                  var root = document.getElementById('{self._uuid}');
                   var text = root.getElementsByClassName('pb-text')[0];
                   var fill = root.getElementsByClassName('pb-fill')[0];
 
@@ -516,9 +511,7 @@ class HtmlProgressBar(ProgressBar):  # pragma: no cover
                   {update}
                   {finish}
               }})();
-        """.format(
-                uuid=self._uuid, text=text, update=update, finish=finish
-            )
+        """
         )
 
     def _update_known_steps(self, progress):

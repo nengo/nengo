@@ -9,7 +9,15 @@ from nengo.builder.operator import Copy, Reset
 from nengo.builder.signal import Signal
 from nengo.dists import UniformHypersphere
 from nengo.exceptions import BuildError, ValidationError
-from nengo.learning_rules import BCM, PES, RLS, LearningRuleTypeParam, Oja, Voja
+from nengo.learning_rules import (
+    BCM,
+    PES,
+    RLS,
+    LearningRuleType,
+    LearningRuleTypeParam,
+    Oja,
+    Voja,
+)
 from nengo.processes import WhiteSignal
 from nengo.synapses import Alpha, Lowpass
 from nengo.utils.numpy import nrmse
@@ -975,3 +983,8 @@ def test_bad_learning_rule_modifies(Simulator):
     with pytest.raises(BuildError, match="Unknown target 'badvalue'"):
         with Simulator(net):
             pass
+
+
+def test_bad_learning_rule_size_in_string():
+    with pytest.raises(ValidationError, match="is not a valid string value"):
+        LearningRuleType(size_in="badval")

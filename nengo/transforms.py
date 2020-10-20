@@ -59,8 +59,8 @@ class ChannelShapeParam(ShapeParam):
         if isinstance(shape, ChannelShape):
             if shape.channels_last != transform.channels_last:
                 raise ValidationError(
-                    "transform has channels_last=%s, but input shape has "
-                    "channels_last=%s" % (transform.channels_last, shape.channels_last),
+                    f"transform has channels_last={transform.channels_last}, but input "
+                    f"shape has channels_last={shape.channels_last}",
                     attr=self.name,
                     obj=transform,
                 )
@@ -111,8 +111,8 @@ class Dense(Transform):
 
             if expected_shape is not None and init.shape != expected_shape:
                 raise ValidationError(
-                    "Shape of initial value %s does not match expected "
-                    "shape %s" % (init.shape, expected_shape),
+                    f"Shape of initial value {init.shape} does not match expected "
+                    f"shape {expected_shape}",
                     attr="init",
                 )
 
@@ -120,7 +120,7 @@ class Dense(Transform):
 
     @property
     def _argreprs(self):
-        return ["shape=%r" % (self.shape,)]
+        return [f"shape={self.shape!r}"]
 
     def sample(self, rng=np.random):
         if isinstance(self.init, Distribution):
@@ -150,7 +150,7 @@ class SparseInitParam(Parameter):
         ):
             raise ValidationError(
                 "Must be `nengo.transforms.SparseMatrix` or "
-                "`scipy.sparse.spmatrix`, got %s" % type(value),
+                f"`scipy.sparse.spmatrix`, got '{type(value)}'",
                 attr="init",
                 obj=instance,
             )
@@ -321,7 +321,7 @@ class Sparse(Transform):
 
     @property
     def _argreprs(self):
-        return ["shape=%r" % (self.shape,)]
+        return [f"shape={self.shape!r}"]
 
     def sample(self, rng=np.random):
         if scipy_sparse and isinstance(self.init, scipy_sparse.spmatrix):
@@ -413,38 +413,38 @@ class Convolution(Transform):
 
         if len(kernel_size) != self.dimensions:
             raise ValidationError(
-                "Kernel dimensions (%d) do not match input dimensions (%d)"
-                % (len(kernel_size), self.dimensions),
+                f"Kernel dimensions ({len(kernel_size)}) does not match "
+                f"input dimensions ({self.dimensions})",
                 attr="kernel_size",
             )
         if len(strides) != self.dimensions:
             raise ValidationError(
-                "Stride dimensions (%d) do not match input dimensions (%d)"
-                % (len(strides), self.dimensions),
+                f"Stride dimensions ({len(strides)}) does not match "
+                f"input dimensions ({self.dimensions})",
                 attr="strides",
             )
         if not isinstance(init, Distribution):
             if init.shape != self.kernel_shape:
                 raise ValidationError(
-                    "Kernel shape %s does not match expected shape %s"
-                    % (init.shape, self.kernel_shape),
+                    f"Kernel shape {init.shape} does not match "
+                    f"expected shape {self.kernel_shape}",
                     attr="init",
                 )
 
     @property
     def _argreprs(self):
         argreprs = [
-            "n_filters=%r" % (self.n_filters,),
-            "input_shape=%s" % (self.input_shape.shape,),
+            f"n_filters={self.n_filters!r}",
+            f"input_shape={self.input_shape.shape}",
         ]
         if self.kernel_size != (3, 3):
-            argreprs.append("kernel_size=%r" % (self.kernel_size,))
+            argreprs.append(f"kernel_size={self.kernel_size!r}")
         if self.strides != (1, 1):
-            argreprs.append("strides=%r" % (self.strides,))
+            argreprs.append(f"strides={self.strides!r}")
         if self.padding != "valid":
-            argreprs.append("padding=%r" % (self.padding,))
+            argreprs.append(f"padding={self.padding!r}")
         if self.channels_last is not True:
-            argreprs.append("channels_last=%r" % (self.channels_last,))
+            argreprs.append(f"channels_last={self.channels_last!r}")
         return argreprs
 
     def sample(self, rng=np.random):
@@ -526,18 +526,19 @@ class ChannelShape:
         return hash((self.shape, self.channels_last))
 
     def __repr__(self):
-        return "%s(shape=%s, channels_last=%s)" % (
-            type(self).__name__,
-            self.shape,
-            self.channels_last,
+        return (
+            f"{type(self).__name__}(shape={self.shape}, "
+            f"channels_last={self.channels_last})"
         )
 
     def __str__(self):
         """Tuple-like string with channel position marked with 'ch'."""
         spatial = [str(s) for s in self.spatial_shape]
-        channel = ["ch=%d" % self.n_channels]
-        return "(%s)" % ", ".join(
-            spatial + channel if self.channels_last else channel + spatial
+        channel = [f"ch={self.n_channels}"]
+        return (
+            "("
+            + ", ".join(spatial + channel if self.channels_last else channel + spatial)
+            + ")"
         )
 
     @property

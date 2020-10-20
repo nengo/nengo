@@ -58,7 +58,6 @@ setup_py:
     - "License :: Free for non-commercial use"
     - "Operating System :: OS Independent"
     - "Programming Language :: Python :: 3 :: Only"
-    - "Programming Language :: Python :: 3.5"
     - "Programming Language :: Python :: 3.6"
     - "Programming Language :: Python :: 3.7"
     - "Programming Language :: Python :: 3.8"
@@ -197,7 +196,7 @@ docs_conf_py:
       - nengo.builder.signal.Signal
 
 travis_yml:
-  python: 3.6
+  python: 3.7
   global_vars:
     NUMPY: numpy
   jobs:
@@ -206,7 +205,7 @@ travis_yml:
       test_args: --memory --plots
     - script: test-coverage
       test_args: --plots
-      python: 3.5
+      python: 3.6
     - script: docs
       apt_install:
         - graphviz
@@ -227,8 +226,6 @@ travis_yml:
     - env:
         NUMPY: numpy==1.17
       if: "branch =~ ^release-candidate-*"
-    - dist: bionic
-      python: 3.7
     - dist: bionic
       python: 3.8
   pypi_user: __token__

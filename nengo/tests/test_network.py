@@ -170,9 +170,7 @@ def test_n_neurons():
 
 def test_readonly_attributes():
     def test_attr(net, attr):
-        with pytest.raises(
-            ReadonlyError, match="Network.%s: %s is read-only" % (attr, attr)
-        ):
+        with pytest.raises(ReadonlyError, match=f"Network.{attr}: {attr} is read-only"):
             setattr(net, attr, [])
 
     with nengo.Network() as net:

@@ -35,10 +35,10 @@ def _test_operator_arg_attributes(OperatorType, argnames, args=None, non_signals
             continue
 
         signal = args[argname]
-        assert signal in signals, "%r not added to sets/incs/reads/updates" % argname
+        assert signal in signals, f"{argname!r} not added to sets/incs/reads/updates"
         signals.remove(signal)
 
-    assert len(signals) == 0, "Extra signals in sets/incs/reads/updates: %r" % signals
+    assert len(signals) == 0, f"Extra signals in sets/incs/reads/updates: {signals!r}"
 
     return args, sim
 

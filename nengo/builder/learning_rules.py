@@ -85,7 +85,7 @@ class SimPES(Operator):
 
     @property
     def _descstr(self):
-        return "pre=%s, error=%s -> %s" % (self.pre_filtered, self.error, self.delta)
+        return f"pre={self.pre_filtered}, error={self.error} -> {self.delta}"
 
     def make_step(self, signals, dt, rng):
         pre_filtered = signals[self.pre_filtered]
@@ -181,11 +181,7 @@ class SimBCM(Operator):
 
     @property
     def _descstr(self):
-        return "pre=%s, post=%s -> %s" % (
-            self.pre_filtered,
-            self.post_filtered,
-            self.delta,
-        )
+        return f"pre={self.pre_filtered}, post={self.post_filtered} -> {self.delta}"
 
     def make_step(self, signals, dt, rng):
         pre_filtered = signals[self.pre_filtered]
@@ -289,11 +285,7 @@ class SimOja(Operator):
 
     @property
     def _descstr(self):
-        return "pre=%s, post=%s -> %s" % (
-            self.pre_filtered,
-            self.post_filtered,
-            self.delta,
-        )
+        return f"pre={self.pre_filtered}, post={self.post_filtered} -> {self.delta}"
 
     def make_step(self, signals, dt, rng):
         weights = signals[self.weights]
@@ -413,11 +405,7 @@ class SimVoja(Operator):
 
     @property
     def _descstr(self):
-        return "pre=%s, post=%s -> %s" % (
-            self.pre_decoded,
-            self.post_filtered,
-            self.delta,
-        )
+        return f"pre={self.pre_decoded}, post={self.post_filtered} -> {self.delta}"
 
     def make_step(self, signals, dt, rng):
         pre_decoded = signals[self.pre_decoded]
@@ -504,7 +492,7 @@ class SimRLS(Operator):
 
     @property
     def _descstr(self):
-        return "pre=%s > %s" % (self.pre_filtered, self.delta)
+        return f"pre={self.pre_filtered} -> {self.delta}"
 
     def make_step(self, signals, dt, rng):
         r = signals[self.pre_filtered]
@@ -591,7 +579,7 @@ def build_learning_rule(model, rule):
         target = model.sig[conn]["weights"]
         tag = "weights += delta"
     else:
-        raise BuildError("Unknown target %r" % rule.modifies)
+        raise BuildError(f"Unknown target {rule.modifies!r}")
 
     delta = Signal(shape=target.shape, name="Delta")
 

@@ -82,8 +82,8 @@ def get_targets(conn, eval_points, dtype=None):
             out = conn.function(ep)
             if out is None:
                 raise BuildError(
-                    "Building %s: Connection function returned "
-                    "None. Cannot solve for decoders." % (conn,)
+                    f"Building {conn}: Connection function returned "
+                    "None. Cannot solve for decoders."
                 )
             targets[i] = out
 
@@ -97,9 +97,9 @@ def build_linear_system(model, conn, rng):
     activities = get_activities(model.params[ens], ens, eval_points)
     if np.count_nonzero(activities) == 0:
         raise BuildError(
-            "Building %s: 'activities' matrix is all zero for %s. "
+            f"Building {conn}: 'activities' matrix is all zero for {conn.pre_obj}. "
             "This is because no evaluation points fall in the firing "
-            "ranges of any neurons." % (conn, conn.pre_obj)
+            "ranges of any neurons."
         )
 
     targets = get_targets(conn, eval_points, dtype=rc.float_dtype)
@@ -150,9 +150,9 @@ def solve_for_decoders(conn, gain, bias, x, targets, rng):
     activities = conn.pre_obj.neuron_type.rates(x, gain, bias)
     if np.count_nonzero(activities) == 0:
         raise BuildError(
-            "Building %s: 'activities' matrix is all zero for %s. "
+            f"Building {conn}: 'activities' matrix is all zero for {conn.pre_obj}. "
             "This is because no evaluation points fall in the firing "
-            "ranges of any neurons." % (conn, conn.pre_obj)
+            "ranges of any neurons."
         )
 
     decoders, solver_info = conn.solver(activities, targets, rng=rng)
@@ -166,7 +166,7 @@ def slice_signal(model, signal, sl):
         return signal[sl]
     else:
         size = np.arange(signal.size, dtype=rc.float_dtype)[sl].size
-        sliced_signal = Signal(shape=size, name="%s.sliced" % signal.name)
+        sliced_signal = Signal(shape=size, name=f"{signal.name}.sliced")
         model.add_op(Copy(signal, sliced_signal, src_slice=sl))
         return sliced_signal
 
@@ -228,15 +228,14 @@ def build_connection(model, conn):
 
         if target not in model.sig:
             raise BuildError(
-                "Building %s: the %r object %s is not in the "
-                "model, or has a size of zero."
-                % (conn, "pre" if is_pre else "post", target)
+                f"Building {conn}: the '{'pre' if is_pre else 'post'}' object {target} "
+                "is not in the model, or has a size of zero."
             )
         signal = model.sig[target].get(key, None)
         if signal is None or signal.size == 0:
             raise BuildError(
-                "Building %s: the %r object %s has a %r size of zero."
-                % (conn, "pre" if is_pre else "post", target, key)
+                f"Building {conn}: the '{'pre' if is_pre else 'post'}' object {target} "
+                f"has a '{key}' size of zero."
             )
 
         return signal
@@ -263,7 +262,7 @@ def build_connection(model, conn):
         elif isinstance(conn.function, np.ndarray):
             raise BuildError("Cannot use function points in direct connection")
         else:
-            in_signal = Signal(shape=conn.size_mid, name="%s.func" % conn)
+            in_signal = Signal(shape=conn.size_mid, name=f"{conn}.func")
             model.add_op(SimPyFunc(in_signal, conn.function, None, sliced_in))
     elif isinstance(conn.pre_obj, Ensemble):  # Normal decoded connection
         eval_points, decoders, solver_info = model.build(conn.solver, conn, rng)
@@ -306,7 +305,7 @@ def build_connection(model, conn):
         # an Ensemble, because the gains are rolled into the encoders)
         gains = Signal(
             model.params[conn.post_obj.ensemble].gain[post_slice],
-            name="%s.gains" % conn,
+            name=f"{conn}.gains",
         )
 
         if is_integer(post_slice) or isinstance(post_slice, slice):
@@ -314,7 +313,7 @@ def build_connection(model, conn):
         else:
             # advanced indexing not supported on Signals, so we need to set up an
             # intermediate signal and use a Copy op to perform the indexing
-            sliced_out = Signal(shape=gains.shape, name="%s.sliced_out" % conn)
+            sliced_out = Signal(shape=gains.shape, name=f"{conn}.sliced_out")
             model.add_op(Reset(sliced_out))
             model.add_op(
                 Copy(sliced_out, model.sig[conn]["out"], dst_slice=post_slice, inc=True)
@@ -322,7 +321,7 @@ def build_connection(model, conn):
 
         model.add_op(
             ElementwiseInc(
-                gains, weighted, sliced_out, tag="%s.gains_elementwiseinc" % conn
+                gains, weighted, sliced_out, tag=f"{conn}.gains_elementwiseinc"
             )
         )
     else:
@@ -333,7 +332,7 @@ def build_connection(model, conn):
                 model.sig[conn]["out"],
                 dst_slice=post_slice,
                 inc=True,
-                tag="%s" % conn,
+                tag=f"{conn}",
             )
         )
 
@@ -342,8 +341,8 @@ def build_connection(model, conn):
         # TODO: provide a general way for transforms to expose learnable params
         if not isinstance(conn.transform, (Dense, NoTransform)):
             raise NotImplementedError(
-                "Learning on connections with %s transforms is not supported"
-                % (type(conn.transform).__name__,)
+                f"Learning on connections with {type(conn.transform).__name__} "
+                "transforms is not supported"
             )
 
         rule = conn.learning_rule

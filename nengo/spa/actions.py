@@ -2,7 +2,6 @@
 
 import re
 import warnings
-from collections import OrderedDict
 
 from nengo.exceptions import SpaParseError
 from nengo.spa.action_objects import DotProduct, Source, Summation, Symbol
@@ -97,7 +96,7 @@ class Effect:
     """
 
     def __init__(self, sources, sinks, effect):
-        self.effect = OrderedDict()
+        self.effect = {}
         # Splits by ',' and separates into lvalue=rvalue. We cannot simply use
         # split, because the rvalue may contain commas in the case of dot(*,*).
         # However, *? is lazy, and * is greedy, making this regex work.

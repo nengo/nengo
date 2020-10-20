@@ -83,7 +83,7 @@ class EnsembleArray(Network):
         label=None,
         seed=None,
         add_to_container=None,
-        **ens_kwargs
+        **ens_kwargs,
     ):
         if "dimensions" in ens_kwargs:
             raise ValidationError(
@@ -120,7 +120,7 @@ class EnsembleArray(Network):
                 e = Ensemble(
                     n_neurons,
                     self.dimensions_per_ensemble,
-                    label="%s%d" % (label_prefix, i),
+                    label=f"{label_prefix}{i}",
                 )
                 Connection(
                     self.input[i * ens_dimensions : (i + 1) * ens_dimensions],
@@ -252,8 +252,8 @@ class EnsembleArray(Network):
         """
         if hasattr(self, name):
             raise ValidationError(
-                "Cannot add output %r; there is already an attribute by this name"
-                % (name,),
+                f"Cannot add output '{name}'; there is already an attribute "
+                "with this name",
                 attr="name",
                 obj=self,
             )

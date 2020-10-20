@@ -47,14 +47,14 @@ class Factory:
         try:
             inst = self()
         except Exception:  # pylint: disable = broad-except
-            inst = "%s(args=%s, kwargs=%s)" % (self.klass, self.args, self.kwargs)
+            inst = f"{self.klass}(args={self.args}, kwargs={self.kwargs})"
         return str(inst)
 
     def __repr__(self):
         try:
             inst = self()
         except Exception:  # pylint: disable = broad-except
-            inst = "<%r instance>" % (self.klass.__name__)
+            inst = f"<{self.klass.__name__!r} instance>"
         return repr(inst)
 
 
@@ -132,7 +132,7 @@ def test_decoder_solver(Solver, plt, rng, allclose):
 
     plt.plot(test, np.zeros_like(test), "k--")
     plt.plot(test, test - est)
-    plt.title("relative RMSE: %0.2e" % rel_rmse)
+    plt.title(f"relative RMSE: {rel_rmse:0.2e}")
 
     atol = (
         0.1 if isinstance(solver, (LstsqNoise, LstsqDrop, LstsqMultNoise)) else 1.5e-2
@@ -346,7 +346,7 @@ def test_subsolvers_L2(rng, allclose):
         logging.info("info: %s", info)
 
     for solver, x in zip(solvers, xs):
-        assert allclose(x0, x, atol=1e-5, rtol=1e-3), "Solver %s" % solver.__name__
+        assert allclose(x0, x, atol=1e-5, rtol=1e-3), f"Solver {solver.__name__}"
 
 
 @pytest.mark.slow
@@ -399,9 +399,7 @@ def test_compare_solvers(Simulator, plt, seed, allclose):
             b = nengo.Ensemble(N, dimensions=1, seed=seed + 1)
             nengo.Connection(a, b, solver=solver, transform=1)
             probes.append(nengo.Probe(b))
-            names.append(
-                "%s(%s)" % (type(solver).__name__, "w" if solver.weights else "d")
-            )
+            names.append(f"{type(solver).__name__}({'w' if solver.weights else 'd'})")
 
     with Simulator(model) as sim:
         sim.run(tfinal)
@@ -427,7 +425,7 @@ def test_compare_solvers(Simulator, plt, seed, allclose):
     )
 
     for name, c in zip(names, close):
-        assert c, "Solver '%s' does not meet tolerances" % name
+        assert c, f"Solver '{name}' does not meet tolerances"
 
 
 @pytest.mark.slow
@@ -487,7 +485,7 @@ def test_regularization(Simulator, NonDirectNeuronType, plt):
             plt.contourf(X, Y, Z, levels=np.linspace(Z.min(), Z.max(), 21))
             plt.xlabel("filter")
             plt.ylabel("reg")
-            plt.title("%s (N=%d)" % (Solver.__name__, n_neurons))
+            plt.title(f"{Solver.__name__}, (N={n_neurons})")
 
     # TODO: add assertions
 

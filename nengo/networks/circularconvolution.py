@@ -191,7 +191,7 @@ class CircularConvolution(Network):
         invert_a=False,
         invert_b=False,
         input_magnitude=1.0,
-        **kwargs
+        **kwargs,
     ):
         if "net" in kwargs:
             raise ObsoleteError("The 'net' argument is no longer supported.")

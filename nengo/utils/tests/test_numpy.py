@@ -81,9 +81,9 @@ def test_array_hash_sparse(nnz, rng):
     # ensure hash is different for different matrices
     for kind in matrices:
         hashes = [array_hash(matrix) for matrix in kind]
-        assert len(np.unique(hashes)) == len(kind), (
-            "Different matrices should have different hashes: %s" % hashes
-        )
+        assert len(np.unique(hashes)) == len(
+            kind
+        ), f"Different matrices should have different hashes: {hashes}"
 
 
 def test_expm(rng, allclose):

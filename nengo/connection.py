@@ -43,7 +43,7 @@ class ConnectionLearningRuleTypeParam(LearningRuleTypeParam):
             if not isinstance(pre, (Ensemble, Neurons)):
                 raise ValidationError(
                     "'pre' must be of type 'Ensemble' or 'Neurons' for "
-                    "learning rule '%s' (got type %r)" % (rule, type(pre).__name__),
+                    f"learning rule '{rule}' (got type '{type(pre).__name__}')",
                     attr=self.name,
                     obj=conn,
                 )
@@ -59,8 +59,8 @@ class ConnectionLearningRuleTypeParam(LearningRuleTypeParam):
         if rule.modifies == "encoders":
             if not isinstance(conn.post_obj, Ensemble):
                 raise ValidationError(
-                    "'post' must be of type 'Ensemble' (got %r) "
-                    "for learning rule '%s'" % (type(conn.post_obj).__name__, rule),
+                    "'post' must be of type 'Ensemble' (got "
+                    f"'{type(conn.post_obj).__name__}') for learning rule '{rule}'",
                     attr=self.name,
                     obj=conn,
                 )
@@ -74,9 +74,8 @@ class ConnectionLearningRuleTypeParam(LearningRuleTypeParam):
         else:
             if not isinstance(conn.post_obj, (Ensemble, Neurons, Node)):
                 raise ValidationError(
-                    "'post' must be of type 'Ensemble', 'Neurons' or 'Node' "
-                    "(got %r) for learning rule '%s'"
-                    % (type(conn.post_obj).__name__, rule),
+                    "'post' must be of type 'Ensemble', 'Neurons' or 'Node' (got "
+                    f"'{type(conn.post_obj).__name__}') for learning rule '{rule}'",
                     attr=self.name,
                     obj=conn,
                 )
@@ -90,8 +89,8 @@ class ConnectionLearningRuleTypeParam(LearningRuleTypeParam):
     def check_transform(self, conn, rule):
         if not conn.has_weights and rule.modifies in ("weights", "decoders"):
             raise ValidationError(
-                "Learning rule '%s' cannot be applied to a connection that does not "
-                "have weights (transform=None)" % rule,
+                f"Learning rule '{rule}' cannot be applied to a connection that does "
+                "not have weights (transform=None)",
                 attr=self.name,
                 obj=conn,
             )
@@ -100,9 +99,9 @@ class ConnectionLearningRuleTypeParam(LearningRuleTypeParam):
             # If the rule modifies 'weights', then it must have full weights
             if not conn._to_neurons:
                 raise ValidationError(
-                    "Learning rule '%s' can only be applied on connections to neurons. "
-                    "Try setting `solver.weights` to True or "
-                    "connecting between two Neurons objects." % rule,
+                    f"Learning rule '{rule}' can only be applied on connections to "
+                    "neurons. Try setting `solver.weights` to True or "
+                    "connecting between two Neurons objects.",
                     attr=self.name,
                     obj=conn,
                 )
@@ -117,7 +116,7 @@ class ConnectionLearningRuleTypeParam(LearningRuleTypeParam):
             ):
                 raise ValidationError(
                     "Transform must be 2D array with shape post_neurons x "
-                    "pre_neurons (%d, %d)" % (pre_size, post_size),
+                    f"pre_neurons ({pre_size}, {post_size})",
                     attr=self.name,
                     obj=conn,
                 )
@@ -157,7 +156,7 @@ class EvalPointsParam(DistOrArrayParam):
         if distorarray is not None and not isinstance(conn.pre, Ensemble):
             msg = (
                 "eval_points are only valid on connections from ensembles "
-                "(got type '%s')" % type(conn.pre).__name__
+                f"(got type '{type(conn.pre).__name__}')"
             )
             raise ValidationError(msg, attr=self.name, obj=conn)
         return super().coerce(conn, distorarray)
@@ -179,14 +178,13 @@ class ConnectionFunctionParam(Parameter):
 
         if ndarray.ndim != 2:
             raise ValidationError(
-                "array must be 2D (got %dD)" % ndarray.ndim, attr=self.name, obj=conn
+                f"array must be 2D (got {ndarray.ndim}D)", attr=self.name, obj=conn
             )
 
         if ndarray.shape[0] != conn.eval_points.shape[0]:
             raise ValidationError(
-                "Number of evaluation points must match number "
-                "of function points (%d != %d)"
-                % (ndarray.shape[0], conn.eval_points.shape[0]),
+                "Number of evaluation points must match number of function points "
+                f"({ndarray.shape[0]} != {conn.eval_points.shape[0]})",
                 attr=self.name,
                 obj=conn,
             )
@@ -199,7 +197,7 @@ class ConnectionFunctionParam(Parameter):
             if not isinstance(conn.pre_obj, (Node, Ensemble)):
                 raise ValidationError(
                     "function can only be set for connections from an Ensemble"
-                    " or Node (got type %r)" % type_pre,
+                    f" or Node (got type '{type_pre}')",
                     attr=self.name,
                     obj=conn,
                 )
@@ -230,8 +228,8 @@ class ConnectionFunctionParam(Parameter):
             super().coerce(conn, function_info)
         else:
             raise ValidationError(
-                "Invalid connection function type %r "
-                "(must be callable or array-like)" % type(function).__name__,
+                f"Invalid connection function type '{type(function).__name__}' "
+                "(must be callable or array-like)",
                 attr=self.name,
                 obj=conn,
             )
@@ -245,7 +243,7 @@ class ConnectionFunctionParam(Parameter):
         value, invoked = checked_call(function, *args)
         if not invoked:
             raise ValidationError(
-                "function '%s' must accept a single np.array argument" % function,
+                f"function '{function}' must accept a single np.array argument",
                 attr=self.name,
                 obj=instance,
             )
@@ -280,23 +278,22 @@ class ConnectionTransformParam(Parameter):
                 # signal, so the blame most likely lies with the function
                 raise ValidationError(
                     "Function output size is incorrect; should return a "
-                    "vector of size %d" % conn.size_mid,
+                    f"vector of size {conn.size_mid}",
                     attr=self.name,
                     obj=conn,
                 )
             else:
                 raise ValidationError(
-                    "Transform input size (%d) not equal to %s output size "
-                    "(%d)"
-                    % (transform.size_in, type(conn.pre_obj).__name__, conn.size_mid),
+                    f"Transform input size ({transform.size_in}) not equal to "
+                    f"'{type(conn.pre_obj).__name__}' output size ({conn.size_mid})",
                     attr=self.name,
                     obj=conn,
                 )
 
         if transform.size_out != conn.size_out:
             raise ValidationError(
-                "Transform output size (%d) not equal to connection "
-                "output size (%d)" % (transform.size_out, conn.size_out),
+                f"Transform output size ({transform.size_out}) not equal to connection "
+                f"output size ({conn.size_out})",
                 attr=self.name,
                 obj=conn,
             )
@@ -529,18 +526,15 @@ class Connection(NengoObject):
     def _str(self, include_id):
         desc = "<Connection "
         if include_id:
-            desc += "at 0x%x " % id(self)
+            desc += f"at 0x{id(self):x} "
 
         if self.label is None:
-            desc += "from %s to %s%s" % (
-                self.pre,
-                self.post,
-                (
-                    ""
-                    if self.function is None
-                    else " computing '%s'" % (function_name(self.function))
-                ),
+            func_txt = (
+                ""
+                if self.function is None
+                else f" computing '{function_name(self.function)}'"
             )
+            desc += f"from {self.pre} to {self.post}{func_txt}"
         else:
             desc += self.label
 
@@ -590,13 +584,13 @@ class Connection(NengoObject):
         if self.label is not None:
             return self.label
 
-        return "from %s to %s%s" % (
-            self.pre,
-            self.post,
-            " computing '%s'" % function_name(self.function)
+        func_txt = (
+            f" computing '{function_name(self.function)}'"
             if self.function is not None
-            else "",
+            else ""
         )
+
+        return f"from {self.pre} to {self.post}{func_txt}"
 
     @property
     def learning_rule(self):
@@ -615,7 +609,7 @@ class Connection(NengoObject):
             learning_rule = LearningRule(self, types)
         else:
             raise ValidationError(
-                "Invalid type %r" % type(types).__name__,
+                f"Invalid type '{type(types).__name__}'",
                 attr="learning_rule_type",
                 obj=self,
             )
@@ -680,16 +674,15 @@ class LearningRule:
         self.learning_rule_type = learning_rule_type
 
     def __repr__(self):
-        return "<LearningRule at 0x%x modifying %r with type %r>" % (
-            id(self),
-            self.connection,
-            self.learning_rule_type,
+        return (
+            f"<LearningRule at 0x{id(self):x} modifying {self.connection!r} "
+            f"with type {self.learning_rule_type!r}>"
         )
 
     def __str__(self):
-        return "<LearningRule modifying %s with type %s>" % (
-            self.connection,
-            self.learning_rule_type,
+        return (
+            f"<LearningRule modifying {self.connection} "
+            f"with type {self.learning_rule_type}>"
         )
 
     def __eq__(self, other):

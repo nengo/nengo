@@ -546,8 +546,8 @@ def test_slicing(Simulator, AnyNeuronType, plt, seed, allclose):
 
     atol = 0.01 if AnyNeuronType is nengo.Direct else 0.1
     for i, [y, p, wp] in enumerate(zip(ys, probes, weight_probes)):
-        assert allclose(y, sim.data[p][-20:], atol=atol), "Failed %d" % i
-        assert allclose(y, sim.data[wp][-20:], atol=atol), "Weights %d" % i
+        assert allclose(y, sim.data[p][-20:], atol=atol), f"Failed {i}"
+        assert allclose(y, sim.data[wp][-20:], atol=atol), f"Weights {i}"
 
 
 def test_neuron_slicing(Simulator, plt, seed, rng, allclose):

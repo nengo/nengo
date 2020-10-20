@@ -19,7 +19,7 @@ def test_thresholding_preset(Simulator, seed, plt, allclose):
     plt.plot(sim.trange(), sim.data[p], label="actual")
     plt.xlabel("Time [s]")
     plt.ylabel("Value")
-    plt.title("Threshold = {}".format(threshold))
+    plt.title(f"Threshold = {threshold}")
     plt.legend(loc="best")
 
     se = np.square(np.squeeze(sim.data[p]) - sim.trange())

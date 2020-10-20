@@ -114,21 +114,20 @@ class Network:
         """Add the passed object to ``Network.context``."""
         if len(Network.context) == 0:
             raise NetworkContextError(
-                "'%s' must either be created inside a ``with network:`` "
+                f"'{obj}' must either be created inside a ``with network:`` "
                 "block, or set add_to_container=False in the object's "
-                "constructor." % obj
+                "constructor."
             )
         network = Network.context[-1]
         if not isinstance(network, Network):
-            raise NetworkContextError("Current context (%s) is not a network" % network)
+            raise NetworkContextError(f"Current context ({network}) is not a network")
         for cls in type(obj).__mro__:
             if cls in network.objects:
                 network.objects[cls].append(obj)
                 break
         else:
             raise NetworkContextError(
-                "Objects of type %r cannot be added to "
-                "networks." % type(obj).__name__
+                f"Objects of type '{type(obj).__name__}' cannot be added to networks."
             )
 
     @staticmethod
@@ -258,15 +257,15 @@ class Network:
         if config is not self._config:
             raise ConfigError(
                 "Config.context in bad state; was expecting "
-                "current context to be '%s' but instead got "
-                "'%s'." % (self._config, config)
+                f"current context to be '{self._config}' but instead got "
+                f"'{config}'."
             )
 
         network = Network.context.pop()
         if network is not self:
             raise NetworkContextError(
                 "Network.context in bad state; was expecting current context "
-                "to be '%s' but instead got '%s'." % (self, network)
+                f"to be '{self}' but instead got '{network}'."
             )
 
         self._config.__exit__(dummy_exc_type, dummy_exc_value, dummy_tb)
@@ -284,19 +283,16 @@ class Network:
             warnings.warn(NotAddedToNetworkWarning(self))
 
     def __str__(self):
-        return "<%s %s>" % (
-            type(self).__name__,
-            '"%s"' % self.label
+        label_txt = (
+            f'"{self.label}"'
             if self.label is not None
-            else "(unlabeled) at 0x%x" % id(self),
+            else f"(unlabeled) at 0x{id(self):x}"
         )
+        return f"<{type(self).__name__} {label_txt}>"
 
     def __repr__(self):
-        return "<%s %s %s>" % (
-            type(self).__name__,
-            '"%s"' % self.label if self.label is not None else "(unlabeled)",
-            "at 0x%x" % id(self),
-        )
+        label_txt = f'"{self.label}"' if self.label is not None else "(unlabeled)"
+        return f"<{type(self).__name__} {label_txt} at 0x{id(self):x}>"
 
     def copy(self, add_to_container=None):
         with warnings.catch_warnings():

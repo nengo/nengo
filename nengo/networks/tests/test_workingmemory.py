@@ -25,7 +25,7 @@ def test_inputgatedmemory(Simulator, allclose, plt, seed):
     data = sim.data[mem_p]
     t = sim.trange()
 
-    plt.title("gating at %.1f s" % start_memorizing)
+    plt.title(f"gating at {start_memorizing:.1f} s")
     plt.plot(t, data, label="value in memory")
     plt.axhline(to_memorize, c="k", lw=2, label="value to remember")
     plt.axvline(start_memorizing, c="k", ls=":", label="start gating")

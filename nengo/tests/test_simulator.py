@@ -42,8 +42,8 @@ def test_dtype(Simulator, request, seed, bits):
         lambda: rc.set("precision", "bits", str(RC_DEFAULTS["precision"]["bits"]))
     )
 
-    float_dtype = np.dtype(getattr(np, "float%s" % bits))
-    int_dtype = np.dtype(getattr(np, "int%s" % bits))
+    float_dtype = np.dtype(getattr(np, f"float{bits}"))
+    int_dtype = np.dtype(getattr(np, f"int{bits}"))
 
     with nengo.Network() as model:
         u = nengo.Node([0.5, -0.4])
@@ -56,7 +56,7 @@ def test_dtype(Simulator, request, seed, bits):
         sim.step()
 
         for k, v in sim.signals.items():
-            assert v.dtype in (float_dtype, int_dtype), "Signal '%s' wrong dtype" % k
+            assert v.dtype in (float_dtype, int_dtype), f"Signal '{k}' wrong dtype"
 
         objs = (obj for obj in model.all_objects if sim.data[obj] is not None)
         for obj in objs:

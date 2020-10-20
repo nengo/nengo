@@ -159,7 +159,7 @@ class BasalGanglia(Network):
         input_bias=0.0,
         ampa_config=None,
         gaba_config=None,
-        **kwargs
+        **kwargs,
     ):
         if "net" in kwargs:
             raise ObsoleteError("The 'net' argument is no longer supported.")
@@ -319,7 +319,7 @@ class Thalamus(Network):
         n_neurons_per_ensemble=50,
         mutual_inhib=1.0,
         threshold=0.0,
-        **kwargs
+        **kwargs,
     ):
         if "net" in kwargs:
             raise ObsoleteError("The 'net' argument is no longer supported.")

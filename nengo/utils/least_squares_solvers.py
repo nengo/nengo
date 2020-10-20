@@ -206,7 +206,7 @@ class Conjgrad(LeastSquaresSolver):
         X = np.zeros((n, d)) if self.X0 is None else np.array(self.X0)
         if X.shape != (n, d):
             raise ValidationError(
-                "Must be shape %s, got %s" % ((n, d), X.shape), attr="X0", obj=self
+                f"Must be shape {n, d}, got {X.shape}", attr="X0", obj=self
             )
 
         damp = m * sigma ** 2
@@ -276,7 +276,7 @@ class BlockConjgrad(LeastSquaresSolver):
         X = np.zeros((n, d)) if self.X0 is None else np.array(self.X0)
         if X.shape != (n, d):
             raise ValidationError(
-                "Must be shape %s, got %s" % ((n, d), X.shape), attr="X0", obj=self
+                f"Must be shape {n, d}, got {X.shape}", attr="X0", obj=self
             )
 
         damp = m * sigma ** 2

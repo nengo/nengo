@@ -111,18 +111,17 @@ def get_gain_bias(ens, rng=np.random, dtype=None):
         ):
             warnings.warn(
                 NengoWarning(
-                    "Specifying the gains and biases for %s imposes a set of "
+                    f"Specifying the gains and biases for {ens} imposes a set of "
                     "maximum firing rates and intercepts. Further specifying "
-                    "either max_rates or intercepts has no effect." % ens
+                    "either max_rates or intercepts has no effect."
                 )
             )
 
     elif ens.gain is not None or ens.bias is not None:
         # TODO: handle this instead of error
         raise NotImplementedError(
-            "gain or bias set for %s, but not both. "
-            "Solving for one given the other is not "
-            "implemented yet." % ens
+            f"gain or bias set for {ens}, but not both. "
+            "Solving for one given the other is not implemented yet."
         )
     else:
         max_rates = get_samples(ens.max_rates, ens.n_neurons, rng=rng)
@@ -130,11 +129,11 @@ def get_gain_bias(ens, rng=np.random, dtype=None):
         gain, bias = ens.neuron_type.gain_bias(max_rates, intercepts)
         if gain is not None and (not np.all(np.isfinite(gain)) or np.any(gain <= 0.0)):
             raise BuildError(
-                "The specified intercepts for %s lead to neurons with "
+                f"The specified intercepts for {ens} lead to neurons with "
                 "negative or non-finite gain. Please adjust the intercepts so "
                 "that all gains are positive. For most neuron types (e.g., "
                 "LIF neurons) this is achieved by reducing the maximum "
-                "intercept value to below 1." % ens
+                "intercept value to below 1."
             )
 
     gain = gain.astype(dtype) if gain is not None else gain
@@ -183,7 +182,7 @@ def build_ensemble(model, ens):
     eval_points = gen_eval_points(ens, ens.eval_points, rng=rng, dtype=rc.float_dtype)
 
     # Set up signal
-    model.sig[ens]["in"] = Signal(shape=ens.dimensions, name="%s.signal" % ens)
+    model.sig[ens]["in"] = Signal(shape=ens.dimensions, name=f"{ens}.signal")
     model.add_op(Reset(model.sig[ens]["in"]))
 
     # Set up encoders
@@ -198,9 +197,9 @@ def build_ensemble(model, ens):
         encoders /= npext.norm(encoders, axis=1, keepdims=True)
     if np.any(np.isnan(encoders)):
         raise BuildError(
-            "NaNs detected in %r encoders. This usually means that you had zero-length "
-            "encoders that were normalized, resulting in NaNs. Ensure all encoders "
-            "have non-zero length, or set `normalize_encoders=False`." % ens
+            f"NaNs detected in '{ens}' encoders. This usually means that you had "
+            "zero-length encoders that were normalized, resulting in NaNs. Ensure all "
+            "encoders have non-zero length, or set `normalize_encoders=False`."
         )
 
     # Build the neurons
@@ -208,20 +207,18 @@ def build_ensemble(model, ens):
 
     if isinstance(ens.neuron_type, Direct):
         model.sig[ens.neurons]["in"] = Signal(
-            shape=ens.dimensions, name="%s.neuron_in" % ens
+            shape=ens.dimensions, name=f"{ens}.neuron_in"
         )
         model.sig[ens.neurons]["out"] = model.sig[ens.neurons]["in"]
         model.add_op(Reset(model.sig[ens.neurons]["in"]))
     else:
         model.sig[ens.neurons]["in"] = Signal(
-            shape=ens.n_neurons, name="%s.neuron_in" % ens
+            shape=ens.n_neurons, name=f"{ens}.neuron_in"
         )
         model.sig[ens.neurons]["out"] = Signal(
-            shape=ens.n_neurons, name="%s.neuron_out" % ens
+            shape=ens.n_neurons, name=f"{ens}.neuron_out"
         )
-        model.sig[ens.neurons]["bias"] = Signal(
-            bias, name="%s.bias" % ens, readonly=True
-        )
+        model.sig[ens.neurons]["bias"] = Signal(bias, name=f"{ens}.bias", readonly=True)
         model.add_op(Copy(model.sig[ens.neurons]["bias"], model.sig[ens.neurons]["in"]))
         # This adds the neuron's operator and sets other signals
         model.build(ens.neuron_type, ens.neurons)
@@ -233,7 +230,7 @@ def build_ensemble(model, ens):
         scaled_encoders = encoders * (gain / ens.radius)[:, np.newaxis]
 
     model.sig[ens]["encoders"] = Signal(
-        scaled_encoders, name="%s.scaled_encoders" % ens, readonly=True
+        scaled_encoders, name=f"{ens}.scaled_encoders", readonly=True
     )
 
     # Inject noise if specified
@@ -246,7 +243,7 @@ def build_ensemble(model, ens):
             model.sig[ens]["encoders"],
             model.sig[ens]["in"],
             model.sig[ens.neurons]["in"],
-            tag="%s encoding" % ens,
+            tag=f"{ens} encoding",
         )
     )
 

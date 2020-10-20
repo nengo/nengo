@@ -101,8 +101,8 @@ class NengoObject(SupportDefaultsMixin, metaclass=NetworkMember):
         initialized = hasattr(self, "_initialized") and self._initialized
         if initialized and not hasattr(self, name):
             warnings.warn(
-                "Creating new attribute '%s' on '%s'. "
-                "Did you mean to change an existing attribute?" % (name, self),
+                f"Creating new attribute '{name}' on '{self}'. "
+                "Did you mean to change an existing attribute?",
                 SyntaxWarning,
             )
         super().__setattr__(name, val)
@@ -114,14 +114,17 @@ class NengoObject(SupportDefaultsMixin, metaclass=NetworkMember):
         return self._str(include_id=True)
 
     def _str(self, include_id):
-        return "<%s%s%s>" % (
-            type(self).__name__,
+        label = (
             ""
             if not hasattr(self, "label")
             else " (unlabeled)"
             if self.label is None
-            else ' "%s"' % self.label,
-            " at 0x%x" % id(self) if include_id else "",
+            else f" '{self.label}'"
+        )
+        return (
+            f"<{type(self).__name__}"
+            f"{label}"
+            f"{f' at 0x{id(self):x}' if include_id else ''}>"
         )
 
     @property
@@ -164,7 +167,7 @@ class ObjView:
         except (IndexError, ValueError):
             self.size_out = None
         if self.size_in is None and self.size_out is None:
-            raise IndexError("Invalid slice '%s' of %s" % (key, self.obj))
+            raise IndexError(f"Invalid slice '{key}' of {self.obj}")
 
         if is_integer(key):
             # single slices of the form [i] should be cast into
@@ -184,10 +187,10 @@ class ObjView:
         return self.size_out
 
     def __str__(self):
-        return "%s[%s]" % (self.obj, self._slice_string)
+        return f"{self.obj}[{self._slice_string}]"
 
     def __repr__(self):
-        return "%r[%s]" % (self.obj, self._slice_string)
+        return f"{self.obj!r}[{self._slice_string}]"
 
     @property
     def _slice_string(self):
@@ -195,9 +198,9 @@ class ObjView:
             sl_start = "" if self.slice.start is None else self.slice.start
             sl_stop = "" if self.slice.stop is None else self.slice.stop
             if self.slice.step is None:
-                return "%s:%s" % (sl_start, sl_stop)
+                return f"{sl_start}:{sl_stop}"
             else:
-                return "%s:%s:%s" % (sl_start, sl_stop, self.slice.step)
+                return f"{sl_start}:{sl_stop}:{self.slice.step}"
         else:
             return str(self.slice)
 
@@ -225,15 +228,15 @@ class NengoObjectParam(Parameter):
         )
         if not isinstance(nengo_obj, nengo_objects):
             raise ValidationError(
-                "'%s' is not a Nengo object" % nengo_obj, attr=self.name, obj=instance
+                f"'{nengo_obj}' is not a Nengo object", attr=self.name, obj=instance
             )
         if self.nonzero_size_in and nengo_obj.size_in < 1:
             raise ValidationError(
-                "'%s' must have size_in > 0." % nengo_obj, attr=self.name, obj=instance
+                f"'{nengo_obj}' must have size_in > 0.", attr=self.name, obj=instance
             )
         if self.nonzero_size_out and nengo_obj.size_out < 1:
             raise ValidationError(
-                "'%s' must have size_out > 0." % nengo_obj, attr=self.name, obj=instance
+                f"'{nengo_obj}' must have size_out > 0.", attr=self.name, obj=instance
             )
         return super().coerce(instance, nengo_obj)
 

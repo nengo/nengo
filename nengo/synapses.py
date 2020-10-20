@@ -236,8 +236,8 @@ class LinearFilter(Synapse):
         dtype = rc.float_dtype if dtype is None else np.dtype(dtype)
         if dtype.kind != "f":
             raise ValidationError(
-                "Only float data types are supported (got %s). Please cast "
-                "your data to a float type." % dtype,
+                f"Only float data types are supported (got {dtype}). Please cast "
+                "your data to a float type.",
                 attr="dtype",
                 obj=self,
             )

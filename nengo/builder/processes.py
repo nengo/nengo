@@ -65,7 +65,7 @@ class SimProcess(Operator):
         elif mode == "set":
             self.sets.extend([output])
         else:
-            raise ValueError("Unrecognized mode %r" % mode)
+            raise ValueError(f"Unrecognized mode '{mode}'")
 
         self.state_idxs = {}
         if state is not None:
@@ -99,7 +99,7 @@ class SimProcess(Operator):
 
     @property
     def _descstr(self):
-        return "%s, %s -> %s" % (self.process, self.input, self.output)
+        return f"{self.process}, {self.input} -> {self.output}"
 
     def make_step(self, signals, dt, rng):
         t = signals[self.t]
@@ -148,7 +148,7 @@ def build_process(model, process, sig_in=None, sig_out=None, mode="set"):
     more than once with the same `.Process` instance.
     """
     if sig_out is None:
-        sig_out = Signal(shape=sig_in.shape, name="%s.%s" % (sig_in.name, process))
+        sig_out = Signal(shape=sig_in.shape, name=f"{sig_in.name}.{process}")
 
     shape_in = sig_in.shape if sig_in is not None else (0,)
     shape_out = sig_out.shape if sig_out is not None else (0,)

@@ -148,8 +148,8 @@ def rasterplot(time, spikes, ax=None, use_eventplot=False, **kwargs):  # noqa
 
     if use_eventplot and not hasattr(ax, "eventplot"):  # pragma: no cover
         warnings.warn(
-            "Matplotlib version %s does not have 'eventplot'. "
-            "Falling back to non-eventplot version." % matplotlib.__version__
+            f"Matplotlib version {matplotlib.__version__} does not have 'eventplot'. "
+            "Falling back to non-eventplot version."
         )
         use_eventplot = False
 

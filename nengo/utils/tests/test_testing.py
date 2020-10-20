@@ -72,7 +72,7 @@ def test_signals_allclose_plot(ny, rng, plt):
     t = 0.01 * np.arange(nt)
     x = rng.uniform(-1, 1, size=(nt, ny))
     y = add_close_noise(x, atol, rtol, rng)
-    labels = ["lab%d" % i for i in range(ny)]
+    labels = [f"lab{i}" for i in range(ny)]
 
     if ny == 1:
         x, y, labels = x[:, 0], y[:, 0], labels[0]
@@ -102,7 +102,7 @@ def test_threadedassertion():
             assert worker.init_param == "good", "Worker did not init"
 
             if worker.n in self.assert_inds:
-                raise RuntimeError("Worker %d failed properly" % worker.n)
+                raise RuntimeError(f"Worker {worker.n} failed properly")
 
         def finish_thread(self, worker):
             worker.finish_param = "finished"

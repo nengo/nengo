@@ -19,7 +19,7 @@ Release history
    - Removed
    - Fixed
 
-3.1.1 (unreleased)
+3.2.0 (unreleased)
 ==================
 
 **Fixed**
@@ -28,9 +28,12 @@ Release history
 
 **Removed**
 
+- Removed support for Python 3.5 (which reached its end of life in
+  September 2020). (`#1649`_)
 - Removed ``nengo.utils.graphs.graph`` (this was a small utility function for building
   graphs that was only used in tests). (`#1654`_)
 
+.. _#1649: https://github.com/nengo/nengo/pull/1649
 .. _#1654: https://github.com/nengo/nengo/pull/1654
 
 3.1.0 (November 17, 2020)

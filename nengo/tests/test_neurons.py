@@ -405,7 +405,7 @@ def test_spiking_types(base_type, seed, plt, allclose):
 
         results[neuron_type]["u"] = sim.data[u_p]
         results[neuron_type]["x"] = sim.data[a_p]
-        plt.plot(sim.trange(), sim.data[a_p], label="%s: t=%.3f" % (neuron_type, timer))
+        plt.plot(sim.trange(), sim.data[a_p], label=f"{neuron_type}: t={timer:.3f}")
 
     plt.plot(sim.trange()[delay:], sim.data[u_p][:-delay], "k--")
     plt.legend(loc=3)

@@ -102,7 +102,7 @@ class Model:
         self.build_callback = None
 
     def __str__(self):
-        return "Model: %s" % self.label
+        return f"Model: {self.label}"
 
     def add_op(self, op):
         """Add an operator to the model.
@@ -231,14 +231,14 @@ class Builder:
         """
         if model.has_built(obj):
             # TODO: Prevent this at pre-build validation time.
-            warnings.warn("Object %s has already been built." % obj)
+            warnings.warn(f"Object {obj} has already been built.")
             return None
 
         for obj_cls in type(obj).__mro__:
             if obj_cls in cls.builders:
                 return cls.builders[obj_cls](model, obj, *args, **kwargs)
 
-        raise BuildError("Cannot build object of type %r" % type(obj).__name__)
+        raise BuildError(f"Cannot build object of type '{type(obj).__name__}'")
 
     @classmethod
     def register(cls, nengo_class):
@@ -255,7 +255,7 @@ class Builder:
         def register_builder(build_fn):
             if nengo_class in cls.builders:
                 warnings.warn(
-                    "Type '%s' already has a builder. Overwriting." % nengo_class
+                    f"Type '{nengo_class}' already has a builder. Overwriting."
                 )
             cls.builders[nengo_class] = build_fn
             return build_fn

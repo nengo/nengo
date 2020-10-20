@@ -142,8 +142,8 @@ def test_build_error():
             ("test_build_error", 'nengo.builder.Builder.build(model, "")'),
             (
                 "build",
-                'raise BuildError("Cannot build object of type %r" % '
-                "type(obj).__name__)",
+                'raise BuildError(f"Cannot build object of '
+                "type '{type(obj).__name__}'\")",
             ),
         ],
     )

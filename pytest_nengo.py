@@ -227,7 +227,7 @@ def pytest_runtest_setup(item):
     for test, reason in unsupported:
         # wrap square brackets to interpret them literally
         # (see https://docs.python.org/3/library/fnmatch.html)
-        test = "".join("[%s]" % c if c in ("[", "]") else c for c in test)
+        test = "".join(f"[{c}]" if c in ("[", "]") else c for c in test)
 
         # We add a '*' before test to eliminate the surprise of needing
         # a '*' before the name of a test function.
@@ -249,7 +249,7 @@ def pytest_terminal_summary(terminalreporter):
             # ... it seems that in OSX the output is in different units ...
             rusage_denom = rusage_denom * rusage_denom
         mem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / rusage_denom
-        terminalreporter.write_sep("=", "total memory consumed: %.2f MiB" % mem)
+        terminalreporter.write_sep("=", f"total memory consumed: {mem:.2f} MiB")
 
         # Ensure we only print once
         terminalreporter.config.option.memory = False

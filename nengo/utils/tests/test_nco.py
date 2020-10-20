@@ -16,15 +16,15 @@ def fixture_data():
 
 
 @pytest.fixture(name="testfile")
-def fixture_testfile(data, tmpdir):
-    f = tmpdir.join("file.txt")
-    f.write(data)
+def fixture_testfile(data, tmp_path):
+    f = tmp_path / "file.txt"
+    f.write_text(data)
     return f
 
 
 def write_custom_nco_header(fileobj, magic_string="NCO", version=0):
     magic_string = magic_string.encode("utf-8")
-    header_format = "@{}sBLLLL".format(len(magic_string))
+    header_format = f"@{len(magic_string)}sBLLLL"
     assert struct.calcsize(header_format) == nco.HEADER_SIZE
 
     header = struct.pack(header_format, magic_string, version, 0, 1, 2, 3)
@@ -112,9 +112,9 @@ class TestSubfile:
             sf.seek(3)
             assert sf.tell() == 3
 
-    def test_read_errors(self, tmpdir):
+    def test_read_errors(self, tmp_path):
         # use a bad magic string
-        filepath = str(tmpdir.join("bad_magic_cache_file.txt"))
+        filepath = tmp_path / "bad_magic_cache_file.txt"
         with open(filepath, "wb") as fh:
             write_custom_nco_header(fh, magic_string="BAD")
 
@@ -123,7 +123,7 @@ class TestSubfile:
                 nco.read(fh)
 
         # use a bad version number
-        filepath = str(tmpdir.join("bad_version_cache_file.txt"))
+        filepath = tmp_path / "bad_version_cache_file.txt"
         with open(filepath, "wb") as fh:
             write_custom_nco_header(fh, version=255)
 
@@ -132,8 +132,8 @@ class TestSubfile:
                 nco.read(fh)
 
 
-def test_nco_roundtrip(tmpdir):
-    tmpfile = tmpdir.join("test.nco")
+def test_nco_roundtrip(tmp_path):
+    tmpfile = tmp_path / "test.nco"
 
     pickle_data = {"0": 237, "str": "foobar"}
     array = np.array([[4, 3], [2, 1]])
