@@ -40,7 +40,14 @@ from nengo.probe import Probe
 from nengo.rc import RC_DEFAULTS, rc
 from nengo.simulator import Simulator
 from nengo.synapses import Alpha, LinearFilter, Lowpass, Triangle
-from nengo.transforms import Convolution, Dense, Sparse
+from nengo.transforms import (
+    Conv,
+    Convolution,
+    ConvolutionTranspose,
+    ConvTranspose,
+    Dense,
+    Sparse,
+)
 from nengo.version import version as __version__
 
 logger = logging.getLogger(__name__)

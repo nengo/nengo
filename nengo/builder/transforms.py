@@ -6,7 +6,13 @@ from nengo.builder.operator import DotInc, ElementwiseInc, Operator, Reset, Spar
 from nengo.builder.signal import Signal
 from nengo.exceptions import BuildError
 from nengo.rc import rc
-from nengo.transforms import Convolution, Dense, NoTransform, Sparse
+from nengo.transforms import (
+    Convolution,
+    ConvolutionTranspose,
+    Dense,
+    NoTransform,
+    Sparse,
+)
 
 
 def multiply(x, y):
@@ -77,6 +83,7 @@ def build_sparse(model, transform, sig_in, decoders=None, encoders=None, rng=np.
 
 
 @Builder.register(Convolution)
+@Builder.register(ConvolutionTranspose)
 def build_convolution(
     model, transform, sig_in, decoders=None, encoders=None, rng=np.random
 ):
@@ -98,8 +105,11 @@ def build_convolution(
     weighted = Signal(shape=transform.size_out, name=f"{transform}.weighted")
     model.add_op(Reset(weighted))
 
+    op_class = (
+        ConvTransposeInc if isinstance(transform, ConvolutionTranspose) else ConvInc
+    )
     model.add_op(
-        ConvInc(
+        op_class(
             weight_sig, sig_in, weighted, transform, tag=f"{transform}.apply_weights"
         )
     )
@@ -107,10 +117,10 @@ def build_convolution(
     return weighted, weight_sig
 
 
-class ConvInc(Operator):
+class GeneralConvInc(Operator):
     """Apply convolutional weights to input signal.
 
-    .. versionadded:: 3.0.0
+    .. versionadded:: 3.2.0
 
     Parameters
     ----------
@@ -120,8 +130,8 @@ class ConvInc(Operator):
         The input signal.
     Y : Signal
         Output signal to be incremented.
-    conv : `~nengo.Convolution`
-        The Convolution object being applied.
+    conv : `~nengo.Convolution` or `~nengo.ConvolutionTranspose`
+        The Convolution or ConvolutionTranspose transform being applied.
     tag : str, optional
         A label associated with the operator, for debugging purposes.
 
@@ -133,8 +143,8 @@ class ConvInc(Operator):
         The input signal.
     Y : Signal
         Output signal to be incremented.
-    conv : `~nengo.Convolution`
-        The Convolution object being applied.
+    conv : `~nengo.Convolution` or `~nengo.ConvolutionTranspose`
+        The Convolution or ConvolutionTranspose transform being applied.
     tag : str, optional
         A label associated with the operator, for debugging purposes.
 
@@ -149,12 +159,18 @@ class ConvInc(Operator):
     def __init__(self, W, X, Y, conv, tag=None):
         super().__init__(tag=tag)
 
+        assert isinstance(conv, (Convolution, ConvolutionTranspose))
+
         self.conv = conv
 
         self.sets = []
         self.incs = [Y]
         self.reads = [W, X]
         self.updates = []
+
+    @property
+    def is_transpose(self):
+        return isinstance(self.conv, ConvolutionTranspose)
 
     @property
     def W(self):
@@ -170,7 +186,8 @@ class ConvInc(Operator):
 
     @property
     def _descstr(self):
-        return f"conv2d({self.W}, {self.X}) -> {self.Y}"
+        name = "convtranspose2d" if self.is_transpose else "conv2d"
+        return f"{name}({self.W}, {self.X}) -> {self.Y}"
 
     def make_step(self, signals, dt, rng):
         if self.conv.dimensions > 2:
@@ -183,6 +200,9 @@ class ConvInc(Operator):
         Y = signals[self.Y]
         pad = self.conv.padding.upper()
         stride = self.conv.strides
+        output_spatial_shape = (
+            self.conv.output_shape.spatial_shape if self.is_transpose else None
+        )
 
         X = X.reshape(self.conv.input_shape.shape)
         Y = Y.reshape(self.conv.output_shape.shape)
@@ -197,14 +217,115 @@ class ConvInc(Operator):
             W = W[None, :, :, :]
             Y = Y[None, :, :]
             stride = (1,) + stride
+            if output_spatial_shape is not None:
+                output_spatial_shape = (1,) + output_spatial_shape
 
         # add empty batch dimension
         X = X[None, ...]
 
-        def step_conv():
-            Y[...] += conv2d.conv2d(X, W, pad=pad, stride=stride)[0]
+        if self.is_transpose:
 
-        return step_conv
+            def step_conv_transpose():
+                Y[...] += conv2d.conv2d_gradx(
+                    W, X, xsize=output_spatial_shape, pad=pad, stride=stride
+                )[0]
+
+            return step_conv_transpose
+
+        else:
+
+            def step_conv():
+                Y[...] += conv2d.conv2d(X, W, pad=pad, stride=stride)[0]
+
+            return step_conv
+
+
+class ConvInc(GeneralConvInc):
+    """Apply convolutional weights to input signal.
+
+    .. versionadded:: 3.0.0
+
+    Parameters
+    ----------
+    W : Signal
+        The convolutional weights (a.k.a. the kernel).
+    X : Signal
+        The input signal.
+    Y : Signal
+        Output signal to be incremented.
+    conv : `~nengo.Convolution`
+        The Convolution transform being applied.
+    tag : str, optional
+        A label associated with the operator, for debugging purposes.
+
+    Attributes
+    ----------
+    W : Signal
+        The convolutional weights.
+    X : Signal
+        The input signal.
+    Y : Signal
+        Output signal to be incremented.
+    conv : `~nengo.Convolution`
+        The Convolution transform being applied.
+    tag : str, optional
+        A label associated with the operator, for debugging purposes.
+
+    Notes
+    -----
+    1. sets ``[]``
+    2. incs ``[Y]``
+    3. reads ``[W, X]``
+    4. updates ``[]``
+    """
+
+    def __init__(self, W, X, Y, conv, tag=None):
+        super().__init__(W, X, Y, conv, tag=tag)
+        assert not self.is_transpose
+
+
+class ConvTransposeInc(GeneralConvInc):
+    """Apply transposed convolutional weights to input signal.
+
+    .. versionadded:: 3.2.0
+
+    Parameters
+    ----------
+    W : Signal
+        The convolutional weights (a.k.a. the kernel).
+    X : Signal
+        The input signal.
+    Y : Signal
+        Output signal to be incremented.
+    conv : `~nengo.ConvolutionTranspose`
+        The ConvolutionTranspose transform being applied.
+    tag : str, optional
+        A label associated with the operator, for debugging purposes.
+
+    Attributes
+    ----------
+    W : Signal
+        The convolutional weights.
+    X : Signal
+        The input signal.
+    Y : Signal
+        Output signal to be incremented.
+    conv : `~nengo.ConvolutionTranspose`
+        The ConvolutionTranspose transform being applied.
+    tag : str, optional
+        A label associated with the operator, for debugging purposes.
+
+    Notes
+    -----
+    1. sets ``[]``
+    2. incs ``[Y]``
+    3. reads ``[W, X]``
+    4. updates ``[]``
+    """
+
+    def __init__(self, W, X, Y, conv, tag=None):
+        super().__init__(W, X, Y, conv, tag=tag)
+        assert self.is_transpose
 
 
 @Builder.register(NoTransform)
