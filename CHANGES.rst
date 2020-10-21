@@ -25,8 +25,12 @@ Release history
 **Added**
 
 - Added official support for Python 3.9. (`#1660`_)
-- Added ``ChannelShape.from_space_and_channels`` to easily construct a ``ChannelShape``
-  from a spatial shape and number of channels. (`#1648`_)
+- Added ``ChannelShape.from_space_and_channels`` to easily construct a
+  ``ChannelShape`` from a spatial shape and number of channels. (`#1648`_)
+- Added the ``ConvolutionTranspose`` transform to perform transposed convolution.
+  It is commonly used for various forms of upsampling in deep networks. (`#1648`_)
+- Added ``Conv`` and ``ConvTranspose`` aliases for ``Convolution`` and
+  ``ConvolutionTranspose``. (`#1648`_)
 
 **Fixed**
 

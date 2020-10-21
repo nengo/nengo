@@ -13,7 +13,9 @@ from nengo import (
     AdaptiveLIF,
     AdaptiveLIFRate,
     Alpha,
+    Conv,
     Convolution,
+    ConvTranspose,
     Dense,
     Direct,
     Izhikevich,
@@ -73,7 +75,12 @@ from nengo.solvers import (
     NoSolver,
 )
 from nengo.synapses import Triangle
-from nengo.transforms import ChannelShape, NoTransform, SparseMatrix
+from nengo.transforms import (
+    ChannelShape,
+    ConvolutionTranspose,
+    NoTransform,
+    SparseMatrix,
+)
 
 
 def check_init_args(cls, args):
@@ -560,7 +567,7 @@ def test_transforms():
     assert repr(Dense((1, 2), init=[[1, 1]])) == "Dense(shape=(1, 2))"
 
     check_init_args(
-        Convolution,
+        Conv,
         [
             "n_filters",
             "input_shape",
@@ -571,20 +578,79 @@ def test_transforms():
             "init",
         ],
     )
-    check_repr(Convolution(n_filters=3, input_shape=(1, 2, 3)))
-    check_repr(Convolution(n_filters=3, input_shape=(1, 2, 3), kernel_size=(3, 2)))
-    check_repr(Convolution(n_filters=3, input_shape=(1, 2, 3), channels_last=False))
+    check_repr(Convolution(n_filters=3, input_shape=(3, 4, 5)))
+    check_repr(Convolution(n_filters=3, input_shape=(3, 2, 5), kernel_size=(3, 2)))
+    check_repr(Convolution(n_filters=3, input_shape=(3, 4, 5), channels_last=False))
+    check_repr(Convolution(n_filters=3, input_shape=(3, 4, 5), strides=(2, 2)))
+    check_repr(Convolution(n_filters=3, input_shape=(3, 4, 5), padding="same"))
     assert (
-        repr(Convolution(n_filters=3, input_shape=(1, 2, 3)))
-        == "Convolution(n_filters=3, input_shape=(1, 2, 3))"
+        repr(Conv(n_filters=3, input_shape=(3, 4, 5)))
+        == "Convolution(n_filters=3, input_shape=(3, 4, 5))"
     )
     assert (
-        repr(Convolution(n_filters=3, input_shape=(1, 2, 3), kernel_size=(3, 2)))
-        == "Convolution(n_filters=3, input_shape=(1, 2, 3), kernel_size=(3, 2))"
+        repr(Conv(n_filters=3, input_shape=(3, 4, 5), kernel_size=(3, 2)))
+        == "Convolution(n_filters=3, input_shape=(3, 4, 5), kernel_size=(3, 2))"
     )
     assert (
-        repr(Convolution(n_filters=3, input_shape=(1, 2, 3), channels_last=False))
-        == "Convolution(n_filters=3, input_shape=(1, 2, 3), channels_last=False)"
+        repr(Conv(n_filters=3, input_shape=(3, 4, 5), channels_last=False))
+        == "Convolution(n_filters=3, input_shape=(3, 4, 5), channels_last=False)"
+    )
+    assert (
+        repr(Conv(n_filters=3, input_shape=(3, 4, 5), strides=(2, 2)))
+        == "Convolution(n_filters=3, input_shape=(3, 4, 5), strides=(2, 2))"
+    )
+    assert (
+        repr(Conv(n_filters=3, input_shape=(3, 4, 5), padding="same"))
+        == "Convolution(n_filters=3, input_shape=(3, 4, 5), padding='same')"
+    )
+
+    check_init_args(
+        ConvTranspose,
+        [
+            "n_filters",
+            "input_shape",
+            "output_shape",
+            "kernel_size",
+            "strides",
+            "padding",
+            "channels_last",
+            "init",
+        ],
+    )
+    check_repr(ConvTranspose(n_filters=3, input_shape=(3, 4, 5)))
+    check_repr(ConvTranspose(n_filters=3, input_shape=(3, 2, 5), kernel_size=(3, 2)))
+    check_repr(ConvTranspose(n_filters=3, input_shape=(3, 4, 5), channels_last=False))
+    check_repr(
+        ConvolutionTranspose(
+            n_filters=9, input_shape=(1, 2, 3), output_shape=(4, 5, 9), strides=(2, 2)
+        )
+    )
+    assert (
+        repr(ConvTranspose(n_filters=3, input_shape=(3, 4, 5)))
+        == "ConvolutionTranspose(n_filters=3, input_shape=(3, 4, 5), "
+        "output_shape=(5, 6, 3))"
+    )
+    assert (
+        repr(ConvTranspose(n_filters=3, input_shape=(3, 4, 5), kernel_size=(3, 2)))
+        == "ConvolutionTranspose(n_filters=3, input_shape=(3, 4, 5), "
+        "output_shape=(5, 5, 3), kernel_size=(3, 2))"
+    )
+    assert (
+        repr(ConvTranspose(n_filters=9, input_shape=(3, 4, 5), channels_last=False))
+        == "ConvolutionTranspose(n_filters=9, input_shape=(3, 4, 5), "
+        "output_shape=(9, 6, 7), channels_last=False)"
+    )
+    assert (
+        repr(
+            ConvolutionTranspose(
+                n_filters=9,
+                input_shape=(2, 3, 4),
+                output_shape=(6, 8, 9),
+                strides=(2, 2),
+            )
+        )
+        == "ConvolutionTranspose(n_filters=9, input_shape=(2, 3, 4), "
+        "output_shape=(6, 8, 9), strides=(2, 2))"
     )
 
     check_init_args(Sparse, ["shape", "indices", "init"])

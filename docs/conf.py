@@ -89,6 +89,9 @@ autoautosummary_change_modules = {
         "nengo.transforms.Dense",
         "nengo.transforms.Sparse",
         "nengo.transforms.Convolution",
+        "nengo.transforms.ConvolutionTranspose",
+        "nengo.transforms.Conv",
+        "nengo.transforms.ConvTranspose",
         "nengo.config.Config",
     ],
     "nengo.builder": [
