@@ -6,7 +6,7 @@ from nengo.builder.signal import Signal
 from nengo.builder.tests.test_operator import _test_operator_arg_attributes
 from nengo.builder.transforms import ConvInc, ConvTransposeInc, multiply
 from nengo.exceptions import BuildError
-from nengo.transforms import Convolution, ConvolutionTranspose
+from nengo.transforms import ChannelShape, Convolution, ConvolutionTranspose
 
 
 def test_multiply():
@@ -111,13 +111,11 @@ def test_convinc_2d(
 
 
 @pytest.mark.parametrize("channels_last", (True, False))
-@pytest.mark.parametrize("stride0", (1, 2))
-@pytest.mark.parametrize("stride1", (1, 2))
-@pytest.mark.parametrize("kernel0", (4, 5))
-@pytest.mark.parametrize("kernel1", (4, 5))
+@pytest.mark.parametrize("strides", [(1, 1), (2, 2), (3, 2)])
+@pytest.mark.parametrize("kernel_size", [(4, 5), (5, 4), (5, 5)])
 @pytest.mark.parametrize("padding", ("same", "valid"))
 def test_convtransposeinc_2d(
-    channels_last, stride0, stride1, kernel0, kernel1, padding, rng, allclose, plt
+    channels_last, strides, kernel_size, padding, rng, allclose, plt
 ):
     """Test ConvTransposeInc by ensuring it is the transpose of ConvInc.
 
@@ -128,22 +126,18 @@ def test_convtransposeinc_2d(
     This test asserts this identity, and thereby tests the ``ConvTransposeInc`` operator
     against the ``ConvInc`` operator.
     """
-    shape0 = 16
-    shape1 = 17
+    spatial_shape = (16, 17)
     in_channels = 32
     out_channels = 64
 
-    x_shape = (
-        (shape0, shape1, in_channels)
-        if channels_last
-        else (in_channels, shape0, shape1)
+    x_shape = ChannelShape.from_space_and_channels(
+        spatial_shape, in_channels, channels_last=channels_last
     )
-
     conv = Convolution(
         out_channels,
         x_shape,
-        kernel_size=(kernel0, kernel1),
-        strides=(stride0, stride1),
+        kernel_size=kernel_size,
+        strides=strides,
         padding=padding,
         channels_last=channels_last,
     )
@@ -152,8 +146,8 @@ def test_convtransposeinc_2d(
     C = rng.randn(nk, conv.output_shape.size)
 
     # compute ``conv_output = C.dot(A.dot(x))``, where ``A`` is the convolution operator
-    x = Signal(rng.randn(*x_shape))
-    w = Signal(rng.randn(kernel0, kernel1, in_channels, out_channels))
+    x = Signal(rng.randn(*x_shape.shape))
+    w = Signal(rng.randn(kernel_size[0], kernel_size[1], in_channels, out_channels))
     y = Signal(np.zeros(conv.output_shape.shape))
 
     signals = {sig: np.array(sig.initial_value) for sig in (x, w, y)}
@@ -170,8 +164,8 @@ def test_convtransposeinc_2d(
         in_channels,
         conv.output_shape,
         output_shape=x_shape,
-        kernel_size=(kernel0, kernel1),
-        strides=(stride0, stride1),
+        kernel_size=kernel_size,
+        strides=strides,
         padding=padding,
         channels_last=channels_last,
     )
