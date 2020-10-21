@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 
+from nengo._vendor.npconv2d import conv2d
 from nengo.builder.signal import Signal
 from nengo.builder.tests.test_operator import _test_operator_arg_attributes
 from nengo.builder.transforms import ConvInc, ConvTransposeInc, multiply
@@ -255,6 +256,56 @@ def test_convtransposeinc_2d(
                         assert success, "Output %d channel %d differs" % (i, k)
 
     assert success
+
+
+@pytest.mark.parametrize("x_size", (1, 2, 3, 4))
+@pytest.mark.parametrize("k_size", (1, 2, 3, 4))
+@pytest.mark.parametrize("stride", (1, 2, 3, 4))
+@pytest.mark.parametrize("padding", ("same", "valid"))
+def test_conv2d_gradx(padding, stride, k_size, x_size, rng, plt, allclose):
+    tf = pytest.importorskip("tensorflow")
+
+    in_channels = 1
+    out_channels = 1
+
+    if padding == "same":
+        y_min = (x_size - 1) * stride + 1
+        y_max = x_size * stride
+    else:
+        y_min = (x_size - 1) * stride + k_size
+        y_max = x_size * stride + k_size - 1
+
+    bad_sizes = []
+    for y_size in range(y_min, y_max + 1):
+        x_shape = (1, x_size, x_size, in_channels)
+        y_shape = (1, y_size, y_size, out_channels)
+        k_shape = (k_size, k_size, out_channels, in_channels)
+
+        x = rng.uniform(-1, 1, size=x_shape)
+        kernel = rng.uniform(-1, 1, size=k_shape)
+        y_tf = tf.nn.conv2d_transpose(
+            x, kernel, y_shape, stride, padding=padding.upper()
+        ).numpy()[0]
+
+        kernel_t = np.transpose(kernel, (0, 1, 3, 2))
+        y_np = conv2d.conv2d_gradx(
+            kernel_t,
+            x,
+            xsize=y_shape[1:3],
+            pad=padding.upper(),
+            stride=(stride, stride),
+        )[0]
+
+        assert y_np.shape == y_tf.shape
+
+        if not allclose(y_np, y_tf):
+            plt.subplot(1, 2, 1)
+            plt.imshow(y_tf[..., 0], vmin=y_tf.min(), vmax=y_tf.max())
+            plt.subplot(1, 2, 2)
+            plt.imshow(y_np[..., 0], vmin=y_tf.min(), vmax=y_tf.max())
+            bad_sizes.append(y_size)
+
+    assert len(bad_sizes) == 0, (y_min, y_max, bad_sizes)
 
 
 def test_convinc_attrs_decstr():

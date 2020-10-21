@@ -46,6 +46,19 @@ def calc_pad(pad, in_siz, out_siz, stride, ksize):
         return pad
 
 
+def calc_gradx_pad(pad, in_siz, out_siz, stride, ksize):
+    if pad == 'SAME':
+        out_siz_min = (in_siz - 1) * stride + 1
+        p = out_siz + ksize - 1 - out_siz_min
+        p = max(p, 0)
+        p = min(p, (ksize - 1) * 2)
+        return p
+    elif pad == 'VALID':
+        return (ksize - 1) * 2
+    else:
+        return pad
+
+
 def calc_size(h, kh, pad, sh):
     """Calculate output image size on one dimension.
     Args:
@@ -203,27 +216,17 @@ def conv2d_gradx(w, dy, xsize, pad='SAME', stride=(1, 1)):
     Modifications from original code:
       - Do not transpose input/output channels in `w`
       - Fix bug in computing `pad2w` (use `dys[1]` instead of `dys[0]`)
+      - Add new `calc_gradx_pad` function to ensure we compute padding the same as TF
     """
     assert w.shape[-2] == dy.shape[-1]
-    ksize = w.shape[:2]
 
-    if pad == 'SAME':
-        dys = dy.shape[1:3]
-        pad2h = int(
-            calc_pad('SAME', max(dys[0], dys[0] * stride[0] - 1), xsize[0], 1,
-                     ksize[0]))
-        pad2w = int(
-            calc_pad('SAME', max(dys[1], dys[1] * stride[1] - 1), xsize[1], 1,
-                     ksize[1]))
-        pad2 = (pad2h, pad2w)
-    elif pad == 'VALID':
-        pad2 = (int(calc_pad('SAME', 0, 0, 1, ksize[0])),
-                int(calc_pad('SAME', 0, 0, 1, ksize[1])))
-        pad2 = (pad2[0] * 2, pad2[1] * 2)
-    else:
-        pad2 = pad
-
+    dys = dy.shape[1:3]
     ksize = w.shape[:2]
+    pad2 = (
+        calc_gradx_pad(pad, dys[0], xsize[0], stride[0], ksize[0]),
+        calc_gradx_pad(pad, dys[1], xsize[1], stride[1], ksize[1]),
+    )
+
     dx = extract_sliding_windows_gradx(dy, ksize, pad2, stride, xsize)
     dxs = dx.shape
     dx = dx.reshape([dxs[0] * dxs[1] * dxs[2], -1])
