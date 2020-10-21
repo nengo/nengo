@@ -39,7 +39,7 @@ def calc_pad(pad, in_siz, out_siz, stride, ksize):
         pad_: Actual padding width.
     """
     if pad == 'SAME':
-        return (out_siz - 1) * stride + ksize - in_siz
+        return max((out_siz - 1) * stride + ksize - in_siz, 0)
     elif pad == 'VALID':
         return 0
     else:

@@ -6,6 +6,44 @@ from nengo._vendor.npconv2d import conv2d
 from nengo.exceptions import BuildError, ValidationError
 
 
+@pytest.mark.parametrize("x_mul", (1, 2, 3, 4))
+@pytest.mark.parametrize("k_size", (1, 2, 3, 4))
+@pytest.mark.parametrize("stride", (1, 2, 3, 4))
+@pytest.mark.parametrize("padding", ("same", "valid"))
+def test_convolution_shape(padding, stride, k_size, x_mul, rng, allclose):
+    tf = pytest.importorskip("tensorflow")
+
+    in_channels = 2
+    out_channels = 3
+
+    for i in range(2 * k_size):
+        x_size = k_size + stride * (x_mul - 1) + i
+        x_shape = (x_size, x_size, in_channels)
+        k_shape = (k_size, k_size, in_channels, out_channels)
+
+        x = rng.uniform(-1, 1, size=x_shape)
+        kernel = rng.uniform(-1, 1, size=k_shape)
+        y_tf = tf.nn.conv2d(
+            x[None, ...], kernel, stride, padding=padding.upper()
+        ).numpy()[0]
+
+        y_np = conv2d.conv2d(
+            x[None, ...], kernel, pad=padding.upper(), stride=(stride, stride)
+        )[0]
+
+        transform = nengo.Convolution(
+            out_channels,
+            x_shape,
+            kernel_size=(k_size, k_size),
+            strides=(stride, stride),
+            padding=padding,
+        )
+
+        assert transform.output_shape.shape == y_tf.shape
+        assert y_np.shape == y_tf.shape
+        assert allclose(y_np, y_tf)
+
+
 @pytest.mark.parametrize("dimensions", (1, 2))
 @pytest.mark.parametrize("padding", ("same", "valid"))
 @pytest.mark.parametrize("channels_last", (True, False))
