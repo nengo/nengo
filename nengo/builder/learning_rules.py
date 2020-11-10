@@ -722,9 +722,9 @@ def build_voja(model, voja, rule):
 
     # Learning signal, defaults to 1 in case no connection is made
     # and multiplied by the learning_rate * dt
-    learning = Signal(shape=rule.size_in, name="Voja:learning")
+    learning = Signal(initial_value=np.ones(rule.size_in), name="Voja:learning")
     assert rule.size_in == 1
-    model.add_op(Reset(learning, value=1.0))
+    model.add_op(Reset(learning))
     model.sig[rule]["in"] = learning  # optional connection will attach here
 
     scaled_encoders = model.sig[post]["encoders"]

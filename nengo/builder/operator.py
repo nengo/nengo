@@ -251,16 +251,14 @@ class TimeUpdate(Operator):
 
 
 class Reset(Operator):
-    """Assign a constant value to a Signal.
+    """Resets a signal to its initial value.
 
-    Implements ``dst[...] = value``.
+    Implements ``dst[...] = dst.initial_value``.
 
     Parameters
     ----------
     dst : Signal
         The Signal to reset.
-    value : float, optional
-        The constant value to which ``dst`` is set.
     tag : str, optional
         A label associated with the operator, for debugging purposes.
 
@@ -270,8 +268,6 @@ class Reset(Operator):
         The Signal to reset.
     tag : str or None
         A label associated with the operator, for debugging purposes.
-    value : float
-        The constant value to which ``dst`` is set.
 
     Notes
     -----
@@ -283,7 +279,6 @@ class Reset(Operator):
 
     def __init__(self, dst, value=0, tag=None):
         super().__init__(tag=tag)
-        self.value = float(value)
 
         self.sets = [dst]
         self.incs = []
@@ -300,10 +295,9 @@ class Reset(Operator):
 
     def make_step(self, signals, dt, rng):
         target = signals[self.dst]
-        value = self.value
 
         def step_reset():
-            target[...] = value
+            target[...] = self.dst.initial_value
 
         return step_reset
 
