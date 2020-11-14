@@ -1,11 +1,11 @@
 """Functions that extend the Python Standard Library."""
 
-from collections import namedtuple
-from collections.abc import Hashable, MutableMapping, MutableSet
 import inspect
 import itertools
 import time
 import weakref
+from collections import namedtuple
+from collections.abc import Hashable, MutableMapping, MutableSet
 
 
 class WeakKeyDefaultDict(MutableMapping):

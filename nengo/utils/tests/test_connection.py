@@ -1,6 +1,6 @@
+import matplotlib.tri as tri
 import numpy as np
 import pytest
-import matplotlib.tri as tri
 
 import nengo
 from nengo.utils.connection import eval_point_decoding

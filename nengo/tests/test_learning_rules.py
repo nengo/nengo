@@ -1,7 +1,7 @@
-import nengo
 import numpy as np
 import pytest
 
+import nengo
 from nengo.builder import Builder
 from nengo.builder.ensemble import get_activities
 from nengo.builder.learning_rules import SimRLS

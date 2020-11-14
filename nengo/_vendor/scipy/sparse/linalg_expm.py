@@ -40,9 +40,9 @@ import math
 
 import numpy as np
 
+from ..special import comb
 from .linalg_interface import LinearOperator
 from .linalg_onenormest import onenormest
-from ..special import comb
 
 UPPER_TRIANGULAR = 'upper_triangular'
 

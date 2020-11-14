@@ -1,11 +1,11 @@
 import numpy as np
 import pytest
 
+from nengo.builder.signal import Signal
+from nengo.builder.tests.test_operator import _test_operator_arg_attributes
+from nengo.builder.transforms import ConvInc, multiply
 from nengo.exceptions import BuildError
 from nengo.transforms import Convolution
-from nengo.builder.signal import Signal
-from nengo.builder.transforms import ConvInc, multiply
-from nengo.builder.tests.test_operator import _test_operator_arg_attributes
 
 
 def test_multiply():

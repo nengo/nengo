@@ -2,8 +2,8 @@ import warnings
 
 import numpy as np
 
-from nengo.connection import Connection
 from nengo.config import Config
+from nengo.connection import Connection
 from nengo.dists import Choice, Exponential, Uniform
 from nengo.ensemble import Ensemble
 from nengo.exceptions import ValidationError
@@ -11,6 +11,7 @@ from nengo.network import Network
 from nengo.node import Node
 from nengo.utils.network import with_self
 from nengo.utils.numpy import is_iterable
+
 from .ensemblearray import EnsembleArray
 
 

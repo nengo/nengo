@@ -10,3 +10,7 @@ exclude = '''
     _vendor/*
 )
 '''
+
+[tool.isort]
+profile = "black"
+src_paths = ["nengo"]

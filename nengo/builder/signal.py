@@ -2,10 +2,10 @@ from io import StringIO
 
 import numpy as np
 
+import nengo.utils.numpy as npext
 from nengo.exceptions import SignalError
 from nengo.rc import rc
 from nengo.transforms import SparseMatrix
-import nengo.utils.numpy as npext
 
 
 def is_sparse(obj):

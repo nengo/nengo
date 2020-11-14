@@ -4,10 +4,10 @@ import itertools
 import numpy as np
 import pytest
 
-from nengo.exceptions import ValidationError
 import nengo.utils.numpy as npext
-from nengo.utils.numpy import array_hash, meshgrid_nd, as_shape, broadcast_shape, array
 from nengo._vendor.scipy import expm
+from nengo.exceptions import ValidationError
+from nengo.utils.numpy import array, array_hash, as_shape, broadcast_shape, meshgrid_nd
 
 
 def test_meshgrid_nd(allclose):

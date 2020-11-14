@@ -5,7 +5,13 @@ repos:
     rev: 20.8b0
     hooks:
     - id: black
+      files: \.py$
       exclude: |
           (?x)(
               _vendor/*
           )
+-   repo: https://github.com/pycqa/isort
+    rev: 5.6.4
+    hooks:
+      - id: isort
+        files: \.py$

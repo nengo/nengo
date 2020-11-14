@@ -5,7 +5,7 @@ import warnings
 from collections import OrderedDict
 
 from nengo.exceptions import SpaParseError
-from nengo.spa.action_objects import Symbol, Source, DotProduct, Summation
+from nengo.spa.action_objects import DotProduct, Source, Summation, Symbol
 
 
 class Expression:

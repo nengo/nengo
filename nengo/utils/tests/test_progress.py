@@ -1,6 +1,6 @@
-from collections import namedtuple
 import sys
 import time
+from collections import namedtuple
 
 import pytest
 
@@ -8,17 +8,16 @@ import nengo.rc as rc
 from nengo.exceptions import ValidationError
 from nengo.utils.progress import (
     AutoProgressBar,
-    get_default_progressbar,
     HtmlProgressBar,
     NoProgressBar,
     Progress,
     ProgressBar,
     ProgressTracker,
     TerminalProgressBar,
-    to_progressbar,
     WriteProgressToFile,
+    get_default_progressbar,
+    to_progressbar,
 )
-
 
 Update = namedtuple(
     "Update", ("name_during", "name_after", "n_steps", "max_steps", "finished")

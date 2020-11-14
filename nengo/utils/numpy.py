@@ -1,15 +1,13 @@
 """
 Extra functions to extend the capabilities of Numpy.
 """
-from collections.abc import Iterable
 import logging
-
 import warnings
+from collections.abc import Iterable
 
 import numpy as np
 
 from ..exceptions import ValidationError
-
 
 logger = logging.getLogger(__name__)
 try:

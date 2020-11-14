@@ -1,6 +1,8 @@
 """Configuration presets for common use cases."""
 
-from nengo import Config, Ensemble, dists
+from nengo.config import Config
+from nengo.dists import Choice, Exponential, Uniform
+from nengo.ensemble import Ensemble
 
 
 def ThresholdingEnsembles(threshold, intercept_width=0.15, radius=1.0):
@@ -39,7 +41,7 @@ def ThresholdingEnsembles(threshold, intercept_width=0.15, radius=1.0):
     """
     config = Config(Ensemble)
     config[Ensemble].radius = radius
-    config[Ensemble].intercepts = dists.Exponential(intercept_width, threshold, radius)
-    config[Ensemble].encoders = dists.Choice([[1]])
-    config[Ensemble].eval_points = dists.Uniform(threshold / radius, 1)
+    config[Ensemble].intercepts = Exponential(intercept_width, threshold, radius)
+    config[Ensemble].encoders = Choice([[1]])
+    config[Ensemble].eval_points = Uniform(threshold / radius, 1)
     return config

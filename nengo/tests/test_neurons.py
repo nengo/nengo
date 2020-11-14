@@ -1,6 +1,6 @@
-from collections import defaultdict
 import logging
 import time
+from collections import defaultdict
 
 import numpy as np
 import pytest
@@ -8,11 +8,11 @@ import pytest
 import nengo
 from nengo.exceptions import BuildError, SimulationError, ValidationError
 from nengo.neurons import (
+    LIF,
     AdaptiveLIF,
     AdaptiveLIFRate,
     Direct,
     Izhikevich,
-    LIF,
     LIFRate,
     NeuronType,
     NeuronTypeParam,

@@ -1,5 +1,5 @@
-from nengo.exceptions import TimeoutError
 from nengo._vendor import portalocker
+from nengo.exceptions import TimeoutError
 
 
 class FileLock:

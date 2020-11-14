@@ -40,18 +40,18 @@ import warnings
 
 import numpy as np
 from numpy import (
-    product,
-    zeros,
+    allclose,
     array,
-    dot,
-    r_,
-    eye,
+    asarray,
     atleast_1d,
     atleast_2d,
+    dot,
+    eye,
     poly,
+    product,
+    r_,
     roots,
-    asarray,
-    allclose,
+    zeros,
 )
 
 from nengo._vendor.scipy import expm

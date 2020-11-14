@@ -1,15 +1,17 @@
-from . import builder
-from . import cache
-from . import connection
-from . import ensemble
-from . import filter_design
-from . import functions
-from . import graphs
-from . import ipython
-from . import magic
-from . import nco
-from . import network
-from . import numpy
-from . import paths
-from . import simulator
-from . import stdlib
+from . import (
+    builder,
+    cache,
+    connection,
+    ensemble,
+    filter_design,
+    functions,
+    graphs,
+    ipython,
+    magic,
+    nco,
+    network,
+    numpy,
+    paths,
+    simulator,
+    stdlib,
+)

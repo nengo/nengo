@@ -2,7 +2,7 @@ import warnings
 
 import numpy as np
 
-from nengo.dists import Choice, Distribution, get_samples, Uniform
+from nengo.dists import Choice, Distribution, Uniform, get_samples
 from nengo.exceptions import SimulationError, ValidationError
 from nengo.params import DictParam, FrozenObject, NumberParam, Parameter
 from nengo.rc import rc

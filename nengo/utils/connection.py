@@ -32,8 +32,8 @@ def eval_point_decoding(conn, sim, eval_points=None):
     # pylint: disable=import-outside-toplevel
     # note: these are imported here to avoid circular imports
     from nengo import rc
-    from nengo.builder.ensemble import get_activities
     from nengo.builder.connection import get_targets
+    from nengo.builder.ensemble import get_activities
 
     dtype = rc.float_dtype
 

@@ -2,7 +2,7 @@ from nengo.base import NengoObject, NengoObjectParam, ObjView
 from nengo.config import Config
 from nengo.connection import Connection, LearningRule
 from nengo.exceptions import ValidationError
-from nengo.params import Default, ConnectionDefault, NumberParam, Parameter, StringParam
+from nengo.params import ConnectionDefault, Default, NumberParam, Parameter, StringParam
 from nengo.solvers import SolverParam
 from nengo.synapses import SynapseParam
 

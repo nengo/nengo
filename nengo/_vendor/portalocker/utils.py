@@ -1,11 +1,10 @@
-import os
-import time
 import atexit
-import tempfile
 import contextlib
-from . import exceptions
-from . import constants
-from . import portalocker
+import os
+import tempfile
+import time
+
+from . import constants, exceptions, portalocker
 
 current_time = getattr(time, "monotonic", time.time)
 

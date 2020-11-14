@@ -39,8 +39,8 @@ import struct
 
 import numpy as np
 
-from .cache import byte_align
 from ..exceptions import CacheIOError
+from .cache import byte_align
 
 
 class Subfile:

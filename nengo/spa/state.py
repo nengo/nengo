@@ -2,8 +2,8 @@ import numpy as np
 
 import nengo
 from nengo.exceptions import ValidationError
-from nengo.spa.module import Module
 from nengo.networks.ensemblearray import EnsembleArray
+from nengo.spa.module import Module
 
 
 class State(Module):

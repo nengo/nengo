@@ -1,6 +1,7 @@
-from nengo.builder import Builder, Signal
+from nengo.builder.builder import Builder
 from nengo.builder.connection import slice_signal
 from nengo.builder.operator import Copy, Reset
+from nengo.builder.signal import Signal
 from nengo.connection import Connection, LearningRule
 from nengo.ensemble import Ensemble, Neurons
 from nengo.exceptions import BuildError

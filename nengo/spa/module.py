@@ -1,7 +1,7 @@
-import nengo
+from nengo.network import Network
 
 
-class Module(nengo.Network):
+class Module(Network):
     """Base class for SPA Modules.
 
     Modules are networks that also have a list of inputs and outputs,

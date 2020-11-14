@@ -1,9 +1,10 @@
 import numpy as np
-from numpy.testing import assert_almost_equal
 import pytest
+from numpy.testing import assert_almost_equal
 
 import nengo
 from nengo.builder.neurons import SimNeurons
+from nengo.builder.operator import Copy, ElementwiseInc
 from nengo.builder.optimizer import (
     CopyMerger,
     ElementwiseIncMerger,
@@ -12,7 +13,6 @@ from nengo.builder.optimizer import (
     SigMerger,
     SimNeuronsMerger,
 )
-from nengo.builder.operator import Copy, ElementwiseInc
 from nengo.builder.signal import Signal
 from nengo.tests.test_learning_rules import learning_net
 from nengo.transforms import SparseMatrix

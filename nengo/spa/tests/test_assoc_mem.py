@@ -1,9 +1,9 @@
 import numpy as np
 
 import nengo
-from nengo.spa import Vocabulary, Input
-from nengo.spa.utils import similarity
+from nengo.spa import Input, Vocabulary
 from nengo.spa.assoc_mem import AssociativeMemory
+from nengo.spa.utils import similarity
 
 
 def test_am_spa_interaction(Simulator, seed, rng):

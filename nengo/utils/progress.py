@@ -1,25 +1,24 @@
 """Utilities for progress tracking and display to the user."""
 
-from datetime import timedelta
-from html import escape
 import importlib
 import os
-from shutil import get_terminal_size
 import sys
 import threading
 import time
 import uuid
 import warnings
+from datetime import timedelta
+from html import escape
+from shutil import get_terminal_size
 
 import numpy as np
 
-from .ipython import check_ipy_version, get_ipython
 from ..exceptions import ValidationError
 from ..rc import rc
-
+from .ipython import check_ipy_version, get_ipython
 
 if get_ipython() is not None:
-    from IPython.display import display, Javascript  # pragma: no cover
+    from IPython.display import Javascript, display  # pragma: no cover
 
 
 class MemoryLeakWarning(UserWarning):

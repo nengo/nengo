@@ -4,14 +4,14 @@ import numpy as np
 import pytest
 
 import nengo
-from nengo.exceptions import MovedError, ValidationError, Unconvertible
+from nengo.exceptions import MovedError, Unconvertible, ValidationError
 from nengo.transforms import NoTransform
 from nengo.utils.builder import (
+    _create_replacement_connection,
     full_transform,
     generate_graphviz,
     objs_and_connections,
     remove_passthrough_nodes,
-    _create_replacement_connection,
 )
 
 

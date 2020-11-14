@@ -1,5 +1,5 @@
-from copy import deepcopy
 import warnings
+from copy import deepcopy
 
 from nengo.config import Config
 from nengo.connection import Connection

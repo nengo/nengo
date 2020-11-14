@@ -1,9 +1,9 @@
 """Operator graph optimizers."""
 
-from collections import defaultdict, namedtuple
-from itertools import zip_longest
 import logging
 import warnings
+from collections import defaultdict, namedtuple
+from itertools import zip_longest
 
 import numpy as np
 

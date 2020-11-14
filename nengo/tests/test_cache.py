@@ -5,21 +5,21 @@ import sys
 from subprocess import CalledProcessError
 
 import numpy as np
-from numpy.testing import assert_equal
 import pytest
+from numpy.testing import assert_equal
 
 import nengo
+import nengo.neurons
+import nengo.utils.least_squares_solvers
 from nengo.cache import (
     CacheIndex,
     DecoderCache,
     Fingerprint,
-    get_fragment_size,
     WriteableCacheIndex,
+    get_fragment_size,
 )
 from nengo.exceptions import CacheIOWarning, FingerprintError
-import nengo.neurons
 from nengo.solvers import LstsqL2
-import nengo.utils.least_squares_solvers
 
 
 class Mock:

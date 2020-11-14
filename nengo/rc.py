@@ -59,8 +59,8 @@ Commented lines show the default values for each setting.
 
 """
 
-from configparser import ConfigParser, DEFAULTSECT
 import logging
+from configparser import DEFAULTSECT, ConfigParser
 
 import numpy as np
 

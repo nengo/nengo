@@ -1,5 +1,5 @@
-from collections import defaultdict
 import itertools
+from collections import defaultdict
 
 from .graphs import add_edges
 from .stdlib import groupby

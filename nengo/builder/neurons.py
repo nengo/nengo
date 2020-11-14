@@ -1,6 +1,8 @@
 import numpy as np
 
-from nengo.builder import Builder, Operator, Signal
+from nengo.builder.builder import Builder
+from nengo.builder.operator import Operator
+from nengo.builder.signal import Signal
 from nengo.exceptions import BuildError
 from nengo.neurons import NeuronType, RatesToSpikesNeuronType
 from nengo.utils.numpy import is_array_like

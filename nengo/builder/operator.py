@@ -34,9 +34,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import numpy as np
 
+import nengo.utils.numpy as npext
 from nengo.exceptions import BuildError, SimulationError
 from nengo.utils.functions import function_name
-import nengo.utils.numpy as npext
 
 
 class Operator:

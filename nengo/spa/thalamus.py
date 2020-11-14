@@ -2,7 +2,7 @@ import numpy as np
 
 import nengo
 from nengo.dists import Uniform
-from nengo.spa.action_objects import Symbol, Source, Convolution
+from nengo.spa.action_objects import Convolution, Source, Symbol
 from nengo.spa.module import Module
 
 

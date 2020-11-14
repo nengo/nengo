@@ -8,10 +8,10 @@ from nengo.builder.operator import (
     ElementwiseInc,
     Operator,
     Reset,
-    reshape_dot,
     SimPyFunc,
     SparseDotInc,
     TimeUpdate,
+    reshape_dot,
 )
 from nengo.exceptions import BuildError
 

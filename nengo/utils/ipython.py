@@ -10,11 +10,11 @@ try:
     from IPython.display import HTML
 
     if IPython.version_info[0] <= 3:  # pragma: no cover
-        from IPython.nbconvert import PythonExporter
         from IPython import nbformat
+        from IPython.nbconvert import PythonExporter
     else:
-        from nbconvert import PythonExporter
         import nbformat
+        from nbconvert import PythonExporter
 
 except ImportError:  # pragma: no cover
 

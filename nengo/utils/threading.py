@@ -1,5 +1,5 @@
-from collections.abc import Sequence
 import threading
+from collections.abc import Sequence
 
 
 class ThreadLocalStack(threading.local, Sequence):  # pylint: disable=too-many-ancestors

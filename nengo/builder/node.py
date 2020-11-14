@@ -1,5 +1,6 @@
-from nengo.builder import Builder, Signal
+from nengo.builder.builder import Builder
 from nengo.builder.operator import Reset, SimPyFunc
+from nengo.builder.signal import Signal
 from nengo.exceptions import BuildError
 from nengo.node import Node
 from nengo.processes import Process

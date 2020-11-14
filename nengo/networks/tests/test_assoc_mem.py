@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from nengo.exceptions import ValidationError
 import nengo
+from nengo.exceptions import ValidationError
 from nengo.networks.assoc_mem import AssociativeMemory
 
 

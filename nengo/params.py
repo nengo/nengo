@@ -1,5 +1,5 @@
-from collections import namedtuple, OrderedDict
 import inspect
+from collections import OrderedDict, namedtuple
 
 import numpy as np
 

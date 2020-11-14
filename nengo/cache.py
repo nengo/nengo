@@ -7,19 +7,19 @@ import os
 import pickle
 import shutil
 import struct
-from subprocess import CalledProcessError
 import sys
-from uuid import uuid1
 import warnings
+from subprocess import CalledProcessError
+from uuid import uuid1
 
 import numpy as np
 
 from nengo.dists import (
+    PDF,
     Choice,
     CosineSimilarity,
     Exponential,
     Gaussian,
-    PDF,
     Samples,
     ScatteredHypersphere,
     SqrtBeta,
@@ -34,11 +34,11 @@ from nengo.exceptions import (
     TimeoutError,
 )
 from nengo.neurons import (
+    LIF,
     AdaptiveLIF,
     AdaptiveLIFRate,
     Direct,
     Izhikevich,
-    LIF,
     LIFRate,
     PoissonSpiking,
     RectifiedLinear,
@@ -64,12 +64,12 @@ from nengo.solvers import (
 from nengo.utils import nco
 from nengo.utils.cache import byte_align, bytes2human, human2bytes
 from nengo.utils.least_squares_solvers import (
+    SVD,
+    BlockConjgrad,
     Cholesky,
+    Conjgrad,
     ConjgradScipy,
     LSMRScipy,
-    Conjgrad,
-    BlockConjgrad,
-    SVD,
     RandomizedSVD,
 )
 from nengo.utils.lock import FileLock

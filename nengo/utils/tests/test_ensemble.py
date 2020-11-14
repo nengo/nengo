@@ -1,10 +1,10 @@
-import numpy as np
 import mpl_toolkits.mplot3d
+import numpy as np
 import pytest
 
 import nengo
 from nengo.dists import Uniform
-from nengo.utils.ensemble import response_curves, tuning_curves, _similarity
+from nengo.utils.ensemble import _similarity, response_curves, tuning_curves
 
 
 def plot_tuning_curves(plt, eval_points, activities):

@@ -2,7 +2,7 @@ import numpy as np
 
 import nengo
 import nengo.spa.action_build
-from nengo.spa.action_objects import Symbol, Source, Convolution
+from nengo.spa.action_objects import Convolution, Source, Symbol
 from nengo.spa.module import Module
 
 

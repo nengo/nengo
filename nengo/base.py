@@ -1,5 +1,5 @@
-from copy import copy as std_copy
 import warnings
+from copy import copy as std_copy
 
 import numpy as np
 
@@ -9,13 +9,13 @@ from nengo.exceptions import NotAddedToNetworkWarning, ValidationError
 from nengo.params import (
     FrozenObject,
     IntParam,
-    iter_params,
     NumberParam,
     Parameter,
     StringParam,
     Unconfigurable,
+    iter_params,
 )
-from nengo.utils.numpy import as_shape, maxint, maxseed, is_integer
+from nengo.utils.numpy import as_shape, is_integer, maxint, maxseed
 
 
 class NetworkMember(type):

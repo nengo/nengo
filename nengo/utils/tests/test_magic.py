@@ -1,10 +1,6 @@
 import inspect
 
-from nengo.utils.magic import (
-    decorator,
-    ObjectProxy,
-    BoundFunctionWrapper,
-)
+from nengo.utils.magic import BoundFunctionWrapper, ObjectProxy, decorator
 
 
 class RunState:

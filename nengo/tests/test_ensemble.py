@@ -8,7 +8,7 @@ import nengo.utils.numpy as npext
 from nengo.dists import Choice, Uniform, UniformHypersphere
 from nengo.exceptions import BuildError, NengoWarning
 from nengo.neurons import RegularSpiking
-from nengo.processes import WhiteNoise, FilteredNoise
+from nengo.processes import FilteredNoise, WhiteNoise
 from nengo.utils.testing import signals_allclose
 
 

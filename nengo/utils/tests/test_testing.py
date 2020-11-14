@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from nengo.utils.testing import signals_allclose, ThreadedAssertion
+from nengo.utils.testing import ThreadedAssertion, signals_allclose
 
 
 def add_close_noise(x, atol, rtol, rng):

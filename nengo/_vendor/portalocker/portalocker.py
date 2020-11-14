@@ -1,7 +1,6 @@
 import os
-from . import exceptions
-from . import constants
 
+from . import constants, exceptions
 
 if os.name == 'nt':  # pragma: no cover
     import msvcrt

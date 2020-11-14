@@ -2,7 +2,7 @@ import pytest
 
 from nengo import spa
 from nengo.exceptions import SpaParseError
-from nengo.spa.actions import Expression, Effect, Action, Actions
+from nengo.spa.actions import Action, Actions, Effect, Expression
 
 
 def test_expression():

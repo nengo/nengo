@@ -3,7 +3,7 @@ import pytest
 
 import nengo
 from nengo import params
-from nengo.exceptions import ObsoleteError, ValidationError, ConfigError
+from nengo.exceptions import ConfigError, ObsoleteError, ValidationError
 from nengo.params import FunctionInfo
 
 

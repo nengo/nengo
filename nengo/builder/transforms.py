@@ -1,11 +1,12 @@
 import numpy as np
 
-from nengo.builder import Builder, Operator, Signal
-from nengo.builder.operator import DotInc, ElementwiseInc, Reset, SparseDotInc
+from nengo._vendor.npconv2d import conv2d
+from nengo.builder.builder import Builder
+from nengo.builder.operator import DotInc, ElementwiseInc, Operator, Reset, SparseDotInc
+from nengo.builder.signal import Signal
 from nengo.exceptions import BuildError
 from nengo.rc import rc
 from nengo.transforms import Convolution, Dense, NoTransform, Sparse
-from nengo._vendor.npconv2d import conv2d
 
 
 def multiply(x, y):

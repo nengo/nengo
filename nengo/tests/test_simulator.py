@@ -1,8 +1,8 @@
 import logging
 import pickle
-import pkg_resources
 
 import numpy as np
+import pkg_resources
 import pytest
 
 import nengo
@@ -12,7 +12,7 @@ from nengo.builder.ensemble import BuiltEnsemble
 from nengo.builder.operator import DotInc
 from nengo.builder.signal import Signal
 from nengo.exceptions import SimulatorClosed, ValidationError
-from nengo.rc import rc, RC_DEFAULTS
+from nengo.rc import RC_DEFAULTS, rc
 from nengo.utils.progress import ProgressBar
 
 

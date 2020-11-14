@@ -6,7 +6,7 @@ from nengo.exceptions import ReadonlyError, SpaParseError, ValidationError
 from nengo.params import Parameter
 from nengo.rc import rc
 from nengo.spa import pointer
-from nengo.utils.numpy import is_iterable, is_number, is_integer
+from nengo.utils.numpy import is_integer, is_iterable, is_number
 
 
 class Vocabulary:

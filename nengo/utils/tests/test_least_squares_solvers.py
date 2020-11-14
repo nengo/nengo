@@ -1,15 +1,15 @@
+import numpy as np
 import pytest
 
-import numpy as np
 from nengo.exceptions import ValidationError
 from nengo.utils.least_squares_solvers import (
+    SVD,
     BlockConjgrad,
     Cholesky,
     Conjgrad,
     ConjgradScipy,
     LSMRScipy,
     RandomizedSVD,
-    SVD,
 )
 
 

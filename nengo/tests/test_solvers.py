@@ -11,11 +11,7 @@ import pytest
 import nengo
 from nengo.dists import Choice, Uniform, UniformHypersphere
 from nengo.exceptions import BuildError, ValidationError
-from nengo.utils.numpy import rms, norm
-from nengo.utils.stdlib import Timer
-from nengo.utils.testing import signals_allclose
 from nengo.solvers import (
-    lstsq,
     Lstsq,
     LstsqDrop,
     LstsqL1,
@@ -27,7 +23,11 @@ from nengo.solvers import (
     NnlsL2,
     NnlsL2nz,
     NoSolver,
+    lstsq,
 )
+from nengo.utils.numpy import norm, rms
+from nengo.utils.stdlib import Timer
+from nengo.utils.testing import signals_allclose
 
 
 class Factory:

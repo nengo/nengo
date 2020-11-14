@@ -26,6 +26,7 @@ SOFTWARE.
 from __future__ import division
 
 import numpy as np
+
 from nengo.utils.numpy import array_offset
 
 

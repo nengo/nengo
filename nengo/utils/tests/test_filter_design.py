@@ -2,18 +2,18 @@ import numpy as np
 import pytest
 
 from nengo.utils.filter_design import (
-    cont2discrete,
-    tf2zpk,
-    zpk2tf,
-    normalize,
-    tf2ss,
     _none_to_empty_2d,
-    _shape_or_none,
     _restore,
+    _shape_or_none,
     abcd_normalize,
+    cont2discrete,
+    normalize,
     ss2tf,
-    zpk2ss,
     ss2zpk,
+    tf2ss,
+    tf2zpk,
+    zpk2ss,
+    zpk2tf,
 )
 
 

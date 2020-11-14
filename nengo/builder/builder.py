@@ -1,10 +1,10 @@
-from collections import defaultdict
 import warnings
+from collections import defaultdict
 
 import numpy as np
 
-from nengo.builder.signal import Signal, SignalDict
 from nengo.builder.operator import TimeUpdate
+from nengo.builder.signal import Signal, SignalDict
 from nengo.cache import NoDecoderCache
 from nengo.exceptions import BuildError
 from nengo.rc import rc

@@ -8,8 +8,8 @@ import nengo.utils.numpy as npext
 from nengo.connection import ConnectionSolverParam
 from nengo.dists import Choice, UniformHypersphere
 from nengo.exceptions import BuildError, ValidationError
-from nengo.solvers import LstsqL2
 from nengo.processes import Piecewise
+from nengo.solvers import LstsqL2
 from nengo.transforms import Dense, NoTransform
 from nengo.utils.testing import signals_allclose
 

@@ -3,7 +3,7 @@ import warnings
 import numpy as np
 
 from nengo.base import FrozenObject
-from nengo.dists import Distribution, DistOrArrayParam, Uniform
+from nengo.dists import DistOrArrayParam, Distribution, Uniform
 from nengo.exceptions import ValidationError
 from nengo.params import (
     BoolParam,

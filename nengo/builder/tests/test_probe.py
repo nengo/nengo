@@ -1,6 +1,6 @@
 import pytest
-import nengo
 
+import nengo
 from nengo.exceptions import BuildError
 
 

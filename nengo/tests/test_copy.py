@@ -1,5 +1,5 @@
-from copy import copy
 import pickle
+from copy import copy
 
 import numpy as np
 import pytest
@@ -7,7 +7,7 @@ import pytest
 import nengo
 from nengo import spa
 from nengo.exceptions import NetworkContextError, NotAddedToNetworkWarning
-from nengo.params import IntParam, iter_params, NdarrayParam
+from nengo.params import IntParam, NdarrayParam, iter_params
 from nengo.utils.numpy import is_array_like
 from nengo.utils.progress import TerminalProgressBar
 

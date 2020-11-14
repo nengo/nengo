@@ -8,7 +8,6 @@ from nengo.synapses import Alpha, LinearFilter, Lowpass, Synapse, SynapseParam, 
 from nengo.utils.filter_design import cont2discrete
 from nengo.utils.testing import signals_allclose
 
-
 # The following num, den are for a 4th order analog Butterworth filter,
 # generated with `scipy.signal.butter(4, 0.1, analog=False)`
 butter_num = np.array([0.0004166, 0.0016664, 0.0024996, 0.0016664, 0.0004166])

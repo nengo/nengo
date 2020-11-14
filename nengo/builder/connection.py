@@ -2,18 +2,19 @@ from collections import namedtuple
 
 import numpy as np
 
-from nengo.builder import Builder, Signal
+from nengo.builder.builder import Builder
 from nengo.builder.ensemble import gen_eval_points, get_activities
 from nengo.builder.node import SimPyFunc
 from nengo.builder.operator import Copy, ElementwiseInc, Reset
+from nengo.builder.signal import Signal
 from nengo.connection import Connection
-from nengo.transforms import Dense, NoTransform
 from nengo.ensemble import Ensemble, Neurons
 from nengo.exceptions import BuildError
 from nengo.neurons import Direct
 from nengo.node import Node
 from nengo.rc import rc
 from nengo.solvers import NoSolver, Solver
+from nengo.transforms import Dense, NoTransform
 from nengo.utils.numpy import is_integer, is_iterable
 
 built_attrs = ["eval_points", "solver_info", "weights", "transform"]

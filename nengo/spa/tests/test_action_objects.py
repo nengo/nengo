@@ -1,7 +1,7 @@
 import pytest
 
 from nengo.exceptions import SpaParseError
-from nengo.spa.action_objects import Symbol, Source, DotProduct
+from nengo.spa.action_objects import DotProduct, Source, Symbol
 
 A = Symbol("A")
 B = Symbol("B")

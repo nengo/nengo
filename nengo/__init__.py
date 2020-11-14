@@ -35,18 +35,22 @@ There are two options for getting Nengo working:
     )
 del sys
 
+
 # Nengo namespace (API)
+from nengo import spa  # pylint: disable=cyclic-import
+from nengo import dists, exceptions, networks, presets, processes, utils
 from nengo.base import Process
 from nengo.config import Config
 from nengo.connection import Connection
 from nengo.ensemble import Ensemble
-from nengo.node import Node
+from nengo.learning_rules import BCM, PES, RLS, Oja, Voja
+from nengo.network import Network
 from nengo.neurons import (
+    LIF,
     AdaptiveLIF,
     AdaptiveLIFRate,
     Direct,
     Izhikevich,
-    LIF,
     LIFRate,
     PoissonSpiking,
     RectifiedLinear,
@@ -56,16 +60,13 @@ from nengo.neurons import (
     StochasticSpiking,
     Tanh,
 )
-from nengo.network import Network
-from nengo.learning_rules import BCM, Oja, PES, RLS, Voja
+from nengo.node import Node
 from nengo.params import Default
 from nengo.probe import Probe
-from nengo.rc import rc, RC_DEFAULTS
+from nengo.rc import RC_DEFAULTS, rc
 from nengo.simulator import Simulator
 from nengo.synapses import Alpha, LinearFilter, Lowpass, Triangle
 from nengo.transforms import Convolution, Dense, Sparse
-from nengo import dists, exceptions, networks, presets, processes, utils
-from nengo import spa  # pylint: disable=cyclic-import
 
 logger = logging.getLogger(__name__)
 try:

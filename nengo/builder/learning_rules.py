@@ -1,8 +1,9 @@
 import numpy as np
 
-from nengo.builder import Builder, Operator, Signal
+from nengo.builder.builder import Builder
 from nengo.builder.connection import slice_signal
-from nengo.builder.operator import Copy, DotInc, Reset
+from nengo.builder.operator import Copy, DotInc, Operator, Reset
+from nengo.builder.signal import Signal
 from nengo.connection import LearningRule
 from nengo.ensemble import Ensemble, Neurons
 from nengo.exceptions import BuildError

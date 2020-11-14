@@ -2,8 +2,8 @@ import numpy as np
 import pytest
 
 import nengo
-from nengo.exceptions import BuildError, ValidationError
 from nengo._vendor.npconv2d import conv2d
+from nengo.exceptions import BuildError, ValidationError
 
 
 @pytest.mark.parametrize("dimensions", (1, 2))

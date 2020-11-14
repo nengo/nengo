@@ -1,7 +1,7 @@
 import os
 
-import pytest
 import _pytest.capture
+import pytest
 
 from nengo.utils.paths import examples_dir
 from nengo.utils.stdlib import execfile
