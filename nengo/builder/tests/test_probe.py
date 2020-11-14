@@ -1,6 +1,7 @@
 import pytest
 
 import nengo
+from nengo.builder.probe import SimProbe
 from nengo.exceptions import BuildError
 
 
@@ -9,7 +10,13 @@ def test_signal_probe(seed):
 
     # --- test probing wrong type
     with nengo.Network() as net:
-        p = nengo.Probe(nengo.Node(0))
+        node = nengo.Node(0)
+        p = nengo.Probe(node)
+
+    with nengo.Simulator(net) as sim:
+        probe_ops = [op for op in sim.model.operators if isinstance(op, SimProbe)]
+        assert len(probe_ops) == 1
+        assert probe_ops[0].signal is sim.model.sig[node]["out"]
 
     # hack to change probe target without tripping API validation
     nengo.Probe.target.data[p] = 1

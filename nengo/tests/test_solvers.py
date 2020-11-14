@@ -397,7 +397,7 @@ def test_compare_solvers(Simulator, plt, seed, allclose):
         names = []
         for solver in decoder_solvers + weight_solvers:
             b = nengo.Ensemble(N, dimensions=1, seed=seed + 1)
-            nengo.Connection(a, b, solver=solver)
+            nengo.Connection(a, b, solver=solver, transform=1)
             probes.append(nengo.Probe(b))
             names.append(
                 "%s(%s)" % (type(solver).__name__, "w" if solver.weights else "d")

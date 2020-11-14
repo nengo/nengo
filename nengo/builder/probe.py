@@ -1,12 +1,53 @@
 from nengo.builder.builder import Builder
 from nengo.builder.connection import slice_signal
-from nengo.builder.operator import Copy, Reset
+from nengo.builder.operator import Copy, Operator, Reset
 from nengo.builder.signal import Signal
 from nengo.connection import Connection, LearningRule
 from nengo.ensemble import Ensemble, Neurons
 from nengo.exceptions import BuildError
 from nengo.node import Node
 from nengo.probe import Probe
+
+
+class SimProbe(Operator):
+    """Mark a signal as being probed.
+
+    This performs no computations, but marks ``signal`` as being read. This is
+    necessary for the rare case in which a node with constant output is probed
+    directly without that signal being otherwise used.
+
+    Parameters
+    ----------
+    signal : Signal
+        The probed signal.
+    tag : str, optional
+        A label associated with the operator, for debugging purposes.
+
+    Notes
+    -----
+    1. sets ``[]``
+    2. incs ``[]``
+    3. reads ``[signal]``
+    4. updates ``[]``
+    """
+
+    def __init__(self, signal, tag=None):
+        super().__init__(tag=tag)
+        self.sets = []
+        self.incs = []
+        self.reads = [signal]
+        self.updates = []
+
+    @property
+    def signal(self):
+        """The probed signal"""
+        return self.reads[0]
+
+    def make_step(self, signals, dt, rng):
+        def step():
+            pass
+
+        return step
 
 
 def conn_probe(model, probe):
@@ -118,6 +159,7 @@ def build_probe(model, probe):
     else:
         signal_probe(model, key, probe)
 
+    model.add_op(SimProbe(model.sig[probe]["in"]))
     model.probes.append(probe)
 
     # Simulator will fill this list with probe data during simulation
