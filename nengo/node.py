@@ -186,6 +186,12 @@ class Node(NengoObject):
     size_in = IntParam("size_in", default=None, low=0, optional=True)
     size_out = IntParam("size_out", default=None, low=0, optional=True)
 
+    _param_init_order = [
+        "size_in",
+        "size_out",
+        "output",
+    ]
+
     def __init__(
         self,
         output=Default,
