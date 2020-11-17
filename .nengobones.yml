@@ -231,7 +231,7 @@ travis_yml:
       python: 3.7
     - dist: bionic
       python: 3.8
-  pypi_user: tbekolay
+  pypi_user: __token__
   deploy_dists:
     - sdist
     - bdist_wheel

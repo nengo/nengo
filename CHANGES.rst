@@ -19,8 +19,8 @@ Release history
    - Removed
    - Fixed
 
-3.1.0 (unreleased)
-==================
+3.1.0 (November 17, 2020)
+=========================
 
 **Added**
 
