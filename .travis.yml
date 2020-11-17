@@ -81,7 +81,7 @@ jobs:
     deploy:
       - provider: pypi
         server: https://test.pypi.org/legacy/
-        user: tbekolay
+        user: __token__
         password: $PYPI_TEST_TOKEN
         distributions: "sdist bdist_wheel "
         on:
@@ -89,7 +89,7 @@ jobs:
           tags: false
           condition: $TRAVIS_BRANCH =~ ^release-candidate-*
       - provider: pypi
-        user: tbekolay
+        user: __token__
         password: $PYPI_TOKEN
         distributions: "sdist bdist_wheel "
         on:
