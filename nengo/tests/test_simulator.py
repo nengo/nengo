@@ -223,10 +223,16 @@ def test_seeding(Simulator, allclose):
 
     def compare_objs(obj1, obj2, attrs, equal=True):
         for attr in attrs:
-            check = allclose(getattr(obj1, attr), getattr(obj2, attr)) == equal
+            attr1 = getattr(obj1, attr)
+            attr2 = getattr(obj2, attr)
+            check = (
+                allclose(attr1, attr2)
+                if equal
+                else (not allclose(attr1, attr2, record_rmse=False, print_fail=0))
+            )
             if not check:
-                logging.info("%s: %s", attr, getattr(obj1, attr))
-                logging.info("%s: %s", attr, getattr(obj2, attr))
+                logging.info("%s: %s", attr, attr1)
+                logging.info("%s: %s", attr, attr2)
             assert check
 
     ens_attrs = BuiltEnsemble._fields
