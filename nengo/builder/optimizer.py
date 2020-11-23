@@ -455,7 +455,7 @@ class OpMerger:
 
         independent_of_ops_tomerge = (
             op not in tomerge.all_dependents
-            and len(tomerge.dependents[op].intersection(tomerge.ops)) == 0
+            and tomerge.dependents[op].isdisjoint(tomerge.ops)
         )
         independent_of_prior_merges = (
             op not in tomerge.merged
@@ -496,7 +496,7 @@ class Merger:
 
     @staticmethod
     def check_signals(op, tomerge):
-        return len(tomerge.all_signals.intersection(op.all_signals)) == 0
+        return tomerge.all_signals.isdisjoint(op.all_signals)
 
     @staticmethod
     def is_mergeable(op1, op2):

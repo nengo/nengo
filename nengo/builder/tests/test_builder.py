@@ -1,3 +1,8 @@
+import os
+import subprocess
+import sys
+import textwrap
+
 import pytest
 
 import nengo
@@ -51,3 +56,54 @@ def test_register_builder_twice_warning():
     my_builder(1)
     with pytest.warns(Warning, match="Type .* already has a builder. Overwriting"):
         my_builder(1)  # repeat setup warning
+
+
+@pytest.mark.skipif(sys.version_info < (3, 6, 0), reason="requires ordered dicts")
+def test_deterministic_op_order(tmp_path):
+    code = textwrap.dedent(
+        """
+    import nengo
+
+    with nengo.Network(seed=0) as net:
+        # use ensemblearrays as they create a lot of parallel ops
+        ens0 = nengo.networks.EnsembleArray(1, 100)
+        ens1 = nengo.networks.EnsembleArray(1, 100)
+        nengo.Connection(ens0.output, ens1.input)
+        nengo.Probe(ens1.output)
+
+    # the optimizer uses WeakSets, which seem incompatible with ordering
+    with nengo.Simulator(net, progress_bar=False, optimize=False) as sim:
+        ops = sim.step_order
+
+    for op in ops:
+        print(type(op))
+        for s in op.all_signals:
+            print(s._name)
+            print(s.shape)
+            print(s.initial_value)
+    """
+    )
+    tmp_path = tmp_path / "test.py"
+    tmp_path.write_text(code, encoding="utf-8")
+
+    env = os.environ.copy()
+
+    env["PYTHONHASHSEED"] = "0"
+    output0 = subprocess.run(
+        [sys.executable, str(tmp_path)],
+        stdout=subprocess.PIPE,
+        env=env,
+        encoding="utf-8",
+        check=True,
+    )
+
+    env["PYTHONHASHSEED"] = "1"
+    output1 = subprocess.run(
+        [sys.executable, str(tmp_path)],
+        stdout=subprocess.PIPE,
+        env=env,
+        encoding="utf-8",
+        check=True,
+    )
+
+    assert output0.stdout == output1.stdout

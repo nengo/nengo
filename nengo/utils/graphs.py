@@ -35,17 +35,8 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from collections import defaultdict
-
 from ..exceptions import BuildError
-
-
-def graph(edges=None):
-    """Construct graph from edges."""
-    g = defaultdict(set)
-    if edges is not None:
-        g.update(edges)
-    return g
+from .stdlib import FrozenOrderedSet, OrderedSet
 
 
 class BidirectionalDAG:
@@ -139,8 +130,9 @@ def toposort(edges):
     .. [2] https://en.wikipedia.org/wiki/Toposort#Algorithms
     """
     incoming_edges = reverse_edges(edges)
-    incoming_edges = {k: set(val) for k, val in incoming_edges.items()}
-    vertices = {v for v in edges if v not in incoming_edges or not incoming_edges[v]}
+    vertices = OrderedSet(
+        v for v in edges if v not in incoming_edges or not incoming_edges[v]
+    )
     ordered = []
 
     while vertices:
@@ -189,7 +181,7 @@ def transitive_closure(edges, topo_sorted=None):
         reachables[vertex] = set(edges[vertex])
         for edge in edges[vertex]:
             reachables[vertex].update(reachables[edge])
-        reachables[vertex] = frozenset(reachables[vertex])
+        reachables[vertex] = FrozenOrderedSet(reachables[vertex])
 
         # We try to reuse existing sets as this can significantly reduce
         # memory in some cases (which is important in the OpMergeOptimizer).
@@ -211,29 +203,8 @@ def reverse_edges(edges):
     Returns
     -------
     Dict of the form {a: set(), b: {a}, c: {a}} where b and c depend on a.
-
-    Examples
-    --------
-
-    .. testcode::
-
-       from nengo.utils.graphs import reverse_edges
-
-       d = {0: {1, 2}, 1: {2, 3}, 2: set(), 3: set()}
-       print(reverse_edges(d))
-
-    .. testoutput::
-
-       {0: set(), 1: {0}, 2: {0, 1}, 3: {1}}
-
-    Notes
-    -----
-    dict order are not deterministic. As we iterate on the
-    input dict, it make the output of this function depend on the
-    dict order. So this function output order should be considered
-    as undeterministic.
     """
-    result = {k: set() for k in edges}
+    result = {k: OrderedSet() for k in edges}
     for key in edges:
         for val in edges[key]:
             result[val].add(key)

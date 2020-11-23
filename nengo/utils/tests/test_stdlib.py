@@ -5,6 +5,8 @@ import numpy as np
 import pytest
 
 from nengo.utils.stdlib import (
+    FrozenOrderedSet,
+    OrderedSet,
     Timer,
     WeakKeyDefaultDict,
     WeakKeyIDDictionary,
@@ -283,3 +285,26 @@ def test_weakset_init():
     # init from another weakset
     s2 = WeakSet(s)
     assert k in s2
+
+
+@pytest.mark.skipif(
+    sys.version_info < (3, 6, 0), reason="OrderedSet only works in Python>=3.6"
+)
+def test_ordered_set():
+    my_set = OrderedSet(("c", "b", "a"))
+
+    # order is preserved
+    assert tuple(my_set) == ("c", "b", "a")
+    my_set |= "d"
+    assert tuple(my_set) == ("c", "b", "a", "d")
+    my_set -= "b"
+    assert tuple(my_set) == ("c", "a", "d")
+
+    # not hashable
+    with pytest.raises(TypeError, match="OrderedSet is not hashable"):
+        _ = {my_set: "val"}
+
+    # hashable
+    my_frozen_set = FrozenOrderedSet(my_set)
+    assert tuple(my_frozen_set) == ("c", "a", "d")
+    assert {my_frozen_set: "val"}[my_frozen_set] == "val"

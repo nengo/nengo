@@ -2,16 +2,16 @@ import itertools
 from collections import defaultdict
 
 from .graphs import add_edges
-from .stdlib import groupby
+from .stdlib import OrderedSet, groupby
 
 
 def operator_dependency_graph(operators):  # noqa: C901
     """Sort operators in a directed graph based on read/write dependencies."""
 
     # -- all views of a base object in a particular dictionary
-    by_base_sets = defaultdict(set)
-    by_base_writes = defaultdict(set)
-    by_base_reads = defaultdict(set)
+    by_base_sets = defaultdict(OrderedSet)
+    by_base_writes = defaultdict(OrderedSet)
+    by_base_reads = defaultdict(OrderedSet)
     reads = defaultdict(list)
     sets = defaultdict(list)
     incs = defaultdict(list)
@@ -47,7 +47,7 @@ def operator_dependency_graph(operators):  # noqa: C901
     #    3) All reads on a given memory block
     #    4) All updates on a given memory block
 
-    dg = {op: set() for op in operators}  # ops are nodes of the graph
+    dg = {op: OrderedSet() for op in operators}  # ops are nodes of the graph
 
     # -- incs depend on sets
     for sig, post_ops in incs.items():
@@ -55,7 +55,7 @@ def operator_dependency_graph(operators):  # noqa: C901
         for sig2 in by_base_sets[sig.base]:
             if sig.may_share_memory(sig2):
                 pre_ops.extend(sets[sig2])
-        add_edges(dg, itertools.product(set(pre_ops), post_ops))
+        add_edges(dg, itertools.product(OrderedSet(pre_ops), post_ops))
 
     # -- reads depend on writes (sets and incs)
     for sig, post_ops in reads.items():
@@ -63,15 +63,15 @@ def operator_dependency_graph(operators):  # noqa: C901
         for sig2 in by_base_writes[sig.base]:
             if sig.may_share_memory(sig2):
                 pre_ops.extend(sets[sig2] + incs[sig2])
-        add_edges(dg, itertools.product(set(pre_ops), post_ops))
+        add_edges(dg, itertools.product(OrderedSet(pre_ops), post_ops))
 
     # -- updates depend on reads, sets, and incs.
     for sig, post_ops in ups.items():
         pre_ops = sets[sig] + incs[sig] + reads[sig]
-        for sig2 in by_base_reads[sig.base].union(by_base_writes[sig.base]):
+        for sig2 in by_base_reads[sig.base] | by_base_writes[sig.base]:
             if sig.may_share_memory(sig2):
                 pre_ops.extend(sets[sig2] + incs[sig2] + reads[sig2])
-        add_edges(dg, itertools.product(set(pre_ops), post_ops))
+        add_edges(dg, itertools.product(OrderedSet(pre_ops), post_ops))
 
     return dg
 

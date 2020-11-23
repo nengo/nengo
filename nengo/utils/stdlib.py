@@ -5,7 +5,7 @@ import itertools
 import time
 import weakref
 from collections import namedtuple
-from collections.abc import Hashable, MutableMapping, MutableSet
+from collections.abc import Hashable, MutableMapping, MutableSet, Set
 
 
 class WeakKeyDefaultDict(MutableMapping):
@@ -136,6 +136,50 @@ class WeakSet(MutableSet):
     def discard(self, key):
         if key in self._data:
             del self._data[key]
+
+
+class FrozenOrderedSet(Set):
+    """A set that preserves insertion order and is hashable."""
+
+    def __init__(self, data=None):
+        if data is None:
+            data = []
+        self.data = dict((d, None) for d in data)
+
+    def __contains__(self, elem):
+        return elem in self.data
+
+    def __iter__(self):
+        return iter(self.data)
+
+    def __len__(self):
+        return len(self.data)
+
+    def __hash__(self):
+        return self._hash()
+
+
+class OrderedSet(FrozenOrderedSet, MutableSet):  # pylint: disable=too-many-ancestors
+    """A set that preserves insertion order and is mutable."""
+
+    def add(self, elem):
+        self.data[elem] = None
+
+    def discard(self, elem):
+        self.data.pop(elem, None)
+
+    def update(self, other):
+        self.data.update((elem, None) for elem in other)
+
+    def difference_update(self, other):
+        self -= other
+
+    def __ior__(self, other):
+        self.update(other)
+        return self
+
+    def __hash__(self):
+        raise TypeError("OrderedSet is not hashable (use FrozenOrderedSet)")
 
 
 CheckedCall = namedtuple("CheckedCall", ("value", "invoked"))
