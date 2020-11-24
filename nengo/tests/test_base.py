@@ -31,21 +31,21 @@ def test_nengoobjectparam_nonzero():
     """Can check that objects have nonzero size in/out."""
 
     class Test:
-        nin = NengoObjectParam("nin", nonzero_size_in=True)
-        nout = NengoObjectParam("nout", nonzero_size_out=True)
+        n_in = NengoObjectParam("n_in", nonzero_size_in=True)
+        n_out = NengoObjectParam("n_out", nonzero_size_out=True)
 
     inst = Test()
     with nengo.Network():
-        nin = nengo.Node(output=lambda t: t)
-        nout = nengo.Node(output=lambda t, x: None, size_in=1)
-        probe = nengo.Probe(nin)
+        n_in = nengo.Node(output=lambda t: t)
+        n_out = nengo.Node(output=lambda t, x: None, size_in=1)
+        probe = nengo.Probe(n_in)
 
         with pytest.raises(ValidationError):
-            inst.nin = nin
+            inst.n_in = n_in
         with pytest.raises(ValidationError):
-            inst.nout = nout
+            inst.n_out = n_out
         with pytest.raises(ValidationError):
-            inst.nout = probe
+            inst.n_out = probe
 
-        inst.nin = nout
-        inst.nout = nin
+        inst.n_in = n_out
+        inst.n_out = n_in
