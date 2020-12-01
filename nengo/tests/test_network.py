@@ -3,7 +3,7 @@ from collections import Counter
 import pytest
 
 import nengo
-from nengo.exceptions import ReadonlyError
+from nengo.exceptions import ConfigError, NetworkContextError, ReadonlyError
 from nengo.utils.testing import ThreadedAssertion
 
 
@@ -66,28 +66,62 @@ def test_nested_context():
         assert e6 not in con1.ensembles
 
 
-def test_context_errors():
+def test_context_errors(request):
+    """Most of these errors are in ``Network.add``; one is in ``Network.__exit__``"""
+
+    def clear_contexts():  # clear anything we've added to the contexts
+        nengo.Network.context.clear()
+        nengo.Config.context.clear()
+
+    request.addfinalizer(clear_contexts)
+
     def add_something():
         nengo.Ensemble(1, dimensions=1)
 
     # Error if adding before Network creation
-    with pytest.raises(RuntimeError):
+    with pytest.raises(NetworkContextError, match="must either be created inside a"):
         add_something()
 
     model = nengo.Network()
     # Error if adding before a `with network` block
-    with pytest.raises(RuntimeError):
+    with pytest.raises(NetworkContextError, match="must either be created inside a"):
         add_something()
 
     # Error if adding after a `with network` block
     with model:
         add_something()
-    with pytest.raises(RuntimeError):
+    with pytest.raises(NetworkContextError, match="must either be created inside a"):
         add_something()
+
+    # Error if adding a bad object type
+    with model:
+        with pytest.raises(NetworkContextError, match="Objects of type.*added to net"):
+            model.add(object())
 
     # Okay if add_to_container=False
     nengo.Ensemble(1, dimensions=1, add_to_container=False)
     nengo.Node(output=[0], add_to_container=False)
+
+    # Errors if context is in a bad state (one in `Network.__exit__`)
+    with pytest.raises(NetworkContextError, match="bad state; was expecting current"):
+        with nengo.Network():
+            nengo.Network.context.append("bad")
+            with pytest.raises(NetworkContextError, match="context (bad) is not"):
+                nengo.Ensemble(10, 1)
+
+    clear_contexts()
+
+    # Error if config is in a bad state
+    with pytest.raises(ConfigError, match="bad state; was expecting current"):
+        with nengo.Network():
+            nengo.Config.context.append(nengo.Config(nengo.Ensemble))
+
+    clear_contexts()
+
+    # Error if context is empty when exiting
+    with pytest.raises(NetworkContextError, match="bad state; was empty when exiting"):
+        with nengo.Network():
+            nengo.Network.context.clear()
 
 
 def test_context_is_threadsafe():
@@ -184,3 +218,12 @@ def test_readonly_attributes():
             "config",
         ):
             test_attr(net, attr)
+
+
+def test_network_contains():
+    out_ens = nengo.Ensemble(10, 1, add_to_container=False)
+    with nengo.Network() as net:
+        ens = nengo.Ensemble(10, 1)
+        assert ens in net
+        assert out_ens not in net
+        assert "str" not in net

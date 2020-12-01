@@ -6,7 +6,7 @@ import pytest
 import nengo
 import nengo.utils.numpy as npext
 from nengo.dists import Choice, Uniform, UniformHypersphere
-from nengo.exceptions import BuildError, NengoWarning
+from nengo.exceptions import BuildError, NengoWarning, ReadonlyError
 from nengo.neurons import RegularSpiking
 from nengo.processes import FilteredNoise, WhiteNoise
 from nengo.utils.testing import signals_allclose
@@ -499,3 +499,10 @@ def test_pickle(seed, Simulator):
     after = sim.data[unpickled.probe]
 
     assert np.all(before == after)
+
+
+def test_neurons_readonly():
+    with nengo.Network():
+        ens = nengo.Ensemble(10, 1)
+        with pytest.raises(ReadonlyError, match="neurons"):
+            ens.neurons = "test"

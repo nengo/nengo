@@ -1,8 +1,10 @@
 import logging
 
 import numpy as np
+import pytest
 
 import nengo
+from nengo.exceptions import ValidationError
 from nengo.utils.stdlib import Timer
 
 
@@ -266,3 +268,13 @@ def test_neuron_probe(Simulator, allclose):
 
     assert allclose(sim.data[p][:, ::2], sim.data[p_slice])
     assert allclose(sim.data[p_slice], sim.data[p_adv])
+
+
+def test_not_probeable_error():
+    with nengo.Network():
+        with pytest.raises(ValidationError, match="Type 'object' is not probeable"):
+            nengo.Probe(object())
+
+        ens = nengo.Ensemble(10, 1)
+        with pytest.raises(ValidationError, match="Attribute 'badattr' is not probeab"):
+            nengo.Probe(ens, "badattr")

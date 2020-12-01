@@ -196,3 +196,53 @@ def test_sparse_nef(encoders, decoders, Simulator):
         # no error
         with Simulator(net):
             pass
+
+
+def test_sparse_validation_errors():
+    with pytest.raises(ValidationError, match="Either `init` must be a `scipy.sparse"):
+        nengo.Sparse((1, 1))
+
+    nengo.Sparse((3, 3), indices=[(0, 0), (1, 2)], init=[1, 2])
+    with pytest.raises(ValidationError, match="Must be a vector.*length as `ind"):
+        nengo.Sparse((3, 3), indices=[(0, 0), (1, 2)], init=[1, 2, 3])
+
+
+def test_sparseinitparam_errors():
+    class TestClass:
+        sparse = nengo.transforms.SparseInitParam("sparse")
+
+    test = TestClass()
+    with pytest.raises(ValidationError, match="Must be `.*SparseMatrix` or .*spmatrix"):
+        test.sparse = "a"
+
+
+def test_convolution_validation_errors():
+    # conflicting channels_last
+    input_shape = nengo.transforms.ChannelShape((2, 3, 4), channels_last=True)
+    with pytest.raises(ValidationError, match="transform has channels_l.*input shape"):
+        nengo.Convolution(4, input_shape, channels_last=False)
+
+    # kernel_size does not match dimensions (2)
+    with pytest.raises(ValidationError, match=r"Kernel dimensions \(3\) does not mat"):
+        nengo.Convolution(4, input_shape, kernel_size=(3, 3, 3))
+
+    # strides does not match dimensions (2)
+    with pytest.raises(ValidationError, match=r"Stride dimensions \(3\) does not mat"):
+        nengo.Convolution(4, input_shape, strides=(1, 1, 1))
+
+    # init shape does not match kernel shape
+    nengo.Convolution(4, input_shape, init=np.ones((3, 3, 4, 4)))  # this works
+    with pytest.raises(ValidationError, match=r"Kernel shape \(9, 9, 4, 4\).*not mat"):
+        nengo.Convolution(4, input_shape, init=np.ones((9, 9, 4, 4)))
+    with pytest.raises(ValidationError, match=r"Kernel shape \(3, 3, 7, 4\).*not mat"):
+        nengo.Convolution(4, input_shape, init=np.ones((3, 3, 7, 4)))
+    with pytest.raises(ValidationError, match=r"Kernel shape \(3, 3, 4, 5\).*not mat"):
+        nengo.Convolution(4, input_shape, init=np.ones((3, 3, 4, 5)))
+
+
+def test_notransform():
+    transform = nengo.transforms.NoTransform(3)
+    assert transform.size_in == transform.size_out == 3
+
+    with pytest.raises(TypeError, match="Cannot sample a NoTransform"):
+        transform.sample()

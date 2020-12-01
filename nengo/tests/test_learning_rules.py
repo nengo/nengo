@@ -958,33 +958,99 @@ def test_null_error():
         nengo.Connection(a.neurons, b, learning_rule_type=Voja(), transform=None)
 
 
-def test_encoder_learning_undecoded_error():
+def test_high_learning_rate_warning():
+    with pytest.warns(UserWarning, match="learning rate is very high"):
+        nengo.PES(learning_rate=1e32)
+
+
+def test_learning_post_error():
     with nengo.Network():
+        ens = nengo.Ensemble(10, 1)
+        conn = nengo.Connection(ens, ens, learning_rule_type=nengo.PES())
+
+        with pytest.raises(ValidationError, match="'post' must.*'Ensemble', 'Neurons"):
+            nengo.Connection(ens, conn.learning_rule, learning_rule_type=nengo.PES())
+
+
+def test_encoder_learning_post_errors():
+    with nengo.Network():
+        ens = nengo.Ensemble(2, 2)
+
+        with pytest.raises(ValidationError, match="'post' must be of type 'Ensemble'"):
+            nengo.Connection(
+                ens,
+                nengo.Node(size_in=2),
+                learning_rule_type=nengo.Voja(),
+            )
+
         with pytest.raises(ValidationError, match="encoders are not used"):
             nengo.Connection(
-                nengo.Ensemble(2, 2),
-                nengo.Ensemble(2, 2),
+                ens,
+                ens,
                 solver=nengo.solvers.LstsqL2(weights=True),
                 learning_rule_type=nengo.Voja(),
             )
 
 
 def test_bad_learning_rule_modifies(Simulator):
-    class CustomRule(nengo.learning_rules.LearningRuleType):
+    class BadCustomRule(nengo.learning_rules.LearningRuleType):
+        modifies = "badval"  # start with a bad value to hit API check
+
+    class TrickCustomRule(nengo.learning_rules.LearningRuleType):
         # start with a valid value, then switch once we pass API check
         modifies = "encoders"
 
     with nengo.Network() as net:
-        nengo.Connection(
-            nengo.Ensemble(2, 2), nengo.Ensemble(2, 2), learning_rule_type=CustomRule()
-        )
+        ens = nengo.Ensemble(2, 2)
 
-    CustomRule.modifies = "badvalue"  # switch to invalid valie
+        with pytest.raises(ValidationError, match="Unrecognized target 'badval'"):
+            nengo.Connection(ens, ens, learning_rule_type=BadCustomRule())
+
+        nengo.Connection(ens, ens, learning_rule_type=TrickCustomRule())
+
+    TrickCustomRule.modifies = "badvalue"  # switch to invalid value
     with pytest.raises(BuildError, match="Unknown target 'badvalue'"):
         with Simulator(net):
             pass
 
 
-def test_bad_learning_rule_size_in_string():
+def test_learning_rule_size_in_strings():
+    class CustomLR(LearningRuleType):
+        modifies = "decoders"
+
+    with nengo.Network():
+        a = nengo.Ensemble(10, 5)
+        b = nengo.Ensemble(10, 2)
+
+        ref = {
+            "pre": 5,
+            "mid": 3,
+            "post": 2,
+            "pre_state": 5,
+            "post_state": 2,
+        }
+        for size_in, correct_size_in in ref.items():
+            conn = nengo.Connection(
+                a,
+                b,
+                function=lambda x: x[:3],
+                transform=np.ones((2, 3)),
+                learning_rule_type=CustomLR(size_in=size_in),
+            )
+            assert conn.learning_rule.size_in == correct_size_in
+
     with pytest.raises(ValidationError, match="is not a valid string value"):
         LearningRuleType(size_in="badval")
+
+
+def test_bad_weight_learning_rule_transform_shape():
+    with nengo.Network():
+        ens = nengo.Ensemble(5, 1)
+
+        with pytest.raises(ValidationError, match="Transform.*post_neurons x pre_neur"):
+            nengo.Connection(
+                ens,
+                ens.neurons,
+                transform=np.ones((5, 1)),
+                learning_rule_type=nengo.BCM(),
+            )

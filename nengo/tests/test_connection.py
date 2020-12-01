@@ -1222,3 +1222,10 @@ def test_is_decoded_deprecation():
     with pytest.warns(DeprecationWarning, match="is_decoded is deprecated"):
         with nengo.Network():
             assert nengo.Connection(nengo.Node(0), nengo.Node(size_in=1)).is_decoded
+
+
+def test_bad_function_type():
+    with nengo.Network():
+        ens = nengo.Ensemble(10, 1)
+        with pytest.raises(ValidationError, match="Invalid connection function type"):
+            nengo.Connection(ens, ens, function="hi")

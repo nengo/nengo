@@ -1,4 +1,5 @@
 import pickle
+from fnmatch import fnmatch
 
 import pytest
 
@@ -298,7 +299,10 @@ def test_classparams_str_repr():
 def test_config_repr():
     """tests the repr function in Config class"""
     model = nengo.Network()
-    assert repr(model.config) == "<Config(Connection, Ensemble, Node, Probe)>"
+    assert fnmatch(
+        repr(model.config),
+        "<Config at 0x* configuring (Connection, Ensemble, Node, Probe)>",
+    )
 
 
 def test_config_exit_errors():

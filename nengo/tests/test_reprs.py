@@ -104,6 +104,7 @@ def test_core_objects():
 
         c1 = nengo.Connection(a, b)
         c2 = nengo.Connection(a, b, function=np.square)
+        c3 = nengo.Connection(a, b, learning_rule_type=nengo.PES(), label="c3")
 
         n1 = nengo.Node(output=np.sin)
         n2 = nengo.Node(output=np.cos, label="n2")
@@ -130,6 +131,12 @@ def test_core_objects():
         repr(c2),
         "<Connection at 0x* from <Ensemble (unlabeled) at 0x*> to <Ensemble 'b'> "
         "computing 'square'>",
+    )
+    assert fnmatch(repr(c3), "<Connection at 0x* c3>")
+
+    assert fnmatch(
+        repr(c3.learning_rule),
+        "<LearningRule at 0x* modifying <Connection at 0x* c3> with type PES()>",
     )
 
     # Node

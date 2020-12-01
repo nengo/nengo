@@ -11,7 +11,7 @@ from nengo.builder import Model
 from nengo.builder.ensemble import BuiltEnsemble
 from nengo.builder.operator import DotInc
 from nengo.builder.signal import Signal
-from nengo.exceptions import SimulatorClosed, ValidationError
+from nengo.exceptions import ReadonlyError, SimulatorClosed, ValidationError
 from nengo.rc import RC_DEFAULTS, rc
 from nengo.utils.progress import ProgressBar
 
@@ -93,6 +93,14 @@ def test_simulation_data():
     data = nengo.simulator.SimulationData(raw)
     assert np.all(data["scalar"] == np.asarray(raw["scalar"]))
     assert np.all(data.get("list") == np.asarray(raw.get("list")))
+    assert tuple(data) == tuple(raw)  # this tests __iter__
+    assert len(data) == len(raw)
+    assert repr(data) == repr(raw)
+    assert str(data) == str(raw)
+
+    assert len(data._cache) > 0
+    data.reset()
+    assert len(data._cache) == 0
 
 
 def test_simulation_data_with_repeated_simulator_runs(Simulator):
@@ -164,7 +172,7 @@ def test_warn_on_opensim_del(Simulator):
         nengo.Ensemble(10, 1)
 
     sim = Simulator(net)
-    with pytest.warns(ResourceWarning):
+    with pytest.warns(ResourceWarning, match="Simulator.*deallocated while open"):
         sim.__del__()
     sim.close()
 
@@ -409,3 +417,9 @@ def test_pickle_optimize(caplog, seed):
     unpickled.close()
 
     assert np.all(before == after)
+
+
+def test_dt_readonly():
+    with nengo.Simulator(nengo.Network()) as sim:
+        with pytest.raises(ReadonlyError, match="dt"):
+            sim.dt = 0.05

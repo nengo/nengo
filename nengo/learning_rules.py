@@ -225,13 +225,6 @@ class RLS(LearningRuleType):
         super().__init__(learning_rate=learning_rate, size_in="post_state")
         self.pre_synapse = pre_synapse
 
-    @property
-    def _argdefaults(self):
-        return (
-            ("learning_rate", RLS.learning_rate.default),
-            ("pre_synapse", RLS.pre_synapse.default),
-        )
-
 
 def _remove_default_post_synapse(argreprs, default):
     default_post_synapse = f"post_synapse={default!r}"

@@ -47,7 +47,7 @@ logger = logging.getLogger(__name__)
 try:
     # Prevent output if no handler set
     logger.addHandler(logging.NullHandler())
-except AttributeError:
+except AttributeError:  # pragma: no cover
     pass
 
 __copyright__ = "2013-2020, Applied Brain Research"

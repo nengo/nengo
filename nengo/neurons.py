@@ -286,12 +286,12 @@ class NeuronType(FrozenObject):
         """
         raise NotImplementedError("Neurons must provide step")
 
-    def step_math(self, dt, J, **state):
+    def step_math(self, dt, J, output, **state):
         warnings.warn(
             "'step_math' has been renamed to 'step'. This alias will be removed "
             "in Nengo 4.0"
         )
-        return self.step(dt, J, **state)
+        return self.step(dt, J, output, **state)
 
 
 class NeuronTypeParam(Parameter):

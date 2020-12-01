@@ -580,19 +580,6 @@ class Connection(NengoObject):
         )
 
     @property
-    def _label(self):
-        if self.label is not None:
-            return self.label
-
-        func_txt = (
-            f" computing '{function_name(self.function)}'"
-            if self.function is not None
-            else ""
-        )
-
-        return f"from {self.pre} to {self.post}{func_txt}"
-
-    @property
     def learning_rule(self):
         """(LearningRule or iterable) Connectable learning rule object(s)."""
         if self.learning_rule_type is None:
@@ -608,11 +595,7 @@ class Connection(NengoObject):
         elif isinstance(types, LearningRuleType):
             learning_rule = LearningRule(self, types)
         else:
-            raise ValidationError(
-                f"Invalid type '{type(types).__name__}'",
-                attr="learning_rule_type",
-                obj=self,
-            )
+            raise NotImplementedError(f"Invalid type '{type(types).__name__}'")
 
         return learning_rule
 

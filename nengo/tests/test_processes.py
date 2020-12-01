@@ -214,13 +214,17 @@ def test_whitesignal_high_dt(Simulator, high, dt, seed, plt, allclose):
 
 
 @pytest.mark.parametrize("high,dt", [(501, 0.001), (500, 0.002)])
-def test_whitesignal_nyquist(Simulator, dt, high, seed):
-    """Check that ``high`` cannot exceed nyquist frequency."""
+def test_whitesignal_high_errors(Simulator, dt, high, seed):
+    """Check for errors if ``high`` is not between 1/period and nyquist frequency."""
+
+    with pytest.raises(ValidationError, match="Make ``high >= 1. / period``"):
+        process = WhiteSignal(period=10 * dt, high=9 * dt)
+
     process = WhiteSignal(1.0, high=high)
     with nengo.Network() as model:
         nengo.Node(process, size_out=1)
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError, match="High must not exceed the Nyquist"):
         Simulator(model, dt=dt, seed=seed)
 
 
@@ -398,7 +402,15 @@ class TestPiecewise:
 
     def test_invalid_key(self):
         data = {0.05: 1, 0.1: 0, "a": 0.2}
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError, match=r"Keys must be times \(floats or in"):
+            Piecewise(data)
+
+    def test_invalid_callable(self):
+        def badcallable(t):
+            raise RuntimeError()
+
+        data = {0.05: 1, 0.1: badcallable}
+        with pytest.raises(ValidationError, match="should return a numerical const"):
             Piecewise(data)
 
     def test_invalid_length(self):
@@ -419,7 +431,7 @@ class TestPiecewise:
         # Emulate not having scipy in case we have scipy
         monkeypatch.setitem(sys.modules, "scipy.interpolate", None)
 
-        with pytest.warns(UserWarning):
+        with pytest.warns(UserWarning, match="cannot be applied.*scipy is not inst"):
             process = Piecewise({0.05: 1, 0.1: 0}, interpolation="linear")
         assert process.interpolation == "zero"
 
@@ -534,13 +546,24 @@ class TestPiecewise:
         assert allclose(f[t == 0.15], func(0.15))
 
     def test_invalid_function_length(self):
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError, match="time 1.0 has size 2"):
             Piecewise({0.5: 0, 1.0: lambda t: [t, t ** 2]})
 
     def test_invalid_interpolation_on_func(self):
         def func(t):
             return t
 
-        with pytest.warns(UserWarning):
+        with pytest.warns(UserWarning, match="cannot be applied.*callable was sup"):
             process = Piecewise({0.05: 0, 0.1: func}, interpolation="linear")
         assert process.interpolation == "zero"
+
+    def test_cubic_interpolation_warning(self):
+        pytest.importorskip("scipy")
+
+        # cubic interpolation with 0 not in times
+        process = Piecewise({0.001: 0, 0.1: 0.1}, interpolation="cubic")
+        with pytest.warns(UserWarning, match="'cubic' interpolation.*for t=0.0"):
+            try:
+                process.run(0.001)
+            except ValueError:
+                pass  # scipy may raise a ValueError

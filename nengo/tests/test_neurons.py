@@ -17,6 +17,7 @@ from nengo.neurons import (
     NeuronType,
     NeuronTypeParam,
     PoissonSpiking,
+    RatesToSpikesNeuronType,
     RectifiedLinear,
     RegularSpiking,
     Sigmoid,
@@ -595,6 +596,11 @@ def test_direct_mode_nonfinite_value(Simulator):
             sim.run(0.01)
 
 
+def test_direct_step_error():
+    with pytest.raises(SimulationError, match="Direct mode neurons.*simulated"):
+        nengo.Direct().step(None, None, None)
+
+
 @pytest.mark.parametrize("generic", (True, False))
 def test_gain_bias(rng, NonDirectNeuronType, generic, allclose):
     if NonDirectNeuronType == Sigmoid and generic:
@@ -776,3 +782,25 @@ def test_bad_initial_state(rng, Simulator):
 def test_spikes_to_spikes_warning():
     with pytest.warns(UserWarning, match="type 'LIF', which is a spiking"):
         nengo.PoissonSpiking(nengo.LIF())
+
+
+def test_ratestospikes_state_overlap():
+    class CustomSpiking(RatesToSpikesNeuronType):  # pylint: disable=abstract-method
+        state = {"adaptation": nengo.dists.Choice([0])}
+
+    with pytest.raises(ValidationError, match="have an overlapping state variable"):
+        CustomSpiking(nengo.AdaptiveLIFRate())
+
+
+def test_step_math():
+    class CustomNeuronType(NeuronType):
+        def step(self, dt, J, output, **state):
+            return dict(dt=dt, J=J, output=output, state=state)
+
+    argnames = ["dt", "J", "output", "state1", "state2"]
+    args = {argname: object() for argname in argnames}
+    with pytest.warns(UserWarning, match="'step_math' has been renamed to 'step'"):
+        result = CustomNeuronType().step_math(**args)
+
+    for arg, val in args.items():
+        assert (result["state"][arg] if arg.startswith("state") else result[arg]) is val

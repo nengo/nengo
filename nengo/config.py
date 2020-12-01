@@ -383,7 +383,10 @@ class Config:
 
     def __repr__(self):
         classes = [key.__name__ for key in self.params if inspect.isclass(key)]
-        return f"<{type(self).__name__}({', '.join(classes)})>"
+        return (
+            f"<{type(self).__name__} at 0x{id(self):x} "
+            f"configuring ({', '.join(classes)})>"
+        )
 
     def __str__(self):
         return "\n".join(str(v) for v in self.params.values())

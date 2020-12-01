@@ -146,6 +146,15 @@ def test_decoder_cache(tmp_path):
         )
         assert SolverMock.n_calls[another_solver] == 1
 
+    with DecoderCache(cache_dir=cache_dir, readonly=True) as cache:
+        n_calls = int(SolverMock.n_calls[solver_mock])
+        decoders3, solver_info3 = cache.wrap_solver(solver_mock)(
+            **get_solver_test_args()
+        )
+        assert SolverMock.n_calls[solver_mock] == n_calls
+        assert_equal(decoders3, decoders2)
+        assert solver_info3 == solver_info2
+
 
 def test_corrupted_decoder_cache(tmp_path):
     cache_dir = str(tmp_path)
@@ -538,7 +547,6 @@ def test_writeablecacheindex_removes(tmp_path):
 
 
 def test_writeablecacheindex_warning(monkeypatch, tmp_path):
-
     with pytest.warns(CacheIOWarning):
         with WriteableCacheIndex(cache_dir=str(tmp_path)) as idx:
 
@@ -547,6 +555,23 @@ def test_writeablecacheindex_warning(monkeypatch, tmp_path):
                     raise CalledProcessError(-1, "move")
 
             monkeypatch.setattr(idx, "cache_dir", RaiseError(idx.cache_dir))
+
+
+def test_writeablecacheindex_reinit(tmp_path):
+    with WriteableCacheIndex(cache_dir=str(tmp_path)) as idx:
+        subdir = idx.cache_dir / "subdir"
+        subdir.mkdir()
+        file1 = idx.cache_dir / "file1"
+        file2 = subdir / "file2"
+        with file1.open("w") as fh:
+            fh.write("contents1")
+        with file2.open("w") as fh:
+            fh.write("contents2")
+
+        assert subdir.exists() and file1.exists() and file2.exists()
+
+        idx._reinit()
+        assert not (subdir.exists() or file1.exists() or file2.exists())
 
 
 def test_shrink_does_not_fail_if_lock_cannot_be_acquired(tmp_path):

@@ -80,7 +80,8 @@ def get_fragment_size(path):
     """Get fragment size in cross-compatible way."""
     try:
         return os.statvfs(path).f_frsize
-    except AttributeError:  # no statvfs on Windows
+    except AttributeError:  # pragma: no cover
+        # no statvfs on Windows
         return 4096  # correct value in 99% of cases
 
 
@@ -88,7 +89,7 @@ def safe_stat(path):
     """Gets file stat, but fails gracefully in case of an OSError."""
     try:
         return path.stat()
-    except OSError as err:
+    except OSError as err:  # pragma: no cover
         logger.warning("OSError during safe_stat: %s", err)
     return None
 
@@ -97,7 +98,7 @@ def safe_remove(path):
     """Removes file, but fails gracefully in case of an OSError."""
     try:
         path.unlink()
-    except OSError as err:
+    except OSError as err:  # pragma: no cover
         logger.warning("OSError during safe_remove: %s", err)
 
 
@@ -106,7 +107,7 @@ def safe_makedirs(path):
     if not path.exists():
         try:
             path.mkdir(parents=True)
-        except OSError as err:
+        except OSError as err:  # pragma: no cover
             logger.warning("OSError during safe_makedirs: %s", err)
 
 
@@ -472,13 +473,18 @@ class WriteableCacheIndex(CacheIndex):
 
     def _reinit(self):
         lock_filepath = pathlib.Path(self._lock.filename)
-        for path in self.cache_dir.iterdir():
-            if path == lock_filepath:
-                continue
-            if path.is_dir():
-                path.rmdir()
-            else:
-                path.unlink()
+
+        def clear_directory(dir_path):
+            for path in dir_path.iterdir():
+                if path == lock_filepath:
+                    continue
+                if path.is_dir():
+                    clear_directory(path)
+                    path.rmdir()
+                else:
+                    path.unlink()
+
+        clear_directory(self.cache_dir)
         self._index = {}
 
     def remove_file_entry(self, filename):
@@ -528,7 +534,7 @@ class WriteableCacheIndex(CacheIndex):
             with self._lock:
                 try:
                     self._load_index_file()
-                except IOError as err:
+                except IOError as err:  # pragma: no cover
                     if err.errno == errno.ENOENT:
                         self._index = {}
                     else:
@@ -544,7 +550,7 @@ class WriteableCacheIndex(CacheIndex):
                 }
 
                 self._write_index()
-        except TimeoutError:
+        except TimeoutError:  # pragma: no cover
             warnings.warn(
                 "Decoder cache index could not acquire lock. "
                 "Cache index was not synced."
@@ -596,7 +602,7 @@ class DecoderCache:
         try:
             try:
                 self._index.__enter__()
-            except TimeoutError:
+            except TimeoutError:  # pragma: no cover
                 self.readonly = True
                 self._index = CacheIndex(self.cache_dir)
                 self._index.__enter__()
@@ -723,7 +729,7 @@ class DecoderCache:
 
                     excess -= size
                     self.remove_file(path)
-        except TimeoutError:
+        except TimeoutError:  # pragma: no cover
             logger.debug("Not shrinking cache. Lock could not be acquired.")
 
     def remove_file(self, path):

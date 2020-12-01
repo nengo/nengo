@@ -260,7 +260,7 @@ class TestCopy:
 
     def test_copy_outside_network(self, make_f, assert_f):
         original = make_f()
-        with pytest.raises(NetworkContextError):
+        with pytest.raises(NetworkContextError, match="either be created inside a"):
             original.copy(add_to_container=True)
 
     def test_copy_outside_network_without_adding(self, make_f, assert_f):

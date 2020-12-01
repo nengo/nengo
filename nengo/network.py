@@ -257,8 +257,8 @@ class Network:
         if config is not self._config:
             raise ConfigError(
                 "Config.context in bad state; was expecting "
-                f"current context to be '{self._config}' but instead got "
-                f"'{config}'."
+                f"current context to be {self._config!r} but instead got "
+                f"{config!r}."
             )
 
         network = Network.context.pop()
