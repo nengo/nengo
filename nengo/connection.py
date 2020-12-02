@@ -595,7 +595,7 @@ class Connection(NengoObject):
         elif isinstance(types, LearningRuleType):
             learning_rule = LearningRule(self, types)
         else:
-            raise NotImplementedError(f"Invalid type '{type(types).__name__}'")
+            assert False, "Validation should catch this"
 
         return learning_rule
 

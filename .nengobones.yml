@@ -65,6 +65,8 @@ setup_py:
 
 setup_cfg:
   coverage:
+    exclude_lines:
+      - "^[ \\t]*assert False"
     omit_files:
       - "nengo/_vendor/*"
       - "nengo/spa/*"
