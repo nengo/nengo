@@ -502,12 +502,3 @@ class SimulationData(Mapping):
 
     def reset(self):
         self._cache.clear()
-
-
-class ProbeDict(SimulationData):
-    def __init__(self, *args, **kwargs):
-        warnings.warn(
-            "ProbeDict has been renamed to SimulationData. This alias "
-            "will be removed in Nengo 3.1."
-        )
-        super().__init__(*args, **kwargs)

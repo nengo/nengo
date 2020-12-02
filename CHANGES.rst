@@ -32,6 +32,8 @@ Release history
   September 2020). (`#1649`_)
 - Removed ``nengo.utils.graphs.graph`` (this was a small utility function for building
   graphs that was only used in tests). (`#1654`_)
+- Removed ``simulator.ProbeDict`` alias; this was previously renamed to
+  ``simulator.SimulationData``. (`#1649`_)
 
 **Fixed**
 
