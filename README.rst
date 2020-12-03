@@ -1,18 +1,10 @@
 .. image:: https://img.shields.io/pypi/v/nengo.svg
-  :target: https://pypi.python.org/pypi/nengo
+  :target: https://pypi.org/project/nengo
   :alt: Latest PyPI version
 
 .. image:: https://img.shields.io/pypi/pyversions/nengo.svg
-  :target: https://pypi.python.org/pypi/nengo
+  :target: https://pypi.org/project/nengo
   :alt: Python versions
-
-.. image:: https://img.shields.io/travis/nengo/nengo/master.svg
-  :target: https://travis-ci.org/nengo/nengo
-  :alt: Travis-CI build status
-
-.. image:: https://ci.appveyor.com/api/projects/status/8ou34p2bgqf2qjqh/branch/master?svg=true
-  :target: https://ci.appveyor.com/project/nengo/nengo
-  :alt: AppVeyor build status
 
 .. image:: https://img.shields.io/codecov/c/github/nengo/nengo/master.svg
   :target: https://codecov.io/gh/nengo/nengo/branch/master
