@@ -31,10 +31,10 @@ seen when calling pytest with the ``-v`` argument.
            "This skips a parametrized test with a specific parameter value."
 """
 
-from fnmatch import fnmatch
 import importlib
 import shlex
 import sys
+from fnmatch import fnmatch
 
 try:
     import resource

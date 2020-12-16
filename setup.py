@@ -47,7 +47,7 @@ optional_req = [
 tests_req = [
     "jupyter",
     "matplotlib>=1.4",
-    "pytest>=3.6",
+    "pytest>=3.9.1",
     "pytest-allclose",
     "pytest-plt",
     "pytest-rng",
