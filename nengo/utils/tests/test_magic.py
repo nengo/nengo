@@ -1,4 +1,5 @@
 import inspect
+import sys
 
 from nengo.utils.magic import BoundFunctionWrapper, ObjectProxy, decorator
 
@@ -215,8 +216,9 @@ def test_class():
     assert type(inst) == f.__wrapped__
 
     # Make sure introspection works
-    # Note: for classes, the decorator isn't part of the source. Weird!
-    assert inspect.getsource(f) == (
+    source = inspect.getsource(f)
+
+    target_source = (
         "    class f:\n"
         '        """Return 1."""\n'
         "\n"
@@ -224,6 +226,12 @@ def test_class():
         "            self.a = a\n"
         "            self.b = b\n"
     )
+
+    if sys.version_info >= (3, 9, 0):
+        # for Python>=3.9 the decorator is included in the source
+        target_source = "    @test_decorator\n" + target_source
+
+    assert source == target_source
 
 
 def test_class_decorator():

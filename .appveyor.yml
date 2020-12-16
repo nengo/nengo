@@ -1,16 +1,18 @@
 environment:
   matrix:
-    - PYTHON: "C:\\Miniconda36"
-    - PYTHON: "C:\\Miniconda36-x64"
+    - PYTHON: "C:\\Miniconda37"
+      CONDA_PYTHON: "python=3.6"
+    - PYTHON: "C:\\Miniconda37-x64"
+      CONDA_PYTHON: "python=3.9"
 
 init:
-  - set PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%
+  - set PATH=%PYTHON%;%PYTHON%\\Scripts;%PYTHON%\\Library;%PYTHON%\\Library\\bin;%PYTHON%\\Library\\mingw-w64\\bin;%PATH%
 
 install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - conda install numpy matplotlib jupyter
+  - conda install %CONDA_PYTHON% numpy matplotlib jupyter
   - pip install -e .[tests]
 
 build: false  # Not a C# project

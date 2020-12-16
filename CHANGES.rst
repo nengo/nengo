@@ -22,6 +22,10 @@ Release history
 3.2.0 (unreleased)
 ==================
 
+**Added**
+
+- Added official support for Python 3.9. (`#1660`_)
+
 **Fixed**
 
 - Operator graph step order will now be deterministic. (`#1654`_)
@@ -42,6 +46,7 @@ Release history
 
 .. _#1649: https://github.com/nengo/nengo/pull/1649
 .. _#1654: https://github.com/nengo/nengo/pull/1654
+.. _#1660: https://github.com/nengo/nengo/pull/1660
 
 3.1.0 (November 17, 2020)
 =========================

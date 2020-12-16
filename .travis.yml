@@ -70,7 +70,7 @@ jobs:
     if: branch =~ ^release-candidate-*
   -
     dist: bionic
-    python: 3.8
+    python: 3.9
   - stage: deploy
     if: branch =~ ^release-candidate-* OR tag =~ ^v[0-9]*
     env: SCRIPT="deploy"
