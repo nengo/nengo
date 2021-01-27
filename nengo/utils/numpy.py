@@ -4,6 +4,7 @@ Extra functions to extend the capabilities of Numpy.
 import logging
 import warnings
 from collections.abc import Iterable
+from distutils.version import LooseVersion
 
 import numpy as np
 
@@ -34,11 +35,7 @@ maxint = np.iinfo(np.int32).max
 # numpy 1.17 introduced a slowdown to clip, so
 # use nengo.utils.numpy.clip instead of np.clip
 # This has persisted through 1.19 at least
-clip = (
-    np.core.umath.clip
-    if tuple(int(st) for st in np.__version__.split(".")) >= (1, 17, 0)
-    else np.clip
-)
+clip = np.core.umath.clip if LooseVersion(np.__version__) >= "1.17.0" else np.clip
 
 
 def is_integer(obj):
