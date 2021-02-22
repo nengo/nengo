@@ -684,10 +684,10 @@ class DotIncMerger(Merger):
         indptr = np.arange(len(ops) + 1, dtype=rc.int_dtype)
         indices = np.arange(len(ops), dtype=rc.int_dtype)
         name = f"bsr_merged<{ops[0].A.name}, ..., {ops[-1].A.name}>"
-        readonly = all([o.A.readonly for o in ops])
+        readonly = all(o.A.readonly for o in ops)
         A = Signal(data, name=name, readonly=readonly)
         A_sigr = {}
-        for i, s in enumerate([o.A for o in ops]):
+        for i, s in enumerate(o.A for o in ops):
             A_sigr[s] = Signal(
                 data[i],
                 name=f"{s.name}[{i}]",

@@ -1008,7 +1008,7 @@ class _betaincinv22:
 
         table = cls.load_table()
 
-        if dims in table:
+        if dims in table:  # pylint: disable=unsupported-membership-test
             xp, yp = table[dims]
         else:
             known_dims = np.array(list(table))
