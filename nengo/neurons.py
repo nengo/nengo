@@ -1025,7 +1025,7 @@ class StochasticSpiking(RatesToSpikesNeuronType):
     Parameters
     ----------
     base_type : NeuronType
-        A rate-based neuron type to convert to a Poisson spiking neuron.
+        A rate-based neuron type to convert to a stochastic spiking neuron.
     amplitude : float
         Scaling factor on the neuron output. Corresponds to the relative
         amplitude of the output spikes of the neuron.
