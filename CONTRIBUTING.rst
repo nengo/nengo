@@ -26,10 +26,6 @@ If you want to fix a bug or add a feature to Nengo,
 we welcome pull requests.
 Ensure that you fill out all sections of the pull request template,
 deleting the comments as you go.
-We check most aspects of code style automatically.
-Please refer to our
-`code style guide <https://www.nengo.ai/nengo-bones/style.html>`_
-for things that we check manually.
 
 Contributor agreement
 =====================

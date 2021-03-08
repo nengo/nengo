@@ -22,7 +22,6 @@ env:
     - SCRIPT="test"
     - TEST_ARGS=""
     - BRANCH_NAME="${TRAVIS_PULL_REQUEST_BRANCH:-$TRAVIS_BRANCH}"
-    - PIP_USE_FEATURE="2020-resolver"
     - NUMPY="numpy"
 
 jobs:
