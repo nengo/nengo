@@ -356,13 +356,13 @@ Release history
   external `pytest-plt <https://www.nengo.ai/pytest-plt/>`__ package instead.
   (`#1566 <https://github.com/nengo/nengo/pull/1566>`__)
 - The internal ``logger`` fixture has been removed. Use pytest's
-  `log capturing <https://docs.pytest.org/en/latest/logging.html>`__ instead.
+  `log capturing <https://docs.pytest.org/en/stable/logging.html>`__ instead.
   (`#1566 <https://github.com/nengo/nengo/pull/1566>`__)
 - Removed ``nengo.log`` and ``nengo.utils.logging``. Use the standard Python
   and pytest logging modules instead.
   (`#1566 <https://github.com/nengo/nengo/pull/1566>`__)
 - The internal ``analytics`` and ``analytics_data`` fixtures have been removed.
-  Use pytest's `cache fixture <https://docs.pytest.org/en/latest/cache.html>`__
+  Use pytest's `cache fixture <https://docs.pytest.org/en/stable/cache.html>`__
   instead.
   (`#1566 <https://github.com/nengo/nengo/pull/1566>`__)
 - The ``RefSimulator`` fixture has been removed. Use the ``Simulator`` fixture
