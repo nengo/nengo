@@ -28,15 +28,16 @@ def run_solver(solver, m=30, n=20, d=1, cond=10, sys_rng=np.random, **kwargs):
     # solve system
     y = np.dot(A, x)
     x2, _ = solver(A, y, **kwargs)
+    y2 = np.dot(A, x2)
 
-    return x, x2
+    return x, x2, y, y2
 
 
 @pytest.mark.parametrize("cond, sigma", [(5, 1e-4), (500, 1e-6), (1e5, 1e-8)])
 def test_cholesky(cond, sigma, rng, allclose):
     rng = np.random
     solver = Cholesky()
-    x, x2 = run_solver(solver, d=2, cond=cond, sys_rng=rng, sigma=sigma)
+    x, x2, _, _ = run_solver(solver, d=2, cond=cond, sys_rng=rng, sigma=sigma)
 
     tol = np.sqrt(cond) * 1e-7  # this is a guesstimate, and also depends on sigma
     assert allclose(x2, x, atol=tol, rtol=tol)
@@ -46,7 +47,7 @@ def test_cholesky(cond, sigma, rng, allclose):
 def test_conjgrad_scipy(cond, sigma, tol, rng, allclose):
     pytest.importorskip("scipy")
     solver = ConjgradScipy(tol=tol)
-    x, x2 = run_solver(solver, d=2, cond=cond, sys_rng=rng, sigma=sigma)
+    x, x2, _, _ = run_solver(solver, d=2, cond=cond, sys_rng=rng, sigma=sigma)
 
     tol = cond * tol
     assert allclose(x2, x, atol=tol, rtol=tol)
@@ -56,7 +57,7 @@ def test_conjgrad_scipy(cond, sigma, tol, rng, allclose):
 def test_lsmr_scipy(cond, sigma, tol, rng, allclose):
     pytest.importorskip("scipy")
     solver = LSMRScipy(tol=tol)
-    x, x2 = run_solver(solver, d=2, cond=cond, sys_rng=rng, sigma=sigma)
+    x, x2, _, _ = run_solver(solver, d=2, cond=cond, sys_rng=rng, sigma=sigma)
 
     tol = cond * tol
     assert allclose(x2, x, atol=tol, rtol=tol)
@@ -66,16 +67,18 @@ def test_lsmr_scipy(cond, sigma, tol, rng, allclose):
     "cond, sigma, tol, maxiters",
     [
         (5, 1e-8, 1e-2, None),  # standard run
-        (50, 1e-8, 1e-4, None),  # precision run
+        (50, 1e-8, 1e-4, 100),  # precision run (extra iterations help convergence)
         (1.1, 1e-15, 0, 1000),  # hit "no perceptible change in p" line
     ],
 )
 def test_conjgrad(cond, sigma, tol, maxiters, rng, allclose):
     solver = Conjgrad(tol=tol, maxiters=maxiters)
-    x, x2 = run_solver(solver, d=2, cond=cond, sys_rng=rng, sigma=sigma)
+    _, _, y, y2 = run_solver(solver, d=2, cond=cond, sys_rng=rng, sigma=sigma)
 
+    # conjgrad stopping tol is based on residual in y, so compare y
+    # (this particularly helps in the ill-conditioned case)
     tol = cond * max(tol, 1e-5)
-    assert allclose(x2, x, atol=tol, rtol=tol)
+    assert allclose(y2, y, atol=tol, rtol=tol)
 
 
 def test_conjgrad_errors():
@@ -86,7 +89,9 @@ def test_conjgrad_errors():
 
 @pytest.mark.parametrize("cond, tol", [(5, 1e-2), (100, 1e-3)])
 def test_blockconjgrad(cond, tol, rng, allclose):
-    x, x2 = run_solver(BlockConjgrad(tol=tol), d=5, cond=cond, sys_rng=rng, sigma=1e-8)
+    x, x2, _, _ = run_solver(
+        BlockConjgrad(tol=tol), d=5, cond=cond, sys_rng=rng, sigma=1e-8
+    )
     assert allclose(x2, x, atol=tol, rtol=tol)
 
 
@@ -98,7 +103,7 @@ def test_blockconjgrad_errors():
 
 @pytest.mark.parametrize("cond", [5, 1000])
 def test_svd(cond, rng, allclose):
-    x, x2 = run_solver(SVD(), d=5, cond=cond, sys_rng=rng, sigma=1e-8)
+    x, x2, _, _ = run_solver(SVD(), d=5, cond=cond, sys_rng=rng, sigma=1e-8)
     assert allclose(x2, x, atol=1e-8, rtol=1e-8)
 
 
@@ -108,5 +113,5 @@ def test_randomized_svd_fallback(cond, rng, allclose):
     pytest.importorskip("sklearn")
     m, n = 30, 20
     solver = RandomizedSVD(n_components=min(m, n))
-    x, x2 = run_solver(solver, m=m, n=n, d=5, cond=cond, sys_rng=rng, sigma=1e-8)
+    x, x2, _, _ = run_solver(solver, m=m, n=n, d=5, cond=cond, sys_rng=rng, sigma=1e-8)
     assert allclose(x2, x, atol=1e-8, rtol=1e-8)
