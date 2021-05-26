@@ -124,6 +124,8 @@ class _RC(ConfigParser):  # pylint: disable=too-many-ancestors
 
     def __init__(self):
         super().__init__()
+
+        self._cache = {}
         self.reload_rc()
 
     @property
@@ -137,6 +139,7 @@ class _RC(ConfigParser):  # pylint: disable=too-many-ancestors
         return np.dtype(f"int{bits}")
 
     def _clear(self):
+        self._cache.clear()
         self.remove_section(DEFAULTSECT)
         for s in self.sections():
             self.remove_section(s)
@@ -146,6 +149,45 @@ class _RC(ConfigParser):  # pylint: disable=too-many-ancestors
             self.add_section(section)
             for k, v in settings.items():
                 self.set(section, k, str(v))
+
+    def _get_cached(
+        self,
+        base_fn,
+        section,
+        option,
+        raw=False,
+        vars=None,
+        fallback=configparser._UNSET,
+    ):
+        if vars is not None:
+            return base_fn(section, option, raw=raw, fallback=fallback)
+
+        key0 = (section, option)
+        key1 = (base_fn.__name__, raw, str(fallback))
+        try:
+            return self._cache[key0][key1]
+        except KeyError:
+            value = base_fn(section, option, raw=raw, fallback=fallback)
+            self._cache.setdefault(key0, {})[key1] = value
+            return value
+
+    def get(self, section, option, **kwargs):
+        return self._get_cached(super().get, section, option, **kwargs)
+
+    def getint(self, section, option, **kwargs):
+        return self._get_cached(super().getint, section, option, **kwargs)
+
+    def getfloat(self, section, option, **kwargs):
+        return self._get_cached(super().getfloat, section, option, **kwargs)
+
+    def getboolean(self, section, option, **kwargs):
+        return self._get_cached(super().getboolean, section, option, **kwargs)
+
+    def set(self, section, option, value=None):
+        key0 = (section, option)
+        if key0 in self._cache:
+            del self._cache[key0]
+        super().set(section, option, value)
 
     def read_file(self, fp, filename=None):
         if filename is None:
