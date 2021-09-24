@@ -35,6 +35,8 @@ Release history
 **Fixed**
 
 - Operator graph step order will now be deterministic. (`#1654`_)
+- Fixed an issue in which some simulators could not be reset due to signals
+  not being marked as readonly. (`#1676`_)
 
 **Removed**
 
@@ -54,6 +56,7 @@ Release history
 .. _#1649: https://github.com/nengo/nengo/pull/1649
 .. _#1654: https://github.com/nengo/nengo/pull/1654
 .. _#1660: https://github.com/nengo/nengo/pull/1660
+.. _#1676: https://github.com/nengo/nengo/pull/1676
 
 3.1.0 (November 17, 2020)
 =========================

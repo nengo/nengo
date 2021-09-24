@@ -155,7 +155,13 @@ class Signal:
 
         view = self._initial_value[item]
         offset = npext.array_offset(view) - npext.array_offset(self._initial_value)
-        return Signal(view, name=f"{self.name}[{item}]", base=self.base, offset=offset)
+        return Signal(
+            view,
+            name=f"{self.name}[{item}]",
+            base=self.base,
+            offset=offset,
+            readonly=self.readonly,
+        )
 
     def __repr__(self):
         return f"Signal(name={self._name}, shape={self.shape})"

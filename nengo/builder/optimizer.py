@@ -693,6 +693,7 @@ class DotIncMerger(Merger):
                 name=f"{s.name}[{i}]",
                 base=A,
                 offset=i * A.itemsize * np.prod(A.shape[1:]),
+                readonly=readonly,
             )
             assert np.allclose(
                 s.initial_value, A_sigr[s].initial_value, atol=0, rtol=0, equal_nan=True
