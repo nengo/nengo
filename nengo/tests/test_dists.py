@@ -230,7 +230,7 @@ def test_scattered_hypersphere(dims, surface, seed, plt):
         )
         plt.plot([d.min()], [0], colors[i] + "x")
     plt.plot([even_distance], [0], "kx")
-    plt.title("surface=%s, dims=%d, n=%d" % (surface, dims, n))
+    plt.title(f"surface={surface}, dims={dims}, n={n}")
 
     plt.subplot(212)
     bins = np.linspace(0, 1.1, 31)
@@ -424,7 +424,7 @@ def test_cosine_analytical(d, allclose):
 
 
 def test_cosine_sample_shape(seed, allclose):
-    """"Tests that CosineSimilarity sample has correct shape."""
+    """Tests that CosineSimilarity sample has correct shape."""
     # sampling (n, d) should be the exact same as sampling (n*d,)
     n = 3
     d = 4

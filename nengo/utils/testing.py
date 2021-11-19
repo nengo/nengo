@@ -1,4 +1,5 @@
 import itertools
+import sys
 import threading
 
 import numpy as np
@@ -147,6 +148,7 @@ class ThreadedAssertion:
             self.barriers = barriers
             self.n = n
             self.exception = None
+            self.exc_info = (None, None, None)
 
         def run(self):
             self.parent.init_thread(self)
@@ -159,6 +161,7 @@ class ThreadedAssertion:
                 self.parent.assert_thread(self)
             except Exception as e:  # pylint: disable=broad-except
                 self.exception = e
+                self.exc_info = sys.exc_info()
             finally:
                 self.parent.finish_thread(self)
 

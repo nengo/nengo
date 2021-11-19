@@ -5,8 +5,8 @@ import numpy as np
 import pytest
 from numpy.testing import assert_equal
 
-import nengo.utils.nco as nco
 from nengo.exceptions import CacheIOError
+from nengo.utils import nco
 from nengo.utils.nco import Subfile
 
 

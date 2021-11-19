@@ -85,6 +85,8 @@ def get_targets(conn, eval_points, dtype=None):
                     f"Building {conn}: Connection function returned "
                     "None. Cannot solve for decoders."
                 )
+            if not isinstance(out, (int, float, np.ndarray)):
+                out = np.hstack(out)
             targets[i] = out
 
     return targets
@@ -189,7 +191,7 @@ def build_no_solver(model, solver, conn, rng):
 
 
 @Builder.register(Connection)  # noqa: C901
-def build_connection(model, conn):
+def build_connection(model, conn):  # noqa: C901
     """Builds a `.Connection` object into a model.
 
     A brief summary of what happens in the connection build process,

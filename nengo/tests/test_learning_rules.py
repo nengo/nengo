@@ -363,9 +363,16 @@ def test_pes_adv_idx(Simulator):
         Simulator(net)
 
 
-@pytest.mark.parametrize("pre_neurons", (True, False))
-@pytest.mark.parametrize("post_neurons", (True, False))
-@pytest.mark.parametrize("weight_solver", (True, False))
+@pytest.mark.parametrize(
+    "pre_neurons,post_neurons,weight_solver",
+    [
+        (True, True, False),
+        (True, False, False),
+        (False, True, False),
+        (False, False, True),
+        (False, False, False),
+    ],
+)
 @pytest.mark.parametrize("pre_slice", (True, False))
 @pytest.mark.parametrize("post_slice", (True, False))
 def test_pes_pre_post_varieties(
@@ -602,8 +609,8 @@ def test_learningrule_attr(seed):
         c3 = nengo.Connection(a.neurons, b.neurons, learning_rule_type=r3, transform=T)
         assert isinstance(c3.learning_rule, dict)
         assert set(c3.learning_rule) == set(r3)  # assert same keys
-        for key in r3:
-            check_rule(c3.learning_rule[key], c3, r3[key])
+        for key, value in r3.items():
+            check_rule(c3.learning_rule[key], c3, value)
 
 
 def test_voja_encoders(Simulator, PositiveNeuronType, rng, seed, allclose):

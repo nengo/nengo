@@ -547,7 +547,7 @@ class SynapseParam(Parameter):
     def __init__(self, name, default=Unconfigurable, optional=True, readonly=None):
         super().__init__(name, default, optional, readonly)
 
-    def coerce(self, instance, synapse):
+    def coerce(self, instance, synapse):  # pylint: disable=arguments-renamed
         synapse = Lowpass(synapse) if is_number(synapse) else synapse
         self.check_type(instance, synapse, Synapse)
         return super().coerce(instance, synapse)

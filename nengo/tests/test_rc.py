@@ -5,13 +5,13 @@ def test_read_file(tmp_path):
     filepath = str(tmp_path / "test_rc_file.txt")
 
     # write the test file
-    with open(filepath, "w") as fh:
+    with open(filepath, "w", encoding="utf-8") as fh:
         fh.write("[test_rc_section]\nsetting0 = 3\nsetting1=5")
 
     del fh
 
     # read the test file using `rc.read_file`
-    with open(filepath, "r") as fh:
+    with open(filepath, "r", encoding="utf-8") as fh:
         rc.read_file(fh)
 
     assert int(rc["test_rc_section"]["setting0"]) == 3

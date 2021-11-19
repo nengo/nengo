@@ -1,5 +1,7 @@
 """Functions for easy interactions with IPython and IPython notebooks."""
 
+# pylint: disable=consider-using-f-string
+
 import io
 
 import numpy as np

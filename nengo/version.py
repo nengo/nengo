@@ -6,6 +6,8 @@ and conform to PEP440 (see https://www.python.org/dev/peps/pep-0440/).
 a release version. Release versions are git tagged with the version.
 """
 
+# pylint: disable=consider-using-f-string
+
 name = "nengo"
 version_info = (3, 2, 0)  # (major, minor, patch)
 dev = 0

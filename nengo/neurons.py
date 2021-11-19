@@ -179,9 +179,15 @@ class NeuronType(FrozenObject):
             Jr *= 2
         else:
             if J_threshold is None:
-                raise RuntimeError("Could not find firing threshold")
+                raise ValidationError(
+                    "Could not find firing threshold",
+                    attr="max_rates,intercepts",
+                    obj=self,
+                )
             if J_max is None:
-                raise RuntimeError("Could not find max current")
+                raise ValidationError(
+                    "Could not find max current", attr="max_rates", obj=self
+                )
 
         J = np.linspace(J_threshold, J_max, J_steps)
         rate = self.rates(J, gain, bias).squeeze(axis=1)
@@ -198,8 +204,8 @@ class NeuronType(FrozenObject):
         dtype = rc.float_dtype if dtype is None else dtype
         state = {}
         initial_state = {} if self.initial_state is None else self.initial_state
-        for name in self.state:
-            dist = initial_state.get(name, self.state[name])
+        for name, default_value in self.state.items():
+            dist = initial_state.get(name, default_value)
             state[name] = get_samples(dist, n=n_neurons, d=None, rng=rng).astype(
                 dtype, copy=False
             )
@@ -298,7 +304,7 @@ class NeuronTypeParam(Parameter):
 
     equatable = True
 
-    def coerce(self, instance, neurons):
+    def coerce(self, instance, neurons):  # pylint: disable=arguments-renamed
         self.check_type(instance, neurons, NeuronType)
         return super().coerce(instance, neurons)
 

@@ -147,30 +147,32 @@ def test_outputparam_errors(Simulator):
         nengo.Node(size_in=1)
 
         # type errors
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError, match="Invalid node output type"):
             nengo.Node(output=object())
+        with pytest.raises(ValidationError, match="is expected to accept exactly 1"):
+            nengo.Node(output=np.add)
 
         # function errors
         nengo.Node(output=lambda t, x=[0]: t + 1, size_in=1)
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError, match="is expected to accept exactly 1"):
             nengo.Node(output=lambda t, x: x + 1)
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError, match="is expected to accept exactly 2"):
             nengo.Node(output=lambda t: t + 1, size_in=1)
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError, match="is expected to accept exactly 2"):
             nengo.Node(output=lambda t, x, y: t + 1, size_in=2)
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError, match="must be callable if size_in != 0"):
             nengo.Node(output=[0], size_in=1)
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError, match="must be callable if size_in != 0"):
             nengo.Node(output=0, size_in=1)
 
         # shape errors
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError, match=r"vector \(got shape \(2, 2\)\)"):
             nengo.Node(output=[[1, 2], [3, 4]])
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError, match=r"vector \(got shape \(1, 2\)\)"):
             nengo.Node(output=lambda t: [[t, t + 1]])
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError, match=r"vector \(got shape \(2, 2\)\)"):
             nengo.Node(output=[[3, 1], [2, 9]], size_out=4)
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError, match=r"\(5\) does not match size_out"):
             nengo.Node(output=[1, 2, 3, 4, 5], size_out=4)
 
     with Simulator(model):

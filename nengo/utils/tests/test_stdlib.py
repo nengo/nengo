@@ -75,7 +75,7 @@ def test_checked_call_errors():
         checked_call(A(), 1)
 
     assert checked_call(np.sin, 1, 2, 3) == (None, False)
-    with pytest.raises(ValueError):
+    with pytest.raises((ValueError, TypeError)):
         checked_call(lambda x: np.sin(1, 2, 3), 1)
 
 
@@ -199,11 +199,11 @@ def test_weakkeydict_update():
     d.update(in_d)
 
     assert len(d) == len(in_d)
-    for k in d.keys():
+    for k in d.keys():  # pylint: disable=consider-using-dict-items
         assert k in in_d, "mysterious new key appeared in weak dict"
         v = in_d.get(k)
         assert v is d[k] and v is d.get(k)
-    for k in in_d:
+    for k in in_d:  # pylint: disable=consider-using-dict-items
         assert k in d, "original key disappeared in weak dict"
         v = in_d[k]
         assert v is d[k] and v is d.get(k)

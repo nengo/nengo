@@ -147,7 +147,7 @@ class _RC(ConfigParser):  # pylint: disable=too-many-ancestors
             for k, v in settings.items():
                 self.set(section, k, str(v))
 
-    def read_file(self, fp, filename=None):
+    def read_file(self, fp, filename=None):  # pylint: disable=arguments-renamed
         if filename is None:
             filename = fp.name if hasattr(fp, "name") else "<???>"
 

@@ -17,7 +17,7 @@ nullcontext = contextlib.contextmanager(lambda: (yield))
 
 
 @Builder.register(Network)  # noqa: C901
-def build_network(model, network, progress=None):
+def build_network(model, network, progress=None):  # noqa: C901
     """Builds a `.Network` object into a model.
 
     The network builder does this by mapping each high-level object to its

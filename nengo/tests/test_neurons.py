@@ -1,6 +1,5 @@
 import logging
 import time
-from collections import defaultdict
 
 import numpy as np
 import pytest
@@ -371,56 +370,56 @@ def test_sigmoid_invalid(Simulator):
                 pass
 
 
-@pytest.mark.slow
 @pytest.mark.parametrize("base_type", [LIFRate(), RectifiedLinear(), Tanh()])
-def test_spiking_types(base_type, seed, plt, allclose):
-    spiking_types = {
-        RegularSpiking: dict(atol=0.05, rmse_target=0.011),
-        PoissonSpiking: dict(atol=0.13, rmse_target=0.024),
-        StochasticSpiking: dict(atol=0.10, rmse_target=0.019),
+def test_spiking_types(Simulator, base_type, seed, plt, allclose):
+    spiking_types = [RegularSpiking, PoissonSpiking, StochasticSpiking]
+    atols = {
+        RegularSpiking: 0.08,
+        PoissonSpiking: 0.15,
+        StochasticSpiking: 0.15,
     }
 
-    n_neurons = 1000
+    n_neurons = 400
+    delay = 5
 
     with nengo.Network(seed=seed) as net:
         u = nengo.Node(lambda t: np.sin(2 * np.pi * t))
-        a = nengo.Ensemble(n_neurons, 1)
+        a = nengo.Ensemble(n_neurons, 1, neuron_type=base_type)
         nengo.Connection(u, a)
-        u_p = nengo.Probe(u, synapse=0.005)
-        a_p = nengo.Probe(a, synapse=0.005)
+        u_p = nengo.Probe(u, synapse=0.001 * delay)
+        a_p = nengo.Probe(a, synapse=0.001 * delay)
 
-    neuron_types = {
-        spiking_type: spiking_type(base_type) for spiking_type in spiking_types
-    }
-    neuron_types[None] = base_type
+    with Simulator(net, seed=seed) as sim:
+        sim.run(1.0)
+    baseline = sim.data[a_p][delay:]
 
-    delay = 5
-    results = defaultdict(dict)
-    for neuron_type in neuron_types.values():
-        a.neuron_type = neuron_type
+    results = {}
+    for spiking_type in spiking_types:
+        a.neuron_type = spiking_type(base_type)
 
-        with nengo.Simulator(net, seed=seed + 1) as sim:
+        with Simulator(net, seed=seed + 1) as sim:
             timer = time.time()
             sim.run(1.0)
             timer = time.time() - timer
 
-        results[neuron_type]["u"] = sim.data[u_p]
-        results[neuron_type]["x"] = sim.data[a_p]
-        plt.plot(sim.trange(), sim.data[a_p], label=f"{neuron_type}: t={timer:.3f}")
+        results[spiking_type] = {
+            "u": sim.data[u_p][:-delay],
+            "x": sim.data[a_p][delay:],
+        }
+        plt.plot(
+            sim.trange(), sim.data[a_p], label=f"{spiking_type.__name__}: t={timer:.3f}"
+        )
 
+    plt.title(base_type)
     plt.plot(sim.trange()[delay:], sim.data[u_p][:-delay], "k--")
     plt.legend(loc=3)
 
-    for spiking_type, tols in spiking_types.items():
-        neuron_type = neuron_types[spiking_type]
-        res = results[neuron_type]
-        x = res["x"][delay:]
-        u = res["u"][:-delay]
-        assert allclose(x, u, atol=tols["atol"]), spiking_type
-
+    for spiking_type in spiking_types:
+        x = results[spiking_type]["x"]
+        u = results[spiking_type]["u"]
+        assert allclose(x, u, atol=atols[spiking_type]), spiking_type.__name__
         # check that spike noise is the target amount above the base spiking model noise
-        rmse = rms(x - u)
-        assert allclose(rmse, tols["rmse_target"], atol=0.003, rtol=0.25), spiking_type
+        assert allclose(x, baseline, atol=atols[spiking_type]), spiking_type.__name__
 
 
 def test_dt_dependence(Simulator, NonDirectNeuronType, plt, seed, allclose):
@@ -596,9 +595,13 @@ def test_direct_mode_nonfinite_value(Simulator):
             sim.run(0.01)
 
 
+def test_direct_max_rates_intercepts():
+    assert Direct().max_rates_intercepts(None, None) == (None, None)
+
+
 def test_direct_step_error():
     with pytest.raises(SimulationError, match="Direct mode neurons.*simulated"):
-        nengo.Direct().step(None, None, None)
+        Direct().step(None, None, None)
 
 
 @pytest.mark.parametrize("generic", (True, False))
@@ -642,6 +645,22 @@ def test_gain_bias(rng, NonDirectNeuronType, generic, allclose):
 
     assert allclose(max_rates, max_rates0, atol=tolerance)
     assert allclose(intercepts, intercepts0, atol=tolerance)
+
+
+def test_invalid_generic_gain_bias():
+    class TestNeuronType(NeuronType):  # pylint: disable=abstract-method
+        rate = 0
+
+        def rates(self, x, gain, bias):
+            return np.ones((x.size, 1)) * self.rate
+
+    neuron_type = TestNeuronType()
+    with pytest.raises(ValidationError, match="Could not find max current"):
+        neuron_type.gain_bias(max_rates=[1], intercepts=[0])
+
+    neuron_type.rate = 1
+    with pytest.raises(ValidationError, match="Could not find firing threshold"):
+        neuron_type.gain_bias(max_rates=[1], intercepts=[0])
 
 
 def test_current(rng, allclose):
@@ -745,7 +764,7 @@ def test_initial_state(neuron_type, Simulator, seed, plt, allclose):
             assert allclose(initial_voltage, voltage, atol=1e-5)
 
 
-def test_bad_initial_state(rng, Simulator):
+def test_bad_initial_state(Simulator):
     with pytest.raises(ValidationError, match="State variable 'rates' not recognized"):
         nengo.LIF(initial_state={"rates": nengo.dists.Choice([0])})
 

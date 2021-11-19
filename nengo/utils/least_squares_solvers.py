@@ -383,6 +383,6 @@ class RandomizedSVD(LeastSquaresSolver):
 class LeastSquaresSolverParam(Parameter):
     """A parameter where the value is a LeastSquaresSolver."""
 
-    def coerce(self, instance, solver):
+    def coerce(self, instance, solver):  # pylint: disable=arguments-renamed
         self.check_type(instance, solver, LeastSquaresSolver)
         return super().coerce(instance, solver)

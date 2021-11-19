@@ -89,7 +89,7 @@ def safe_stat(path):
     """Gets file stat, but fails gracefully in case of an OSError."""
     try:
         return path.stat()
-    except OSError as err:  # pragma: no cover
+    except OSError as err:
         logger.warning("OSError during safe_stat: %s", err)
     return None
 
@@ -257,7 +257,7 @@ class Fingerprint:
         self.fingerprint = hashlib.sha1()
         try:
             self.fingerprint.update(pickle.dumps(obj, pickle.HIGHEST_PROTOCOL))
-        except Exception as err:
+        except Exception as err:  # pragma: no cover
             raise FingerprintError() from err
 
     def __str__(self):
@@ -642,7 +642,9 @@ class DecoderCache:
 
     def _get_fd(self):
         if self._fd is None:
-            self._fd = open(self._key2path(str(uuid1())), "wb")
+            self._fd = open(  # pylint: disable=consider-using-with
+                self._key2path(str(uuid1())), "wb"
+            )
         return self._fd
 
     def get_files(self):
@@ -767,7 +769,7 @@ class DecoderCache:
                 key = self._get_cache_key(
                     conn.solver, conn.pre_obj.neuron_type, gain, bias, x, targets, rng
                 )
-            except FingerprintError as e:
+            except FingerprintError as e:  # pragma: no cover
                 logger.debug("Failed to generate cache key: %s", e)
                 return solver_fn(
                     conn, gain, bias, x, targets, rng=rng, **uncached_kwargs

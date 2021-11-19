@@ -10,7 +10,7 @@ from nengo.utils.numpy import is_iterable
 class LearningRuleTypeSizeInParam(IntParam):
     valid_strings = ("pre", "post", "mid", "pre_state", "post_state")
 
-    def coerce(self, instance, size_in):
+    def coerce(self, instance, size_in):  # pylint: disable=arguments-renamed
         if isinstance(size_in, str):
             if size_in not in self.valid_strings:
                 raise ValidationError(
@@ -428,7 +428,7 @@ class LearningRuleTypeParam(Parameter):
                 f"Unrecognized target {rule.modifies!r}", attr=self.name, obj=instance
             )
 
-    def coerce(self, instance, rule):
+    def coerce(self, instance, rule):  # pylint: disable=arguments-renamed
         if is_iterable(rule):
             for r in rule.values() if isinstance(rule, dict) else rule:
                 self.check_rule(instance, r)

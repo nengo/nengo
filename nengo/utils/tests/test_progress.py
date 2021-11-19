@@ -4,7 +4,7 @@ from collections import namedtuple
 
 import pytest
 
-import nengo.rc as rc
+from nengo import rc
 from nengo.exceptions import ValidationError
 from nengo.utils.progress import (
     AutoProgressBar,
@@ -179,7 +179,7 @@ def test_write_progress_to_file(tmp_path):
     """Tests the WriteProgressToFile progress bar type"""
 
     def check_file(filename, startstring):
-        with open(filename, "r") as fh:
+        with open(filename, "r", encoding="utf-8") as fh:
             data = fh.read()
         assert data.startswith(startstring)
 

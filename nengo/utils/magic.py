@@ -137,11 +137,9 @@ class ObjectProxy(metaclass=ObjectProxyMeta):
         return str(self.__wrapped__)
 
     def __repr__(self):
-        return "<%s at 0x%x for %s at 0x%x>" % (
-            type(self).__name__,
-            id(self),
-            type(self.__wrapped__).__name__,
-            id(self.__wrapped__),
+        return (
+            f"<{type(self).__name__} at 0x{id(self):x} "
+            f"for {type(self.__wrapped__).__name__} at 0x{id(self.__wrapped__):x}>"
         )
 
 

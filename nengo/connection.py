@@ -20,7 +20,7 @@ from nengo.utils.stdlib import checked_call
 
 
 class PrePostParam(NengoObjectParam):
-    def coerce(self, conn, nengo_obj):
+    def coerce(self, conn, nengo_obj):  # pylint: disable=arguments-renamed
         if isinstance(nengo_obj, Connection):
             raise ValidationError(
                 "Cannot connect to or from connections. "
@@ -80,7 +80,7 @@ class ConnectionLearningRuleTypeParam(LearningRuleTypeParam):
                     obj=conn,
                 )
 
-    def check_rule(self, conn, rule):
+    def check_rule(self, conn, rule):  # pylint: disable=arguments-renamed
         super().check_rule(conn, rule)
         self.check_pre(conn, rule)
         self.check_post(conn, rule)
@@ -127,7 +127,7 @@ class ConnectionSolverParam(SolverParam):
 
     coerce_defaults = False
 
-    def coerce(self, conn, solver):
+    def coerce(self, conn, solver):  # pylint: disable=arguments-renamed
         solver = super().coerce(conn, solver)
         if solver is not None:
             # it's true that setting the solver on any connection without a pre Ensemble
@@ -151,7 +151,7 @@ class ConnectionSolverParam(SolverParam):
 class EvalPointsParam(DistOrArrayParam):
     coerce_defaults = False
 
-    def coerce(self, conn, distorarray):
+    def coerce(self, conn, distorarray):  # pylint: disable=arguments-renamed
         """Eval points are only valid when pre is an ensemble."""
         if distorarray is not None and not isinstance(conn.pre, Ensemble):
             msg = (
@@ -209,7 +209,7 @@ class ConnectionFunctionParam(Parameter):
                     obj=conn,
                 )
 
-    def coerce(self, conn, function):
+    def coerce(self, conn, function):  # pylint: disable=arguments-renamed
         function = super().coerce(conn, function)
 
         if function is None:
@@ -263,7 +263,7 @@ class ConnectionTransformParam(Parameter):
 
     coerce_defaults = False
 
-    def coerce(self, conn, transform):
+    def coerce(self, conn, transform):  # pylint: disable=arguments-renamed
         if transform is None:
             transform = NoTransform(conn.size_mid)
         elif is_array_like(transform) or isinstance(transform, Distribution):

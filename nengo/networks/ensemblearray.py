@@ -96,9 +96,9 @@ class EnsembleArray(Network):
 
         super().__init__(label, seed, add_to_container)
 
-        for param in ens_kwargs:
-            if is_iterable(ens_kwargs[param]):
-                ens_kwargs[param] = Samples(ens_kwargs[param])
+        for param, value in ens_kwargs.items():
+            if is_iterable(value):
+                ens_kwargs[param] = Samples(value)
 
         self.config[Ensemble].update(ens_kwargs)
 

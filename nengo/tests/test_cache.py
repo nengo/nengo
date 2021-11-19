@@ -1,8 +1,10 @@
 import errno
+import logging
 import multiprocessing
 import os
 import pickle
 import sys
+from pathlib import Path
 from subprocess import CalledProcessError
 
 import numpy as np
@@ -14,10 +16,13 @@ import nengo.neurons
 import nengo.utils.least_squares_solvers
 from nengo.cache import (
     CacheIndex,
+    CacheIOError,
     DecoderCache,
     Fingerprint,
+    NoDecoderCache,
     WriteableCacheIndex,
     get_fragment_size,
+    safe_stat,
 )
 from nengo.exceptions import CacheIOWarning, FingerprintError
 from nengo.solvers import LstsqL2
@@ -166,7 +171,7 @@ def test_corrupted_decoder_cache(tmp_path):
 
         # corrupt the cache
         for path in cache.get_files():
-            with open(path, "w") as f:
+            with open(path, "w", encoding="utf-8") as f:
                 f.write("corrupted")
 
         cache.wrap_solver(solver_mock)(**get_solver_test_args())
@@ -181,7 +186,7 @@ def test_corrupted_decoder_cache_index(tmp_path):
     assert len(os.listdir(cache_dir)) == 2  # index, index.lock
 
     # Write corrupted index
-    with open(os.path.join(cache_dir, CacheIndex._INDEX), "w") as f:
+    with open(os.path.join(cache_dir, CacheIndex._INDEX), "w", encoding="utf-8") as f:
         f.write("(d")  # empty dict, but missing '.' at the end
 
     # Try to load index
@@ -197,10 +202,11 @@ def test_too_new_decoder_cache_index(tmp_path):
     with open(os.path.join(cache_dir, CacheIndex._INDEX), "wb") as f:
         pickle.dump((1000, 1000), f)
 
-    with DecoderCache(cache_dir=cache_dir) as cache:
-        solver_mock = SolverMock()
-        cache.wrap_solver(solver_mock)(**get_solver_test_args())
-        assert SolverMock.n_calls[solver_mock] == 1
+    with pytest.warns(UserWarning, match="could not acquire lock and was deactivated"):
+        with DecoderCache(cache_dir=cache_dir) as cache:
+            solver_mock = SolverMock()
+            cache.wrap_solver(solver_mock)(**get_solver_test_args())
+            assert SolverMock.n_calls[solver_mock] == 1
 
 
 def test_decoder_cache_invalidation(tmp_path):
@@ -214,6 +220,22 @@ def test_decoder_cache_invalidation(tmp_path):
         cache.invalidate()
         cache.wrap_solver(solver_mock)(**get_solver_test_args())
         assert SolverMock.n_calls[solver_mock] == 2
+
+
+def test_readonly_cache(caplog, tmp_path):
+    caplog.set_level(logging.INFO)
+    cache_dir = str(tmp_path)
+
+    with open(os.path.join(cache_dir, CacheIndex._INDEX), "wb") as f:
+        pickle.dump((CacheIndex.VERSION, pickle.HIGHEST_PROTOCOL), f)
+        pickle.dump({}, f)
+
+    with DecoderCache(readonly=True, cache_dir=cache_dir) as cache:
+        cache.shrink()
+        with pytest.raises(CacheIOError, match="Cannot invalidate a readonly cache."):
+            cache.invalidate()
+    assert len(caplog.records) == 1
+    assert caplog.records[0].message == "Tried to shrink a readonly cache."
 
 
 def test_decoder_cache_size_includes_overhead(tmp_path):
@@ -338,7 +360,7 @@ class DummyB:
         self.attr = attr
 
 
-nengo.cache.Fingerprint.whitelist(DummyB)
+nengo.cache.Fingerprint.whitelist(DummyB, fn=lambda obj: True)
 
 
 def dummy_fn(arg):
@@ -378,7 +400,7 @@ def test_fingerprinting(reference, equal, different):
     ),
 )
 def test_unsupported_fingerprinting(obj):
-    with pytest.raises(FingerprintError):
+    with pytest.raises(FingerprintError, match="cannot be fingerprinted"):
         Fingerprint(obj)
 
 
@@ -408,7 +430,7 @@ def test_supported_fingerprinting(cls, monkeypatch):
 
 
 def test_fails_for_lambda_expression():
-    with pytest.raises(FingerprintError):
+    with pytest.raises(FingerprintError, match="cannot be fingerprinted"):
         Fingerprint(lambda x: x)
 
 
@@ -563,9 +585,9 @@ def test_writeablecacheindex_reinit(tmp_path):
         subdir.mkdir()
         file1 = idx.cache_dir / "file1"
         file2 = subdir / "file2"
-        with file1.open("w") as fh:
+        with file1.open("w", encoding="utf-8") as fh:
             fh.write("contents1")
-        with file2.open("w") as fh:
+        with file2.open("w", encoding="utf-8") as fh:
             fh.write("contents2")
 
         assert subdir.exists() and file1.exists() and file2.exists()
@@ -581,3 +603,15 @@ def test_shrink_does_not_fail_if_lock_cannot_be_acquired(tmp_path):
         cache.wrap_solver(SolverMock())(**get_solver_test_args())
     with cache._index._lock:
         cache.shrink(limit=0)
+
+
+def test_safe_stat(caplog):
+    assert safe_stat(Path("/tmp/does/not/exist")) is None
+    assert len(caplog.records) == 1
+    assert "OSError during safe_stat:" in caplog.records[0].message
+
+
+def test_no_decoder_cache():
+    cache = NoDecoderCache()
+    assert cache.get_size_in_bytes() == 0
+    assert cache.get_size() == "0 B"

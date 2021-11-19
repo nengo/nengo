@@ -50,7 +50,7 @@ class OutputParam(Parameter):
                 obj=node,
             )
 
-    def coerce(self, node, output):
+    def coerce(self, node, output):  # pylint: disable=arguments-renamed
         output = super().coerce(node, output)
 
         size_in_set = node.size_in is not None

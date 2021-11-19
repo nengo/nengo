@@ -219,7 +219,7 @@ class NengoObjectParam(Parameter):
         self.nonzero_size_out = nonzero_size_out
         super().__init__(name, default, optional, readonly)
 
-    def coerce(self, instance, nengo_obj):
+    def coerce(self, instance, nengo_obj):  # pylint: disable=arguments-renamed
         nengo_objects = (
             NengoObject,
             ObjView,
@@ -466,6 +466,6 @@ class Process(FrozenObject):
 class ProcessParam(Parameter):
     """Must be a Process."""
 
-    def coerce(self, instance, process):
+    def coerce(self, instance, process):  # pylint: disable=arguments-renamed
         self.check_type(instance, process, Process)
         return super().coerce(instance, process)

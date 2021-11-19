@@ -87,7 +87,7 @@ class Solver(FrozenObject):
 class SolverParam(Parameter):
     """A parameter in which the value is a `.Solver` instance."""
 
-    def coerce(self, instance, solver):
+    def coerce(self, instance, solver):  # pylint: disable=arguments-renamed
         self.check_type(instance, solver, Solver)
         return super().coerce(instance, solver)
 

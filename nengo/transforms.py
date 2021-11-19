@@ -55,7 +55,7 @@ class ChannelShapeParam(ShapeParam):
     .. versionadded:: 3.0.0
     """
 
-    def coerce(self, transform, shape):
+    def coerce(self, transform, shape):  # pylint: disable=arguments-renamed
         if isinstance(shape, ChannelShape):
             if shape.channels_last != transform.channels_last:
                 raise ValidationError(

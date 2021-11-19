@@ -8,7 +8,7 @@ from nengo.synapses import SynapseParam
 
 
 class TargetParam(NengoObjectParam):
-    def coerce(self, probe, target):
+    def coerce(self, probe, target):  # pylint: disable=arguments-renamed
         obj = target.obj if isinstance(target, ObjView) else target
         if not hasattr(obj, "probeable"):
             raise ValidationError(
@@ -28,7 +28,7 @@ class TargetParam(NengoObjectParam):
 class AttributeParam(StringParam):
     coerce_defaults = False
 
-    def coerce(self, probe, attr):
+    def coerce(self, probe, attr):  # pylint: disable=arguments-renamed
         value = super().coerce(probe, attr)
         if attr not in probe.obj.probeable:
             raise ValidationError(
@@ -41,7 +41,7 @@ class AttributeParam(StringParam):
 
 
 class ProbeSolverParam(SolverParam):
-    def coerce(self, conn, solver):
+    def coerce(self, conn, solver):  # pylint: disable=arguments-renamed
         if solver is ConnectionDefault:
             solver = Config.default(Connection, "solver")
         return super().coerce(conn, solver)

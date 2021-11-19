@@ -91,10 +91,10 @@ class WeakKeyIDDictionary(MutableMapping):
         del self._id2ref[id_]
         del self._ref2id[id(ref)]
 
-    def get(self, k, default=None):
+    def get(self, key, default=None):
         """Return item from dictionary."""
 
-        return self._keyvalues.get(id(k), default)
+        return self._keyvalues.get(id(key), default)
 
     def keys(self):
         """Return dictionary keys."""
@@ -121,8 +121,8 @@ class WeakSet(MutableSet):
         if items is not None:
             self |= items
 
-    def __contains__(self, key):
-        return key in self._data
+    def __contains__(self, value):
+        return value in self._data
 
     def __iter__(self):
         return iter(self._data)
@@ -130,12 +130,12 @@ class WeakSet(MutableSet):
     def __len__(self):
         return len(self._data)
 
-    def add(self, key):
-        self._data[key] = None
+    def add(self, value):
+        self._data[value] = None
 
-    def discard(self, key):
-        if key in self._data:
-            del self._data[key]
+    def discard(self, value):
+        if value in self._data:
+            del self._data[value]
 
 
 class FrozenOrderedSet(Set):
@@ -162,14 +162,14 @@ class FrozenOrderedSet(Set):
 class OrderedSet(FrozenOrderedSet, MutableSet):  # pylint: disable=too-many-ancestors
     """A set that preserves insertion order and is mutable."""
 
-    def add(self, elem):
-        self.data[elem] = None
+    def add(self, value):
+        self.data[value] = None
 
-    def discard(self, elem):
-        self.data.pop(elem, None)
+    def discard(self, value):
+        self.data.pop(value, None)
 
     def update(self, other):
-        self.data.update((elem, None) for elem in other)
+        self.data.update((value, None) for value in other)
 
     def difference_update(self, other):
         self -= other

@@ -58,7 +58,7 @@ class DistributionParam(Parameter):
 
     equatable = True
 
-    def coerce(self, instance, dist):
+    def coerce(self, instance, dist):  # pylint: disable=arguments-renamed
         self.check_type(instance, dist, Distribution)
         return super().coerce(instance, dist)
 
@@ -84,7 +84,7 @@ class DistOrArrayParam(NdarrayParam):
             readonly=readonly,
         )
 
-    def coerce(self, instance, distorarray):
+    def coerce(self, instance, distorarray):  # pylint: disable=arguments-renamed
         if isinstance(distorarray, Distribution):
             return Parameter.coerce(self, instance, distorarray)
         return super().coerce(instance, distorarray)
@@ -368,7 +368,7 @@ class QuasirandomSequence(Distribution):
     References
     ----------
     .. [#] Martin Roberts. "The Unreasonable Effectiveness of Quasirandom Sequences."
-       http://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/
+       https://web.archive.org/web/20211029094035/http://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/
 
     Examples
     --------
@@ -789,8 +789,8 @@ class SqrtBeta(Distribution):
         self.n = n
         self.m = m
 
-    def sample(self, num, d=None, rng=np.random):
-        shape = self._sample_shape(num, d)
+    def sample(self, n, d=None, rng=np.random):
+        shape = self._sample_shape(n, d)
         return np.sqrt(rng.beta(self.m / 2.0, self.n / 2.0, size=shape))
 
     def cdf(self, x):
@@ -928,10 +928,10 @@ class CosineSimilarity(SubvectorLength):
     def __init__(self, dimensions):
         super().__init__(dimensions)
 
-    def sample(self, num, d=None, rng=np.random):
-        shape = self._sample_shape(num, d)
+    def sample(self, n, d=None, rng=np.random):
+        shape = self._sample_shape(n, d)
         sign = Choice((1, -1)).sample(np.prod(shape), rng=rng).reshape(*shape)
-        return sign * super().sample(num, d, rng=rng)
+        return sign * super().sample(n, d, rng=rng)
 
     def cdf(self, x):
         return (super().cdf(x) * np.sign(x) + 1) / 2.0

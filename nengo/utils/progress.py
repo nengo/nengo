@@ -344,17 +344,19 @@ class VdomProgressBar(ProgressBar):  # pragma: no cover
         if progress is None:
             text = ""
         elif progress.finished:
-            text = "{} finished in {}.".format(
-                escape(progress.name_after),
-                timestamp2timedelta(progress.elapsed_seconds()),
+            text = (
+                "{} finished in {}.".format(  # pylint: disable=consider-using-f-string
+                    escape(progress.name_after),
+                    timestamp2timedelta(progress.elapsed_seconds()),
+                )
             )
         elif progress.max_steps is None:
-            text = "{task}\u2026 duration: {duration}".format(
+            text = "{task}\u2026 duration: {duration}".format(  # pylint: disable=consider-using-f-string
                 task=escape(progress.name_during),
                 duration=timestamp2timedelta(progress.elapsed_seconds()),
             )
         else:
-            text = "{task}\u2026 {progress:.0f}%, ETA: {eta}".format(
+            text = "{task}\u2026 {progress:.0f}%, ETA: {eta}".format(  # pylint: disable=consider-using-f-string
                 task=escape(progress.name_during),
                 progress=100.0 * progress.progress,
                 eta=timestamp2timedelta(progress.eta()),
@@ -471,17 +473,19 @@ class HtmlProgressBar(ProgressBar):  # pragma: no cover
         if progress is None:
             text = ""
         elif progress.finished:
-            text = "{} finished in {}.".format(
-                escape(progress.name_after),
-                timestamp2timedelta(progress.elapsed_seconds()),
+            text = (
+                "{} finished in {}.".format(  # pylint: disable=consider-using-f-string
+                    escape(progress.name_after),
+                    timestamp2timedelta(progress.elapsed_seconds()),
+                )
             )
         elif progress.max_steps is None:
-            text = "{task}&hellip; duration: {duration}".format(
+            text = "{task}&hellip; duration: {duration}".format(  # pylint: disable=consider-using-f-string
                 task=escape(progress.name_during),
                 duration=timestamp2timedelta(progress.elapsed_seconds()),
             )
         else:
-            text = "{task}&hellip; {progress:.0f}%, ETA: {eta}".format(
+            text = "{task}&hellip; {progress:.0f}%, ETA: {eta}".format(  # pylint: disable=consider-using-f-string
                 task=escape(progress.name_during),
                 progress=100.0 * progress.progress,
                 eta=timestamp2timedelta(progress.eta()),
@@ -634,16 +638,18 @@ class WriteProgressToFile(ProgressBar):
 
     def update(self, progress):
         if progress.finished:
-            text = "{} finished in {}.".format(
-                progress.name_after, timestamp2timedelta(progress.elapsed_seconds())
+            text = (
+                "{} finished in {}.".format(  # pylint: disable=consider-using-f-string
+                    progress.name_after, timestamp2timedelta(progress.elapsed_seconds())
+                )
             )
         else:
-            text = "{progress:.0f}%, ETA: {eta}".format(
+            text = "{progress:.0f}%, ETA: {eta}".format(  # pylint: disable=consider-using-f-string
                 progress=100 * progress.progress,
                 eta=timestamp2timedelta(progress.eta()),
             )
 
-        with open(self.filename, "w") as f:
+        with open(self.filename, "w", encoding="utf-8") as f:
             f.write(text + os.linesep)
 
 

@@ -267,7 +267,7 @@ class PiecewiseDataParam(DictParam):
 
     equatable = True
 
-    def coerce(self, instance, data):
+    def coerce(self, instance, data):  # pylint: disable=arguments-renamed
         data = super().coerce(instance, data)
 
         size_out = None

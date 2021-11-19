@@ -275,7 +275,7 @@ class NumberParam(Parameter):
         self.high_open = high_open
         super().__init__(name, default, optional, readonly)
 
-    def coerce(self, instance, num):
+    def coerce(self, instance, num):  # pylint: disable=arguments-renamed
         if num is not None:
             if is_array(num) and num.shape == ():
                 num = num.item()  # convert scalar array to Python object
@@ -316,7 +316,7 @@ class StringParam(Parameter):
 
     equatable = True
 
-    def coerce(self, instance, string):
+    def coerce(self, instance, string):  # pylint: disable=arguments-renamed
         self.check_type(instance, string, (str,))
         return super().coerce(instance, string)
 
@@ -580,7 +580,7 @@ class FunctionParam(Parameter):
     def function_args(self, instance, function):
         return (np.zeros(1),)
 
-    def coerce(self, instance, function):
+    def coerce(self, instance, function):  # pylint: disable=arguments-renamed
         function = super().coerce(instance, function)
         if isinstance(function, FunctionInfo):
             function_info = function
