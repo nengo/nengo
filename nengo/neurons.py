@@ -1006,7 +1006,8 @@ class RegularSpiking(RatesToSpikesNeuronType):
     ----------
     .. [1] Voelker, A. R., Rasmussen, D., & Eliasmith, C. (2020). A Spike in
        Performance: Training Hybrid-Spiking Neural Networks with Quantized Activation
-       Functions. arXiv preprint arXiv:2002.03553. (https://arxiv.org/abs/2002.03553)
+       Functions. arXiv preprint arXiv:2002.03553.
+       (https://export.arxiv.org/abs/2002.03553)
     """
 
     state = {"voltage": Uniform(low=0, high=1)}
