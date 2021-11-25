@@ -26,7 +26,7 @@ class TestThreadLocalStack:
 
     def test_implements_stack(self):
         stack = ThreadLocalStack()
-        assert list(stack) == []
+        assert not list(stack)
         stack.append(1)
         assert list(stack) == [1]
         stack.append(2)
@@ -34,7 +34,7 @@ class TestThreadLocalStack:
         assert stack.pop() == 2
         assert list(stack) == [1]
         assert stack.pop() == 1
-        assert list(stack) == []
+        assert not list(stack)
 
         with pytest.raises(IndexError):
             stack.pop()
