@@ -1,3 +1,5 @@
+import numpy as np
+
 from nengo.builder.builder import Builder
 from nengo.builder.operator import Operator
 from nengo.builder.signal import Signal
@@ -110,17 +112,27 @@ class SimProcess(Operator):
         rng = self.process.get_rng(rng)
         state = {name: signals[sig] for name, sig in self.state.items()}
         step_f = self.process.make_step(shape_in, shape_out, dt, rng, state)
-        args = (t,) if input is None else (t, input)
 
-        if self.mode == "inc":
+        if self.mode == "inc" and input is None:
 
             def step_simprocess():
-                output[...] += step_f(args[0].item(), *args[1:])
+                output[...] += step_f(t.item())
+
+        elif self.mode == "inc":
+
+            def step_simprocess():
+                output[...] += step_f(t.item(), np.copy(input))
+
+        elif input is None:
+
+            def step_simprocess():
+                output[...] = step_f(t.item())
 
         else:
+            assert self.mode != "inc" and input is not None
 
             def step_simprocess():
-                output[...] = step_f(args[0].item(), *args[1:])
+                output[...] = step_f(t.item(), np.copy(input))
 
         return step_simprocess
 

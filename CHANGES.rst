@@ -51,12 +51,16 @@ Release history
 
 - Fixed a bug with a problematic cache index breaking decoder solvers. The solver now
   avoids using the cache, rather than crashing. (`#1649`_)
+- Fixed an inconsistency in which normal ``Node`` output functions would receive
+  a copy of the input signal, while ``Process`` step functions would not.
+  ``Process`` step functions now also receive copies. (`#1679`_)
 
 .. _#1648: https://github.com/nengo/nengo/pull/1648
 .. _#1649: https://github.com/nengo/nengo/pull/1649
 .. _#1654: https://github.com/nengo/nengo/pull/1654
 .. _#1660: https://github.com/nengo/nengo/pull/1660
 .. _#1676: https://github.com/nengo/nengo/pull/1676
+.. _#1679: https://github.com/nengo/nengo/pull/1679
 
 3.1.0 (November 17, 2020)
 =========================

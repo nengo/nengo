@@ -362,6 +362,7 @@ def test_args(Simulator):
             assert isinstance(t, float)
             assert isinstance(x, np.ndarray)
             assert self.last_x is not x  # x should be a new copy on each call
+            assert x.base is None  # x should not be a view (since it should be a copy)
             self.last_x = x
             assert x[0] == t
 

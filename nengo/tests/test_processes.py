@@ -39,6 +39,18 @@ class TimeProcess(Process):
         return lambda t, x: [t * np.sum(x)] * size_out
 
 
+class QueueProcess(Process):
+    def __init__(self):
+        super().__init__()
+        self.queue = []
+
+    def make_step(self, shape_in, shape_out, dt, rng, state):
+        def step(t, x, queue=self.queue):  # pylint: disable=dangerous-default-value
+            queue.append(x)
+
+        return step
+
+
 def test_time(Simulator, allclose):
     t_run = 1.0
     c = 2.0
@@ -257,6 +269,25 @@ def test_sampling_shape():
     assert process.run_steps(1).shape == (1, 1)
     assert process.run_steps(5, d=1).shape == (5, 1)
     assert process.run_steps(1, d=2).shape == (1, 2)
+
+
+def test_x_copy(Simulator, allclose):
+    """Test that process `x` is copied internally.
+
+    If it is not copied, all elements in `process.queue` will reference the same
+    underlying array, and will all be equal to each other.
+    """
+    with nengo.Network() as model:
+        u = nengo.Node(lambda t: [t, t + 2])
+        process = QueueProcess()
+        v = nengo.Node(process, size_in=2)
+        nengo.Connection(u, v, synapse=None)
+
+    with Simulator(model) as sim:
+        sim.run(0.003)
+
+    t = sim.trange()
+    assert allclose(process.queue, np.column_stack([t, t + 2]))
 
 
 def test_reset(Simulator, seed, allclose):
