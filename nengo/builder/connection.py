@@ -85,7 +85,7 @@ def get_targets(conn, eval_points, dtype=None):
                     f"Building {conn}: Connection function returned "
                     "None. Cannot solve for decoders."
                 )
-            if not isinstance(out, (int, float, np.ndarray)):
+            if isinstance(out, (tuple, list)):
                 out = np.hstack(out)
             targets[i] = out
 
