@@ -18,7 +18,6 @@ try:
         """Check if ``obj`` is a sparse matrix."""
         return isinstance(obj, scipy_sparse.spmatrix)
 
-
 except ImportError as e:
     logger.info("Could not import scipy.sparse:\n%s", str(e))
     scipy_sparse = None
