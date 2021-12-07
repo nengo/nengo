@@ -26,27 +26,28 @@ _pytest.capture.DontReadFromInput.write = lambda: None
 _pytest.capture.DontReadFromInput.flush = lambda: None
 
 
-too_slow = [
-    "basal-ganglia",
-    "inhibitory-gating",
-    "izhikevich",
-    "learn-communication-channel",
-    "learn-product",
-    "learn-square",
-    "learn-unsupervised",
-    "lorenz-attractor",
-    "nef-algorithm",
-    "nef-summary",
-    "network-design",
-    "network-design-advanced",
-]
+too_slow = {
+    "advanced/inhibitory-gating",
+    "advanced/izhikevich",
+    "advanced/nef-algorithm",
+    "advanced/nef-summary",
+    "dynamics/lorenz-attractor",
+    "learning/learn-communication-channel",
+    "learning/learn-product",
+    "learning/learn-square",
+    "learning/learn-unsupervised",
+    "learning/lmu",
+    "networks/basal-ganglia",
+    "usage/network-design",
+    "usage/network-design-advanced",
+}
 
 files = [
     f for f in examples_dir.glob("**/*.ipynb") if ".ipynb_checkpoints" not in str(f)
 ]
 all_examples = [f.relative_to(examples_dir).with_suffix("") for f in files]
-slow_examples = [f for f in all_examples if f.stem in too_slow]
-fast_examples = [f for f in all_examples if f.stem not in too_slow]
+slow_examples = [f for f in all_examples if f.as_posix() in too_slow]
+fast_examples = [f for f in all_examples if f.as_posix() not in too_slow]
 
 # glob goes in arbitrary order, so sort after the fact to keep pytest happy
 # convert paths to literal strings so that they're displayed nicer in the pytest name
