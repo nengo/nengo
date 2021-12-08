@@ -271,11 +271,11 @@ codecov_yml:
 
 pre_commit_config_yaml:
   exclude:
-    - "_vendor/*"
+    - "_vendor/"
 
 pyproject_toml:
   exclude:
-    - "_vendor/*"
+    - "_vendor/"
 
 version_py:
   major: 3
