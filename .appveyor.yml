@@ -1,7 +1,7 @@
 environment:
   matrix:
     - PYTHON: "C:\\Miniconda37"
-      CONDA_PYTHON: "python=3.6"
+      CONDA_PYTHON: "python=3.7"
     - PYTHON: "C:\\Miniconda37-x64"
       CONDA_PYTHON: "python=3.9"
 
