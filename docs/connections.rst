@@ -91,7 +91,7 @@ that one should keep in mind when using decoded connections.
   It will never be run during the simulation.
 
   When you define a function in a node,
-  it will be execute on every simulation timestep.
+  it will be executed on every simulation timestep.
   That may lead you to think that the function
   passed to a connection is executed on every timestep,
   but that is *not* the case for decoded connections.
