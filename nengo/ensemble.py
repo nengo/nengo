@@ -244,7 +244,7 @@ class Neurons:
     @property
     def probeable(self):
         """(tuple) Signals that can be probed in the neuron population."""
-        return ("output", "input") + self.ensemble.neuron_type.probeable
+        return self.ensemble.neuron_type.probeable + ("input",)
 
     @property
     def size_in(self):

@@ -32,12 +32,6 @@ Release history
 - Added ``Conv`` and ``ConvTranspose`` aliases for ``Convolution`` and
   ``ConvolutionTranspose``. (`#1648`_)
 
-**Fixed**
-
-- Operator graph step order will now be deterministic. (`#1654`_)
-- Fixed an issue in which some simulators could not be reset due to signals
-  not being marked as readonly. (`#1676`_)
-
 **Removed**
 
 - Removed support for Python 3.5 (which reached its end of life in
@@ -51,9 +45,13 @@ Release history
 
 - Fixed a bug with a problematic cache index breaking decoder solvers. The solver now
   avoids using the cache, rather than crashing. (`#1649`_)
+- Operator graph step order will now be deterministic. (`#1654`_)
+- Fixed an issue in which some simulators could not be reset due to signals
+  not being marked as readonly. (`#1676`_)
 - Fixed an inconsistency in which normal ``Node`` output functions would receive
   a copy of the input signal, while ``Process`` step functions would not.
   ``Process`` step functions now also receive copies. (`#1679`_)
+- Duplicate keys in ``Neurons.probeable`` have been removed. (`#1681`_)
 
 .. _#1648: https://github.com/nengo/nengo/pull/1648
 .. _#1649: https://github.com/nengo/nengo/pull/1649
@@ -61,6 +59,7 @@ Release history
 .. _#1660: https://github.com/nengo/nengo/pull/1660
 .. _#1676: https://github.com/nengo/nengo/pull/1676
 .. _#1679: https://github.com/nengo/nengo/pull/1679
+.. _#1681: https://github.com/nengo/nengo/pull/1681
 
 3.1.0 (November 17, 2020)
 =========================

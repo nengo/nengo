@@ -1229,3 +1229,9 @@ def test_bad_function_type():
         ens = nengo.Ensemble(10, 1)
         with pytest.raises(ValidationError, match="Invalid connection function type"):
             nengo.Connection(ens, ens, function="hi")
+
+
+def test_probeable():
+    with nengo.Network():
+        conn = nengo.Connection(nengo.Ensemble(10, 1), nengo.Ensemble(10, 1))
+        assert conn.probeable == ("output", "input", "weights")

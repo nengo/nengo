@@ -823,3 +823,29 @@ def test_step_math():
 
     for arg, val in args.items():
         assert (result["state"][arg] if arg.startswith("state") else result[arg]) is val
+
+
+def test_probeable():
+    def check_neuron_type(neuron_type, expected):
+        assert neuron_type.probeable == expected
+        ens = nengo.Ensemble(10, 1, neuron_type=neuron_type)
+        assert ens.neurons.probeable == expected + ("input",)
+
+    with nengo.Network():
+        check_neuron_type(Direct(), ("output",))
+        check_neuron_type(RectifiedLinear(), ("output",))
+        check_neuron_type(SpikingRectifiedLinear(), ("output", "voltage"))
+        check_neuron_type(Sigmoid(), ("output",))
+        check_neuron_type(Tanh(), ("output",))
+        check_neuron_type(LIFRate(), ("output",))
+        check_neuron_type(LIF(), ("output", "voltage", "refractory_time"))
+        check_neuron_type(AdaptiveLIFRate(), ("output", "adaptation"))
+        check_neuron_type(
+            AdaptiveLIF(), ("output", "voltage", "refractory_time", "adaptation")
+        )
+        check_neuron_type(Izhikevich(), ("output", "voltage", "recovery"))
+        check_neuron_type(RegularSpiking(LIFRate()), ("output", "rate_out", "voltage"))
+        check_neuron_type(
+            StochasticSpiking(AdaptiveLIFRate()), ("output", "rate_out", "adaptation")
+        )
+        check_neuron_type(PoissonSpiking(LIFRate()), ("output", "rate_out"))

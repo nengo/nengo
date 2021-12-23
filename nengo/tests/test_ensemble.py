@@ -506,3 +506,9 @@ def test_neurons_readonly():
         ens = nengo.Ensemble(10, 1)
         with pytest.raises(ReadonlyError, match="neurons"):
             ens.neurons = "test"
+
+
+def test_probeable():
+    with nengo.Network():
+        ens = nengo.Ensemble(10, 1)
+        assert ens.probeable == ("decoded_output", "input", "scaled_encoders")

@@ -428,3 +428,8 @@ def test_invalid_values(Simulator, badval):
     with Simulator(model) as sim:
         with pytest.raises(SimulationError):
             sim.run(0.01)
+
+
+def test_probeable():
+    with nengo.Network():
+        assert nengo.Node(np.sin).probeable == ("output",)

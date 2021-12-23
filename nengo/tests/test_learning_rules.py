@@ -188,7 +188,7 @@ def test_pes_neuron_ens(Simulator, plt, seed, rng, allclose):
     )
 
 
-def test_pes_ens_neurons(Simulator, plt, seed, rng, allclose):
+def test_pes_ens_neurons(Simulator, plt, seed, allclose):
     n = 200
     initial_weights = np.ones((n, 2))
     _test_pes(
@@ -1061,3 +1061,29 @@ def test_bad_weight_learning_rule_transform_shape():
                 transform=np.ones((5, 1)),
                 learning_rule_type=nengo.BCM(),
             )
+
+
+def test_probeable():
+    net = nengo.Network()
+
+    def check_learning_rule(learning_rule_type, expected, net=net):
+        assert learning_rule_type.probeable == expected
+        post = net.e if isinstance(learning_rule_type, Voja) else net.n
+        transform = np.ones((1, 10)) if isinstance(learning_rule_type, Voja) else 1.0
+        conn = nengo.Connection(
+            net.n, post, transform=transform, learning_rule_type=learning_rule_type
+        )
+        assert conn.learning_rule.probeable == expected
+
+    with net:
+        net.e = nengo.Ensemble(10, 1)
+        net.n = net.e.neurons
+        check_learning_rule(nengo.PES(), ("error", "activities", "delta"))
+        check_learning_rule(
+            nengo.RLS(), ("pre_filtered", "error", "delta", "inv_gamma")
+        )
+        check_learning_rule(
+            nengo.BCM(), ("theta", "pre_filtered", "post_filtered", "delta")
+        )
+        check_learning_rule(nengo.Oja(), ("pre_filtered", "post_filtered", "delta"))
+        check_learning_rule(nengo.Voja(), ("post_filtered", "scaled_encoders", "delta"))
