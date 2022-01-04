@@ -21,4 +21,4 @@ version = ".".join(str(v) for v in version_info)
 if dev is not None:
     version += ".dev%d" % dev
 
-copyright = "Copyright (c) 2013-2021 Applied Brain Research"
+copyright = "Copyright (c) 2013-2022 Applied Brain Research"
