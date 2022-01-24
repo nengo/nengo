@@ -11,13 +11,13 @@ import logging
 import sys
 
 # Nengo namespace (API)
-from nengo import spa  # pylint: disable=cyclic-import
-from nengo import dists, exceptions, networks, presets, processes, utils
+from nengo import dists, exceptions, presets, processes, utils
 from nengo.base import Process
 from nengo.config import Config
 from nengo.connection import Connection
 from nengo.ensemble import Ensemble
 from nengo.learning_rules import BCM, PES, RLS, Oja, Voja
+from nengo.linear_system import LinearSystem
 from nengo.network import Network
 from nengo.neurons import (
     LIF,
@@ -49,6 +49,10 @@ from nengo.transforms import (
     Sparse,
 )
 from nengo.version import version as __version__
+
+# import networks and submodules last to avoid cirular imports
+from nengo import networks  # isort:skip, pylint: disable=cyclic-import
+from nengo import spa  # isort:skip, pylint: disable=cyclic-import
 
 logger = logging.getLogger(__name__)
 try:

@@ -6,7 +6,7 @@ import pytest
 import nengo
 import nengo.utils.numpy as npext
 from nengo.connection import ConnectionSolverParam
-from nengo.dists import Choice, UniformHypersphere
+from nengo.dists import Choice, Uniform, UniformHypersphere
 from nengo.exceptions import BuildError, ValidationError
 from nengo.processes import Piecewise
 from nengo.solvers import LstsqL2
@@ -1229,3 +1229,156 @@ def test_bad_function_type():
         ens = nengo.Ensemble(10, 1)
         with pytest.raises(ValidationError, match="Invalid connection function type"):
             nengo.Connection(ens, ens, function="hi")
+
+
+@pytest.mark.parametrize(
+    "Synapse",
+    [
+        lambda output: nengo.Lowpass(0.05, initial_output=output),
+        lambda output: nengo.Alpha(0.03, initial_output=output),
+        lambda output: nengo.synapses.Triangle(0.15, initial_output=output),
+    ],
+)
+def test_synapse_initial_output(Synapse, Simulator, seed, plt, allclose):
+    initial_outputs = [
+        None,
+        1.0,
+        nengo.dists.Choice([[1.0]]),
+        [1, -1],
+    ]
+
+    with nengo.Network(seed=seed) as net:
+        u = nengo.Node([1, -1])
+        dims = u.size_out
+
+        a = nengo.Ensemble(200, dims, radius=1.5)
+        nengo.Connection(u, a, synapse=None)
+
+        def add_output(initial_output=None):
+            v = nengo.Node(size_in=dims)
+            synapse = Synapse(initial_output)
+            nengo.Connection(a, v, synapse=synapse)
+            return nengo.Probe(v)
+
+        probes = [add_output(v) for v in initial_outputs]
+
+    with Simulator(net) as sim:
+        sim.run(0.3)
+
+    initial_sampled = [
+        np.zeros(dims)
+        if v is None
+        else v * np.ones(dims)
+        if isinstance(v, float)
+        else v.sample(dims).squeeze(axis=1)
+        if hasattr(v, "sample")
+        else np.asarray(v)
+        for v in initial_outputs
+    ]
+    for v, probe in zip(initial_sampled, probes):
+        plt.plot(sim.trange(), sim.data[probe], label=str(list(v)))
+    plt.legend()
+
+    for x0, probe in zip(initial_sampled, probes):
+        x = sim.data[probe]
+
+        # check that initial values are close to requested initial values
+        assert allclose(x[0], x0, atol=1e-1, record_rmse=False)
+
+        # check that any values that start close to their final value stay close
+        close_dims = np.isclose(x0, u.output)
+        if close_dims.any():
+            assert allclose(
+                x[1:, close_dims], x0[close_dims], atol=5e-2, record_rmse=False
+            )
+        if not close_dims.all():
+            assert not allclose(
+                x[1:, ~close_dims],
+                x0[~close_dims],
+                atol=5e-2,
+                record_rmse=False,
+                print_fail=0,
+            )
+
+
+def test_neuron_initial_outputs(Simulator, seed, rng, plt, allclose):
+    def encoder_gain_bias(n_neurons, dims, neuron_type, rng):
+        encoders = UniformHypersphere(surface=True).sample(n_neurons, dims, rng=rng)
+        max_rates = Uniform(150, 250).sample(n_neurons, rng=rng)
+        intercepts = Uniform(-1, 0.99).sample(n_neurons, rng=rng)
+        gain, bias = neuron_type.gain_bias(max_rates, intercepts)
+        return (encoders, gain, bias)
+
+    Synapse = lambda initial_output: nengo.Alpha(0.03, initial_output=initial_output)
+    neuron_type0 = nengo.LIF()
+    neuron_type1 = nengo.LIFRate()
+    Solver = nengo.solvers.LstsqL2
+    x0 = np.array([1.0, -1.0])
+    n_neurons0 = 150
+    n_neurons1 = n_neurons0 + 1
+    dims = len(x0)
+
+    radius = np.sqrt(dims)
+    encoders0, gain0, bias0 = encoder_gain_bias(n_neurons0, dims, neuron_type0, rng)
+    encoders1, gain1, bias1 = encoder_gain_bias(n_neurons1, dims, neuron_type1, rng)
+    eval_points0 = UniformHypersphere(surface=False).sample(1000, dims, rng=rng)
+    acts0 = neuron_type0.rates(eval_points0.dot(encoders0.T), gain0, bias0)
+    decoders, _ = Solver()(acts0, eval_points0)
+    weights = encoders1.dot(decoders.T)
+
+    neurons0 = neuron_type0.rates(x0[None, :].dot(encoders0.T), gain0, bias0)
+    assert neurons0.shape == (1, n_neurons0)
+    initial_output_a = neurons0.dot(decoders).dot(encoders1.T)[0]
+    initial_output_b = gain1 * initial_output_a  # weight solver weights include gains
+
+    with nengo.Network(seed=seed) as net:
+        u = nengo.Node(x0)
+        ens0 = nengo.Ensemble(
+            n_neurons0,
+            dims,
+            radius=radius,
+            neuron_type=neuron_type0,
+            encoders=encoders0,
+            gain=gain0,
+            bias=bias0,
+        )
+        nengo.Connection(u, ens0, synapse=None)
+
+        def make_output(initial_output=None, weights=None):
+            ens1 = nengo.Ensemble(
+                n_neurons1,
+                dims,
+                radius=radius,
+                neuron_type=neuron_type1,
+                encoders=encoders1,
+                gain=gain1,
+                bias=bias1,
+            )
+            kwargs = dict(synapse=Synapse(initial_output))
+
+            if weights is not None:
+                kwargs["transform"] = weights
+                nengo.Connection(ens0.neurons, ens1.neurons, **kwargs)
+            else:
+                kwargs["solver"] = Solver(weights=True)
+                nengo.Connection(ens0, ens1, **kwargs)
+
+            return nengo.Probe(ens1)
+
+        r_p = make_output(weights=weights)
+        a_p = make_output(weights=weights, initial_output=initial_output_a)
+        b_p = make_output(initial_output=initial_output_b)
+
+    with Simulator(net) as sim:
+        sim.run(0.3)
+
+    plt.plot(sim.trange(), sim.data[r_p], "--", label="r")
+    plt.plot(sim.trange(), sim.data[a_p], label="a")
+    plt.plot(sim.trange(), sim.data[b_p], label="b")
+    plt.legend()
+
+    assert not np.allclose(sim.data[r_p], x0, atol=0.2, rtol=0)
+    for probe in (a_p, b_p):
+        assert allclose(sim.data[probe][1:], x0, atol=0.3, rtol=0, record_rmse=False)
+
+    assert allclose(sim.data[a_p], sim.data[b_p], atol=0.02, rtol=0, record_rmse=False)

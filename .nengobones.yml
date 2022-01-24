@@ -116,6 +116,7 @@ docs_conf_py:
     - nengo_sphinx_theme.ext.resolvedefaults
     - sphinx.ext.inheritance_diagram
   doctest_setup:
+    - "import matplotlib.pyplot as plt"
     - "import numpy as np"
     - "if np.__version__ >= '1.14':"
     - "    np.set_printoptions(legacy='1.13')"
@@ -270,11 +271,11 @@ codecov_yml:
 
 pre_commit_config_yaml:
   exclude:
-    - "_vendor/"
+    - "_vendor"
 
 pyproject_toml:
   exclude:
-    - "_vendor/"
+    - "_vendor"
 
 version_py:
   major: 3

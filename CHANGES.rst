@@ -31,6 +31,29 @@ Release history
   It is commonly used for various forms of upsampling in deep networks. (`#1648`_)
 - Added ``Conv`` and ``ConvTranspose`` aliases for ``Convolution`` and
   ``ConvolutionTranspose``. (`#1648`_)
+- Added ``LinearSystem``, a ``Process`` to implement arbitrary linear systems.
+  (`#1650`_)
+- Added ``DoubleExp``, ``Bandpass``, ``Highpass``, ``DiscreteDelay``, and
+  ``LegendreDelay`` synapse models. (`#1650`_)
+- Added ``LinearSystemNetwork``. This network takes a ``LinearSystem`` process and
+  implements it in neurons, properly accounting for the synapse model used on the
+  recurrent synapse. For ``Lowpass`` synapses, this is equivalent to Principle 3 of the
+  Neural Engineering Framework (NEF), but it generalizes to other synapse types, as well
+  as discrete synapses. (`#1650`_)
+- ``Synapse`` now has the ``initial_output`` parameter, which allows synapses to be
+  initialized to represent the desired value. This is useful for minimizing startup
+  transients in models with long synapses (e.g. recurrent networks). (`#1650`_)
+
+**Changed**
+
+- ``LinearFilter`` now accepts system descriptions in state-space (``(A, B, C, D)``) or
+  zero-pole-gain (``(z, p, k)``) form, in addition to transfer function (``(num, den)``)
+  form. If passing systems in transfer function form, they should be passed as a
+  ``(numerator, denominator)`` tuple; the separate ``den`` argument is deprecated.
+  (`#1650`_)
+- Added ``rng`` argument to ``Process.make_state``, for processes that use randomness
+  in their initialization. Any custom processes overriding ``make_state`` will need to
+  add this argument to the signature. (`#1650`_)
 
 **Fixed**
 
@@ -57,6 +80,7 @@ Release history
 
 .. _#1648: https://github.com/nengo/nengo/pull/1648
 .. _#1649: https://github.com/nengo/nengo/pull/1649
+.. _#1650: https://github.com/nengo/nengo/pull/1650
 .. _#1654: https://github.com/nengo/nengo/pull/1654
 .. _#1660: https://github.com/nengo/nengo/pull/1660
 .. _#1676: https://github.com/nengo/nengo/pull/1676

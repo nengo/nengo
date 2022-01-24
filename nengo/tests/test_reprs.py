@@ -55,6 +55,7 @@ from nengo.dists import (
     Uniform,
     UniformHypersphere,
 )
+from nengo.linear_system import LinearSystem
 from nengo.processes import (
     BrownNoise,
     FilteredNoise,
@@ -433,13 +434,17 @@ def test_distributions():
 
 
 def test_synapses():
-    check_init_args(LinearFilter, ["num", "den", "analog", "method"])
-    check_repr(LinearFilter([1, 2], [3, 4]))
-    check_repr(LinearFilter([1, 2], [3, 4], analog=False))
-    assert (
-        repr(LinearFilter([1], [0.03, 1]))
-        == "LinearFilter(num=array([1.]), den=array([0.03, 1.  ]))"
+    def ary(*shape):
+        return np.arange(1, np.prod(shape) + 1).reshape(shape)
+
+    check_init_args(
+        LinearFilter, ["sys", "den", "analog", "method", "x0", "initial_output"]
     )
+    check_repr(LinearFilter(([1, 2], [3, 4])))
+    check_repr(LinearFilter(([1, 2], [3, 4]), analog=False))
+    assert repr(LinearFilter(([1], [0.03, 1]))) == "LinearFilter(sys=([1], [0.03, 1]))"
+    A, B, C, D = ary(2, 2), ary(2, 1) + 1, ary(1, 2) + 2, ary(1, 1)
+    check_repr(LinearFilter((A, B, C, D)))
 
     check_init_args(Lowpass, ["tau"])
     check_repr(Lowpass(0.3))
@@ -452,6 +457,16 @@ def test_synapses():
     check_init_args(Triangle, ["t"])
     check_repr(Triangle(0.3))
     assert repr(Triangle(0.03)) == "Triangle(t=0.03)"
+
+
+def test_linear_system():
+    check_init_args(LinearSystem, ["sys", "analog", "method", "x0", "default_dt"])
+    check_repr(LinearSystem(([1], [0.3, 1])))
+    check_repr(LinearSystem(([1], [0.3, 1]), x0=[0.2]))
+    check_repr(LinearSystem(([0.1], [-0.5, -0.7], [1.2])))
+    check_repr(LinearSystem(([-0.1], [0.1], [1.3], [0.1])))
+    check_repr(LinearSystem(([0.1], [0.1], [1.3], [0.1]), analog=False))
+    check_repr(LinearSystem(([0.1], [0.1], [1.3], [0.1]), method="zoh"))
 
 
 def test_processes():

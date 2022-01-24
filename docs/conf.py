@@ -34,6 +34,7 @@ autodoc_member_order = "bysource"  # default is alphabetical
 # -- sphinx.ext.doctest
 doctest_global_setup = """
 import nengo
+import matplotlib.pyplot as plt
 import numpy as np
 if np.__version__ >= '1.14':
     np.set_printoptions(legacy='1.13')

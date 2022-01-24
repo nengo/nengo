@@ -67,6 +67,9 @@ Processes
       :exclude-members: PiecewiseDataParam
 
       nengo.Process
+      nengo.LinearSystem
+
+.. autoclass:: nengo.LinearSystem
 
 .. autoclass:: nengo.Process
 

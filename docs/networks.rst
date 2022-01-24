@@ -39,6 +39,8 @@ Built-in networks
    nengo.networks.AssociativeMemory
    nengo.networks.CircularConvolution
    nengo.networks.Integrator
+   nengo.networks.LinearSystemNetwork
+   nengo.networks.linear_system.ss2sim
    nengo.networks.Oscillator
    nengo.networks.Product
    nengo.networks.InputGatedMemory
@@ -54,6 +56,10 @@ Built-in networks
 .. autoclass:: nengo.networks.CircularConvolution
 
 .. autoclass:: nengo.networks.Integrator
+
+.. autoclass:: nengo.networks.LinearSystemNetwork
+
+.. autofunction:: nengo.networks.linear_system.ss2sim
 
 .. autoclass:: nengo.networks.Oscillator
 

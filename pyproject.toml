@@ -7,10 +7,13 @@ requires = ["setuptools", "wheel"]
 target-version = ['py36']
 exclude = '''
 (
-    _vendor/
+    _vendor
 )
 '''
 
 [tool.isort]
 profile = "black"
 src_paths = ["nengo"]
+skip = [
+    "_vendor"
+]

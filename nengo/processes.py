@@ -90,8 +90,8 @@ class FilteredNoise(Process):
         self.dist = dist
         self.scale = scale
 
-    def make_state(self, shape_in, shape_out, dt, dtype=None):
-        return self.synapse.make_state(shape_out, shape_out, dt, dtype=dtype)
+    def make_state(self, shape_in, shape_out, dt, rng, dtype=None):
+        return self.synapse.make_state(shape_out, shape_out, dt, rng, dtype=dtype)
 
     def make_step(self, shape_in, shape_out, dt, rng, state):
         assert shape_in == (0,)
@@ -126,7 +126,7 @@ class BrownNoise(FilteredNoise):
 
     def __init__(self, dist=Gaussian(mean=0, std=1), **kwargs):
         super().__init__(
-            synapse=LinearFilter([1], [1, 0], method="euler"), dist=dist, **kwargs
+            synapse=LinearFilter(([1], [1, 0]), method="euler"), dist=dist, **kwargs
         )
 
 
