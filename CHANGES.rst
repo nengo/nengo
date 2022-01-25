@@ -32,6 +32,10 @@ Release history
 - Added ``Conv`` and ``ConvTranspose`` aliases for ``Convolution`` and
   ``ConvolutionTranspose``. (`#1648`_)
 
+**Changed**
+
+- Learning rules now have ``"delta"`` as their default probeable signal. (`#1681`_)
+
 **Removed**
 
 - Removed support for Python 3.5 (which reached its end of life in

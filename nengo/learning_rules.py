@@ -105,7 +105,7 @@ class PES(LearningRuleType):
     """
 
     modifies = "decoders"
-    probeable = ("error", "activities", "delta")
+    probeable = ("delta", "error", "activities")
 
     learning_rate = NumberParam("learning_rate", low=0, readonly=True, default=1e-4)
     pre_synapse = SynapseParam("pre_synapse", default=Lowpass(tau=0.005), readonly=True)
@@ -216,7 +216,7 @@ class RLS(LearningRuleType):
     """
 
     modifies = "decoders"
-    probeable = ("pre_filtered", "error", "delta", "inv_gamma")
+    probeable = ("delta", "pre_filtered", "error", "inv_gamma")
 
     learning_rate = NumberParam("learning_rate", low=0, readonly=True, default=1e-3)
     pre_synapse = SynapseParam("pre_synapse", default=Lowpass(tau=0.005), readonly=True)
@@ -275,7 +275,7 @@ class BCM(LearningRuleType):
     """
 
     modifies = "weights"
-    probeable = ("theta", "pre_filtered", "post_filtered", "delta")
+    probeable = ("delta", "theta", "pre_filtered", "post_filtered")
 
     learning_rate = NumberParam("learning_rate", low=0, readonly=True, default=1e-9)
     pre_synapse = SynapseParam("pre_synapse", default=Lowpass(tau=0.005), readonly=True)
@@ -347,7 +347,7 @@ class Oja(LearningRuleType):
     """
 
     modifies = "weights"
-    probeable = ("pre_filtered", "post_filtered", "delta")
+    probeable = ("delta", "pre_filtered", "post_filtered")
 
     learning_rate = NumberParam("learning_rate", low=0, readonly=True, default=1e-6)
     pre_synapse = SynapseParam("pre_synapse", default=Lowpass(tau=0.005), readonly=True)
@@ -401,7 +401,7 @@ class Voja(LearningRuleType):
     """
 
     modifies = "encoders"
-    probeable = ("post_filtered", "scaled_encoders", "delta")
+    probeable = ("delta", "post_filtered", "scaled_encoders")
 
     learning_rate = NumberParam("learning_rate", low=0, readonly=True, default=1e-2)
     post_synapse = SynapseParam(
