@@ -1078,12 +1078,12 @@ def test_probeable():
     with net:
         net.e = nengo.Ensemble(10, 1)
         net.n = net.e.neurons
-        check_learning_rule(nengo.PES(), ("error", "activities", "delta"))
+        check_learning_rule(nengo.PES(), ("delta", "error", "activities"))
         check_learning_rule(
-            nengo.RLS(), ("pre_filtered", "error", "delta", "inv_gamma")
+            nengo.RLS(), ("delta", "pre_filtered", "error", "inv_gamma")
         )
         check_learning_rule(
-            nengo.BCM(), ("theta", "pre_filtered", "post_filtered", "delta")
+            nengo.BCM(), ("delta", "theta", "pre_filtered", "post_filtered")
         )
-        check_learning_rule(nengo.Oja(), ("pre_filtered", "post_filtered", "delta"))
-        check_learning_rule(nengo.Voja(), ("post_filtered", "scaled_encoders", "delta"))
+        check_learning_rule(nengo.Oja(), ("delta", "pre_filtered", "post_filtered"))
+        check_learning_rule(nengo.Voja(), ("delta", "post_filtered", "scaled_encoders"))

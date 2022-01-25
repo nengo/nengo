@@ -10,7 +10,7 @@ from nengo.synapses import SynapseParam
 class TargetParam(NengoObjectParam):
     def coerce(self, probe, target):  # pylint: disable=arguments-renamed
         obj = target.obj if isinstance(target, ObjView) else target
-        if not hasattr(obj, "probeable"):
+        if not hasattr(obj, "probeable") or not obj.probeable:
             raise ValidationError(
                 f"Type '{type(obj).__name__}' is not probeable",
                 attr=self.name,
