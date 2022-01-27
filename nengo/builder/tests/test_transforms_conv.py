@@ -168,7 +168,9 @@ def test_convtransposeinc_2d(
     assert conv_transpose_output.shape == conv_output.shape
 
     success = allclose(conv_transpose_output, conv_output)
-    if not success:
+    if success:
+        plt.saveas = None
+    else:
         debug_convtransposeinc_2d(w, wt, x, xt, y, yt, conv, conv_transpose, plt)
     assert success
 
@@ -278,6 +280,8 @@ def test_conv2d_gradx(padding, stride, k_size, x_size, rng, plt, allclose):
             plt.imshow(y_np[..., 0], vmin=y_tf.min(), vmax=y_tf.max())
             bad_sizes.append(y_size)
 
+    if len(bad_sizes) == 0:
+        plt.saveas = None
     assert len(bad_sizes) == 0, (y_min, y_max, bad_sizes)
 
 
