@@ -10,10 +10,10 @@ and conform to PEP440 (see https://www.python.org/dev/peps/pep-0440/).
 a release version. Release versions are git tagged with the version.
 """
 
-version_info = (3, 2, 0)
+version_info = (3, 2, 1)
 
 name = "nengo"
-dev = None
+dev = 0
 
 # use old string formatting, so that this can still run in Python <= 3.5
 # (since this file is parsed in setup.py, before python_requires is applied)
