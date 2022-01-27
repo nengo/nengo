@@ -32,6 +32,11 @@ Release history
 - Added ``Conv`` and ``ConvTranspose`` aliases for ``Convolution`` and
   ``ConvolutionTranspose``. (`#1648`_)
 
+**Changed**
+
+- The minimum supported NumPy version is now 1.19, as earlier versions are
+  no longer officially supported. (`NEP-29`_, `#1683`_)
+
 **Removed**
 
 - Removed support for Python 3.5 (which reached its end of life in
@@ -60,6 +65,8 @@ Release history
 .. _#1676: https://github.com/nengo/nengo/pull/1676
 .. _#1679: https://github.com/nengo/nengo/pull/1679
 .. _#1681: https://github.com/nengo/nengo/pull/1681
+.. _#1683: https://github.com/nengo/nengo/pull/1683
+.. _NEP-29: https://numpy.org/neps/nep-0029-deprecation_policy.html
 
 3.1.0 (November 17, 2020)
 =========================

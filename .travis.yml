@@ -37,7 +37,7 @@ jobs:
     env:
       SCRIPT="test-coverage"
       TEST_ARGS="--plots"
-    python: 3.6
+    python: 3.7
   -
     env:
       SCRIPT="docs"
@@ -48,26 +48,18 @@ jobs:
           - pandoc
   -
     env:
-      NUMPY="numpy==1.13"
-    if: branch =~ ^release-candidate-*
+      NUMPY="numpy==1.19"
+    python: 3.8
     cache: False
-  -
-    env:
-      NUMPY="numpy==1.14"
     if: branch =~ ^release-candidate-*
   -
     env:
-      NUMPY="numpy==1.15"
+      NUMPY="numpy==1.20"
+    python: 3.8
     if: branch =~ ^release-candidate-*
   -
     env:
-      NUMPY="numpy==1.16"
-    if: branch =~ ^release-candidate-*
-  -
-    env:
-      NUMPY="numpy==1.17"
-    if: branch =~ ^release-candidate-*
-  -
+      NUMPY="numpy==1.21"
     dist: bionic
     python: 3.9
   - stage: deploy

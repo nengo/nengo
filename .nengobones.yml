@@ -33,7 +33,7 @@ setup_py:
     pytest11:
       - nengo = pytest_nengo
   install_req:
-    - numpy>=1.13
+    - numpy>=1.19
   docs_req:
     - sphinx>=1.8
     - jupyter
@@ -210,28 +210,23 @@ travis_yml:
       test_args: --memory --plots
     - script: test-coverage
       test_args: --plots
-      python: 3.6
+      python: 3.7
     - script: docs
       apt_install:
         - graphviz
         - pandoc
     - env:
-        NUMPY: numpy==1.13
-      if: "branch =~ ^release-candidate-*"
+        NUMPY: numpy==1.19
+      python: 3.8
       cache: false  # disable the cache for one build to make sure that works
-    - env:
-        NUMPY: numpy==1.14
       if: "branch =~ ^release-candidate-*"
     - env:
-        NUMPY: numpy==1.15
-      if: "branch =~ ^release-candidate-*"
-    - env:
-        NUMPY: numpy==1.16
-      if: "branch =~ ^release-candidate-*"
-    - env:
-        NUMPY: numpy==1.17
+        NUMPY: numpy==1.20
+      python: 3.8
       if: "branch =~ ^release-candidate-*"
     - dist: bionic
+      env:
+        NUMPY: numpy==1.21
       python: 3.9
   pypi_user: __token__
   deploy_dists:
