@@ -6,23 +6,26 @@ Nengo license
 
 Copyright (c) 2013-2022 Applied Brain Research
 
-Nengo is made available under a proprietary license
-that permits using, copying, sharing, and making derivative works from
-Nengo and its source code for any non-commercial purpose,
-as long as the above copyright notice and this permission notice
-are included in all copies or substantial portions of the software.
+**ABR License**
 
-If you would like to use Nengo commercially,
-licenses can be purchased from Applied Brain Research.
-Please contact info@appliedbrainresearch.com for more information.
+Nengo is made available under a proprietary license, the
+"ABR TECHNOLOGY LICENSE AND USE AGREEMENT" (the "ABR License").
+The main ABR License file is available for download at
+`<https://www.appliedbrainresearch.com/license>`_.
+The entire contents of this ``LICENSE.rst`` file, including any
+terms and conditions herein, form part of the ABR License.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+Commercial Use Licenses are available to purchase for a yearly fee.
+Academic and Personal Use Licenses for Nengo are available at
+no cost.
+Both types of licences can be obtained from the
+ABR store at `<https://www.appliedbrainresearch.com/store>`_.
+
+If you have any sales questions,
+please contact `<sales@appliedbrainresearch.com>`_.
+If you have any technical support questions, please post them on the ABR
+community forums at `<https://forum.nengo.ai/>`_ or contact
+`<support@appliedbrainresearch.com>`_.
 
 Licensed code
 =============

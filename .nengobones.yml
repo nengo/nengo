@@ -4,6 +4,7 @@ repo_name: nengo/nengo
 description: Tools for building and simulating large-scale neural models
 
 copyright_start: 2013
+license: abr-free
 
 license_rst: {}
 
