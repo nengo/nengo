@@ -148,7 +148,7 @@ These connections are the types of connections
 you see in most neural simulators,
 and can be used to reproduce networks
 written in other simulators like
-`Brian <http://briansimulator.org/>`_:
+`Brian <https://briansimulator.org/>`_:
 
 .. testcode::
 

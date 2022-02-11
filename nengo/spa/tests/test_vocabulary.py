@@ -241,7 +241,7 @@ def test_extend(rng, allclose):
     fft_val = np.fft.fft(v["E"].v)
     fft_imag = fft_val.imag
     fft_real = fft_val.real
-    fft_norms = np.sqrt(fft_imag ** 2 + fft_real ** 2)
+    fft_norms = np.sqrt(fft_imag**2 + fft_real**2)
     assert allclose(fft_norms, np.ones(16))
 
     v.extend(["G", "H"], unitary=True)

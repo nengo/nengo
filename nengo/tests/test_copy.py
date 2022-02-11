@@ -67,7 +67,7 @@ def make_function_connection():
     with nengo.Network():
         e1 = nengo.Ensemble(10, 1)
         e2 = nengo.Ensemble(10, 1)
-        c = nengo.Connection(e1, e2, function=lambda x: x ** 2)
+        c = nengo.Connection(e1, e2, function=lambda x: x**2)
     return c
 
 

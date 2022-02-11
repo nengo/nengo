@@ -433,7 +433,7 @@ def test_dt_dependence(Simulator, NonDirectNeuronType, plt, seed, allclose):
         pre = nengo.Ensemble(80, dimensions=2)
         square = nengo.Ensemble(80, dimensions=2)
         nengo.Connection(u, pre)
-        nengo.Connection(pre, square, function=lambda x: x ** 2)
+        nengo.Connection(pre, square, function=lambda x: x**2)
 
         activity_p = nengo.Probe(square.neurons, synapse=0.05, sample_every=0.001)
         out_p = nengo.Probe(square, synapse=0.05, sample_every=0.001)
@@ -526,7 +526,7 @@ def test_reset(Simulator, NonDirectNeuronType, seed, allclose):
         square = nengo.Ensemble(60, dimensions=2)
         nengo.Connection(u, ens)
         nengo.Connection(
-            ens, square, function=lambda x: x ** 2, solver=LstsqL2nz(weights=True)
+            ens, square, function=lambda x: x**2, solver=LstsqL2nz(weights=True)
         )
         square_p = nengo.Probe(square, synapse=0.01)
 

@@ -495,7 +495,7 @@ class NnlsL2(Nnls):
 
         # form Gram matrix so we can add regularization
         GA = np.dot(A.T, A)
-        np.fill_diagonal(GA, GA.diagonal() + A.shape[0] * sigma ** 2)
+        np.fill_diagonal(GA, GA.diagonal() + A.shape[0] * sigma**2)
         GY = np.dot(A.T, np.maximum(Y, 0))
         # ^ TODO: why is it better if we clip Y to be positive here?
 

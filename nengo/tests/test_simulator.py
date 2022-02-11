@@ -229,7 +229,7 @@ def test_seeding(Simulator, allclose):
         A = nengo.Ensemble(40, 1, label="A")
         B = nengo.Ensemble(20, 1, label="B")
         nengo.Connection(input, A)
-        C = nengo.Connection(A, B, function=lambda x: x ** 2)
+        C = nengo.Connection(A, B, function=lambda x: x**2)
 
     m.seed = 872
     with Simulator(m) as sim:

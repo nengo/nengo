@@ -28,8 +28,7 @@ class Product(Network):
     ``1 / sqrt(2)``.
 
     .. _Gosmann, 2015:
-       https://nbviewer.jupyter.org/github/ctn-archive/technical-reports/blob/
-       master/Precise-multiplications-with-the-NEF.ipynb
+       https://nbviewer.org/github/ctn-archive/technical-reports/blob/master/Precise-multiplications-with-the-NEF.ipynb
 
     Parameters
     ----------

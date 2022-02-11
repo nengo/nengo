@@ -220,7 +220,7 @@ def norm(x, axis=None, keepdims=False):
         newer versions of Numpy (>= 1.7).
     """
     x = np.asarray(x)
-    return np.sqrt(np.sum(x ** 2, axis=axis, keepdims=keepdims))
+    return np.sqrt(np.sum(x**2, axis=axis, keepdims=keepdims))
 
 
 def meshgrid_nd(*args):
@@ -246,7 +246,7 @@ def rms(x, axis=None, keepdims=False):
         newer versions of Numpy (>= 1.7).
     """
     x = np.asarray(x)
-    return np.sqrt(np.mean(x ** 2, axis=axis, keepdims=keepdims))
+    return np.sqrt(np.mean(x**2, axis=axis, keepdims=keepdims))
 
 
 def rmse(x, y, axis=None, keepdims=False):  # pragma: no cover

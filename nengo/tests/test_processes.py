@@ -261,7 +261,7 @@ def test_whitesignal_continuity(Simulator, seed, plt):
     safety_factor = 2.0
     a, f = np.sqrt(2) * rms, (2 * np.pi * high) * dt
     assert abs(np.diff(x, axis=0)).max() <= safety_factor * a * f
-    assert abs(np.diff(x, n=2, axis=0)).max() <= safety_factor ** 2 * a * f ** 2
+    assert abs(np.diff(x, n=2, axis=0)).max() <= safety_factor**2 * a * f**2
 
 
 def test_sampling_shape():
@@ -542,10 +542,10 @@ class TestPiecewise:
 
     def test_function_list(self, Simulator, allclose):
         def func1(t):
-            return t, t ** 2, t ** 3
+            return t, t**2, t**3
 
         def func2(t):
-            return t ** 4, t ** 5, t ** 6
+            return t**4, t**5, t**6
 
         t, f = self.run_sim({0.05: func1, 0.1: func2}, "zero", Simulator)
         assert allclose(f[t == 0.001], [0.0])
@@ -566,7 +566,7 @@ class TestPiecewise:
 
     def test_mixture_3d(self, Simulator, allclose):
         def func(t):
-            return t, t ** 2, t ** 3
+            return t, t**2, t**3
 
         t, f = self.run_sim({0.05: [1, 1, 1], 0.1: func}, "zero", Simulator)
         assert allclose(f[t == 0.001], [0.0, 0.0, 0.0])
@@ -578,7 +578,7 @@ class TestPiecewise:
 
     def test_invalid_function_length(self):
         with pytest.raises(ValidationError, match="time 1.0 has size 2"):
-            Piecewise({0.5: 0, 1.0: lambda t: [t, t ** 2]})
+            Piecewise({0.5: 0, 1.0: lambda t: [t, t**2]})
 
     def test_invalid_interpolation_on_func(self):
         def func(t):

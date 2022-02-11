@@ -62,7 +62,7 @@ def test_lowpass(Simulator, plt, seed, allclose):
 def test_alpha(Simulator, plt, seed, allclose):
     dt = 1e-3
     tau = 0.03
-    num, den = [1], [tau ** 2, 2 * tau, 1]
+    num, den = [1], [tau**2, 2 * tau, 1]
 
     t, x, yhat = run_synapse(Simulator, seed, Alpha(tau), dt=dt)
     y = LinearFilter(num, den).filt(x, dt=dt, y0=0)
@@ -113,7 +113,7 @@ def test_linearfilter(Simulator, plt, seed, allclose):
 def test_linearfilter_evaluate(plt):
     tau = 0.02
     ord1 = LinearFilter([1], [tau, 1])
-    ord2 = LinearFilter([1], [tau ** 2, 2 * tau, 1])
+    ord2 = LinearFilter([1], [tau**2, 2 * tau, 1])
 
     f = np.logspace(-1, 3, 100)
     y1 = ord1.evaluate(f)
@@ -129,7 +129,7 @@ def test_linearfilter_evaluate(plt):
 
     jw_tau = 2.0j * np.pi * f * tau
     y1_ref = 1 / (jw_tau + 1)
-    y2_ref = 1 / (jw_tau ** 2 + 2 * jw_tau + 1)
+    y2_ref = 1 / (jw_tau**2 + 2 * jw_tau + 1)
     assert np.allclose(y1, y1_ref)
     assert np.allclose(y2, y2_ref)
 

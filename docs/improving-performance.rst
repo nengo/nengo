@@ -37,7 +37,7 @@ To improve run time
 -------------------
 
 1. Enable the operator graph optimizer
-   (and install `SciPy <https://www.scipy.org/scipylib/download.html>`_):
+   (and install `SciPy <https://scipy.org/install/>`_):
 
 .. testcode::
 
@@ -49,7 +49,7 @@ To improve run time
 
    ...
 
-2. Consider switching to the `nengo_ocl <https://github.com/nengo/nengo-ocl>`_
+2. Consider switching to the `nengo_ocl <https://github.com/nengo-labs/nengo-ocl>`_
    backend if you have a powerful GPU.
 
 To lower peak memory consumption
@@ -151,7 +151,7 @@ SciPy
 *Influences run time.*
 
 To gain the maximum performance gain from the operator graph optimizer,
-install `SciPy <https://www.scipy.org/scipylib/download.html>`_.
+install `SciPy <https://scipy.org/install/>`_.
 When the operator graph optimizer is deactivated,
 installing SciPy has no effect on performance.
 
@@ -161,7 +161,7 @@ nengo_ocl
 *Improves run time.*
 
 If you have a powerful GPU, you have the option to switch to the `nengo_ocl
-<https://github.com/nengo/nengo-ocl>`_ backend. It will utilize your GPU,
+<https://github.com/nengo-labs/nengo-ocl>`_ backend. It will utilize your GPU,
 which is optimized for the sorts of calculations done by Nengo.
 Build times with ``nengo_ocl`` are usually comparable to Nengo,
 but run times can be significantly faster.

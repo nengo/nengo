@@ -210,7 +210,7 @@ def test_create_replacement_connection_errors():
 
         # set function on c2 (need to set v.output temporarily to avoid API validation)
         v.output = lambda t, x: x + 1
-        c2.function = lambda x: x ** 2
+        c2.function = lambda x: x**2
         v.output = None
         c1.synapse = None
         with pytest.raises(

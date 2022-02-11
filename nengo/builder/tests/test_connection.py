@@ -8,7 +8,7 @@ from nengo.exceptions import BuildError
 
 
 def test_build_linear_system(seed, rng, plt, allclose):
-    func = lambda x: x ** 2
+    func = lambda x: x**2
 
     with nengo.Network(seed=seed) as net:
         conn = nengo.Connection(

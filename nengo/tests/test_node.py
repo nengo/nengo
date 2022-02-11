@@ -59,7 +59,7 @@ def test_connected(Simulator, plt, seed, allclose):
     sim_sin = sim.data[p_in].ravel()
     sim_sq = sim.data[p_out].ravel()
     assert allclose(sim_sin, np.sin(sim_t))
-    assert allclose(sim_sq, sim_sin ** 2)
+    assert allclose(sim_sq, sim_sin**2)
 
 
 def test_passthrough(Simulator, plt, seed, allclose):
@@ -325,7 +325,7 @@ def test_set_callable_output(Simulator):
             nengo.Node(lambda t, x: 2.0, size_in=0, size_out=0)
         # if size_in > 0, should take both t and x
         with pytest.raises(ValidationError):
-            nengo.Node(lambda t: t ** 2, size_in=1)
+            nengo.Node(lambda t: t**2, size_in=1)
         # function must return a scalar or vector, not matrix
         with pytest.raises(ValidationError):
             nengo.Node(lambda t: np.ones((2, 2)))

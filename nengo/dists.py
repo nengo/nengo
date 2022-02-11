@@ -339,7 +339,7 @@ class UniformHypersphere(Distribution):
         # Generate magnitudes for vectors from uniform distribution.
         # The (1 / d) exponent ensures that samples are uniformly distributed
         # in n-space and not all bunched up at the centre of the sphere.
-        samples *= rng.uniform(low=self.min_magnitude ** d, high=1, size=(n, 1)) ** (
+        samples *= rng.uniform(low=self.min_magnitude**d, high=1, size=(n, 1)) ** (
             1.0 / d
         )
 
@@ -368,7 +368,7 @@ class QuasirandomSequence(Distribution):
     References
     ----------
     .. [#] Martin Roberts. "The Unreasonable Effectiveness of Quasirandom Sequences."
-       https://web.archive.org/web/20211029094035/http://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/
+       https://web.archive.org/web/20220114023542/http://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/
 
     Examples
     --------
@@ -384,7 +384,7 @@ class QuasirandomSequence(Distribution):
         """Newton-Raphson-Method to calculate ``g = phi_d``."""
         x = 1.0
         for _ in range(100):
-            dx = (x ** (d + 1) - x - 1) / ((d + 1) * x ** d - 1)
+            dx = (x ** (d + 1) - x - 1) / ((d + 1) * x**d - 1)
             x -= dx
             if abs(dx) < tol:
                 break
@@ -623,7 +623,7 @@ class ScatteredHypersphere(Distribution):
             samples = self.base.sample(n, d, rng)
             samples, radius = samples[:, :-1], samples[:, -1:]
             if self.min_magnitude != 0:
-                min_d = self.min_magnitude ** d
+                min_d = self.min_magnitude**d
                 radius *= 1 - min_d
                 radius += min_d
             radius **= 1.0 / d

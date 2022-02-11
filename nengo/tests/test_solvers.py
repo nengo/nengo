@@ -274,7 +274,7 @@ def test_nnls(Solver, plt, rng, allclose):
     pytest.importorskip("scipy.optimize")
 
     A, x = get_system(500, 100, 1, rng=rng, sort=True)
-    y = x ** 2
+    y = x**2
 
     d, _ = Solver()(A, y, rng)
     yest = np.dot(A, d)

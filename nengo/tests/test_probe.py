@@ -123,7 +123,7 @@ def test_multiple_probes(Simulator, allclose):
         ens = nengo.Ensemble(10, 1)
         p_001 = nengo.Probe(ens, sample_every=dt)
         p_01 = nengo.Probe(ens, sample_every=f * dt)
-        p_1 = nengo.Probe(ens, sample_every=f ** 2 * dt)
+        p_1 = nengo.Probe(ens, sample_every=f**2 * dt)
 
     with Simulator(model, dt=dt) as sim:
         sim.run(1.0)
@@ -155,7 +155,7 @@ def test_conn_output(Simulator, allclose):
         n2 = nengo.Node(output=0.5)
         n_out = nengo.Node(size_in=1)
         c1 = nengo.Connection(n1, n_out, transform=-1, synapse=None)
-        c2 = nengo.Connection(n2, n_out, function=lambda x: x ** 2, synapse=None)
+        c2 = nengo.Connection(n2, n_out, function=lambda x: x**2, synapse=None)
         p1 = nengo.Probe(c1, "output", synapse=None)
         p2 = nengo.Probe(c2, "output", synapse=None)
 
@@ -163,7 +163,7 @@ def test_conn_output(Simulator, allclose):
         sim.run(0.2)
     t = sim.trange()
     assert allclose(sim.data[p1][:, 0], -1.0 * np.sin(t))
-    assert allclose(sim.data[p2][:, 0], 0.5 ** 2)
+    assert allclose(sim.data[p2][:, 0], 0.5**2)
 
 
 def test_slice(Simulator, allclose):

@@ -25,7 +25,7 @@ from nengo.exceptions import ValidationError
 def test_pdf(rng, allclose):
     s = 0.25
     f = lambda x: (
-        np.exp(-0.5 * (x + 0.5) ** 2 / s ** 2) + np.exp(-0.5 * (x - 0.5) ** 2 / s ** 2)
+        np.exp(-0.5 * (x + 0.5) ** 2 / s**2) + np.exp(-0.5 * (x - 0.5) ** 2 / s**2)
     )
 
     xref = np.linspace(-2, 2, 101)
@@ -121,7 +121,7 @@ def test_hypersphere_volume(cls, min_magnitude, d, rng, allclose):
 
     # probability of not finding a point in [min_magnitude, r_tol_min], [r_tol_max, 1]
     q = 1e-5
-    r_min_d = min_magnitude ** d
+    r_min_d = min_magnitude**d
     r_tol_min = (r_min_d + (1 - r_min_d) * (1 - q ** (1 / n))) ** (1 / d)
     assert norms.min() <= r_tol_min
     r_tol_max = (1 - (1 - r_min_d) * (1 - q ** (1 / n))) ** (1 / d)
@@ -208,7 +208,7 @@ def test_scattered_hypersphere(dims, surface, seed, plt):
             d_min.append(np.sqrt(d2.min(axis=1)))
         d_min = np.concatenate(d_min)
         dd.append(d_min)
-        rr.append(np.sqrt((x ** 2).sum(axis=1)))
+        rr.append(np.sqrt((x**2).sum(axis=1)))
 
     # compute the approximate distance between points if they were evenly spread
     volume = np.pi ** (0.5 * dims) / scipy_special.gamma(0.5 * dims + 1)

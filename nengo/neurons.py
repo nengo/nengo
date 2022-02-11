@@ -923,7 +923,7 @@ class Izhikevich(NeuronType):
         # A more principled minimum value would be better.
         J = np.maximum(-30.0, J)
 
-        dV = (0.04 * voltage ** 2 + 5 * voltage + 140 - recovery + J) * 1000
+        dV = (0.04 * voltage**2 + 5 * voltage + 140 - recovery + J) * 1000
         voltage[:] += dV * dt
 
         # We check for spikes and reset the voltage here rather than after,

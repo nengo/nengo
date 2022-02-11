@@ -33,11 +33,11 @@ def test_cont2discrete_zoh(dt, allclose):
 
     # test with alpha filter, using analytic solution
     for tau in taus:
-        num, den = [1], [tau ** 2, 2 * tau, 1]
+        num, den = [1], [tau**2, 2 * tau, 1]
         a = dt / tau
         ea = np.exp(-a)
         num0 = [0, -a * ea + (1 - ea), ea * (a + ea - 1)]
-        den0 = [1, -2 * ea, ea ** 2]
+        den0 = [1, -2 * ea, ea**2]
         num1, den1, _ = cont2discrete((num, den), dt)
         assert allclose(num0, num1)
         assert allclose(den0, den1)

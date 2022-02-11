@@ -112,7 +112,7 @@ def test_node_to_ensemble(Simulator, NonDirectNeuronType, plt, seed, allclose):
 
         nengo.Connection(input_node, a, function=lambda x: -x[0])
         nengo.Connection(input_node[:1], b, function=lambda x: -x)
-        nengo.Connection(input_node, c, function=lambda x: -(x ** 2))
+        nengo.Connection(input_node, c, function=lambda x: -(x**2))
         nengo.Connection(
             input_node, d, function=lambda x: [-x[0], -(x[0] ** 2), -(x[1] ** 2)]
         )
@@ -361,7 +361,7 @@ def test_weights(Simulator, AnyNeuronType, plt, seed, allclose):
 def test_configure_weight_solver(Simulator, seed, plt, allclose):
     """Ensures that connections that don't use the weight solver ignore it"""
     n1, n2 = 100, 101
-    function = lambda x: x ** 2
+    function = lambda x: x**2
 
     with nengo.Network(seed=seed) as net:
         net.config[nengo.Connection].solver = nengo.solvers.LstsqL2(weights=True)
@@ -661,7 +661,7 @@ def test_slicing_function(Simulator, plt, seed, allclose):
     """Test using a pre-slice and a function"""
     N = 300
     f_in = lambda t: [np.cos(3 * t), np.sin(3 * t)]
-    f_x = lambda x: [x, -(x ** 2)]
+    f_x = lambda x: [x, -(x**2)]
 
     with nengo.Network(seed=seed) as model:
         u = nengo.Node(output=f_in)
@@ -838,7 +838,7 @@ def test_set_function(Simulator):
 
     with model:
         # Can change to another function with correct dimensionality
-        conn_2d.function = lambda x: x ** 2
+        conn_2d.function = lambda x: x**2
         conn_1d.function = lambda x: x[0] + x[1]
 
     with Simulator(model):

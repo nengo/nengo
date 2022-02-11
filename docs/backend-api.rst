@@ -6,7 +6,7 @@ Nengo is designed so that models created with the
 :doc:`Nengo frontend API <frontend-api>`
 work on a variety of different simulators, or "backends."
 For example, backends have been created to take advantage of
-`GPUs <https://github.com/nengo/nengo-ocl/>`_ and
+`GPUs <https://github.com/nengo-labs/nengo-ocl/>`_ and
 `neuromorphic hardware <https://github.com/project-rig/nengo_spinnaker>`_.
 
 Reference backend

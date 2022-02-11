@@ -61,7 +61,7 @@ class SemanticPointer:
         fft_val = np.fft.fft(self.v)
         fft_imag = fft_val.imag
         fft_real = fft_val.real
-        fft_norms = np.sqrt(fft_imag ** 2 + fft_real ** 2)
+        fft_norms = np.sqrt(fft_imag**2 + fft_real**2)
         fft_unit = fft_val / fft_norms
         self.v = np.array((np.fft.ifft(fft_unit)).real)
 

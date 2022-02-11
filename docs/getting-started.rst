@@ -34,7 +34,7 @@ on each operating system is:
 - Linux: Use a package manager or install from source
 
 For more options, see
-`SciPy.org's installation page <https://www.scipy.org/install.html>`_.
+`SciPy.org's installation page <https://scipy.org/install/>`_.
 For our recommended options, read on.
 
 Anaconda

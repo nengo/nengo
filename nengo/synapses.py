@@ -466,7 +466,7 @@ class Alpha(LinearFilter):
     tau = NumberParam("tau", low=0)
 
     def __init__(self, tau, **kwargs):
-        super().__init__([1], [tau ** 2, 2 * tau, 1], **kwargs)
+        super().__init__([1], [tau**2, 2 * tau, 1], **kwargs)
         self.tau = tau
 
 
