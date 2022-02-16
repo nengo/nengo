@@ -22,7 +22,12 @@ Release history
 3.2.1 (unreleased)
 ==================
 
+**Added**
 
+- Added ``groups`` parameter to ``nengo.Convolution``. (`#1675`_, `#1684`_)
+
+.. _#1675: https://github.com/nengo/nengo/issues/1675
+.. _#1684: https://github.com/nengo/nengo/pull/1684
 
 3.2.0 (January 27, 2022)
 ========================

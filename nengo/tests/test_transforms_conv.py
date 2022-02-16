@@ -2,24 +2,21 @@ import numpy as np
 import pytest
 
 import nengo
-from nengo.builder.transforms import conv2d, conv2d_gradx
+from nengo.builder.transforms import conv2d, conv2d_gradx, conv2d_groups
 from nengo.exceptions import BuildError, ValidationError
 
 
-@pytest.mark.parametrize("x_mul", (1, 2, 3, 4))
-@pytest.mark.parametrize("k_size", (1, 2, 3, 4))
-@pytest.mark.parametrize("stride", (1, 2, 3, 4))
-@pytest.mark.parametrize("padding", ("same", "valid"))
-def test_convolution_shape(padding, stride, k_size, x_mul, rng, allclose):
+def _test_convolution_shape(
+    padding, stride, k_size, x_mul, groups, out_channels, rng, allclose
+):
     tf = pytest.importorskip("tensorflow")
 
     in_channels = 2
-    out_channels = 3
 
     for i in range(2 * k_size):
         x_size = k_size + stride * (x_mul - 1) + i
         x_shape = (x_size, x_size, in_channels)
-        k_shape = (k_size, k_size, in_channels, out_channels)
+        k_shape = (k_size, k_size, in_channels // groups, out_channels)
 
         x = rng.uniform(-1, 1, size=x_shape)
         kernel = rng.uniform(-1, 1, size=k_shape)
@@ -27,7 +24,7 @@ def test_convolution_shape(padding, stride, k_size, x_mul, rng, allclose):
             x[None, ...], kernel, stride, padding=padding.upper()
         ).numpy()[0]
 
-        y_np = conv2d(
+        y_np = conv2d_groups(
             x[None, ...], kernel, pad=padding.upper(), stride=(stride, stride)
         )[0]
 
@@ -37,6 +34,7 @@ def test_convolution_shape(padding, stride, k_size, x_mul, rng, allclose):
             kernel_size=(k_size, k_size),
             strides=(stride, stride),
             padding=padding,
+            groups=groups,
         )
 
         assert transform.output_shape.shape == y_tf.shape
@@ -44,25 +42,62 @@ def test_convolution_shape(padding, stride, k_size, x_mul, rng, allclose):
         assert allclose(y_np, y_tf)
 
 
-@pytest.mark.parametrize("dimensions", (1, 2))
+@pytest.mark.parametrize("x_mul", (1, 2, 3, 4))
+@pytest.mark.parametrize("k_size", (1, 2, 3, 4))
+@pytest.mark.parametrize("stride", (1, 2, 3, 4))
 @pytest.mark.parametrize("padding", ("same", "valid"))
-@pytest.mark.parametrize("channels_last", (True, False))
-@pytest.mark.parametrize("fixed_kernel", (True, False))
-@pytest.mark.parametrize("transpose", (True, False))
-def test_convolution(
+def test_convolution_shape(padding, stride, k_size, x_mul, rng, allclose):
+    _test_convolution_shape(
+        padding=padding,
+        stride=stride,
+        k_size=k_size,
+        x_mul=x_mul,
+        groups=1,
+        out_channels=3,
+        rng=rng,
+        allclose=allclose,
+    )
+
+
+@pytest.mark.parametrize("out_channels", (2, 4))
+@pytest.mark.parametrize("groups", (1, 2))
+@pytest.mark.parametrize("x_mul", (1, 4))
+@pytest.mark.parametrize("k_size", (1, 3))
+@pytest.mark.parametrize("stride", (1, 2))
+@pytest.mark.parametrize("padding", ("same", "valid"))
+def test_convolution_group_shape(
+    padding, stride, k_size, x_mul, groups, out_channels, rng, allclose
+):
+    _test_convolution_shape(
+        padding=padding,
+        stride=stride,
+        k_size=k_size,
+        x_mul=x_mul,
+        groups=groups,
+        out_channels=out_channels,
+        rng=rng,
+        allclose=allclose,
+    )
+
+
+def _test_convolution(
     dimensions,
     padding,
     channels_last,
     fixed_kernel,
     transpose,
+    groups,
+    output_channels,
     Simulator,
     allclose,
     rng,
     seed,
 ):
+    assert not (
+        transpose and groups > 1
+    ), "Transpose Convolutions Not Supported With Groups != 1"
     input_d = 4
     input_channels = 2
-    output_channels = 5
     kernel_d = 3
     output_d = (
         input_d
@@ -72,7 +107,7 @@ def test_convolution(
 
     kernel_size = (kernel_d,) if dimensions == 1 else (kernel_d, kernel_d)
     input_shape = (input_d, input_channels)
-    kernel_shape = (kernel_d, input_channels, output_channels)
+    kernel_shape = (kernel_d, input_channels // groups, output_channels)
     output_shape = (output_d, output_channels)
 
     if dimensions == 2:
@@ -106,6 +141,7 @@ def test_convolution(
             kernel_size=kernel_size,
             strides=(1,) if dimensions == 1 else (1, 1),
             channels_last=channels_last,
+            groups=groups,
         )
 
     assert transform.output_shape.shape == output_shape
@@ -133,6 +169,7 @@ def test_convolution(
     weights = sim.data[conn].weights
     if not channels_last:
         x = np.moveaxis(x, 0, -1)
+
     if dimensions == 1:
         x = x[:, None, :]
         weights = weights[:, None, :, :]
@@ -143,12 +180,76 @@ def test_convolution(
             0
         ]
     else:
-        truth = conv2d(x[None, ...], weights, pad=padding.upper())[0]
+        truth = (conv2d if groups == 1 else conv2d_groups)(
+            x[None, ...], weights, pad=padding.upper()
+        )[0]
 
     if not channels_last:
         truth = np.moveaxis(truth, -1, 0)
 
     assert allclose(sim.data[p][0], np.ravel(truth))
+
+
+@pytest.mark.parametrize("dimensions", (1, 2))
+@pytest.mark.parametrize("padding", ("same", "valid"))
+@pytest.mark.parametrize("channels_last", (True, False))
+@pytest.mark.parametrize("fixed_kernel", (True, False))
+@pytest.mark.parametrize("transpose", (True, False))
+def test_convolution(
+    dimensions,
+    padding,
+    channels_last,
+    fixed_kernel,
+    transpose,
+    Simulator,
+    allclose,
+    rng,
+    seed,
+):
+    _test_convolution(
+        dimensions=dimensions,
+        padding=padding,
+        channels_last=channels_last,
+        fixed_kernel=fixed_kernel,
+        transpose=transpose,
+        groups=1,
+        output_channels=5,
+        Simulator=Simulator,
+        allclose=allclose,
+        rng=rng,
+        seed=seed,
+    )
+
+
+@pytest.mark.parametrize("dimensions", (1, 2))
+@pytest.mark.parametrize("channels_last", (True, False))
+@pytest.mark.parametrize("fixed_kernel", (True, False))
+@pytest.mark.parametrize("groups", (1, 2))
+@pytest.mark.parametrize("output_channels", (2, 4))
+def test_convolution_groups(
+    dimensions,
+    channels_last,
+    fixed_kernel,
+    groups,
+    output_channels,
+    Simulator,
+    allclose,
+    rng,
+    seed,
+):
+    _test_convolution(
+        dimensions=dimensions,
+        padding="same",
+        channels_last=channels_last,
+        fixed_kernel=fixed_kernel,
+        transpose=False,
+        groups=groups,
+        output_channels=output_channels,
+        Simulator=Simulator,
+        allclose=allclose,
+        rng=rng,
+        seed=seed,
+    )
 
 
 @pytest.mark.parametrize("encoders", (True, False))
@@ -202,6 +303,14 @@ def test_convolution_validation_errors():
     # test empty output
     with pytest.raises(ValidationError, match="exceeds the spatial size"):
         nengo.transforms.Convolution(n_filters=2, input_shape=(3, 2, 1))
+
+    # test invalid groups
+    with pytest.raises(ValidationError, match="Groups.*cannot be greater than"):
+        nengo.transforms.Convolution(n_filters=3, input_shape=(3, 2, 1), groups=3)
+    with pytest.raises(ValidationError, match="evenly divisible by.*groups"):
+        nengo.transforms.Convolution(n_filters=3, input_shape=(3, 3, 5), groups=3)
+    with pytest.raises(ValidationError, match="evenly divisible by.*groups"):
+        nengo.transforms.Convolution(n_filters=4, input_shape=(3, 3, 3), groups=3)
 
     # valid output shape
     nengo.transforms.ConvolutionTranspose(
