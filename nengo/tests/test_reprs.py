@@ -576,6 +576,7 @@ def test_transforms():
             "padding",
             "channels_last",
             "init",
+            "groups",
         ],
     )
     check_repr(Convolution(n_filters=3, input_shape=(3, 4, 5)))
@@ -583,6 +584,7 @@ def test_transforms():
     check_repr(Convolution(n_filters=3, input_shape=(3, 4, 5), channels_last=False))
     check_repr(Convolution(n_filters=3, input_shape=(3, 4, 5), strides=(2, 2)))
     check_repr(Convolution(n_filters=3, input_shape=(3, 4, 5), padding="same"))
+    check_repr(Convolution(n_filters=3, input_shape=(3, 4, 6), groups=3))
     assert (
         repr(Conv(n_filters=3, input_shape=(3, 4, 5)))
         == "Convolution(n_filters=3, input_shape=(3, 4, 5))"
@@ -602,6 +604,10 @@ def test_transforms():
     assert (
         repr(Conv(n_filters=3, input_shape=(3, 4, 5), padding="same"))
         == "Convolution(n_filters=3, input_shape=(3, 4, 5), padding='same')"
+    )
+    assert (
+        repr(Conv(n_filters=3, input_shape=(3, 4, 6), groups=3))
+        == "Convolution(n_filters=3, input_shape=(3, 4, 6), groups=3)"
     )
 
     check_init_args(

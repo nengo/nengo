@@ -348,6 +348,7 @@ class _ConvolutionBase(Transform):
     padding = EnumParam("padding", values=("same", "valid"))
     channels_last = BoolParam("channels_last")
     init = DistOrArrayParam("init")
+    groups = IntParam("groups", low=1)
 
     _param_init_order = ["channels_last", "input_shape"]
 
@@ -360,6 +361,7 @@ class _ConvolutionBase(Transform):
         padding="valid",
         channels_last=True,
         init=Uniform(-1, 1),
+        groups=1,
     ):
         super().__init__()
 
@@ -370,6 +372,7 @@ class _ConvolutionBase(Transform):
         self.strides = strides
         self.padding = padding
         self.init = init
+        self.groups = groups
 
         if len(kernel_size) != self.dimensions:
             raise ValidationError(
@@ -391,6 +394,20 @@ class _ConvolutionBase(Transform):
                     attr="init",
                 )
 
+        in_channels = self.input_shape.n_channels
+        if groups > in_channels:
+            raise ValidationError(
+                f"Groups ({groups}) cannot be greater than "
+                f"the number of input channels ({in_channels})",
+                attr="groups",
+            )
+        if in_channels % groups != 0 or self.n_filters % groups != 0:
+            raise ValidationError(
+                f"Both the number of input channels ({in_channels}) and filters "
+                f"({self.n_filters}) must be evenly divisible by ``groups`` ({groups})",
+                attr="groups",
+            )
+
     @property
     def _argreprs(self):
         argreprs = [
@@ -405,6 +422,8 @@ class _ConvolutionBase(Transform):
             argreprs.append(f"padding={self.padding!r}")
         if self.channels_last is not True:
             argreprs.append(f"channels_last={self.channels_last!r}")
+        if self.groups != 1:
+            argreprs.append(f"groups={self.groups!r}")
         return argreprs
 
     def sample(self, rng=np.random):
@@ -412,7 +431,9 @@ class _ConvolutionBase(Transform):
             # we sample this way so that any variancescaling distribution based
             # on n/d is scaled appropriately
             kernel = [
-                self.init.sample(self.input_shape.n_channels, self.n_filters, rng=rng)
+                self.init.sample(
+                    self.input_shape.n_channels // self.groups, self.n_filters, rng=rng
+                )
                 for _ in range(np.prod(self.kernel_size))
             ]
             kernel = np.reshape(kernel, self.kernel_shape)
@@ -423,7 +444,10 @@ class _ConvolutionBase(Transform):
     @property
     def kernel_shape(self):
         """Full shape of kernel."""
-        return self.kernel_size + (self.input_shape.n_channels, self.n_filters)
+        return self.kernel_size + (
+            self.input_shape.n_channels // self.groups,
+            self.n_filters,
+        )
 
     @property
     def size_in(self):
@@ -485,6 +509,11 @@ class Convolution(_ConvolutionBase):
     init : `.Distribution` or `~numpy:numpy.ndarray`, optional
         A predefined kernel with shape ``kernel_size + (input_channels, n_filters)``,
         or a ``Distribution`` that will be used to initialize the kernel.
+    groups : int, optional
+        The number of groups in which to split the input/output channels for mixing.
+        Output channels only depend on input channels within the same group; the number
+        of each of these channels must be divisible by ``groups``. For depthwise
+        convolution, use ``groups == input_shape.n_channels == n_filters``.
 
     Notes
     -----
@@ -501,6 +530,7 @@ class Convolution(_ConvolutionBase):
         padding="valid",
         channels_last=True,
         init=Uniform(-1, 1),
+        groups=1,
     ):
         super().__init__(
             n_filters=n_filters,
@@ -510,6 +540,7 @@ class Convolution(_ConvolutionBase):
             padding=padding,
             channels_last=channels_last,
             init=init,
+            groups=groups,
         )
 
         if self.padding == "valid":

@@ -232,10 +232,17 @@ class GeneralConvInc(Operator):
 
             return step_conv_transpose
 
-        else:
+        elif self.conv.groups == 1:  # standard convolution
 
             def step_conv():
                 Y[...] += conv2d.conv2d(X, W, pad=pad, stride=stride)[0]
+
+            return step_conv
+
+        else:  # grouped convolution
+
+            def step_conv():
+                Y[...] += conv2d.conv2d_groups(X, W, pad=pad, stride=stride)[0]
 
             return step_conv
 

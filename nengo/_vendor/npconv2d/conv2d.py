@@ -181,7 +181,7 @@ def extract_sliding_windows_gradx(x,
     return y
 
 
-def conv2d(x, w, pad='SAME', stride=(1, 1)):
+def conv2d(x, w, pad="SAME", stride=(1, 1)):
     """2D convolution (technically speaking, correlation).
     Args:
         x: [N, H, W, C]
@@ -191,6 +191,7 @@ def conv2d(x, w, pad='SAME', stride=(1, 1)):
     Returns:
         y: [N, H', W', K]
     """
+    assert x.ndim == 4 and w.ndim == 4
     ksize = w.shape[:2]
     x = extract_sliding_windows(x, ksize, pad, stride)
     ws = w.shape
@@ -199,6 +200,43 @@ def conv2d(x, w, pad='SAME', stride=(1, 1)):
     x = x.reshape([xs[0] * xs[1] * xs[2], -1])
     y = x.dot(w)
     y = y.reshape([xs[0], xs[1], xs[2], -1])
+    return y
+
+
+def conv2d_groups(x, w, pad="SAME", stride=(1, 1)):
+    """2D convolution (technically speaking, correlation). Compatible with groups > 1
+    Args:
+        x: [N, H, W, C]
+        w: [I, J, C/G, K]
+        pad: [PH, PW]
+        stride: [SH, SW]
+    Returns:
+        y: [N, H', W', K]
+    """
+    assert x.ndim == 4 and w.ndim == 4
+    c = x.shape[-1]  # input channels
+    ksize = w.shape[:2]
+    cg, k = w.shape[2:]  # channels-per-group and output channels
+
+    # infer number of groups
+    assert (
+        c % cg == 0
+    ), f"Number of channels ({c}) must be divisible by channels-per-group ({cg})"
+    groups = c // cg
+
+    x = extract_sliding_windows(x, ksize, pad, stride)
+    x = x.reshape(x.shape[:-1] + (groups, c // groups))  # split windows into groups
+    x = np.moveaxis(x, -2, 0)  # move groups to axis 0
+    xs = x.shape
+    x = x.reshape([groups, xs[1] * xs[2] * xs[3], xs[4] * xs[5] * xs[6]])
+
+    w = w.reshape(w.shape[:-1] + (groups, k // groups))  # split weights into groups
+    w = np.moveaxis(w, -2, 0)  # move groups to axis 0
+    ws = w.shape
+    w = w.reshape([groups, ws[1] * ws[2] * ws[3], ws[4]])
+
+    y = np.einsum("ikj,ijm->kim", x, w)
+    y = y.reshape([xs[1], xs[2], xs[3], k])
     return y
 
 

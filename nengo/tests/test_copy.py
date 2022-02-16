@@ -402,12 +402,13 @@ def test_pickle_model(Simulator, seed, allclose):
 
 
 def test_copy_convolution():
-    x = nengo.Convolution(1, (2, 3, 4), channels_last=False)
+    x = nengo.Convolution(2, (2, 3, 4), channels_last=False, groups=2)
     y = copy(x)
 
     assert x.n_filters == y.n_filters
     assert x.input_shape == y.input_shape
     assert x.channels_last == y.channels_last
+    assert x.groups == y.groups
 
 
 @pytest.mark.parametrize(
