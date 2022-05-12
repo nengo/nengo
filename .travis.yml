@@ -96,7 +96,9 @@ before_install:
     _travis_terminate_unix
     _travis_terminate_windows
   # upgrade pip
-  - pip install pip --upgrade
+  - pip install pip setuptools --upgrade
+  # fixes setuptools bug, see https://github.com/pypa/setuptools/issues/3293
+  - pip install "importlib-metadata>=0.21"
   # install/run nengo-bones
   - pip install git+https://github.com/nengo/nengo-bones#egg=nengo-bones
   - bones-generate --output-dir .ci ci-scripts
