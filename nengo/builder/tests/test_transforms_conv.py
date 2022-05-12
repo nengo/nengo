@@ -1,10 +1,9 @@
 import numpy as np
 import pytest
 
-from nengo._vendor.npconv2d import conv2d
 from nengo.builder.signal import Signal
 from nengo.builder.tests.test_operator import _test_operator_arg_attributes
-from nengo.builder.transforms import ConvInc, ConvTransposeInc
+from nengo.builder.transforms import ConvInc, ConvTransposeInc, conv2d_gradx
 from nengo.transforms import ChannelShape, Convolution, ConvolutionTranspose
 
 
@@ -263,7 +262,7 @@ def test_conv2d_gradx(padding, stride, k_size, x_size, rng, plt, allclose):
         ).numpy()[0]
 
         kernel_t = np.transpose(kernel, (0, 1, 3, 2))
-        y_np = conv2d.conv2d_gradx(
+        y_np = conv2d_gradx(
             kernel_t,
             x,
             xsize=y_shape[1:3],
