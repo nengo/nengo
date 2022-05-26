@@ -1,8 +1,8 @@
+import conv2d
 import numpy as np
 import pytest
 
 import nengo
-from nengo.builder.transforms import conv2d, conv2d_gradx, conv2d_groups
 from nengo.exceptions import BuildError, ValidationError
 
 
@@ -24,7 +24,7 @@ def _test_convolution_shape(
             x[None, ...], kernel, stride, padding=padding.upper()
         ).numpy()[0]
 
-        y_np = conv2d_groups(
+        y_np = conv2d.conv2d_groups(
             x[None, ...], kernel, pad=padding.upper(), stride=(stride, stride)
         )[0]
 
@@ -176,11 +176,14 @@ def _test_convolution(
 
     if transpose:
         outsize = (output_d, 1) if dimensions == 1 else (output_d, output_d)
-        truth = conv2d_gradx(weights, x[None, ...], xsize=outsize, pad=padding.upper())[
-            0
-        ]
+        truth = conv2d.conv2d_gradx(
+            weights.transpose([0, 1, 3, 2]),
+            x[None, ...],
+            xsize=outsize,
+            pad=padding.upper(),
+        )[0]
     else:
-        truth = (conv2d if groups == 1 else conv2d_groups)(
+        truth = (conv2d.conv2d if groups == 1 else conv2d.conv2d_groups)(
             x[None, ...], weights, pad=padding.upper()
         )[0]
 

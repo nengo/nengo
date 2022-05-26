@@ -31,6 +31,7 @@ version = runpy.run_path(str(root / "nengo" / "version.py"))["version"]
 
 install_req = [
     "numpy>=1.19",
+    "np-conv2d>=1.0.0",
 ]
 docs_req = [
     "sphinx>=1.8",
