@@ -271,12 +271,12 @@ def build_connection(model, conn):  # noqa: C901
         if isinstance(conn.post_obj, Ensemble) and conn.solver.weights:
             model.sig[conn]["out"] = model.sig[conn.post_obj.neurons]["in"]
 
-            encoders = model.params[conn.post_obj].scaled_encoders.T
+            encoders = model.params[conn.post_obj].encoders.T
             encoders = encoders[conn.post_slice]
 
             # post slice already applied to encoders (either here or in
             # `build_decoders`), so don't apply later
-            post_slice = None
+            post_slice = slice(None, None, None)
     else:
         in_signal = slice_signal(model, in_signal, conn.pre_slice)
 
@@ -302,11 +302,18 @@ def build_connection(model, conn):  # noqa: C901
     # Store the weighted-filtered output in case we want to probe it
     model.sig[conn]["weighted"] = weighted
 
-    if isinstance(conn.post_obj, Neurons):
+    if isinstance(conn.post_obj, Neurons) or (
+        isinstance(conn.post_obj, Ensemble) and conn.solver.weights
+    ):
+        if isinstance(conn.post_obj, Neurons):
+            post_obj_ens = conn.post_obj.ensemble
+        else:
+            post_obj_ens = conn.post_obj
+
         # Apply neuron gains (we don't need to do this if we're connecting to
         # an Ensemble, because the gains are rolled into the encoders)
         gains = Signal(
-            model.params[conn.post_obj.ensemble].gain[post_slice],
+            model.params[post_obj_ens].gain[post_slice],
             name=f"{conn}.gains",
         )
 
