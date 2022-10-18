@@ -26,8 +26,14 @@ Release history
 
 - Added ``groups`` parameter to ``nengo.Convolution``. (`#1675`_, `#1684`_)
 
+**Fixed**
+
+- Fixed an issue where ``nengo.LinearFilter`` and subclasses (e.g. ``Lowpass``,
+  ``Alpha``) would fail when running on tensors with dimension >= 3. (`#1687`_)
+
 .. _#1675: https://github.com/nengo/nengo/issues/1675
 .. _#1684: https://github.com/nengo/nengo/pull/1684
+.. _#1687: https://github.com/nengo/nengo/pull/1687
 
 3.2.0 (January 27, 2022)
 ========================

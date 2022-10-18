@@ -170,6 +170,34 @@ def test_linearfilter_extras(allclose):
         synapse.make_state(shape, shape, dt=0.001, dtype=np.complex64)
 
 
+@pytest.mark.parametrize(
+    "synapse",
+    [
+        Alpha(0.05),
+        LinearFilter(butter_num, butter_den, analog=False),
+        Triangle(0.04),
+    ],
+)
+@pytest.mark.parametrize(
+    "shape, axis",
+    ([(1, 30, 1), 1], [(2, 20, 5), 1], [(40, 1, 2, 3), 0], [(3, 9, 8, 2), 2]),
+)
+def test_filter_tensor(synapse, shape, axis, rng, allclose):
+    """Test that synapses work with higher orders of tensors and along other axes."""
+    dt = 3e-3
+    nt = shape[axis]
+    x = rng.uniform(-1, 1, size=shape)
+
+    # reference version is same synapse applied to axis 0 of 2D tensor
+    xt = x.swapaxes(0, axis)
+    yt = synapse.filt(xt.reshape(nt, -1), dt=dt, y0=0)
+    y_ref = yt.reshape(xt.shape).swapaxes(0, axis)
+
+    y = synapse.filt(x, axis=axis, dt=dt, y0=0)
+    assert y.shape == y_ref.shape == x.shape
+    assert allclose(y, y_ref)
+
+
 def test_step_errors():
     # error for A.shape[0] != B.shape[0]
     A = np.ones((2, 2))

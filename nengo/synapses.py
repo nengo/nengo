@@ -312,10 +312,11 @@ class LinearFilter(Synapse):
                     obj=self,
                 )
             self.A = A
-            self.B = B
+            self.B = B.reshape([B.shape[0]] + [1] * (X.ndim - 1))
             self.C = C
-            self.D = D
+            self.D = D.reshape([D.shape[0]] + [1] * (X.ndim - 1))
             self.X = X
+            self.dot = np.dot if self.X.ndim <= 2 else self.leading_dot
 
         def __call__(self, t, signal):
             raise NotImplementedError("Step object must implement __call__")
@@ -331,6 +332,11 @@ class LinearFilter(Synapse):
                     and C.shape[0] == B.shape[1] == 1
                     and D.size == 1
                 )
+
+        @staticmethod
+        def leading_dot(a, b):
+            """Dot along the first dimension of ``b``."""
+            return np.tensordot(a, b, axes=[[1], [0]])
 
     class NoX(Step):
         """Step for system with no state, only passthrough matrix (D)."""
@@ -392,8 +398,8 @@ class LinearFilter(Synapse):
         """
 
         def __call__(self, t, signal):
-            self.X[:] = np.dot(self.A, self.X) + self.B * signal
-            return np.dot(self.C, self.X)[0]
+            self.X[:] = self.dot(self.A, self.X) + self.B * signal
+            return self.dot(self.C, self.X).squeeze(axis=0)
 
         @classmethod
         def check(cls, A, B, C, D, X):
@@ -412,8 +418,8 @@ class LinearFilter(Synapse):
         """
 
         def __call__(self, t, signal):
-            Y = np.dot(self.C, self.X)[0] + self.D * signal
-            self.X[:] = np.dot(self.A, self.X) + self.B * signal
+            Y = self.dot(self.C, self.X).squeeze(axis=0) + self.D * signal
+            self.X[:] = self.dot(self.A, self.X) + self.B * signal
             return Y
 
         @classmethod
