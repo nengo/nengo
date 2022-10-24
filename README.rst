@@ -6,11 +6,6 @@
   :target: https://pypi.org/project/nengo
   :alt: Python versions
 
-.. image:: https://img.shields.io/codecov/c/github/nengo/nengo/master.svg
-  :target: https://codecov.io/gh/nengo/nengo/branch/master
-  :alt: Test coverage
-
-
 ********************************************
 Nengo: Large-scale brain modelling in Python
 ********************************************

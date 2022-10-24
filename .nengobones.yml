@@ -5,6 +5,7 @@ description: Tools for building and simulating large-scale neural models
 
 copyright_start: 2013
 license: abr-free
+main_branch: main
 
 license_rst: {}
 
@@ -73,6 +74,7 @@ setup_cfg:
     exclude_lines:
       - "^[ \\t]*assert False"
     omit_files:
+      - "/tmp/pytest-*"
       - "nengo/_vendor/*"
       - "nengo/version.py"
       - "nengo/spa/*"
@@ -93,8 +95,8 @@ setup_cfg:
       - "ignore:Skipping some optimization steps"
       - "ignore:SciPy is not installed"
       - "ignore:numpy.(dtype|ufunc) size changed"
-      - "ignore:Object <BasalGanglia \"bg\"> has already been built"
-      - "ignore:Object <Thalamus \"thalamus\"> has already been built"
+      - 'ignore:Object <BasalGanglia "bg"> has already been built'
+      - 'ignore:Object <Thalamus "thalamus"> has already been built'
       - "ignore:IPython.core.inputsplitter is deprecated"
       - "ignore:'step_math' has been renamed"
     plt_filename_drop:
@@ -114,9 +116,8 @@ setup_cfg:
 
 docs_conf_py:
   intersphinx_mapping:
-    scipy: 'https://docs.scipy.org/doc/scipy/reference'
-    sklearn: 'https://scikit-learn.org/dev'
-  tagmanager_id: GTM-KWCR2HN
+    scipy: "https://docs.scipy.org/doc/scipy/reference"
+    sklearn: "https://scikit-learn.org/dev"
   extensions:
     - nengo_sphinx_theme.ext.autoautosummary
     - nengo_sphinx_theme.ext.resolvedefaults
@@ -128,43 +129,30 @@ docs_conf_py:
     - "import matplotlib.pyplot as plt"
   html_redirects:
     backend_api.html: backend-api.html
-    examples/advanced/functions_and_tuning_curves.html:
-      examples/advanced/functions-and-tuning-curves.html
-    examples/advanced/inhibitory_gating.html:
-      examples/advanced/inhibitory-gating.html
-    examples/advanced/matrix_multiplication.html:
-      examples/advanced/matrix-multiplication.html
+    examples/advanced/functions_and_tuning_curves.html: examples/advanced/functions-and-tuning-curves.html
+    examples/advanced/inhibitory_gating.html: examples/advanced/inhibitory-gating.html
+    examples/advanced/matrix_multiplication.html: examples/advanced/matrix-multiplication.html
     examples/advanced/nef_algorithm.html: examples/advanced/nef-algorithm.html
     examples/advanced/nef_summary.html: examples/advanced/nef-summary.html
     examples/basic/2d_representation.html: examples/basic/2d-representation.html
-    examples/basic/communication_channel.html:
-      examples/basic/communication-channel.html
+    examples/basic/communication_channel.html: examples/basic/communication-channel.html
     examples/basic/many_neurons.html: examples/basic/many-neurons.html
     examples/basic/single_neuron.html: examples/basic/single-neuron.html
     examples/basic/two_neurons.html: examples/basic/two-neurons.html
-    examples/dynamics/controlled_integrator.html:
-      examples/dynamics/controlled-integrator.html
-    examples/dynamics/controlled_integrator2.html:
-      examples/dynamics/controlled-integrator2.html
-    examples/dynamics/controlled_oscillator.html:
-      examples/dynamics/controlled-oscillator.html
-    examples/dynamics/lorenz_attractor.html:
-      examples/dynamics/lorenz-attractor.html
-    examples/learning/learn_associations.html:
-      examples/learning/learn-associations.html
-    examples/learning/learn_communication_channel.html:
-      examples/learning/learn-communication-channel.html
+    examples/dynamics/controlled_integrator.html: examples/dynamics/controlled-integrator.html
+    examples/dynamics/controlled_integrator2.html: examples/dynamics/controlled-integrator2.html
+    examples/dynamics/controlled_oscillator.html: examples/dynamics/controlled-oscillator.html
+    examples/dynamics/lorenz_attractor.html: examples/dynamics/lorenz-attractor.html
+    examples/learning/learn_associations.html: examples/learning/learn-associations.html
+    examples/learning/learn_communication_channel.html: examples/learning/learn-communication-channel.html
     examples/learning/learn_product.html: examples/learning/learn-product.html
     examples/learning/learn_square.html: examples/learning/learn-square.html
-    examples/learning/learn_unsupervised.html:
-      examples/learning/learn-unsupervised.html
+    examples/learning/learn_unsupervised.html: examples/learning/learn-unsupervised.html
     examples/networks/basal_ganglia.html: examples/networks/basal-ganglia.html
     examples/networks/ensemble_array.html: examples/networks/ensemble-array.html
-    examples/networks/integrator_network.html:
-      examples/networks/integrator-network.html
+    examples/networks/integrator_network.html: examples/networks/integrator-network.html
     examples/usage/delay_node.html: examples/usage/delay-node.html
-    examples/usage/network_design_advanced.html:
-      examples/usage/network-design-advanced.html
+    examples/usage/network_design_advanced.html: examples/usage/network-design-advanced.html
     examples/usage/network_design.html: examples/usage/network-design.html
     examples/usage/rectified_linear.html: examples/usage/rectified-linear.html
     examples/usage/tuning_curves.html: examples/usage/tuning-curves.html
@@ -206,42 +194,6 @@ docs_conf_py:
       - nengo.builder.operator.Operator
       - nengo.builder.signal.Signal
 
-travis_yml:
-  python: 3.7
-  global_vars:
-    NUMPY: numpy
-  jobs:
-    - script: static
-    - script: test-coverage-scipy
-      test_args: --memory --plots
-    - script: test-coverage
-      test_args: --plots
-      python: 3.7
-    - script: docs
-      apt_install:
-        - graphviz
-        - pandoc
-    - env:
-        NUMPY: numpy==1.19
-      python: 3.8
-      cache: false  # disable the cache for one build to make sure that works
-      if: "branch =~ ^release-candidate-*"
-    - env:
-        NUMPY: numpy==1.20
-      python: 3.8
-      if: "branch =~ ^release-candidate-*"
-    - dist: bionic
-      env:
-        NUMPY: numpy==1.21
-      python: 3.9
-  pypi_user: __token__
-  deploy_dists:
-    - sdist
-    - bdist_wheel
-  slack_notifications: "bWVmSjW3kLZEEmJxpEmcrxlOFMVK24pYbgTZ2pjra0KMmwA2OJ11BsjdDW0fDE\
-    Vd4JJGkxV3vOghsufRTrKE10reLHSM0Jtum8PYvlYk7riE8yUish0VCwxa8gYZpsH41Q7IlJQB04y5XxwY\
-    MqSnDepOAmB8C5babwYJkzfF5Dw="
-
 ci_scripts:
   - template: static
   - template: test
@@ -265,9 +217,7 @@ ci_scripts:
       - scipy
       - matplotlib
   - template: deploy
-
-codecov_yml:
-  abs_target: 100%
+    wheel: true
 
 pre_commit_config_yaml:
   exclude:

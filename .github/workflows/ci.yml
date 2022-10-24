@@ -1,0 +1,144 @@
+name: CI testing
+on:
+  pull_request: {}
+  push:
+    branches:
+      - main
+      - release-candidate-*
+    tags:
+      - v*
+  workflow_dispatch:
+    inputs:
+      debug_enabled:
+        description: Run the build with SSH debugging enabled
+        type: boolean
+        required: false
+        default: false
+
+jobs:
+  static:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: nengo/nengo-bones/actions/setup@main
+        with:
+          python-version: "3.7"
+      - uses: nengo/nengo-bones/actions/generate-and-check@main
+      - uses: nengo/nengo-bones/actions/run-script@main
+        with:
+          name: static
+  test:
+    needs:
+      - static
+    timeout-minutes: 45
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - coverage-name: py37
+            script: test-coverage
+            test_args: --plots
+            python: "3.7"
+          - coverage-name: py39-scipy
+            script: test-coverage-scipy
+            test_args: --plots
+            python: "3.9"
+          - coverage-name: py310-memory
+            script: test-coverage
+            test_args: --memory --plots
+            python: "3.10"
+    env:
+      TEST_ARGS: ${{ matrix.test_args }}
+      NUMPY: numpy
+    steps:
+      - uses: nengo/nengo-bones/actions/setup@main
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: nengo/nengo-bones/actions/generate-and-check@main
+      - uses: nengo/nengo-bones/actions/run-script@main
+        with:
+          name: ${{ matrix.script }}
+      - uses: actions/upload-artifact@v3
+        if: ${{ always() && matrix.coverage-name }}
+        with:
+          name: coverage-${{ matrix.coverage-name }}
+          path: .coverage
+  test-all:
+    needs:
+      - test
+    if: ${{ startsWith(github.ref_name, 'release-candidate-') }}
+    timeout-minutes: 45
+    strategy:
+      matrix:
+        include:
+          - python: "3.8"
+            numpy: "1.19"
+            os: windows-latest
+          - python: "3.8"
+            numpy: "1.20"
+            os: macos-latest
+          - python: "3.9"
+            numpy: "1.21"
+            os: ubuntu-latest
+          - python: "3.10"
+            numpy: "1.22"
+            os: ubuntu-latest
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
+    env:
+      NUMPY: numpy==${{ matrix.numpy }}
+    steps:
+      - uses: nengo/nengo-bones/actions/setup@main
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: nengo/nengo-bones/actions/generate-and-check@main
+      - uses: nengo/nengo-bones/actions/run-script@main
+        with:
+          name: test
+  docs:
+    needs:
+      - static
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
+    steps:
+      - name: Install apt dependencies
+        run: |
+          sudo apt-get install -y graphviz pandoc
+      - uses: nengo/nengo-bones/actions/setup@main
+        with:
+          python-version: "3.7"
+      - uses: nengo/nengo-bones/actions/generate-and-check@main
+      - uses: nengo/nengo-bones/actions/run-script@main
+        with:
+          name: docs
+  coverage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs:
+      - test
+    if: ${{ always() }}
+    steps:
+      - uses: nengo/nengo-bones/actions/coverage-report@main
+  deploy:
+    needs:
+      - test-all
+      - docs
+    if: >-
+      startsWith(github.ref_name, 'release-candidate-') ||
+      (github.ref_type == 'tag' && startsWith(github.ref_name, 'v'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Write .pypirc to file
+        run: |
+          echo '${{ secrets.PYPIRC_FILE }}' > ~/.pypirc
+      - uses: actions/checkout@v3
+      - uses: nengo/nengo-bones/actions/setup@main
+        with:
+          python-version: "3.10"
+      - uses: nengo/nengo-bones/actions/generate-and-check@main
+      - uses: nengo/nengo-bones/actions/run-script@main
+        with:
+          name: deploy
