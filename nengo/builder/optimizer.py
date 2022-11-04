@@ -525,12 +525,12 @@ class ResetMerger(Merger):
 
     @staticmethod
     def is_mergeable(op1, op2):
-        return SigMerger.check([op1.dst, op2.dst]) and op1.value == op2.value
+        return SigMerger.check([op1.dst, op2.dst])
 
     @staticmethod
     def merge(ops):
         dst, replacements = SigMerger.merge([o.dst for o in ops])
-        return Reset(dst, ops[0].value), replacements
+        return Reset(dst), replacements
 
 
 @OpMerger.register(Copy)
