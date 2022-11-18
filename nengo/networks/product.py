@@ -10,7 +10,8 @@ from nengo.node import Node
 
 
 class Product(Network):
-    """Computes the element-wise product of two equally sized vectors.
+    """
+    Computes the element-wise product of two equally sized vectors.
 
     The network used to calculate the product is described in
     `Gosmann, 2015`_. A simpler version of this network can be found in the

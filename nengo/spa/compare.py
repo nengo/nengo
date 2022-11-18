@@ -5,7 +5,8 @@ from nengo.spa.module import Module
 
 
 class Compare(Module):
-    """A module for computing the dot product of two inputs.
+    """
+    A module for computing the dot product of two inputs.
 
     Parameters
     ----------

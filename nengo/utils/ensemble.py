@@ -4,7 +4,8 @@ from . import numpy as npext  # pylint: disable = reimported
 
 
 def tuning_curves(ens, sim, inputs=None):
-    """Calculates the tuning curves of an ensemble.
+    """
+    Calculates the tuning curves of an ensemble.
 
     That is the neuron responses in dependence of the vector represented by the
     ensemble.
@@ -61,7 +62,8 @@ def tuning_curves(ens, sim, inputs=None):
 
 
 def response_curves(ens, sim, inputs=None):
-    """Calculates the response curves of an ensemble.
+    """
+    Calculates the response curves of an ensemble.
 
     That is the neuron responses in dependence of an already encoded value.
     This corresponds to the tuning curves along the neuron's preferred
@@ -98,7 +100,8 @@ def response_curves(ens, sim, inputs=None):
 
 
 def _similarity(encoders, index, rows, cols=1):
-    """Helper function to compute similarity for one encoder.
+    """
+    Helper function to compute similarity for one encoder.
 
     Parameters
     ----------
@@ -133,7 +136,8 @@ def _similarity(encoders, index, rows, cols=1):
 
 
 def sorted_neurons(ensemble, sim, iterations=100, seed=None):
-    """Sort neurons in an ensemble by encoder and intercept.
+    """
+    Sort neurons in an ensemble by encoder and intercept.
 
     Parameters
     ----------

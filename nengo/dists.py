@@ -19,11 +19,12 @@ from nengo.utils.paths import data_dir
 
 
 class Distribution(FrozenObject):
-    """A base class for probability distributions.
+    """
+    A base class for probability distributions.
 
     The only thing that a probabilities distribution need to define is a
-    `.Distribution.sample` method. This base class ensures that all
-    distributions accept the same arguments for the sample function.
+    `.Distribution.sample` method. This base class ensures that all distributions
+    accept the same arguments for the sample function.
     """
 
     def _sample_shape(self, n, d=None):
@@ -31,7 +32,8 @@ class Distribution(FrozenObject):
         return (n,) if d is None else (n, d)
 
     def sample(self, n, d=None, rng=np.random):
-        """Samples the distribution.
+        """
+        Samples the distribution.
 
         Parameters
         ----------
@@ -91,7 +93,8 @@ class DistOrArrayParam(NdarrayParam):
 
 
 def get_samples(dist_or_samples, n, d=None, rng=np.random):
-    """Convenience function to sample a distribution or return samples.
+    """
+    Convenience function to sample a distribution or return samples.
 
     Use this function in situations where you accept an argument that could
     be a distribution, or could be an ``array_like`` of samples.
@@ -131,7 +134,6 @@ def get_samples(dist_or_samples, n, d=None, rng=np.random):
     Returns
     -------
     samples : (n, d) array_like
-
     """
     if isinstance(dist_or_samples, Distribution):
         return dist_or_samples.sample(n, d=d, rng=rng)
@@ -139,7 +141,8 @@ def get_samples(dist_or_samples, n, d=None, rng=np.random):
 
 
 class PDF(Distribution):
-    """An arbitrary distribution from a PDF.
+    """
+    An arbitrary distribution from a PDF.
 
     Parameters
     ----------
@@ -180,7 +183,8 @@ class PDF(Distribution):
 
 
 class Uniform(Distribution):
-    """A uniform distribution.
+    """
+    A uniform distribution.
 
     It's equally likely to get any scalar between ``low`` and ``high``.
 
@@ -218,7 +222,8 @@ class Uniform(Distribution):
 
 
 class Gaussian(Distribution):
-    """A Gaussian distribution.
+    """
+    A Gaussian distribution.
 
     This represents a bell-curve centred at ``mean`` and with
     spread represented by the standard deviation, ``std``.
@@ -233,7 +238,6 @@ class Gaussian(Distribution):
     Raises
     ------
     ValidationError if std is <= 0
-
     """
 
     mean = NumberParam("mean")
@@ -250,7 +254,8 @@ class Gaussian(Distribution):
 
 
 class Exponential(Distribution):
-    """An exponential distribution (optionally with high values clipped).
+    """
+    An exponential distribution (optionally with high values clipped).
 
     If ``high`` is left to its default value of infinity, this is a standard
     exponential distribution. If ``high`` is set, then any sampled values at
@@ -299,7 +304,8 @@ class Exponential(Distribution):
 
 
 class UniformHypersphere(Distribution):
-    """Uniform distribution on or in an n-dimensional unit hypersphere.
+    """
+    Uniform distribution on or in an n-dimensional unit hypersphere.
 
     Sample points are uniformly distributed across the volume (default) or
     surface of an n-dimensional unit hypersphere.
@@ -347,7 +353,8 @@ class UniformHypersphere(Distribution):
 
 
 class QuasirandomSequence(Distribution):
-    """Sequence for quasi Monte Carlo sampling the ``[0, 1]``-cube.
+    """
+    Sequence for quasi Monte Carlo sampling the ``[0, 1]``-cube.
 
     This is similar to ``np.random.uniform(0, 1, size=(num, d))``, but with the
     additional property that each ``d``-dimensional point is uniformly scattered.
@@ -411,7 +418,8 @@ class QuasirandomSequence(Distribution):
 
 
 class ScatteredHypersphere(Distribution):
-    r"""Quasirandom distribution over the hypersphere or hyperball.
+    r"""
+    Quasirandom distribution over the hypersphere or hyperball.
 
     Applies a spherical transform to the given quasirandom sequence
     (by default `.QuasirandomSequence`) to obtain uniformly scattered samples.
@@ -522,7 +530,8 @@ class ScatteredHypersphere(Distribution):
 
     @classmethod
     def spherical_transform_sct(cls, samples, approx=False):
-        """Map samples from the ``[0, 1]``-cube onto the hypersphere.
+        """
+        Map samples from the ``[0, 1]``-cube onto the hypersphere.
 
         Uses the SCT method described in section 1.5.3 of Fang and Wang (1994).
         """
@@ -547,7 +556,8 @@ class ScatteredHypersphere(Distribution):
 
     @staticmethod
     def spherical_transform_tfww(c_samples):
-        """Map samples from the ``[0, 1]``-cube onto the hypersphere surface.
+        """
+        Map samples from the ``[0, 1]``-cube onto the hypersphere surface.
 
         Uses the TFWW method described in section 4.3 of Fang and Wang (1994).
         """
@@ -646,7 +656,8 @@ class ScatteredHypersphere(Distribution):
 
 
 class Choice(Distribution):
-    """Discrete distribution across a set of possible values.
+    """
+    Discrete distribution across a set of possible values.
 
     The same as Numpy random's `~numpy.random.RandomState.choice`,
     except can take vector or matrix values for the choices.
@@ -708,7 +719,8 @@ class Choice(Distribution):
 
 
 class Samples(Distribution):
-    """A set of samples.
+    """
+    A set of samples.
 
     This class is a subclass of `.Distribution` so that it can be used in any
     situation that calls for a  `.Distribution`. However, the call to
@@ -764,7 +776,8 @@ class Samples(Distribution):
 
 
 class SqrtBeta(Distribution):
-    """Distribution of the square root of a Beta distributed random variable.
+    """
+    Distribution of the square root of a Beta distributed random variable.
 
     Given ``n + m`` dimensional random unit vectors, the length of subvectors
     with ``m`` elements will be distributed according to this distribution.
@@ -794,7 +807,8 @@ class SqrtBeta(Distribution):
         return np.sqrt(rng.beta(self.m / 2.0, self.n / 2.0, size=shape))
 
     def cdf(self, x):
-        """Cumulative distribution function.
+        """
+        Cumulative distribution function.
 
         .. note:: Requires SciPy.
 
@@ -816,7 +830,8 @@ class SqrtBeta(Distribution):
         )
 
     def pdf(self, x):
-        """Probability distribution function.
+        """
+        Probability distribution function.
 
         .. note:: Requires SciPy.
 
@@ -840,7 +855,8 @@ class SqrtBeta(Distribution):
         )
 
     def ppf(self, y):
-        """Percent point function (inverse cumulative distribution).
+        """
+        Percent point function (inverse cumulative distribution).
 
         .. note:: Requires SciPy.
 
@@ -861,7 +877,8 @@ class SqrtBeta(Distribution):
 
 
 class SubvectorLength(SqrtBeta):
-    """Distribution of the length of a subvectors of a unit vector.
+    """
+    Distribution of the length of a subvectors of a unit vector.
 
     Parameters
     ----------
@@ -888,7 +905,8 @@ class SubvectorLength(SqrtBeta):
 
 
 class CosineSimilarity(SubvectorLength):
-    """Distribution of the cosine of the angle between two random vectors.
+    """
+    Distribution of the cosine of the angle between two random vectors.
 
     The "cosine similarity" is the cosine of the angle between two vectors,
     which is equal to the dot product of the vectors, divided by the L2-norms

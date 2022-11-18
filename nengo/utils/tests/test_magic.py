@@ -9,7 +9,6 @@ class RunState:
 
 
 def _test_decorated(obj):
-
     # Make sure decorator works
     RunState.state = "not run"
     obj(0, 0)
@@ -235,7 +234,7 @@ def test_class():
 
 
 def test_class_decorator():
-    """Test that `decorator` works on a class method"""
+    """Test that ``decorator`` works on a class method."""
 
     class TestA:
         @decorator
@@ -266,7 +265,7 @@ def test_class_decorator():
 
 
 def test_instance_decorator():
-    """Test that `decorator` works on a class instance method"""
+    """Test that ``decorator`` works on a class instance method."""
 
     class TestA:
         @decorator
@@ -298,10 +297,8 @@ def test_instance_decorator():
 
 
 def test_objectproxy():
-    """tests functions of ObjectProxy"""
-
     class Test:
-        """my docstring"""
+        """My docstring."""
 
         __annotations__ = "testannotations"
         __name__ = "testname"
@@ -333,8 +330,6 @@ def test_objectproxy():
 
 
 def test_boundfunctionwrapper():
-    """tests functions of BoundFunctionWrapper"""
-
     class MyParentHelper:
         def __get__(self, a, b=None):
             return 0

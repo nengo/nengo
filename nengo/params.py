@@ -1,3 +1,5 @@
+# pylint: disable=unnecessary-dunder-call
+
 import inspect
 from collections import namedtuple
 
@@ -59,7 +61,8 @@ def equal(a, b):
 
 
 class Parameter:
-    """Simple descriptor for storing configuration parameters.
+    """
+    Simple descriptor for storing configuration parameters.
 
     Parameters
     ----------
@@ -445,11 +448,12 @@ class DictParam(Parameter):
 
 
 class NdarrayParam(Parameter):
-    """A parameter where the value is a NumPy ndarray.
+    """
+    A parameter where the value is a NumPy ndarray.
 
-    If the passed value is an ndarray, a view onto that array is stored.
-    If the passed value is not an ndarray, it will be cast to an ndarray
-    of ``dtype`` and stored.
+    If the passed value is an ndarray, a view onto that array is stored. If the
+    passed value is not an ndarray, it will be cast to an ndarray of ``dtype``
+    and stored.
     """
 
     equatable = True
@@ -602,7 +606,8 @@ class FunctionParam(Parameter):
 
 
 class FrozenObject:
-    """An object with parameters that cannot change value after instantiation.
+    """
+    An object with parameters that cannot change value after instantiation.
 
     Since such objects are read-only ("frozen"), they can be safely used in
     multiple locations, compared, etc.

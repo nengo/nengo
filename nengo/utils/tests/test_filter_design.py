@@ -19,7 +19,6 @@ from nengo.utils.filter_design import (
 
 @pytest.mark.parametrize("dt", [1e-3, 1e-2, 1e-1])
 def test_cont2discrete_zoh(dt, allclose):
-    """test the function cont2discrete with zero-order hold"""
     taus = np.logspace(-np.log10(dt) - 1, np.log10(dt) + 3, 30)
 
     # test with lowpass filter, using analytic solution
@@ -89,7 +88,6 @@ def test_cont2discrete_other_methods():
 
 
 def test_tf2zpk():
-    """test the tf2zpk function"""
     (a, b, c) = tf2zpk(1, 2)
     assert a.size == 0
     assert b.size == 0
@@ -97,7 +95,6 @@ def test_tf2zpk():
 
 
 def test_zpk2tf():
-    """test the zpk2tf function"""
     (b, a) = zpk2tf([[1], [2]], [3], 3.0)
     z = [[1], [2]]
     z = np.atleast_1d(z)
@@ -115,7 +112,6 @@ def test_zpk2tf():
 
 @pytest.mark.filterwarnings("ignore:Badly conditioned filter coefficients")
 def test_normalize():
-    """test the normalize function, and exceptions"""
     with pytest.raises(ValueError):
         a = [[1], [2]]
         b = [1]
@@ -134,7 +130,6 @@ def test_normalize():
 
 
 def test_tf2ss():
-    """test the tf2ss function, and exceptions"""
     with pytest.raises(ValueError):
         num = [1, 2]
         den = [1]
@@ -142,17 +137,15 @@ def test_tf2ss():
 
 
 def test_none_to_empty_2d():
-    """test the _none_to_empty_2d function"""
     assert np.array_equal(np.zeros((0, 0)), _none_to_empty_2d(None))
 
 
 def test_shape_or_none():
-    """test the _shape_or_none function"""
     assert _shape_or_none(None) == (None,) * 2
 
 
 def test_restore(allclose):
-    """test the _restore function and errors"""
+    """test the _restore function and errors."""
 
     class Test:
         shape = (0, 0)
@@ -167,20 +160,16 @@ def test_restore(allclose):
 
 
 def test_abcd_normalize():
-    """test the function abcd_normalize"""
     with pytest.raises(ValueError):
         abcd_normalize(None, None, None, None)
 
 
 def test_ss2tf():
-    """test the function ss2tf"""
     with pytest.raises(ValueError):
         ss2tf(None, None, None, None, 5)
 
 
 def test_zpk2ss():
-    """test the function zpk2ss"""
-
     predicted = (
         np.array([[3.0, -2.0], [1.0, 0.0]]),
         np.array([[1.0], [0.0]]),
@@ -192,6 +181,5 @@ def test_zpk2ss():
 
 
 def test_ss2zpk():
-    """test the function ss2zpk"""
     predicted = (np.array([0.0]), np.array([1.0]), 1.0)
     assert repr(ss2zpk([1], [1], [1], [1])) == repr(predicted)

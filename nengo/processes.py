@@ -11,7 +11,8 @@ from nengo.utils.numpy import array_hash, clip, is_number, rfftfreq
 
 
 class WhiteNoise(Process):
-    """Full-spectrum white noise process.
+    """
+    Full-spectrum white noise process.
 
     Parameters
     ----------
@@ -57,7 +58,8 @@ class WhiteNoise(Process):
 
 
 class FilteredNoise(Process):
-    """Filtered white noise process.
+    """
+    Filtered white noise process.
 
     This process takes white noise and filters it using the provided synapse.
 
@@ -112,7 +114,8 @@ class FilteredNoise(Process):
 
 
 class BrownNoise(FilteredNoise):
-    """Brown noise process (aka Brownian noise, red noise, Wiener process).
+    """
+    Brown noise process (aka Brownian noise, red noise, Wiener process).
 
     This process is the integral of white noise.
 
@@ -131,7 +134,8 @@ class BrownNoise(FilteredNoise):
 
 
 class WhiteSignal(Process):
-    """An ideal low-pass filtered white noise process.
+    """
+    An ideal low-pass filtered white noise process.
 
     This signal is created in the frequency domain, and designed to have
     exactly equal power at all frequencies below the cut-off frequency,
@@ -223,7 +227,8 @@ class WhiteSignal(Process):
 
 
 class PresentInput(Process):
-    """Present a series of inputs, each for the same fixed length of time.
+    """
+    Present a series of inputs, each for the same fixed length of time.
 
     Parameters
     ----------
@@ -259,10 +264,11 @@ class PresentInput(Process):
 
 
 class PiecewiseDataParam(DictParam):
-    """Piecewise-specific validation for the data dictionary.
+    """
+    Piecewise-specific validation for the data dictionary.
 
-    In the `.Piecewise` data dict, the keys are points in time (float) and
-    values are numerical constants or callables of the same dimensionality.
+    In the `.Piecewise` data dict, the keys are points in time (float) and values
+    are numerical constants or callables of the same dimensionality.
     """
 
     equatable = True
@@ -313,7 +319,8 @@ class PiecewiseDataParam(DictParam):
 
 
 class Piecewise(Process):
-    """A piecewise function with different options for interpolation.
+    """
+    A piecewise function with different options for interpolation.
 
     Given an input dictionary of ``{0: 0, 0.5: -1, 0.75: 0.5, 1: 0}``,
     this process  will emit the numerical values (0, -1, 0.5, 0)
@@ -401,7 +408,6 @@ class Piecewise(Process):
 
        [[ 0.]]
        [[ 1.]]
-
     """
 
     data = PiecewiseDataParam("data", readonly=True)

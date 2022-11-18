@@ -283,14 +283,14 @@ class TestPickle:
     """A basic set of tests that should pass for all objects."""
 
     def test_pickle_roundtrip(self, make_f):
-        """Tests making a deepcopy using pickling and unpickling"""
+        """Tests making a deepcopy using pickling and unpickling."""
         original = make_f()
         cp = pickle.loads(pickle.dumps(original))
         assert_is_deepcopy(cp, original)
 
     def test_unpickling_warning_in_network(self, make_f):
-        """Tests a not added to network warning when unpickling
-        inside a network when the original was not in the network"""
+        """Tests a not added to network warning when unpickling inside a network when
+        the original was not in the network."""
         original = make_f()
         pkl = pickle.dumps(original)
         with nengo.Network():

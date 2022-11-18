@@ -108,7 +108,7 @@ def test_svd(cond, rng, allclose):
 
 @pytest.mark.parametrize("cond", [5, 1000])
 def test_randomized_svd_fallback(cond, rng, allclose):
-    """Test the specific case where RandomizedSVD falls back to SVD"""
+    """Test the specific case where RandomizedSVD falls back to SVD."""
     pytest.importorskip("sklearn")
     m, n = 30, 20
     solver = RandomizedSVD(n_components=min(m, n))

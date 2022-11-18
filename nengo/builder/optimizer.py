@@ -25,7 +25,8 @@ logger = logging.getLogger(__name__)
 
 
 def optimize(model, dg):
-    """Optimizes the operator graph by merging operators.
+    """
+    Optimizes the operator graph by merging operators.
 
     This reduces the number of iterators to iterate over in slow Python code
     (as opposed to fast C code). The resulting merged operators will also
@@ -143,7 +144,8 @@ class OpMergePass:
         self.opinfo = OpInfo()
 
     def __call__(self, only_merge_ops_with_view):
-        """Perform a single optimization pass.
+        """
+        Perform a single optimization pass.
 
         Parameters
         ----------
@@ -162,7 +164,8 @@ class OpMergePass:
         self.perform_merges()
 
     def perform_merges(self):
-        """Go through all operators and merge them where possible.
+        """
+        Go through all operators and merge them where possible.
 
         Parameters
         ----------
@@ -196,7 +199,8 @@ class OpMergePass:
                 break
 
     def perform_merges_for_subset(self, subset):
-        """Performs operator merges for a subset of operators.
+        """
+        Performs operator merges for a subset of operators.
 
         Parameters
         ----------
@@ -217,7 +221,8 @@ class OpMergePass:
             self.perform_merges_for_view_subset(by_view[None])
 
     def perform_merges_for_view_subset(self, subset):
-        """Perform merges for a subset of operators with the same view base.
+        """
+        Perform merges for a subset of operators with the same view base.
 
         Parameters
         ----------
@@ -282,12 +287,13 @@ class OpMergePass:
                 self.might_merge.remove(op)
 
     def merge(self, tomerge):
-        """Merges the given operators.
+        """
+        Merges the given operators.
 
         This method will also update ``op_replacements``, ``sig_replacements``,
-        and the internal list of merged operators to prevent further merges
-        on the same operators before all required operators and signals have
-        been replaced.
+        and the internal list of merged operators to prevent further merges on
+        the same operators before all required operators and signals have been
+        replaced.
         """
         merged_op, merged_sig = OpMerger.merge(tomerge.ops)
         self.dg.merge(tomerge.ops, merged_op)
@@ -508,7 +514,8 @@ class Merger:
 
     @staticmethod
     def merge_dicts(*dicts):
-        """Merges the given dictionaries into a single dictionary.
+        """
+        Merges the given dictionaries into a single dictionary.
 
         This function assumes and enforces that no keys overlap.
         """
@@ -752,7 +759,8 @@ class SigMerger:
 
     @staticmethod
     def check(signals, axis=0):
-        """Checks that all signals can be concatenated along a given axis.
+        """
+        Checks that all signals can be concatenated along a given axis.
 
         For views, this includes also a check that the signals have a common
         base and agree on the strides.
@@ -783,10 +791,11 @@ class SigMerger:
 
     @staticmethod
     def check_signals(signals, axis=0):
-        """Checks that all signals can be merged along a given axis.
+        """
+        Checks that all signals can be merged along a given axis.
 
-        If this is not possible, or any signals are views, a
-        ``ValueError`` will be raised.
+        If this is not possible, or any signals are views, a ``ValueError`` will
+        be raised.
         """
         if any(s.is_view for s in signals):
             raise ValueError("Cannot merge views.")
@@ -811,7 +820,8 @@ class SigMerger:
 
     @staticmethod
     def check_views(signals, axis=0):
-        """Checks that all signal views can be merged along a given axis.
+        """
+        Checks that all signal views can be merged along a given axis.
 
         If this is not possible, or any signals are not views,
         a ``ValueError`` will be raised.
@@ -842,7 +852,8 @@ class SigMerger:
 
     @staticmethod
     def merge(signals, axis=0):
-        """Merges multiple signals or signal views into one contiguous signal.
+        """
+        Merges multiple signals or signal views into one contiguous signal.
 
         Note that if any of the signals are linked to another signal (by being
         the base of a view), the merged signal will not reflect those links
@@ -873,7 +884,8 @@ class SigMerger:
 
     @staticmethod
     def merge_signals(signals, axis=0):
-        """Merges multiple signal into one contiguous signal.
+        """
+        Merges multiple signal into one contiguous signal.
 
         Note that if any of the signals are linked to another signal (by being
         the base of a view), the merged signal will not reflect
@@ -922,7 +934,8 @@ class SigMerger:
 
     @staticmethod
     def merge_views(signals, axis=0):
-        """Merges multiple signal views into one contiguous signal view.
+        """
+        Merges multiple signal views into one contiguous signal view.
 
         Parameters
         ----------
@@ -967,10 +980,11 @@ class SigMerger:
 
 
 def groupby(lst, keyfunc=lambda item: item):
-    """Groups the given list by the value returned by ``keyfunc``.
+    """
+    Groups the given list by the value returned by ``keyfunc``.
 
-    Similar to ``itertools.groupby``, but returns a dict, and does not depend
-    on the order of the input list.
+    Similar to ``itertools.groupby``, but returns a dict, and does not depend on
+    the order of the input list.
     """
     d = defaultdict(list)
     for item in lst:

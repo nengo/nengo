@@ -10,7 +10,8 @@ from nengo.exceptions import MovedError, Unconvertible, ValidationError
 def full_transform(  # noqa: C901
     conn, slice_pre=True, slice_post=True, allow_scalars=True
 ):
-    """Compute the full transform matrix for a Dense connection transform.
+    """
+    Compute the full transform matrix for a Dense connection transform.
 
     Parameters
     ----------
@@ -43,7 +44,9 @@ def full_transform(  # noqa: C901
     pre_slice = conn.pre_slice if slice_pre and conn.function is None else slice(None)
     post_slice = conn.post_slice if slice_post else slice(None)
 
-    eq_none_slice = lambda s: isinstance(s, slice) and s == slice(None)
+    def eq_none_slice(s):
+        return isinstance(s, slice) and s == slice(None)
+
     if eq_none_slice(pre_slice) and eq_none_slice(post_slice):
         if transform.ndim == 2:
             # transform is already full, so return a copy
@@ -68,9 +71,10 @@ def full_transform(  # noqa: C901
     assert transform.ndim <= 2, "connection transform must have <= 2 axes"
 
     if transform.ndim == 2:
-        repeated_inds = lambda x: (
-            not isinstance(x, slice) and np.unique(x).size != len(x)
-        )
+
+        def repeated_inds(x):
+            return not isinstance(x, slice) and np.unique(x).size != len(x)
+
         if repeated_inds(pre_slice):
             raise NotImplementedError("Input object selection has repeated indices")
         if repeated_inds(post_slice):
@@ -90,7 +94,8 @@ def full_transform(  # noqa: C901
 
 
 def default_n_eval_points(n_neurons, dimensions):
-    """A heuristic to determine an appropriate number of evaluation points.
+    """
+    A heuristic to determine an appropriate number of evaluation points.
 
     This is used by builders to generate a sufficiently large sample
     from a vector space in order to solve for accurate decoders.
@@ -167,7 +172,8 @@ def _create_replacement_connection(c_in, c_out):
 def remove_passthrough_nodes(  # noqa: C901
     objs, connections, create_connection_fn=None
 ):
-    """Returns a version of the model without passthrough Nodes.
+    """
+    Returns a version of the model without passthrough Nodes.
 
     For some backends (such as SpiNNaker), it is useful to remove Nodes that
     have 'None' as their output.  These nodes simply sum their inputs and

@@ -5,7 +5,8 @@ import nengo
 
 
 def convolution(module, target_name, effect, n_neurons_cconv, synapse):
-    """Implement an action_objects.Convolution.
+    """
+    Implement an action_objects.Convolution.
 
     Parameters
     ----------

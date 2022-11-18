@@ -10,7 +10,8 @@ from nengo.utils.numpy import is_integer, is_iterable, is_number
 
 
 class Vocabulary:
-    """A collection of semantic pointers, each with their own text label.
+    """
+    A collection of semantic pointers, each with their own text label.
 
     The Vocabulary can also act as a dictionary, with keys as the names
     of the semantic pointers and values as the `.SemanticPointer` objects
@@ -93,13 +94,13 @@ class Vocabulary:
         self.parent = None
 
     def create_pointer(self, attempts=100, unitary=False):
-        """Create a new semantic pointer.
+        """
+        Create a new semantic pointer.
 
-        This will take into account the randomize and max_similarity
-        parameters from self. If a pointer satisfying max_similarity
-        is not generated after the specified number of attempts, the
-        candidate pointer with lowest maximum cosine with all existing
-        pointers is returned.
+        This will take into account the randomize and max_similarity parameters
+        from self. If a pointer satisfying max_similarity is not generated after
+        the specified number of attempts, the candidate pointer with lowest
+        maximum cosine with all existing pointers is returned.
         """
         if self.randomize:
             if self.vectors.shape[0] == 0:
@@ -137,11 +138,12 @@ class Vocabulary:
         return p
 
     def __getitem__(self, key):
-        """Return the semantic pointer with the requested name.
+        """
+        Return the semantic pointer with the requested name.
 
-        If one does not exist, automatically create one. The key must be
-        a valid semantic pointer name, which is any Python identifier starting
-        with a capital letter.
+        If one does not exist, automatically create one. The key must be a valid
+        semantic pointer name, which is any Python identifier starting with a
+        capital letter.
         """
         if not key[0].isupper():
             raise SpaParseError("Semantic pointers must begin with a capital letter.")
@@ -156,7 +158,8 @@ class Vocabulary:
         return value
 
     def add(self, key, p):
-        """Add a new semantic pointer to the vocabulary.
+        """
+        Add a new semantic pointer to the vocabulary.
 
         The pointer value can be a `.SemanticPointer` or a vector.
         """
@@ -196,10 +199,11 @@ class Vocabulary:
 
     @include_pairs.setter
     def include_pairs(self, value):
-        """Adjusts whether key pairs are kept track of by the vocabulary.
+        """
+        Adjusts whether key pairs are kept track of by the vocabulary.
 
-        If this is turned on, we need to compute all the pairs of terms
-        already existing.
+        If this is turned on, we need to compute all the pairs of terms already
+        existing.
         """
         if value == self._include_pairs:
             return
@@ -218,7 +222,8 @@ class Vocabulary:
             self.vector_pairs = None
 
     def parse(self, text):
-        """Evaluate a text string and return the corresponding SemanticPointer.
+        """
+        Evaluate a text string and return the corresponding SemanticPointer.
 
         This uses the Python ``eval()`` function, so any Python operators that
         have been defined for SemanticPointers are valid (``+``, ``-``, ``*``,
@@ -266,7 +271,8 @@ class Vocabulary:
         terms=None,
         normalize=False,
     ):
-        """Return a human-readable text version of the provided vector.
+        """
+        Return a human-readable text version of the provided vector.
 
         This is meant to give a quick text version of a vector for display
         purposes. To do this, compute the dot product between the vector
@@ -331,7 +337,8 @@ class Vocabulary:
         return join.join(["%0.2f%s" % (sim, key) for (sim, key) in r])
 
     def dot(self, v):
-        """Returns the dot product with all terms in the Vocabulary.
+        """
+        Returns the dot product with all terms in the Vocabulary.
 
         Input parameter can either be a `.SemanticPointer` or a vector.
         """
@@ -340,7 +347,8 @@ class Vocabulary:
         return np.dot(self.vectors, v)
 
     def dot_pairs(self, v):
-        """Returns the dot product with all pairs of terms in the Vocabulary.
+        """
+        Returns the dot product with all pairs of terms in the Vocabulary.
 
         Input parameter can either be a `.SemanticPointer` or a vector.
         """
@@ -356,7 +364,8 @@ class Vocabulary:
         return np.dot(self.vector_pairs, v)
 
     def transform_to(self, other, keys=None):
-        """Create a linear transform from one Vocabulary to another.
+        """
+        Create a linear transform from one Vocabulary to another.
 
         This is simply the sum of the outer products of the corresponding
         terms in each Vocabulary.
@@ -400,7 +409,8 @@ class Vocabulary:
             return t
 
     def prob_cleanup(self, similarity, vocab_size, steps=10000):
-        """Estimate the chance of successful cleanup.
+        """
+        Estimate the chance of successful cleanup.
 
         This returns the chance that, out of vocab_size randomly chosen
         vectors, at least one of them will be closer to a particular
@@ -438,7 +448,8 @@ class Vocabulary:
         return pcorrect
 
     def extend(self, keys, unitary=False):
-        """Extends the vocabulary with additional keys.
+        """
+        Extends the vocabulary with additional keys.
 
         Creates and adds the semantic pointers listed in keys to the
         vocabulary.
@@ -468,7 +479,8 @@ class Vocabulary:
                 self[key]
 
     def create_subset(self, keys):
-        """Returns the subset of this vocabulary.
+        """
+        Returns the subset of this vocabulary.
 
         Creates and returns a subset of the current vocabulary that contains
         all the semantic pointers found in keys.

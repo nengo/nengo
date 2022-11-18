@@ -128,7 +128,7 @@ def test_context_is_threadsafe():
     class CheckIndependence(ThreadedAssertion):
         def init_thread(self, worker):
             setattr(worker, "model", nengo.Network())
-            worker.model.__enter__()
+            worker.model.__enter__()  # pylint: disable=unnecessary-dunder-call
 
         def assert_thread(self, worker):
             assert list(nengo.Network.context) == [worker.model]

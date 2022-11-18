@@ -5,7 +5,8 @@ from nengo.utils.numpy import is_number
 
 
 class Symbol:
-    """A set of semantic pointer symbols and associated math.
+    """
+    A set of semantic pointer symbols and associated math.
 
     This is an abstract semantic pointer (not associated with a particular
     vocabulary or dimension). It is just meant for keeping track of the
@@ -70,7 +71,8 @@ class Symbol:
 
 
 class Source:
-    """A particular source of a vector for the action system.
+    """
+    A particular source of a vector for the action system.
 
     This will always refer to a particular named output from a
     `.spa.module.Module`. It also tracks a single `.Symbol` which represents
@@ -127,7 +129,8 @@ class Source:
 
 
 class DotProduct:
-    """The dot product of a Source and a Source or a Source and a Symbol.
+    """
+    The dot product of a Source and a Source or a Source and a Symbol.
 
     This represents a similarity measure for computing the utility of
     an action. It also maintains a scaling factor on the result,

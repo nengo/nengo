@@ -10,7 +10,7 @@ from nengo.utils.numpy import rms
 @pytest.mark.parametrize("invert_a", [True, False])
 @pytest.mark.parametrize("invert_b", [True, False])
 def test_circularconv_transforms(invert_a, invert_b, rng, allclose):
-    """Test the circular convolution transforms"""
+    """Test the circular convolution transforms."""
     dims = 100
     x = rng.randn(dims)
     y = rng.randn(dims)
@@ -26,7 +26,8 @@ def test_circularconv_transforms(invert_a, invert_b, rng, allclose):
 
 
 def test_input_magnitude(Simulator, seed, rng, dims=16, magnitude=10):
-    """Test to make sure the magnitude scaling works.
+    """
+    Test to make sure the magnitude scaling works.
 
     Builds two different CircularConvolution networks, one with the correct
     magnitude and one with 1.0 as the input_magnitude.

@@ -9,7 +9,7 @@ from nengo.utils.stdlib import Timer
 
 
 def test_multirun(Simulator, rng, allclose):
-    """Test probing the time on multiple runs"""
+    """Test probing the time on multiple runs."""
 
     # set rtol a bit higher, since OCL model.t accumulates error over time
     rtol = 0.0001
@@ -32,7 +32,7 @@ def test_multirun(Simulator, rng, allclose):
 
 
 def test_dts(Simulator, seed, rng):
-    """Test probes with different dts and runtimes"""
+    """Test probes with different dts and runtimes."""
 
     for _ in range(100):
         dt = rng.uniform(0.001, 0.1)  # simulator dt
@@ -54,7 +54,11 @@ def test_dts(Simulator, seed, rng):
 
 
 def test_large(Simulator, seed, allclose):
-    """Test with a lot of big probes. Can also be used for speed."""
+    """
+    Test with a lot of big probes.
+
+    Can also be used for speed.
+    """
 
     n = 10
 
@@ -195,7 +199,8 @@ def test_solver_defaults():
     solver2 = nengo.solvers.LstsqL2(reg=0.911)
     solver3 = nengo.solvers.LstsqL2(reg=0.898)
 
-    make_probe = lambda: nengo.Probe(nengo.Ensemble(100, 1))
+    def make_probe():
+        return nengo.Probe(nengo.Ensemble(100, 1))
 
     with nengo.Network() as model:
         a = make_probe()

@@ -109,21 +109,30 @@ def _test_pes(
 
 
 def test_pes_ens_ens(Simulator, NonDirectNeuronType, plt, seed, allclose):
-    function = lambda x: [x[1], x[0]]
-    _test_pes(Simulator, NonDirectNeuronType, plt, seed, allclose, function=function)
+    _test_pes(
+        Simulator,
+        NonDirectNeuronType,
+        plt,
+        seed,
+        allclose,
+        function=lambda x: [x[1], x[0]],
+    )
 
 
 def test_pes_weight_solver(Simulator, plt, seed, allclose):
-    function = lambda x: [x[1], x[0]]
     _test_pes(
-        Simulator, nengo.LIF, plt, seed, allclose, function=function, weight_solver=True
+        Simulator,
+        nengo.LIF,
+        plt,
+        seed,
+        allclose,
+        function=lambda x: [x[1], x[0]],
+        weight_solver=True,
     )
 
 
 def test_pes_ens_slice(Simulator, plt, seed, allclose):
     vin = [0.5, -0.5]
-    vout = [vin[0] ** 2 + vin[1] ** 2]
-    function = lambda x: [x[0] - x[1]]
     _test_pes(
         Simulator,
         nengo.LIF,
@@ -131,8 +140,8 @@ def test_pes_ens_slice(Simulator, plt, seed, allclose):
         seed,
         allclose,
         vin=vin,
-        vout=vout,
-        function=function,
+        vout=[vin[0] ** 2 + vin[1] ** 2],
+        function=lambda x: [x[0] - x[1]],
         post_slice=slice(0, 1),
     )
 
@@ -243,7 +252,8 @@ def test_pes_transform(Simulator, seed, allclose):
 
 
 def test_pes_multidim_error(Simulator, seed):
-    """Test that PES works on error connections mapping from N to 1 dims.
+    """
+    Test that PES works on error connections mapping from N to 1 dims.
 
     Note that the transform is applied before the learning rule, so the error
     signal should be 1-dimensional.
@@ -586,7 +596,7 @@ def test_learningruletypeparam():
 
 
 def test_learningrule_attr(seed):
-    """Test learning_rule attribute on Connection"""
+    """Test learning_rule attribute on Connection."""
 
     def check_rule(rule, conn, rule_type):
         assert rule.connection is conn and rule.learning_rule_type is rule_type
@@ -834,7 +844,7 @@ def test_rls_scalar_spiking(Simulator, seed, plt):
 
 
 def test_frozen():
-    """Test attributes inherited from FrozenObject"""
+    """Test attributes inherited from FrozenObject."""
     a = PES(learning_rate=2e-3, pre_synapse=4e-3)
     b = PES(learning_rate=2e-3, pre_synapse=4e-3)
     c = PES(learning_rate=2e-3, pre_synapse=5e-3)
@@ -865,7 +875,8 @@ def test_pes_direct_errors():
 
 
 def test_custom_type(Simulator, allclose):
-    """Test with custom learning rule type.
+    """
+    Test with custom learning rule type.
 
     A custom learning type may have ``size_in`` not equal to 0, 1, or None.
     """

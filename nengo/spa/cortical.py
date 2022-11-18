@@ -7,7 +7,8 @@ from nengo.spa.module import Module
 
 
 class Cortical(Module):
-    """A SPA module for forming connections between other modules.
+    """
+    A SPA module for forming connections between other modules.
 
     Parameters
     ----------
@@ -71,7 +72,8 @@ class Cortical(Module):
                         )
 
     def add_direct_effect(self, target_name, value):
-        """Make a fixed constant input to a module.
+        """
+        Make a fixed constant input to a module.
 
         Parameters
         ----------
@@ -92,7 +94,8 @@ class Cortical(Module):
             )
 
     def add_route_effect(self, target_name, source_name, transform, inverted):
-        """Connect a module output to a module input.
+        """
+        Connect a module output to a module input.
 
         Parameters
         ----------
@@ -124,7 +127,8 @@ class Cortical(Module):
             nengo.Connection(source, target, transform=t, synapse=self.synapse)
 
     def add_conv_effect(self, target_name, effect):
-        """Convolve the output of two modules and send result to target.
+        """
+        Convolve the output of two modules and send result to target.
 
         Parameters
         ----------

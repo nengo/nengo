@@ -6,10 +6,11 @@ from nengo.utils.numpy import is_integer, is_number
 
 
 class SemanticPointer:
-    """A Semantic Pointer, based on Holographic Reduced Representations.
+    """
+    A Semantic Pointer, based on Holographic Reduced Representations.
 
-    Operators are overloaded so that ``+`` and ``-`` are addition,
-    ``*`` is circular convolution, and ``~`` is the inversion operator.
+    Operators are overloaded so that ``+`` and ``-`` are addition, ``*`` is
+    circular convolution, and ``~`` is the inversion operator.
     """
 
     def __init__(self, data, rng=None):
@@ -83,7 +84,8 @@ class SemanticPointer:
         return self
 
     def __mul__(self, other):
-        """Multiplication of two SemanticPointers is circular convolution.
+        """
+        Multiplication of two SemanticPointers is circular convolution.
 
         If multiplied by a scalar, we do normal multiplication.
         """
@@ -102,7 +104,8 @@ class SemanticPointer:
         return SemanticPointer(data=x)
 
     def __rmul__(self, other):
-        """Multiplication of two SemanticPointers is circular convolution.
+        """
+        Multiplication of two SemanticPointers is circular convolution.
 
         If mutliplied by a scaler, we do normal multiplication.
         """
@@ -116,7 +119,8 @@ class SemanticPointer:
             )
 
     def __imul__(self, other):
-        """Multiplication of two SemanticPointers is circular convolution.
+        """
+        Multiplication of two SemanticPointers is circular convolution.
 
         If mutliplied by a scaler, we do normal multiplication.
         """
@@ -131,10 +135,11 @@ class SemanticPointer:
         return self
 
     def compare(self, other):
-        """Return the similarity between two SemanticPointers.
+        """
+        Return the similarity between two SemanticPointers.
 
-        This is the normalized dotproduct, or (equivalently), the cosine of
-        the angle between the two vectors.
+        This is the normalized dotproduct, or (equivalently), the cosine of the
+        angle between the two vectors.
         """
         if isinstance(other, SemanticPointer):
             other = other.v
@@ -150,7 +155,8 @@ class SemanticPointer:
         return np.dot(self.v, other)
 
     def distance(self, other):
-        """Return a distance measure between the vectors.
+        """
+        Return a distance measure between the vectors.
 
         This is ``1-cos(angle)``, so that it is 0 when they are identical, and
         the distance gets larger as the vectors are farther apart.
@@ -158,7 +164,8 @@ class SemanticPointer:
         return 1 - self.compare(other)
 
     def __invert__(self):
-        """Return a reorganized vector that acts as an inverse for convolution.
+        """
+        Return a reorganized vector that acts as an inverse for convolution.
 
         This reorganization turns circular convolution into circular
         correlation, meaning that ``A*B*~B`` is approximately ``A``.
@@ -180,7 +187,8 @@ class SemanticPointer:
         return np.sum((self - other).v ** 2) / len(self.v)
 
     def get_convolution_matrix(self):
-        """Return the matrix that does a circular convolution by this vector.
+        """
+        Return the matrix that does a circular convolution by this vector.
 
         This should be such that ``A*B == dot(A.get_convolution_matrix, B.v)``.
         """

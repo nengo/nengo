@@ -136,7 +136,8 @@ def check_attrs(obj):
 
 
 class Fingerprint:
-    """Fingerprint of an object instance.
+    """
+    Fingerprint of an object instance.
 
     A finger print is equal for two instances if and only if they are of the
     same type and have the same attributes.
@@ -265,10 +266,11 @@ class Fingerprint:
 
     @classmethod
     def supports(cls, obj):
-        """Determines whether ``obj`` can be fingerprinted.
+        """
+        Determines whether ``obj`` can be fingerprinted.
 
-        Uses the `.whitelist`  method and runs the check function associated
-        with the type of ``obj``.
+        Uses the `.whitelist`  method and runs the check function associated with
+        the type of ``obj``.
         """
         typ = type(obj)
         in_whitelist = typ in cls.WHITELIST
@@ -277,7 +279,8 @@ class Fingerprint:
 
     @classmethod
     def whitelist(cls, typ, fn=None):
-        """Whitelist the type given in ``typ``.
+        """
+        Whitelist the type given in ``typ``.
 
         Will run the check function ``fn`` on objects if provided.
         """
@@ -287,7 +290,8 @@ class Fingerprint:
 
 
 class CacheIndex:
-    """Cache index mapping keys to (filename, start, end) tuples.
+    """
+    Cache index mapping keys to (filename, start, end) tuples.
 
     Once instantiated the cache index has to be used in a ``with`` block to
     allow access. The index will not be loaded before the ``with`` block is
@@ -395,7 +399,8 @@ class CacheIndex:
 
 
 class WriteableCacheIndex(CacheIndex):
-    """Writable cache index mapping keys to files.
+    """
+    Writable cache index mapping keys to files.
 
     This class allows write access to the cache index.
 
@@ -526,7 +531,8 @@ class WriteableCacheIndex(CacheIndex):
             )
 
     def sync(self):
-        """Write changes to the cache index back to disk.
+        """
+        Write changes to the cache index back to disk.
 
         The call to this function will be locked by a file lock.
         """
@@ -562,7 +568,8 @@ class WriteableCacheIndex(CacheIndex):
 
 
 class DecoderCache:
-    """Cache for decoders.
+    """
+    Cache for decoders.
 
     Hashes the arguments to the decoder solver and stores the result in a file
     which will be reused in later calls with the same arguments.
@@ -627,7 +634,8 @@ class DecoderCache:
 
     @staticmethod
     def get_default_dir():
-        """Returns the default location of the cache.
+        """
+        Returns the default location of the cache.
 
         Returns
         -------
@@ -648,7 +656,8 @@ class DecoderCache:
         return self._fd
 
     def get_files(self):
-        """Returns all of the files in the cache.
+        """
+        Returns all of the files in the cache.
 
         Returns
         -------
@@ -661,7 +670,8 @@ class DecoderCache:
         return files
 
     def get_size(self):
-        """Returns the size of the cache with units as a string.
+        """
+        Returns the size of the cache with units as a string.
 
         Returns
         -------
@@ -670,7 +680,8 @@ class DecoderCache:
         return bytes2human(self.get_size_in_bytes())
 
     def get_size_in_bytes(self):
-        """Returns the size of the cache in bytes as an int.
+        """
+        Returns the size of the cache in bytes as an int.
 
         Returns
         -------
@@ -693,7 +704,8 @@ class DecoderCache:
                 self.remove_file(path)
 
     def shrink(self, limit=None):  # noqa: C901
-        """Reduces the size of the cache to meet a limit.
+        """
+        Reduces the size of the cache to meet a limit.
 
         Parameters
         ----------
@@ -740,7 +752,8 @@ class DecoderCache:
         safe_remove(path)
 
     def wrap_solver(self, solver_fn):  # noqa: C901
-        """Takes a decoder solver and wraps it to use caching.
+        """
+        Takes a decoder solver and wraps it to use caching.
 
         Parameters
         ----------

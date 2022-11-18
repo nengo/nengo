@@ -143,7 +143,8 @@ def test_grouped_convinc_2d(
 def test_convtransposeinc_2d(
     channels_last, strides, kernel_size, padding, rng, allclose, plt
 ):
-    """Test ConvTransposeInc by ensuring it is the transpose of ConvInc.
+    """
+    Test ConvTransposeInc by ensuring it is the transpose of ConvInc.
 
     Since convolution is a linear operator, it can be expressed as a matrix ``A``.
     We can therefore state that ``C.dot(A.dot(x)) == (A.T.dot(C.T)).T.dot(x)``,

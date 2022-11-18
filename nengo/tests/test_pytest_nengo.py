@@ -5,7 +5,7 @@ pytest_plugins = ["pytester"]
 
 @pytest.mark.parametrize("xfail", (True, False))
 def test_unsupported(xfail, testdir):
-    """Test ``nengo_test_unsupported`` config option and ``--unsupported`` arg"""
+    """Test ``nengo_test_unsupported`` config option and ``--unsupported`` arg."""
 
     # Set up a dummy nengo package directory, so that `pytest_nengo.is_nengo_test`
     # returns True

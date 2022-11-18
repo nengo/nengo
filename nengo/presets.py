@@ -6,7 +6,8 @@ from nengo.ensemble import Ensemble
 
 
 def ThresholdingEnsembles(threshold, intercept_width=0.15, radius=1.0):
-    """Configuration preset for a thresholding ensemble.
+    """
+    Configuration preset for a thresholding ensemble.
 
     This preset adjust ensemble parameters for thresholding. The ensemble's
     neurons will only fire for values above threshold. One can either decode

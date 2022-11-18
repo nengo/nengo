@@ -6,7 +6,8 @@ from nengo.node import Node
 
 
 class Integrator(Network):
-    """An ensemble that accumulates input and maintains state.
+    """
+    An ensemble that accumulates input and maintains state.
 
     This is accomplished through scaling the input signal and recurrently
     connecting an ensemble to itself to maintain state.

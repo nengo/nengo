@@ -8,7 +8,8 @@ from nengo.rc import rc
 
 
 class SimProcess(Operator):
-    """Simulate a process.
+    """
+    Simulate a process.
 
     Parameters
     ----------
@@ -139,7 +140,8 @@ class SimProcess(Operator):
 
 @Builder.register(Process)
 def build_process(model, process, sig_in=None, sig_out=None, mode="set"):
-    """Builds a `.Process` object into a model.
+    """
+    Builds a `.Process` object into a model.
 
     Parameters
     ----------

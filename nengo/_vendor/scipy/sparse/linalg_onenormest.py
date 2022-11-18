@@ -97,7 +97,6 @@ def onenormest(A, t=2, itmax=5, compute_v=False, compute_w=False):
     .. [2] Awad H. Al-Mohy and Nicholas J. Higham (2009),
            "A new scaling and squaring algorithm for the matrix exponential."
            SIAM J. Matrix Anal. Appl. Vol. 31, No. 3, pp. 970-989.
-
     """
 
     # Check the input.
@@ -138,10 +137,8 @@ def onenormest(A, t=2, itmax=5, compute_v=False, compute_w=False):
 
 
 def _blocked_elementwise(func):
-    """
-    Decorator for an elementwise function, to apply it blockwise along
-    first dimension, to avoid excessive memory usage in temporaries.
-    """
+    """Decorator for an elementwise function, to apply it blockwise along first
+    dimension, to avoid excessive memory usage in temporaries."""
     block_size = 2**20
 
     def wrapper(x):
@@ -167,7 +164,6 @@ def sign_round_up(X):
     "Everything in this section remains valid for complex matrices
     provided that sign(A) is redefined as the matrix (aij / |aij|)
     (and sign(0) = 1) transposes are replaced by conjugate transposes."
-
     """
     Y = X.copy()
     Y[Y == 0] = 1
@@ -274,7 +270,6 @@ def _algorithm_2_2(A, AT, t):  # noqa: C901
     its usage in algorithm 2.4.  This algorithm 2.2 may be easier to test,
     so it gives a chance of uncovering bugs related to indexing
     which could have propagated less noticeably to algorithm 2.4.
-
     """
     A_linear_operator = aslinearoperator(A)
     AT_linear_operator = aslinearoperator(AT)
@@ -377,7 +372,6 @@ def _onenormest_core(A, AT, t, itmax):  # noqa: C901
     Notes
     -----
     This is algorithm 2.4.
-
     """
     # This function is a more or less direct translation
     # of Algorithm 2.4 from the Higham and Tisseur (2000) paper.

@@ -38,7 +38,8 @@ def check_ipy_version(min_version):
 
 
 def hide_input():
-    """Hide the input of the Jupyter notebook input block this is executed in.
+    """
+    Hide the input of the Jupyter notebook input block this is executed in.
 
     Returns a link to toggle the visibility of the input block.
     """
@@ -123,7 +124,8 @@ def load_notebook(nb_path):
 
 
 def export_py(nb, dest_path=None):
-    """Convert notebook to Python script.
+    """
+    Convert notebook to Python script.
 
     Optionally saves script to dest_path.
     """

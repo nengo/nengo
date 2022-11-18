@@ -7,7 +7,8 @@ from nengo.spa.module import Module
 
 
 class Thalamus(nengo.networks.Thalamus, Module):
-    """A thalamus, implementing the effects for an associated basal ganglia.
+    """
+    A thalamus, implementing the effects for an associated basal ganglia.
 
     See `.spa.BasalGanglia` for information on the basal ganglia, and
     `.networks.Thalamus` for details on the underlying network.
@@ -143,7 +144,8 @@ class Thalamus(nengo.networks.Thalamus, Module):
                         )
 
     def add_direct_effect(self, index, target_name, value):
-        """Cause an action to drive a particular module input to value.
+        """
+        Cause an action to drive a particular module input to value.
 
         Parameters
         ----------
@@ -167,13 +169,13 @@ class Thalamus(nengo.networks.Thalamus, Module):
             )
 
     def get_gate(self, index, target_name):
-        """Return the gate for an action.
+        """
+        Return the gate for an action.
 
-        The gate will be created if it does not already exist. The gate
-        neurons have no activity when the action is selected, but are
-        active when the action is not selected. This makes the gate useful
-        for inhibiting ensembles that should only be active when this
-        action is active.
+        The gate will be created if it does not already exist. The gate neurons
+        have no activity when the action is selected, but are active when the
+        action is not selected. This makes the gate useful for inhibiting
+        ensembles that should only be active when this action is active.
         """
 
         target_module = self.spa.get_module(target_name)
@@ -205,7 +207,8 @@ class Thalamus(nengo.networks.Thalamus, Module):
         return self.gates[index]
 
     def add_route_effect(self, index, target_name, source_name, transform, inverted):
-        """Set an action to send source to target with the given transform.
+        """
+        Set an action to send source to target with the given transform.
 
         Parameters
         ----------
@@ -284,7 +287,8 @@ class Thalamus(nengo.networks.Thalamus, Module):
             nengo.Connection(channel.output, target, synapse=self.synapse_channel)
 
     def add_conv_effect(self, index, target_name, effect):
-        """Set an action to combine two sources and send to target.
+        """
+        Set an action to combine two sources and send to target.
 
         Parameters
         ----------

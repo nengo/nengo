@@ -137,7 +137,8 @@ class OutputParam(Parameter):
 
 
 class Node(NengoObject):
-    """Provide non-neural inputs to Nengo objects and process outputs.
+    """
+    Provide non-neural inputs to Nengo objects and process outputs.
 
     Nodes can accept input, and perform arbitrary computations
     for the purpose of controlling a Nengo simulation.

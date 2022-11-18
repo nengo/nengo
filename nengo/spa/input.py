@@ -12,7 +12,8 @@ def make_parse_func(func, vocab):
 
 
 class Input(Module):
-    """A SPA module for providing external inputs to other modules.
+    """
+    A SPA module for providing external inputs to other modules.
 
     The parameters passed to this module indicate the module input name
     and the function to execute to generate inputs to that module.

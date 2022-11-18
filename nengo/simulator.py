@@ -1,7 +1,8 @@
-"""Reference simulator for nengo models.
+"""
+Reference simulator for nengo models.
 
-This backend is relatively fast, and works on general purpose computers.
-Other Nengo backends provide more specialized Simulators for custom platforms.
+This backend is relatively fast, and works on general purpose computers. Other
+Nengo backends provide more specialized Simulators for custom platforms.
 """
 
 import logging
@@ -24,7 +25,8 @@ logger = logging.getLogger(__name__)
 
 
 class Simulator:
-    r"""Reference simulator for Nengo models.
+    r"""
+    Reference simulator for Nengo models.
 
     The simulator takes a `.Network` and builds internal data structures to
     run the model defined by that network. Run the simulator with the
@@ -143,7 +145,6 @@ class Simulator:
         simulate the network.
     signals : SignalDict
         The `.SignalDict` mapping from `.Signal` instances to NumPy arrays.
-
     """
 
     def __init__(
@@ -277,7 +278,8 @@ class Simulator:
         return self._time
 
     def clear_probes(self):
-        """Clear all probe histories.
+        """
+        Clear all probe histories.
 
         .. versionadded:: 3.0.0
         """
@@ -286,11 +288,12 @@ class Simulator:
         self.data.reset()  # clear probe cache
 
     def close(self):
-        """Closes the simulator.
+        """
+        Closes the simulator.
 
-        Any call to `.Simulator.run`, `.Simulator.run_steps`,
-        `.Simulator.step`, and `.Simulator.reset` on a closed simulator raises
-        a `.SimulatorClosed` exception.
+        Any call to `.Simulator.run`, `.Simulator.run_steps`, `.Simulator.step`,
+        and `.Simulator.reset` on a closed simulator raises a `.SimulatorClosed`
+        exception.
         """
         self.closed = True
         self.signals = None  # signals may no longer exist on some backends
@@ -310,7 +313,8 @@ class Simulator:
         self._time = self.signals[self.model.time].item()
 
     def reset(self, seed=None):
-        """Reset the simulator state.
+        """
+        Reset the simulator state.
 
         Parameters
         ----------
@@ -341,7 +345,8 @@ class Simulator:
         self._probe_step_time()
 
     def run(self, time_in_seconds, progress_bar=None):
-        """Simulate for the given length of time.
+        """
+        Simulate for the given length of time.
 
         If the given length of time is not a multiple of ``dt``,
         it will be rounded to the nearest ``dt``. For example, if ``dt``
@@ -386,7 +391,8 @@ class Simulator:
             self.run_steps(steps, progress_bar=progress_bar)
 
     def run_steps(self, steps, progress_bar=None):
-        """Simulate for the given number of ``dt`` steps.
+        """
+        Simulate for the given number of ``dt`` steps.
 
         Parameters
         ----------
@@ -425,7 +431,8 @@ class Simulator:
         self._probe()
 
     def trange(self, dt=None, sample_every=None):
-        """Create a vector of times matching probed data.
+        """
+        Create a vector of times matching probed data.
 
         Note that the range does not start at 0 as one might expect, but at
         the first timestep (i.e., ``dt``).
@@ -457,7 +464,8 @@ class Simulator:
 
 
 class SimulationData(Mapping):
-    """Data structure used to access simulation data from the model.
+    """
+    Data structure used to access simulation data from the model.
 
     The main use case for this is to access Probe data; for example,
     ``probe_data = sim.data[my_probe]``. However, it is also used to access the
@@ -478,10 +486,11 @@ class SimulationData(Mapping):
         self._cache = {}
 
     def __getitem__(self, key):
-        """Return simulation data for ``key`` object.
+        """
+        Return simulation data for ``key`` object.
 
-        For speed reasons, the simulator uses Python lists for Probe data
-        and we want to return NumPy arrays.
+        For speed reasons, the simulator uses Python lists for Probe data and we
+        want to return NumPy arrays.
         """
         if key not in self._cache or len(self._cache[key]) != len(self.raw[key]):
             rval = self.raw[key]

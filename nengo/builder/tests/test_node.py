@@ -5,7 +5,7 @@ from nengo.exceptions import BuildError
 
 
 def test_build_node_error(Simulator):
-    """Tests a build error for the build_node function"""
+    """Tests a build error for the build_node function."""
 
     class BadOutputType:
         pass

@@ -1,4 +1,5 @@
-"""Simple graph manipulation algorithms.
+"""
+Simple graph manipulation algorithms.
 
 Nengo models are essentially graphs where ensembles, nodes, and networks
 are graph vertices, and connections are edges. We make use of this fact
@@ -40,7 +41,8 @@ from .stdlib import FrozenOrderedSet, OrderedSet
 
 
 class BidirectionalDAG:
-    """Directed acyclic graph supporting bidirectional traversal.
+    """
+    Directed acyclic graph supporting bidirectional traversal.
 
     Parameters
     ----------
@@ -61,7 +63,8 @@ class BidirectionalDAG:
         self.backward = reverse_edges(forward)
 
     def merge(self, vertices, merged_vertex):
-        """Merges vertices in the graph.
+        """
+        Merges vertices in the graph.
 
         Parameters
         ----------
@@ -93,7 +96,8 @@ class BidirectionalDAG:
 
 
 def toposort(edges):
-    """Topological sort algorithm by Kahn [1]_.
+    """
+    Topological sort algorithm by Kahn [1]_.
 
     Complexity is O(nodes + vertices).
 
@@ -153,7 +157,8 @@ def toposort(edges):
 
 
 def transitive_closure(edges, topo_sorted=None):
-    """Constructs the transitive closure of a directed acyclic graph (DAG).
+    """
+    Constructs the transitive closure of a directed acyclic graph (DAG).
 
     The complexity is O(nodes + vertices).
 
@@ -192,7 +197,8 @@ def transitive_closure(edges, topo_sorted=None):
 
 
 def reverse_edges(edges):
-    """Reverses direction of dependence dict.
+    """
+    Reverses direction of dependence dict.
 
     Parameters
     ----------

@@ -10,7 +10,8 @@ from nengo.utils.numpy import is_array_like
 
 @Builder.register(Node)
 def build_node(model, node):
-    """Builds a `.Node` object into a model.
+    """
+    Builds a `.Node` object into a model.
 
     The node build function is relatively simple. It involves creating input
     and output signals, and connecting them with an `.Operator` that depends

@@ -6,7 +6,8 @@ from nengo.node import Node
 
 
 class Oscillator(Network):
-    """A two-dimensional ensemble with interacting recurrent connections.
+    """
+    A two-dimensional ensemble with interacting recurrent connections.
 
     The ensemble connects to itself in a manner similar to the integrator;
     however, here the two dimensions interact with each other to implement

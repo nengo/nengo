@@ -4,7 +4,8 @@ from nengo.spa.module import Module
 
 
 class Bind(Module):
-    """A module for binding together two inputs.
+    """
+    A module for binding together two inputs.
 
     Binding is done with circular convolution. For more details on how
     this is computed, see the underlying `~.networks.CircularConvolution`

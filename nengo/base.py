@@ -19,7 +19,8 @@ from nengo.utils.numpy import as_shape, is_integer, maxint, maxseed
 
 
 class NetworkMember(type):
-    """A metaclass used to add instances of derived classes to networks.
+    """
+    A metaclass used to add instances of derived classes to networks.
 
     Inheriting from this class means that Network.add will be invoked after
     initializing the object, unless add_to_container=False is passed to the
@@ -39,7 +40,8 @@ class NetworkMember(type):
 
 
 class NengoObject(SupportDefaultsMixin, metaclass=NetworkMember):
-    """A base class for Nengo objects.
+    """
+    A base class for Nengo objects.
 
     Parameters
     ----------
@@ -144,7 +146,8 @@ class NengoObject(SupportDefaultsMixin, metaclass=NetworkMember):
 
 
 class ObjView:
-    """Container for a slice with respect to some object.
+    """
+    Container for a slice with respect to some object.
 
     This is used by the __getitem__ of Neurons, Node, and Ensemble, in order
     to pass slices of those objects to Connection. This is a notational
@@ -242,7 +245,8 @@ class NengoObjectParam(Parameter):
 
 
 class Process(FrozenObject):
-    """A general system with input, output, and state.
+    """
+    A general system with input, output, and state.
 
     For more details on how to use processes and make
     custom process subclasses, see :doc:`examples/advanced/processes`.
@@ -291,7 +295,8 @@ class Process(FrozenObject):
         self.seed = seed
 
     def apply(self, x, d=None, dt=None, rng=np.random, copy=True, **kwargs):
-        """Run process on a given input.
+        """
+        Run process on a given input.
 
         Keyword arguments that do not appear in the parameter list below
         will be passed to the ``make_step`` function of this process.
@@ -322,7 +327,8 @@ class Process(FrozenObject):
         return output
 
     def get_rng(self, rng):
-        """Get a properly seeded independent RNG for the process step.
+        """
+        Get a properly seeded independent RNG for the process step.
 
         Parameters
         ----------
@@ -333,7 +339,8 @@ class Process(FrozenObject):
         return np.random.RandomState(seed)
 
     def make_state(self, shape_in, shape_out, dt, dtype=None):
-        """Get a dictionary of signals to represent the state of this process.
+        """
+        Get a dictionary of signals to represent the state of this process.
 
         The builder uses this to allocate memory for the process state, so
         that the state can be represented as part of the whole simulator state.
@@ -362,7 +369,8 @@ class Process(FrozenObject):
         return {}  # Implement if the process has a state
 
     def make_step(self, shape_in, shape_out, dt, rng, state):
-        """Create function that advances the process forward one time step.
+        """
+        Create function that advances the process forward one time step.
 
         This must be implemented by all custom processes. The parameters below
         indicate what information is provided by the builder.
@@ -387,7 +395,8 @@ class Process(FrozenObject):
         raise NotImplementedError("Process must implement `make_step` method.")
 
     def run(self, t, d=None, dt=None, rng=np.random, **kwargs):
-        """Run process without input for given length of time.
+        """
+        Run process without input for given length of time.
 
         Keyword arguments that do not appear in the parameter list below
         will be passed to the ``make_step`` function of this process.
@@ -408,7 +417,8 @@ class Process(FrozenObject):
         return self.run_steps(n_steps, d=d, dt=dt, rng=rng, **kwargs)
 
     def run_steps(self, n_steps, d=None, dt=None, rng=np.random, **kwargs):
-        """Run process without input for given number of steps.
+        """
+        Run process without input for given number of steps.
 
         Keyword arguments that do not appear in the parameter list below
         will be passed to the ``make_step`` function of this process.
@@ -436,7 +446,8 @@ class Process(FrozenObject):
         return output
 
     def ntrange(self, n_steps, dt=None):
-        """Create time points corresponding to a given number of steps.
+        """
+        Create time points corresponding to a given number of steps.
 
         Parameters
         ----------
@@ -449,7 +460,8 @@ class Process(FrozenObject):
         return dt * np.arange(1, n_steps + 1)
 
     def trange(self, t, dt=None):
-        """Create time points corresponding to a given length of time.
+        """
+        Create time points corresponding to a given length of time.
 
         Parameters
         ----------

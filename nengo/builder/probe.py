@@ -10,7 +10,8 @@ from nengo.probe import Probe
 
 
 class SimProbe(Operator):
-    """Mark a signal as being probed.
+    """
+    Mark a signal as being probed.
 
     This performs no computations, but marks ``signal`` as being read. This is
     necessary for the rare case in which a node with constant output is probed
@@ -40,7 +41,7 @@ class SimProbe(Operator):
 
     @property
     def signal(self):
-        """The probed signal"""
+        """The probed signal."""
         return self.reads[0]
 
     def make_step(self, signals, dt, rng):
@@ -51,11 +52,12 @@ class SimProbe(Operator):
 
 
 def conn_probe(model, probe):
-    """Build a "connection" probe type.
+    """
+    Build a "connection" probe type.
 
-    Connection probes create a connection from the target, and probe
-    the resulting signal (used when you want to probe the default
-    output of an object, which may not have a predefined signal).
+    Connection probes create a connection from the target, and probe the
+    resulting signal (used when you want to probe the default output of an
+    object, which may not have a predefined signal).
     """
 
     conn = Connection(
@@ -79,7 +81,8 @@ def conn_probe(model, probe):
 
 
 def signal_probe(model, key, probe):
-    """Build a "signal" probe type.
+    """
+    Build a "signal" probe type.
 
     Signal probes directly probe a target signal.
     """
@@ -114,7 +117,8 @@ probemap = {
 
 @Builder.register(Probe)
 def build_probe(model, probe):
-    """Builds a `.Probe` object into a model.
+    """
+    Builds a `.Probe` object into a model.
 
     Under the hood, there are two types of probes:
     connection probes and signal probes.

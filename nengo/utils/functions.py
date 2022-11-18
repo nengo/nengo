@@ -1,5 +1,6 @@
 def function_name(func):
-    """Returns the name of a function.
+    """
+    Returns the name of a function.
 
     Unlike accessing ``func.__name__``, this function is robust to the
     different types of objects that can be considered a function in Nengo.

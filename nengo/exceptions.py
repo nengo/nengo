@@ -2,7 +2,8 @@ import inspect
 
 
 class NengoException(Exception):
-    """Base class for Nengo exceptions.
+    """
+    Base class for Nengo exceptions.
 
     NengoException instances should not be created; this base class exists so
     that all exceptions raised by Nengo can be caught in a try / except block.
@@ -66,7 +67,8 @@ class ObsoleteError(NengoException):
 
 
 class MovedError(NengoException):
-    """A feature that has been moved elsewhere.
+    """
+    A feature that has been moved elsewhere.
 
     .. versionadded:: 3.0.0
     """

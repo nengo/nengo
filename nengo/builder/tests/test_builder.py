@@ -10,7 +10,7 @@ from nengo.builder.builder import Builder
 
 
 def test_seed_override(seed, allclose):
-    """Test that seeds are not overwritten by the seeding function"""
+    """Test that seeds are not overwritten by the seeding function."""
     with nengo.Network(seed=seed - 1) as net:
         a = nengo.Ensemble(10, 1, seed=seed - 2)
         b = nengo.Ensemble(10, 1, seed=seed + 2)
@@ -34,7 +34,7 @@ def test_seed_override(seed, allclose):
 
 
 def test_build_twice():
-    """Tests warning for building an object twice"""
+    """Tests warning for building an object twice."""
     model = nengo.builder.Model()
     ens = nengo.Ensemble(10, 1, add_to_container=False)
     model.seeds[ens] = 0
@@ -47,7 +47,7 @@ def test_build_twice():
 
 
 def test_register_builder_twice_warning():
-    """Tests warning for registering a builder twice"""
+    """Tests warning for registering a builder twice."""
 
     class Test:
         pass

@@ -119,7 +119,7 @@ def test_response_curves_direct_mode(Simulator, plt, seed, dimensions, allclose)
 
 
 def test_similarity(rng):
-    """Test _similarity, particularly for cols != 1 since this is untested otherwise"""
+    """Test _similarity, particularly for cols != 1 since this is untested otherwise."""
     N = 5
     D = 4
     encoders = rng.uniform(-1, 1, size=(N, D))

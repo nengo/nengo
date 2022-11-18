@@ -62,7 +62,6 @@ def _onenorm_matrix_power_nnm(A, p):
     -------
     out : float
         The 1-norm of the matrix power p of A.
-
     """
     # check input
     if int(p) != p or p < 0:
@@ -116,7 +115,6 @@ def _smart_matrix_product(A, B, alpha=None, structure=None):
     -------
     M : 2d ndarray
         Matrix product of A and B.
-
     """
     if len(A.shape) != 2:
         raise ValueError('expected A to be a rectangular matrix')
@@ -174,9 +172,7 @@ class MatrixPowerOperator(LinearOperator):
 
 
 class ProductOperator(LinearOperator):
-    """
-    For now, this is limited to products of multiple square matrices.
-    """
+    """For now, this is limited to products of multiple square matrices."""
 
     def __init__(self, *args, **kwargs):
         self._structure = kwargs.get('structure', None)
@@ -255,7 +251,6 @@ def _onenormest_matrix_power(
         The vector Av which has relatively large 1-norm.
         It can be thought of as an output of the linear operator
         that is relatively large in norm compared to the input.
-
     """
     return onenormest(MatrixPowerOperator(A, p, structure=structure))
 
@@ -297,7 +292,6 @@ def _onenormest_product(
         The vector Av which has relatively large 1-norm.
         It can be thought of as an output of the linear operator
         that is relatively large in norm compared to the input.
-
     """
     return onenormest(ProductOperator(*operator_seq, structure=structure))
 
@@ -306,10 +300,9 @@ class _ExpmPadeHelper(object):
     """
     Help lazily evaluate a matrix exponential.
 
-    The idea is to not do more work than we need for high expm precision,
-    so we lazily compute matrix powers and store or precompute
-    other properties of the matrix.
-
+    The idea is to not do more work than we need for high expm precision, so we
+    lazily compute matrix powers and store or precompute other properties of the
+    matrix.
     """
     def __init__(self, A, structure=None, use_exact_onenorm=False):
         """
@@ -541,7 +534,6 @@ def expm(A):
            "A New Scaling and Squaring Algorithm for the Matrix Exponential."
            SIAM Journal on Matrix Analysis and Applications.
            31 (3). pp. 970-989. ISSN 1095-7162
-
     """
     return _expm(A, use_exact_onenorm='auto')
 
@@ -629,7 +621,6 @@ def _solve_P_Q(U, V, structure=None):
     -----
     The `structure` argument is inspired by similar args
     for theano and cvxopt functions.
-
     """
     P = U + V
     Q = -U + V
@@ -653,7 +644,6 @@ def _sinch(x):
     whereas the "engineer's" definition of sinc is implemented.
     The implementation of sinc involves a scaling factor of pi
     that distinguishes it from the "mathematician's" version of sinc.
-
     """
 
     # If x is small then use sixth order Taylor expansion.
@@ -703,7 +693,6 @@ def _fragment_2_1(X, T, s):
     with sparse matrices, for example by avoiding fancy indexing
     and by using methods of the matrices whenever possible instead of
     using functions of the numpy or scipy libraries themselves.
-
     """
     # Form X = r_m(2^-s T)
     # Replace diag(X) by exp(2^-s diag(T)).
@@ -755,7 +744,6 @@ def _ell(A, m):
     -------
     value : int
         A value related to a bound.
-
     """
     if len(A.shape) != 2 or A.shape[0] != A.shape[1]:
         raise ValueError('expected A to be like a square matrix')

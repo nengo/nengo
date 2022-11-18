@@ -9,7 +9,8 @@ from nengo.spa.vocab import Vocabulary, VocabularyParam
 
 
 def enable_spa_params(model):
-    """Enables the SPA specific parameters on a model.
+    """
+    Enables the SPA specific parameters on a model.
 
     Parameters
     ----------
@@ -24,7 +25,8 @@ def enable_spa_params(model):
 
 
 def similarity(data, vocab, normalize=False):
-    """Return the similarity between some data and the vocabulary.
+    """
+    Return the similarity between some data and the vocabulary.
 
     Computes the dot products between all data vectors and each
     vocabulary vector. If ``normalize=True``, normalizes all vectors

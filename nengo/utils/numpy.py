@@ -1,10 +1,7 @@
-"""
-Extra functions to extend the capabilities of Numpy.
-"""
+"""Extra functions to extend the capabilities of Numpy."""
 import logging
 import warnings
 from collections.abc import Iterable
-from distutils.version import LooseVersion
 
 import numpy as np
 
@@ -29,12 +26,9 @@ except ImportError as e:
 
 maxseed = np.iinfo(np.uint32).max
 maxint = np.iinfo(np.int32).max
-
-
 # numpy 1.17 introduced a slowdown to clip, so
-# use nengo.utils.numpy.clip instead of np.clip
-# This has persisted through 1.19 at least
-clip = np.core.umath.clip if LooseVersion(np.__version__) >= "1.17.0" else np.clip
+# use np.core.umath.clip instead of np.clip
+clip = np.core.umath.clip
 
 
 def is_integer(obj):
@@ -101,7 +95,8 @@ def broadcast_shape(shape, length):
 
 
 def array(x, dims=None, min_dims=0, readonly=False, **kwargs):
-    """Create numpy array with some extra configuration.
+    """
+    Create numpy array with some extra configuration.
 
     This is a wrapper around ``np.array``.
 
@@ -160,7 +155,8 @@ def _array_hash(a, n=100):
 
 
 def array_hash(a, n=100):
-    """Simple fast array hash function.
+    """
+    Simple fast array hash function.
 
     For arrays with size larger than ``n``, pick ``n`` elements at random
     to hash. This strategy should work well for dense arrays, but for
@@ -207,7 +203,8 @@ def array_offset(x):
 
 
 def norm(x, axis=None, keepdims=False):
-    """Compute the Euclidean norm.
+    """
+    Compute the Euclidean norm.
 
     Parameters
     ----------
@@ -233,7 +230,8 @@ def meshgrid_nd(*args):
 
 
 def rms(x, axis=None, keepdims=False):
-    """Compute the root-mean-square amplitude.
+    """
+    Compute the root-mean-square amplitude.
 
     Parameters
     ----------
@@ -250,7 +248,8 @@ def rms(x, axis=None, keepdims=False):
 
 
 def rmse(x, y, axis=None, keepdims=False):  # pragma: no cover
-    """Compute the root-mean-square error.
+    """
+    Compute the root-mean-square error.
 
     Equivalent to rms(x - y, axis=axis, keepdims=keepdims).
 
@@ -274,7 +273,8 @@ def rmse(x, y, axis=None, keepdims=False):  # pragma: no cover
 
 
 def nrmse(a, b, axis=None, keepdims=False):
-    """Compute the root-mean-square (RMS) error normalized by the RMS of ``b``.
+    """
+    Compute the root-mean-square (RMS) error normalized by the RMS of ``b``.
 
     Equivalent to ``rms(a - b, **kwargs) / rms(b, **kwargs)``
 

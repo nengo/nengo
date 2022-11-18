@@ -2,7 +2,8 @@ from nengo.network import Network
 
 
 class Module(Network):
-    """Base class for SPA Modules.
+    """
+    Base class for SPA Modules.
 
     Modules are networks that also have a list of inputs and outputs,
     each with an associated `.Vocabulary` (or a desired dimensionality for
@@ -18,10 +19,11 @@ class Module(Network):
         self.outputs = {}
 
     def on_add(self, spa):
-        """Called when this is assigned to a variable in the SPA network.
+        """
+        Called when this is assigned to a variable in the SPA network.
 
-        Overload this when you want processing to be delayed until after
-        the module is attached to the SPA network. This is usually for
-        modules that connect to other things in the SPA model (such as
-        the basal ganglia or thalamus).
+        Overload this when you want processing to be delayed until after the
+        module is attached to the SPA network. This is usually for modules that
+        connect to other things in the SPA model (such as the basal ganglia or
+        thalamus).
         """

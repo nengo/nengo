@@ -26,7 +26,8 @@ built_attrs = [
 
 
 class BuiltEnsemble(namedtuple("BuiltEnsemble", built_attrs)):
-    """Collects the parameters generated in `.build_ensemble`.
+    """
+    Collects the parameters generated in `.build_ensemble`.
 
     These are stored here because in the majority of cases the equivalent
     attribute in the original ensemble is a `.Distribution`. The attributes
@@ -145,7 +146,8 @@ def get_gain_bias(ens, rng=np.random, dtype=None):
 
 @Builder.register(Ensemble)  # noqa: C901
 def build_ensemble(model, ens):
-    """Builds an `.Ensemble` object into a model.
+    """
+    Builds an `.Ensemble` object into a model.
 
     A brief summary of what happens in the ensemble build process, in order:
 

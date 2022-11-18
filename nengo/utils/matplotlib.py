@@ -1,14 +1,16 @@
 import warnings
-from distutils.version import LooseVersion
 
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 
-has_prop_cycle = LooseVersion(matplotlib.__version__) >= "1.5.0"
-
-if has_prop_cycle:
+try:
     from cycler import cycler  # Dependency of MPL form 1.5.0 onward
+
+    assert cycler
+    has_prop_cycle = True
+except ImportError:  # pragma: no cover
+    has_prop_cycle = False
 
 
 def get_color_cycle():
@@ -38,7 +40,8 @@ def set_color_cycle(colors, ax=None):
 
 
 def axis_size(ax=None):
-    """Get axis width and height in pixels.
+    """
+    Get axis width and height in pixels.
 
     Based on a StackOverflow response:
     https://stackoverflow.com/questions/19306510/determine-matplotlib-axis-size-in-pixels
@@ -62,7 +65,8 @@ def axis_size(ax=None):
 
 
 def implot(plt_, x, y, Z, ax=None, colorbar=True, **kwargs):
-    """Image plot of general data (like imshow but with non-pixel axes).
+    """
+    Image plot of general data (like imshow but with non-pixel axes).
 
     Parameters
     ----------
@@ -94,7 +98,8 @@ def implot(plt_, x, y, Z, ax=None, colorbar=True, **kwargs):
 
 
 def rasterplot(time, spikes, ax=None, use_eventplot=False, **kwargs):  # noqa
-    """Generate a raster plot of the provided spike data.
+    """
+    Generate a raster plot of the provided spike data.
 
     Parameters
     ----------
@@ -133,7 +138,6 @@ def rasterplot(time, spikes, ax=None, use_eventplot=False, **kwargs):  # noqa
        :hide:
 
        ...
-
     """
     time = np.asarray(time)
     spikes = np.array(spikes, copy=False, ndmin=2)

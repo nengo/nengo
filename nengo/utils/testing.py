@@ -18,7 +18,8 @@ def signals_allclose(  # noqa: C901
     individual_results=False,
     allclose=np.allclose,
 ):
-    """Ensure all signal elements are within tolerances.
+    """
+    Ensure all signal elements are within tolerances.
 
     Allows for delay, removing the beginning of the signal, and plotting.
 
@@ -130,7 +131,8 @@ def signals_allclose(  # noqa: C901
 
 
 class ThreadedAssertion:
-    """Performs assertions in parallel.
+    """
+    Performs assertions in parallel.
 
     Starts a number of threads, waits for each thread to execute some
     initialization code, and then executes assertions in each thread.

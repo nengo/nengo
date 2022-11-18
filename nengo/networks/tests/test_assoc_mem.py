@@ -159,7 +159,8 @@ def test_am_wta(Simulator, plt, seed, rng):
 
 
 def test_am_complex(Simulator, plt, seed, rng):
-    """Complex auto-associative memory test.
+    """
+    Complex auto-associative memory test.
 
     Has a default output vector, outputs utilities, and becomes inhibited.
     """
@@ -244,7 +245,7 @@ def test_am_complex(Simulator, plt, seed, rng):
 
 
 def test_repeat_config_warning():
-    """tests a warning is run on repeat config"""
+    """tests a warning is run on repeat config."""
     with nengo.Network():
         test_am = AssociativeMemory([0])
 
@@ -258,7 +259,7 @@ def test_repeat_config_warning():
 
 
 def test_add_output_mapping(rng):
-    """tests add_output_mapping edge cases and errors"""
+    """tests add_output_mapping edge cases and errors."""
     vocab = make_vocab(4, 64, rng)
 
     with nengo.Network():
@@ -273,7 +274,7 @@ def test_add_output_mapping(rng):
 
 
 def test_add_input_mapping(rng):
-    """tests add_input_mapping edge cases and errors"""
+    """tests add_input_mapping edge cases and errors."""
     vocab = make_vocab(4, 64, rng)
 
     with nengo.Network():
@@ -292,7 +293,7 @@ def test_add_input_mapping(rng):
 
 
 def test_associativememory_errors(rng):
-    """tests multiple errors in AssociativeMemory"""
+    """tests multiple errors in AssociativeMemory."""
     vocab = make_vocab(4, 64, rng)
 
     with nengo.Network():
@@ -315,7 +316,8 @@ def test_associativememory_errors(rng):
 
 
 def test_associativememory_edge_cases(seed, rng):
-    """Tests that edge case code runs without error
+    """
+    Tests that edge case code runs without error.
 
     TODO: In the future, these features should be tested in an integration test.
     """

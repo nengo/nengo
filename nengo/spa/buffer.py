@@ -8,7 +8,8 @@ from nengo.spa.module import Module
 
 
 class Buffer(Module):
-    """A module capable of representing a single vector, with no memory.
+    """
+    A module capable of representing a single vector, with no memory.
 
     This is a minimal SPA module, useful for passing data along
     (for example, visual input).

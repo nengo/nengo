@@ -7,7 +7,7 @@ from nengo.utils.simulator import validate_ops
 
 
 def test_validate_ops():
-    """tests validate_ops, including may_share_memory"""
+    """Tests validate_ops, including may_share_memory."""
 
     base1 = Signal(initial_value=np.ones((10, 4)))
     base2 = Signal(initial_value=np.ones((10, 4)))

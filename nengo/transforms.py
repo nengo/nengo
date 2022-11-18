@@ -18,13 +18,15 @@ from nengo.utils.numpy import is_array_like, scipy_sparse
 
 
 class Transform(FrozenObject):
-    """A base class for connection transforms.
+    """
+    A base class for connection transforms.
 
     .. versionadded:: 3.0.0
     """
 
     def sample(self, rng=np.random):
-        """Returns concrete weights to implement the specified transform.
+        """
+        Returns concrete weights to implement the specified transform.
 
         Parameters
         ----------
@@ -50,7 +52,8 @@ class Transform(FrozenObject):
 
 
 class ChannelShapeParam(ShapeParam):
-    """A parameter where the value must be a shape with channels.
+    """
+    A parameter where the value must be a shape with channels.
 
     .. versionadded:: 3.0.0
     """
@@ -72,7 +75,8 @@ class ChannelShapeParam(ShapeParam):
 
 
 class Dense(Transform):
-    """A dense matrix transformation between an input and output signal.
+    """
+    A dense matrix transformation between an input and output signal.
 
     .. versionadded:: 3.0.0
 
@@ -158,7 +162,8 @@ class SparseInitParam(Parameter):
 
 
 class SparseMatrix(FrozenObject):
-    """Represents a sparse matrix.
+    """
+    Represents a sparse matrix.
 
     .. versionadded:: 3.0.0
 
@@ -217,11 +222,12 @@ class SparseMatrix(FrozenObject):
         return self.indices.shape[0]
 
     def allocate(self):
-        """Return a `scipy.sparse.csr_matrix` or dense matrix equivalent.
+        """
+        Return a `scipy.sparse.csr_matrix` or dense matrix equivalent.
 
-        We mark this data as readonly to be consistent with how other
-        data associated with signals are allocated. If this allocated
-        data is to be modified, it should be copied first.
+        We mark this data as readonly to be consistent with how other data
+        associated with signals are allocated. If this allocated data is to be
+        modified, it should be copied first.
         """
 
         if self._allocated is not None:
@@ -242,7 +248,8 @@ class SparseMatrix(FrozenObject):
         return self._allocated
 
     def sample(self, rng=np.random):
-        """Convert `.Distribution` data to fixed array.
+        """
+        Convert `.Distribution` data to fixed array.
 
         Parameters
         ----------
@@ -280,7 +287,8 @@ class SparseMatrix(FrozenObject):
 
 
 class Sparse(Transform):
-    """A sparse matrix transformation between an input and output signal.
+    """
+    A sparse matrix transformation between an input and output signal.
 
     .. versionadded:: 3.0.0
 
@@ -476,7 +484,8 @@ class _ConvolutionBase(Transform):
 
 
 class Convolution(_ConvolutionBase):
-    """An N-dimensional convolutional transform.
+    """
+    An N-dimensional convolutional transform.
 
     The dimensionality of the convolution is determined by the input shape.
 
@@ -562,7 +571,8 @@ class Convolution(_ConvolutionBase):
 
 
 class ConvolutionTranspose(_ConvolutionBase):
-    """An N-dimensional transposed convolutional transform.
+    """
+    An N-dimensional transposed convolutional transform.
 
     This performs the transpose operation of `.Convolution`. The ``kernel_size``,
     ``strides``, and ``padding`` parameters all act as in `.Convolution`, so this
@@ -689,7 +699,8 @@ class ConvolutionTranspose(_ConvolutionBase):
 
 
 class ChannelShape:
-    """Represents shape information with variable channel position.
+    """
+    Represents shape information with variable channel position.
 
     .. versionadded:: 3.0.0
 
@@ -705,7 +716,8 @@ class ChannelShape:
 
     @classmethod
     def from_space_and_channels(cls, spatial_shape, n_channels, channels_last=True):
-        """Create a ChannelShape from a spatial shape and number of channels.
+        """
+        Create a ChannelShape from a spatial shape and number of channels.
 
         .. versionadded:: 3.2.0
 
@@ -781,7 +793,8 @@ class ChannelShape:
 
 
 class NoTransform(Transform):
-    """Directly pass the signal through without any transform operations.
+    """
+    Directly pass the signal through without any transform operations.
 
     .. versionadded:: 3.1.0
 
@@ -797,7 +810,8 @@ class NoTransform(Transform):
         self._size_in = size_in
 
     def sample(self, rng=np.random):
-        """Returns concrete weights to implement the specified transform.
+        """
+        Returns concrete weights to implement the specified transform.
 
         Parameters
         ----------

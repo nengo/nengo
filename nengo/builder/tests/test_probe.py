@@ -6,7 +6,7 @@ from nengo.exceptions import BuildError
 
 
 def test_signal_probe(seed):
-    """tests the function signal_probe"""
+    """tests the function signal_probe."""
 
     # --- test probing wrong type
     with nengo.Network() as net:

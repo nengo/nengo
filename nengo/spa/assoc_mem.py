@@ -3,7 +3,8 @@ from nengo.spa.module import Module
 
 
 class AssociativeMemory(Module):
-    """Associative memory module.
+    """
+    Associative memory module.
 
     See :doc:`examples/spa/associative-memory` for an introduction and
     examples.

@@ -113,7 +113,7 @@ def test_context_is_threadsafe():
     class CheckIndependence(ThreadedAssertion):
         def init_thread(self, worker):
             setattr(worker, "model", nengo.Network())
-            worker.model.__enter__()
+            worker.model.__enter__()  # pylint: disable=unnecessary-dunder-call
 
         def assert_thread(self, worker):
             assert list(nengo.Config.context) == [worker.model.config]
@@ -267,7 +267,6 @@ def test_subclass_config():
 
 
 def test_classparams_del():
-    """tests ClassParams.__delattr__"""
     net = nengo.Network()
     clsparams = net.config[nengo.Ensemble]
 
@@ -286,7 +285,6 @@ def test_classparams_del():
 
 
 def test_classparams_str_repr():
-    """tests the repr function in classparams class"""
     clsparams = nengo.Network().config[nengo.Ensemble]
     clsparams.set_param("test", Parameter("test", None))
     assert repr(clsparams) == "<ClassParams[Ensemble]{test: None}>"
@@ -297,7 +295,6 @@ def test_classparams_str_repr():
 
 
 def test_config_repr():
-    """tests the repr function in Config class"""
     model = nengo.Network()
     assert fnmatch(
         repr(model.config),
@@ -317,12 +314,11 @@ def test_config_exit_errors():
     with pytest.raises(
         ConfigError, match="Config.context in bad state; was expecting current"
     ):
-        model2.config.__enter__()
+        model2.config.__enter__()  # pylint: disable=unnecessary-dunder-call
         model.config.__exit__(0, 0, 0)
 
 
 def test_instanceparams_str_repr():
-    """Test the str and repr functions for InstanceParams class"""
     model = nengo.Network()
     with model:
         a = nengo.Ensemble(50, dimensions=1, label="a")
@@ -334,7 +330,6 @@ def test_instanceparams_str_repr():
 
 
 def test_instanceparams_contains():
-    """tests the contains function in InstanceParams class"""
     model = nengo.Network()
     model.config[nengo.Ensemble].set_param("test", Parameter("test", None))
     with model:
@@ -347,7 +342,7 @@ def test_instanceparams_contains():
 
 
 def test_instanceparams_del():
-    """tests built in params on the delattr function in InstanceParams class"""
+    """Tests built in params on the delattr function in InstanceParams class."""
     model = nengo.Network()
     with model:
         a = nengo.Ensemble(5, dimensions=1)
@@ -371,7 +366,7 @@ def test_instanceparams_del():
 
 
 def test_unconfigurable_configerror():
-    """Tests exception when using settattr on something that is not configurable"""
+    """Tests exception when using settattr on something that is not configurable."""
     model = nengo.Network()
     model.config[nengo.Ensemble].set_param("prm", Parameter("prm", Unconfigurable))
 
@@ -380,8 +375,7 @@ def test_unconfigurable_configerror():
 
 
 def test_reuse_parameters_configerror(request):
-    """test that exception is raised when
-    reusing parameters"""
+    """Tests that an exception is raised when reusing parameters."""
 
     def finalizer():
         del nengo.Ensemble.same
@@ -400,7 +394,7 @@ def test_no_configures_args_error():
 
 
 def test_unconfigurable_default_configerror(request):
-    """test exception when using `Config.default` with a unconfigurable parameter"""
+    """Test exception when using `Config.default` with a unconfigurable parameter."""
 
     def finalizer():
         del nengo.Ensemble.something2
@@ -415,7 +409,7 @@ def test_unconfigurable_default_configerror(request):
 
 
 def test_get_param_on_instance_configerror():
-    """test that exception is raised when getting params on instance"""
+    """Tests that an exception is raised when getting params on instance."""
     model = nengo.Network()
     model.config[nengo.Ensemble].set_param("something", Parameter("something", None))
     with model:

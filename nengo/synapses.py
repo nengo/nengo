@@ -16,7 +16,8 @@ from nengo.utils.numpy import as_shape, is_number
 
 
 class Synapse(Process):
-    """Abstract base class for synapse models.
+    """
+    Abstract base class for synapse models.
 
     Conceptually, a synapse model emulates a biological synapse, taking in
     input in the form of released neurotransmitter and opening ion channels
@@ -71,7 +72,8 @@ class Synapse(Process):
         raise NotImplementedError("Synapse must implement make_state")
 
     def filt(self, x, dt=None, axis=0, y0=0, copy=True, filtfilt=False):
-        """Filter ``x`` with this synapse model.
+        """
+        Filter ``x`` with this synapse model.
 
         Parameters
         ----------
@@ -113,7 +115,8 @@ class Synapse(Process):
         return filtered
 
     def filtfilt(self, x, **kwargs):
-        """Zero-phase filtering of ``x`` using this filter.
+        """
+        Zero-phase filtering of ``x`` using this filter.
 
         Equivalent to `filt(x, filtfilt=True, **kwargs) <.Synapse.filt>`.
         """
@@ -121,7 +124,8 @@ class Synapse(Process):
 
 
 class LinearFilter(Synapse):
-    """General linear time-invariant (LTI) system synapse.
+    """
+    General linear time-invariant (LTI) system synapse.
 
     This class can be used to implement any linear filter, given the
     filter's transfer function. [1]_
@@ -198,7 +202,8 @@ class LinearFilter(Synapse):
         )
 
     def evaluate(self, frequencies):
-        """Evaluate the transfer function at the given frequencies.
+        """
+        Evaluate the transfer function at the given frequencies.
 
         Examples
         --------
@@ -359,7 +364,8 @@ class LinearFilter(Synapse):
             return super().check(A, B, C, D, X) and (len(A) == 1 and (D == 0).all())
 
     class OneXScalar(OneX):
-        """Step for systems with one state element, no passthrough, and a size-1 input.
+        """
+        Step for systems with one state element, no passthrough, and a size-1 input.
 
         Using the builtin float math improves performance.
         """
@@ -373,7 +379,8 @@ class LinearFilter(Synapse):
             return super().check(A, B, C, D, X) and X.size == 1
 
     class NoD(Step):
-        """Step for systems with no passthrough matrix (D).
+        """
+        Step for systems with no passthrough matrix (D).
 
         Implements::
 
@@ -393,7 +400,8 @@ class LinearFilter(Synapse):
             return super().check(A, B, C, D, X) and (len(A) >= 1 and (D == 0).all())
 
     class General(Step):
-        """Step for any LTI system with at least one state element (X).
+        """
+        Step for any LTI system with at least one state element (X).
 
         Implements::
 
@@ -414,7 +422,8 @@ class LinearFilter(Synapse):
 
 
 class Lowpass(LinearFilter):
-    """Standard first-order lowpass filter synapse.
+    """
+    Standard first-order lowpass filter synapse.
 
     The impulse-response function is given by::
 
@@ -439,7 +448,8 @@ class Lowpass(LinearFilter):
 
 
 class Alpha(LinearFilter):
-    """Alpha-function filter synapse.
+    """
+    Alpha-function filter synapse.
 
     The impulse-response function is given by::
 
@@ -471,7 +481,8 @@ class Alpha(LinearFilter):
 
 
 class Triangle(Synapse):
-    """Triangular finite impulse response (FIR) synapse.
+    """
+    Triangular finite impulse response (FIR) synapse.
 
     This synapse has a triangular and finite impulse response. The length of
     the triangle is ``t`` seconds; thus the digital filter will have

@@ -1,4 +1,5 @@
-"""These solvers are to be passed as arguments to `~.Solver` objects.
+"""
+These solvers are to be passed as arguments to `~.Solver` objects.
 
 For example:
 
@@ -11,7 +12,6 @@ For example:
        ens_a = nengo.Ensemble(10, 1)
        ens_b = nengo.Ensemble(10, 1)
        nengo.Connection(ens_a, ens_b, solver=LstsqL2(solver=SVD()))
-
 """
 
 import numpy as np
@@ -95,7 +95,8 @@ class Cholesky(LeastSquaresSolver):
 
 
 class ConjgradScipy(LeastSquaresSolver):
-    """Solve a least-squares system using Scipy's conjugate gradient.
+    """
+    Solve a least-squares system using Scipy's conjugate gradient.
 
     Parameters
     ----------
@@ -128,7 +129,10 @@ class ConjgradScipy(LeastSquaresSolver):
         Y, m, n, d, matrix_in = format_system(A, Y)
 
         damp = m * sigma**2
-        calcAA = lambda x: np.dot(A.T, np.dot(A, x)) + damp * x
+
+        def calcAA(x):
+            return np.dot(A.T, np.dot(A, x)) + damp * x
+
         G = scipy.sparse.linalg.LinearOperator(
             (n, n), matvec=calcAA, matmat=calcAA, dtype=A.dtype
         )
@@ -211,7 +215,10 @@ class Conjgrad(LeastSquaresSolver):
 
         damp = m * sigma**2
         rtol = self.tol * np.sqrt(m)
-        G = lambda x: np.dot(A.T, np.dot(A, x)) + damp * x
+
+        def G(x):
+            return np.dot(A.T, np.dot(A, x)) + damp * x
+
         B = np.dot(A.T, Y)
 
         iters = -np.ones(d, dtype="int")
@@ -258,7 +265,7 @@ class Conjgrad(LeastSquaresSolver):
 
 
 class BlockConjgrad(LeastSquaresSolver):
-    """Solve a multiple-RHS least-squares system using block conj. gradient."""
+    """Solve a multiple-RHS least-squares system using block conj gradient."""
 
     tol = NumberParam("tol", low=0)
     X0 = NdarrayParam("X0", shape=("*", "*"), optional=True)
@@ -281,7 +288,10 @@ class BlockConjgrad(LeastSquaresSolver):
 
         damp = m * sigma**2
         rtol = self.tol * np.sqrt(m)
-        G = lambda x: np.dot(A.T, np.dot(A, x)) + damp * x
+
+        def G(x):
+            return np.dot(A.T, np.dot(A, x)) + damp * x
+
         B = np.dot(A.T, Y)
 
         # --- conjugate gradient
@@ -322,7 +332,8 @@ class SVD(LeastSquaresSolver):
 
 
 class RandomizedSVD(LeastSquaresSolver):
-    """Solve a least-squares system using a randomized (partial) SVD.
+    """
+    Solve a least-squares system using a randomized (partial) SVD.
 
     Useful for solving large matrices quickly, but non-optimally.
 

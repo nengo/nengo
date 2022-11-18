@@ -347,7 +347,6 @@ def test_iter_params_does_not_list_obsolete_params():
 
 @pytest.mark.filterwarnings("ignore:'Node.size_out' is being overwritten")
 def test_configure_all_nengo_parameters():
-
     # make up a non-default value for the parameter
     conv_func = {
         params.BoolParam: lambda attr: not attr.default,
@@ -431,13 +430,13 @@ def test_frozenobject_missing_arg_repr():
 
 
 def test_ndarrayparam_coerce_defaults():
-    """Tests NdarrayParam coerce_defaults if shape is none"""
+    """Tests NdarrayParam coerce_defaults if shape is none."""
     params.NdarrayParam.shape = None
     assert params.NdarrayParam("name").coerce_defaults is True
 
 
 def test_parameter_get_error():
-    """Tests params get ValidationError"""
+    """Tests params get ValidationError."""
 
     class Test:
         p = params.Parameter("something", params.Unconfigurable)
@@ -448,14 +447,14 @@ def test_parameter_get_error():
 
 
 def test_parameter_set_default_error():
-    """Tests params set_default ConfigError"""
+    """Tests params set_default ConfigError."""
     my_param = params.Parameter("something")
     with pytest.raises(ConfigError, match="Parameter.*is not configurable"):
         params.Parameter.set_default(my_param, my_param, my_param)
 
 
 def test_equal_not_equatable():
-    """Tests params.equal() when not equatable"""
+    """Tests params.equal() when not equatable."""
 
     class Test:
         param = params.Parameter("param", default=None)
@@ -474,7 +473,7 @@ def test_equal_not_equatable():
 
 
 def test_coerce_value_error():
-    """tests to make sure ValueError is thrown with incorrect coerce usage"""
+    """tests to make sure ValueError is thrown with incorrect coerce usage."""
 
     class Test:
         o = params.Parameter("o", default=None)

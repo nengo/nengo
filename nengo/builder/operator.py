@@ -1,4 +1,5 @@
-"""Operators represent calculations that will occur in the simulation.
+"""
+Operators represent calculations that will occur in the simulation.
 
 This code adapted from sigops/operator.py and sigops/operators.py
 (https://github.com/jaberg/sigops).
@@ -40,7 +41,8 @@ from nengo.utils.functions import function_name
 
 
 class Operator:
-    """Base class for operator instances understood by Nengo.
+    """
+    Base class for operator instances understood by Nengo.
 
     During one simulator timestep, a `.Signal` can experience
 
@@ -103,7 +105,8 @@ class Operator:
 
     @property
     def incs(self):
-        """Signals incremented by this operator.
+        """
+        Signals incremented by this operator.
 
         Increments will be applied after sets (if it is set), and before reads.
         """
@@ -115,7 +118,8 @@ class Operator:
 
     @property
     def reads(self):
-        """Signals that are read and not modified by this operator.
+        """
+        Signals that are read and not modified by this operator.
 
         Reads occur after increments, and before updates.
         """
@@ -127,10 +131,11 @@ class Operator:
 
     @property
     def sets(self):
-        """Signals set by this operator.
+        """
+        Signals set by this operator.
 
-        Sets occur first, before increments. A signal that is set here cannot
-        be set or updated by any other operator.
+        Sets occur first, before increments. A signal that is set here cannot be
+        set or updated by any other operator.
         """
         return self._sets
 
@@ -140,7 +145,8 @@ class Operator:
 
     @property
     def updates(self):
-        """Signals updated by this operator.
+        """
+        Signals updated by this operator.
 
         Updates are the last operation to occur to a signal.
         """
@@ -151,7 +157,8 @@ class Operator:
         self._updates = val
 
     def init_signals(self, signals):
-        """Initialize the signals associated with this operator.
+        """
+        Initialize the signals associated with this operator.
 
         The signals will be initialized into ``signals``.
         Operator subclasses that use extra buffers should create them here.
@@ -166,7 +173,8 @@ class Operator:
                 signals.init(sig)
 
     def make_step(self, signals, dt, rng):
-        """Returns a callable that performs the desired computation.
+        """
+        Returns a callable that performs the desired computation.
 
         This method must be implemented by subclasses. To fully understand what
         an operator does, look at its implementation of ``make_step``.
@@ -184,7 +192,8 @@ class Operator:
 
 
 class TimeUpdate(Operator):
-    """Updates the simulation step and time.
+    """
+    Updates the simulation step and time.
 
     Implements ``step[...] += 1`` and ``time[...] = step * dt``.
 
@@ -245,7 +254,8 @@ class TimeUpdate(Operator):
 
 
 class Reset(Operator):
-    """Assign a constant value to a Signal.
+    """
+    Assign a constant value to a Signal.
 
     Implements ``dst[...] = value``.
 
@@ -303,7 +313,8 @@ class Reset(Operator):
 
 
 class Copy(Operator):
-    """Assign the value of one signal to another, with optional slicing.
+    """
+    Assign the value of one signal to another, with optional slicing.
 
     Implements:
 
@@ -508,7 +519,8 @@ class ElementwiseInc(Operator):
 
 
 def reshape_dot(A, X, Y, tag=None):
-    """Checks if the dot product needs to be reshaped.
+    """
+    Checks if the dot product needs to be reshaped.
 
     Also does a bunch of error checking based on the shapes of A and X.
     """
@@ -535,7 +547,8 @@ def reshape_dot(A, X, Y, tag=None):
 
 
 class DotInc(Operator):
-    """Increment signal ``Y`` by ``dot(A, X)``.
+    """
+    Increment signal ``Y`` by ``dot(A, X)``.
 
     Implements ``Y[...] += np.dot(A, X)``.
 
@@ -628,7 +641,8 @@ class DotInc(Operator):
 
 
 class SparseDotInc(DotInc):
-    """Like `.DotInc` but ``A`` is a sparse matrix.
+    """
+    Like `.DotInc` but ``A`` is a sparse matrix.
 
     .. versionadded:: 3.0.0
     """
@@ -642,7 +656,8 @@ class SparseDotInc(DotInc):
 
 
 class BsrDotInc(DotInc):
-    """Increment signal Y by dot(A, X) using block sparse row format.
+    """
+    Increment signal Y by dot(A, X) using block sparse row format.
 
     Implements ``Y[...] += np.dot(A, X)``, where ``A`` is an instance
     of `scipy.sparse.bsr_matrix`.
@@ -720,7 +735,8 @@ class BsrDotInc(DotInc):
 
 
 class SimPyFunc(Operator):
-    """Apply a Python function to a signal, with optional arguments.
+    """
+    Apply a Python function to a signal, with optional arguments.
 
     Implements ``output[...] = fn(*args)`` where ``args`` can
     include the current simulation time ``t`` and an input signal ``x``.

@@ -1,3 +1,4 @@
+import sys
 from io import BytesIO
 
 import pytest
@@ -213,7 +214,12 @@ def test_spa_module_error():
     check_tb_entries(
         excinfo.traceback,
         [
-            ("test_spa_module_error", 'nengo.spa.State(1, label="1")'),
+            (
+                "test_spa_module_error",
+                "with nengo.spa.SPA():"
+                if sys.version_info >= (3, 10)
+                else 'nengo.spa.State(1, label="1")',
+            ),
             ("__exit__", "raise SpaModuleError(..."),
         ],
     )
@@ -328,7 +334,12 @@ def test_network_context_error(request):
     check_tb_entries(
         excinfo.traceback,
         [
-            ("test_network_context_error", "nengo.Ensemble(10, 1)"),
+            (
+                "test_network_context_error",
+                'with nengo.Network(label="net"):'
+                if sys.version_info >= (3, 10)
+                else "nengo.Ensemble(10, 1)",
+            ),
             ("__exit__", "raise NetworkContextError(..."),
         ],
     )

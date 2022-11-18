@@ -1,4 +1,5 @@
-r"""Certain features of Nengo can be configured globally through RC settings.
+r"""
+Certain features of Nengo can be configured globally through RC settings.
 
 RC settings can be manipulated either through the ``nengo.rc`` object,
 or through RC configuration files.
@@ -56,7 +57,6 @@ Commented lines show the default values for each setting.
 .. include:: ../nengo-data/nengorc
    :literal:
    :start-line: 29
-
 """
 
 import logging
@@ -92,7 +92,8 @@ RC_FILES = [
 
 
 class _RC(ConfigParser):  # pylint: disable=too-many-ancestors
-    """Allows reading from and writing to Nengo RC settings.
+    """
+    Allows reading from and writing to Nengo RC settings.
 
     This object is a :class:`configparser.ConfigParser`, which means that
     values can be accessed and manipulated like a dictionary:
@@ -119,7 +120,6 @@ class _RC(ConfigParser):  # pylint: disable=too-many-ancestors
 
        nengo.rc.reload_rc()  # Reads defaults from configuration files
        nengo.rc.reload_rc(filenames=[])  # Ignores configuration files
-
     """
 
     def __init__(self):
@@ -159,7 +159,8 @@ class _RC(ConfigParser):  # pylint: disable=too-many-ancestors
         return super().read(filenames)
 
     def reload_rc(self, filenames=None):
-        """Resets the currently loaded RC settings and loads new RC files.
+        """
+        Resets the currently loaded RC settings and loads new RC files.
 
         Parameters
         ----------

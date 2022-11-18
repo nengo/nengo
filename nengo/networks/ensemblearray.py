@@ -14,7 +14,8 @@ from nengo.utils.numpy import is_iterable
 
 
 class EnsembleArray(Network):
-    """An array of ensembles.
+    """
+    An array of ensembles.
 
     This acts, in some ways, like a single high-dimensional ensemble,
     but actually consists of many sub-ensembles, each one representing
@@ -138,7 +139,8 @@ class EnsembleArray(Network):
 
     @with_self
     def add_neuron_input(self):
-        """Adds a node that provides input to the neurons of all ensembles.
+        """
+        Adds a node that provides input to the neurons of all ensembles.
 
         Direct neuron input is useful for inhibiting the activity of all
         neurons in the ensemble array.
@@ -176,7 +178,8 @@ class EnsembleArray(Network):
 
     @with_self
     def add_neuron_output(self):
-        """Adds a node that collects the neural output of all ensembles.
+        """
+        Adds a node that collects the neural output of all ensembles.
 
         Direct neuron output is useful for plotting the spike raster of
         all neurons in the ensemble array.
@@ -215,7 +218,8 @@ class EnsembleArray(Network):
 
     @with_self
     def add_output(self, name, function, synapse=None, **conn_kwargs):
-        """Adds a node that collects the decoded output of all ensembles.
+        """
+        Adds a node that collects the decoded output of all ensembles.
 
         By default, this is called once in ``__init__`` with ``function=None``.
         However, this can be called multiple times with different functions,

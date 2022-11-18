@@ -16,7 +16,7 @@ from nengo.utils.builder import (
 
 
 def test_full_transform():
-    """Tests ``full_transform`` and its exceptions"""
+    """Tests ``full_transform`` and its exceptions."""
     N = 30
 
     with nengo.Network():
@@ -127,7 +127,7 @@ def test_graphviz_moved():
 
 
 def test_remove_passthrough():
-    """Test scanning through a model and removing Nodes with output=None"""
+    """Test scanning through a model and removing Nodes with output=None."""
 
     model = nengo.Network()
     with model:
@@ -154,7 +154,7 @@ def test_remove_passthrough():
 
 
 def test_remove_passthrough_bg():
-    """Test scanning through a model and removing Nodes with output=None"""
+    """Test scanning through a model and removing Nodes with output=None."""
 
     model = nengo.Network()
     with model:
@@ -176,7 +176,7 @@ def test_remove_passthrough_bg():
 
 
 def test_passthrough_errors():
-    """Test errors removing Nodes with output=None"""
+    """Test errors removing Nodes with output=None."""
 
     model = nengo.Network()
     with model:

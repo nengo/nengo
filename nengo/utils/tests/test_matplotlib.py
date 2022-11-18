@@ -23,7 +23,7 @@ def test_rasterplot(use_eventplot, Simulator, seed, plt):
 
 
 def test_rasterplot_onetime(plt):
-    """Tests rasterplot with a single time point"""
+    """Tests rasterplot with a single time point."""
     time = [0.2]
     spikes = np.array([1, 0, 0, 1, 0, 1, 1]).reshape((1, -1))
     rasterplot(time, spikes, ax=None)

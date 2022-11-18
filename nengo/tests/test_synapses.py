@@ -310,7 +310,7 @@ def test_synapseparam():
 
 
 def test_frozen():
-    """Test attributes inherited from FrozenObject"""
+    """Test attributes inherited from FrozenObject."""
     a = LinearFilter([1], [0.04, 1])
     b = LinearFilter([1], [0.04, 1])
     c = LinearFilter([1], [0.04, 1.1])

@@ -21,7 +21,8 @@ built_attrs = ["eval_points", "solver_info", "weights", "transform"]
 
 
 class BuiltConnection(namedtuple("BuiltConnection", built_attrs)):
-    """Collects the parameters generated in `.build_connection`.
+    """
+    Collects the parameters generated in `.build_connection`.
 
     These are stored here because in the majority of cases the equivalent
     attribute in the original connection is a `.Distribution`. The attributes
@@ -144,7 +145,8 @@ def build_decoders(model, conn, rng):
 
 
 def solve_for_decoders(conn, gain, bias, x, targets, rng):
-    """Solver for decoders.
+    """
+    Solver for decoders.
 
     Factored out from `.build_decoders` for use with the cache system.
     """
@@ -192,7 +194,8 @@ def build_no_solver(model, solver, conn, rng):
 
 @Builder.register(Connection)  # noqa: C901
 def build_connection(model, conn):  # noqa: C901
-    """Builds a `.Connection` object into a model.
+    """
+    Builds a `.Connection` object into a model.
 
     A brief summary of what happens in the connection build process,
     in order:

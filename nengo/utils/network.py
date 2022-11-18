@@ -3,7 +3,8 @@ from .magic import decorator
 
 @decorator
 def with_self(method, network, args, kwargs):
-    """Wraps a method with ``with network:``.
+    """
+    Wraps a method with ``with network:``.
 
     This makes it easy to add methods to a network that create new
     Nengo objects. Instead of writing ``with self`` at the top of the method
@@ -31,7 +32,8 @@ def with_self(method, network, args, kwargs):
 
 
 def activate_direct_mode(network):
-    """Activates direct mode for a network.
+    """
+    Activates direct mode for a network.
 
     This sets the neuron type of all ensembles to a `nengo.Direct`
     instance unless:

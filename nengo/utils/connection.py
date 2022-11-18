@@ -2,7 +2,8 @@ import numpy as np
 
 
 def eval_point_decoding(conn, sim, eval_points=None):
-    """Get the targets and actual decoded values for a set of eval points.
+    """
+    Get the targets and actual decoded values for a set of eval points.
 
     This function evaluates the static decoding (i.e. using the neuron type's
     ``rates`` function) of a connection for a given set of evaluation points.

@@ -69,7 +69,8 @@ def config_with_default_synapse(config, synapse):
 
 
 class BasalGanglia(Network):
-    """Winner take all network, typically used for action selection.
+    """
+    Winner take all network, typically used for action selection.
 
     The basal ganglia network outputs approximately 0 at the dimension with
     the largest value, and is negative elsewhere.
@@ -275,7 +276,8 @@ class BasalGanglia(Network):
 
 
 class Thalamus(Network):
-    """Inhibits non-selected actions.
+    """
+    Inhibits non-selected actions.
 
     The thalamus is intended to work in tandem with a basal ganglia network.
     It converts basal ganglia output into a signal with (approximately) 1 for

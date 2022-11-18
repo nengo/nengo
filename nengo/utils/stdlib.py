@@ -38,10 +38,11 @@ class WeakKeyDefaultDict(MutableMapping):
 
 
 class WeakKeyIDDictionary(MutableMapping):
-    """WeakKeyDictionary that uses object ID to hash.
+    """
+    WeakKeyDictionary that uses object ID to hash.
 
-    This ignores the ``__eq__`` and ``__hash__`` functions on objects,
-    so that objects are only considered equal if one is the other.
+    This ignores the ``__eq__`` and ``__hash__`` functions on objects, so that
+    objects are only considered equal if one is the other.
     """
 
     def __init__(self, *args, **kwargs):
@@ -109,7 +110,7 @@ class WeakKeyIDDictionary(MutableMapping):
     def update(self, in_dict):
         """Update with items from other dictionary."""
         for key, value in in_dict.items():
-            self.__setitem__(key, value)
+            self[key] = value
 
 
 class WeakSet(MutableSet):
@@ -186,7 +187,8 @@ CheckedCall = namedtuple("CheckedCall", ("value", "invoked"))
 
 
 def checked_call(func, *args, **kwargs):
-    """Calls ``func`` and checks that invocation was successful.
+    """
+    Calls ``func`` and checks that invocation was successful.
 
     The namedtuple ``(value=func(*args, **kwargs), invoked=True)`` is returned
     if the call is successful. If an exception occurs inside of ``func``, then
@@ -205,7 +207,8 @@ def checked_call(func, *args, **kwargs):
 
 
 def execfile(path, globals, locals=None):
-    """Execute a Python script in the (mandatory) globals namespace.
+    """
+    Execute a Python script in the (mandatory) globals namespace.
 
     This is similar to the Python 2 builtin execfile, but it
     also works on Python 3, and ``globals`` is mandatory.
@@ -227,7 +230,8 @@ def execfile(path, globals, locals=None):
 
 
 def groupby(objects, key, hashable=None, force_list=True):
-    """Group objects based on a key.
+    """
+    Group objects based on a key.
 
     Unlike `itertools.groupby`, this function does not require the input
     to be sorted.
@@ -277,7 +281,8 @@ def groupby(objects, key, hashable=None, force_list=True):
 
 
 class Timer:
-    """A context manager for timing a block of code.
+    """
+    A context manager for timing a block of code.
 
     Attributes
     ----------
@@ -300,7 +305,6 @@ class Timer:
        with Timer() as t:
           time.sleep(1)
        assert t.duration >= 1
-
     """
 
     def __init__(self):

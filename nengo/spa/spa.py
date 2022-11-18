@@ -10,7 +10,8 @@ from nengo.spa.vocab import Vocabulary
 
 
 class SPA(Network):
-    """Base class for SPA models.
+    """
+    Base class for SPA models.
 
     This expands the standard `.Network` system to support structured
     connections that use Semantic Pointers and associated vocabularies
@@ -112,10 +113,11 @@ class SPA(Network):
         setattr(self, "_initialized", True)
 
     def __setattr__(self, key, value):
-        """A setattr that handles Modules being added specially.
+        """
+        A setattr that handles Modules being added specially.
 
-        This is so that we can use the variable name for the Module as
-        the name that all of the SPA system will use to access that module.
+        This is so that we can use the variable name for the Module as the name
+        that all of the SPA system will use to access that module.
         """
         if not hasattr(self, "_initialized"):
             return super().__setattr__(key, value)
@@ -168,7 +170,8 @@ class SPA(Network):
         raise SpaModuleError("Could not find module %r" % name)
 
     def get_default_vocab(self, dimensions):
-        """Return a Vocabulary with the desired dimensions.
+        """
+        Return a Vocabulary with the desired dimensions.
 
         This will create a new default Vocabulary if one doesn't exist.
         """
@@ -182,7 +185,8 @@ class SPA(Network):
         return self._default_vocabs[dimensions]
 
     def get_module_input(self, name):
-        """Return the object to connect into for the given name.
+        """
+        Return the object to connect into for the given name.
 
         The name will be either the same as a module, or of the form
         ``<module_name>_<input_name>``.
@@ -209,7 +213,8 @@ class SPA(Network):
         return self.get_module_input(name)[1]
 
     def get_module_output(self, name):
-        """Return the object to connect into for the given name.
+        """
+        Return the object to connect into for the given name.
 
         The name will be either the same as a module, or of the form
         ``<module_name>_<output_name>``.
@@ -236,7 +241,8 @@ class SPA(Network):
         return self.get_module_output(name)[1]
 
     def similarity(self, data, probe, vocab=None):
-        """Return the similarity between the probed data and ``vocab``.
+        """
+        Return the similarity between the probed data and ``vocab``.
 
         If no vocabulary is provided, the vocabulary associated with
         ``probe.target`` will be used.

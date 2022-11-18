@@ -25,7 +25,8 @@ class LearningRuleTypeSizeInParam(IntParam):
 
 
 class LearningRuleType(FrozenObject, SupportDefaultsMixin):
-    """Base class for all learning rule objects.
+    """
+    Base class for all learning rule objects.
 
     To use a learning rule, pass it as a ``learning_rule_type`` keyword
     argument to the `~nengo.Connection` on which you want to do learning.
@@ -84,7 +85,8 @@ class LearningRuleType(FrozenObject, SupportDefaultsMixin):
 
 
 class PES(LearningRuleType):
-    """Prescribed Error Sensitivity learning rule.
+    """
+    Prescribed Error Sensitivity learning rule.
 
     Modifies a connection's decoders to minimize an error signal provided
     through a connection to the connection's learning rule.
@@ -122,7 +124,8 @@ class PES(LearningRuleType):
 
 
 class RLS(LearningRuleType):
-    r"""Recursive least-squares rule for online decoder optimization.
+    r"""
+    Recursive least-squares rule for online decoder optimization.
 
     This implements an online version of the standard least-squares solvers used
     to learn connection weights offline (e.g. `nengo.solvers.LstsqL2`). It can be
@@ -234,7 +237,8 @@ def _remove_default_post_synapse(argreprs, default):
 
 
 class BCM(LearningRuleType):
-    """Bienenstock-Cooper-Munroe learning rule.
+    """
+    Bienenstock-Cooper-Munroe learning rule.
 
     Modifies connection weights as a function of the presynaptic activity
     and the difference between the postsynaptic activity and the average
@@ -305,7 +309,8 @@ class BCM(LearningRuleType):
 
 
 class Oja(LearningRuleType):
-    """Oja learning rule.
+    """
+    Oja learning rule.
 
     Modifies connection weights according to the Hebbian Oja rule, which
     augments typically Hebbian coactivity with a "forgetting" term that is
@@ -375,7 +380,8 @@ class Oja(LearningRuleType):
 
 
 class Voja(LearningRuleType):
-    """Vector Oja learning rule.
+    """
+    Vector Oja learning rule.
 
     Modifies an ensemble's encoders to be selective to its inputs.
 

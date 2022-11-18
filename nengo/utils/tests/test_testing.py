@@ -19,9 +19,12 @@ def test_signals_allclose(multiple_targets, rng):
 
     t = 0.01 * np.arange(nt)
     x = rng.uniform(-1, 1, size=(nt, ny if multiple_targets else 1))
-    get_y = lambda close: add_close_noise(
-        x, (1 if close else 3) * atol, (1 if close else 3) * rtol, rng
-    )
+
+    def get_y(close):
+        return add_close_noise(
+            x, (1 if close else 3) * atol, (1 if close else 3) * rtol, rng
+        )
+
     y_close = (
         get_y(True)
         if multiple_targets

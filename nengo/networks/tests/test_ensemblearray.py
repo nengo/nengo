@@ -7,7 +7,7 @@ from nengo.exceptions import ValidationError
 
 
 def test_multidim(Simulator, plt, seed, rng, allclose):
-    """Tests with multiple dimensions per ensemble"""
+    """Tests with multiple dimensions per ensemble."""
     dims = 3
     n_neurons = 60
     radius = 1.0
@@ -281,7 +281,7 @@ def test_ndarrays(Simulator, rng, allclose):
 
 
 def test_add_input_output_errors():
-    """Ensures warnings and errors are thrown as appropriate"""
+    """Ensures warnings and errors are thrown as appropriate."""
     with nengo.Network():
         A = nengo.networks.EnsembleArray(n_neurons=10, n_ensembles=3)
 

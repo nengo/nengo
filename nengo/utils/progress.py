@@ -43,7 +43,8 @@ def _load_class(name):
 
 
 class Progress:
-    """Stores and tracks information about the progress of some process.
+    """
+    Stores and tracks information about the progress of some process.
 
     This class is to be used as part of a ``with`` statement. Use ``step()`` to
     update the progress.
@@ -88,7 +89,6 @@ class Progress:
            for i in range(max_steps):
                # do something
                progress.step()
-
     """
 
     def __init__(self, name_during="", name_after=None, max_steps=None):
@@ -108,7 +108,8 @@ class Progress:
 
     @property
     def progress(self):
-        """The current progress as a number from 0 to 1 (inclusive).
+        """
+        The current progress as a number from 0 to 1 (inclusive).
 
         Returns
         -------
@@ -119,7 +120,8 @@ class Progress:
         return min(1.0, self.n_steps / self.max_steps)
 
     def elapsed_seconds(self):
-        """The number of seconds passed since entering the ``with`` statement.
+        """
+        The number of seconds passed since entering the ``with`` statement.
 
         Returns
         -------
@@ -131,7 +133,8 @@ class Progress:
             return time.time() - self.time_start
 
     def eta(self):
-        """The estimated number of seconds until the process is finished.
+        """
+        The estimated number of seconds until the process is finished.
 
         Stands for estimated time of arrival (ETA).
         If no estimate is available -1 will be returned.
@@ -160,7 +163,8 @@ class Progress:
         self.finished = True
 
     def step(self, n=1):
-        """Advances the progress.
+        """
+        Advances the progress.
 
         Parameters
         ----------
@@ -171,14 +175,16 @@ class Progress:
 
 
 class ProgressBar:
-    """Visualizes the progress of a process.
+    """
+    Visualizes the progress of a process.
 
     This is an abstract base class that progress bar classes some inherit from.
     Progress bars should visually displaying the progress in some way.
     """
 
     def update(self, progress):
-        """Updates the displayed progress.
+        """
+        Updates the displayed progress.
 
         Parameters
         ----------
@@ -188,14 +194,16 @@ class ProgressBar:
         raise NotImplementedError()
 
     def close(self):
-        """Closes the progress bar.
+        """
+        Closes the progress bar.
 
         Indicates that not further updates will be made.
         """
 
 
 class NoProgressBar(ProgressBar):
-    """A progress bar that does not display anything.
+    """
+    A progress bar that does not display anything.
 
     Helpful in headless situations or when using Nengo as a library.
     """
@@ -237,7 +245,8 @@ class TerminalProgressBar(ProgressBar):
         return "\r" + line.format(progress_str)
 
     def _get_unknown_progress_line(self, progress):
-        """Generates a progress line with continuously moving marker.
+        """
+        Generates a progress line with continuously moving marker.
 
         This is to indicate processing while not knowing how far along we
         progressed with the processing.
@@ -270,7 +279,8 @@ class TerminalProgressBar(ProgressBar):
 
 
 class VdomProgressBar(ProgressBar):  # pragma: no cover
-    """A progress bar using a virtual DOM representation.
+    """
+    A progress bar using a virtual DOM representation.
 
     This HTML representation can be used in Jupyter lab (>=0.32) environments.
 
@@ -398,7 +408,8 @@ class VdomProgressBar(ProgressBar):  # pragma: no cover
 
 
 class HtmlProgressBar(ProgressBar):  # pragma: no cover
-    """A progress bar using a HTML representation.
+    """
+    A progress bar using a HTML representation.
 
     This HTML representation can be used in Jupyter notebook environments
     and is provided by the *_repr_html_* method that will be automatically
@@ -544,7 +555,8 @@ class HtmlProgressBar(ProgressBar):  # pragma: no cover
 
 
 class VdomOrHtmlProgressBar(ProgressBar):  # pragma: no cover
-    """Progress bar using the VDOM or HTML progress bar.
+    """
+    Progress bar using the VDOM or HTML progress bar.
 
     This progress bar will transmit both representations as part of a MIME
     bundle and it is up to the Jupyter client to pick the preferred version.
@@ -587,7 +599,8 @@ class VdomOrHtmlProgressBar(ProgressBar):  # pragma: no cover
 
 
 class IPython5ProgressBar(ProgressBar):  # pragma: no cover
-    """ProgressBar for IPython>=5 environments.
+    """
+    ProgressBar for IPython>=5 environments.
 
     Provides a VDOM/HTML representation, except for in a pure terminal IPython
     (i.e. not an IPython kernel that was connected to via ZMQ), where a
@@ -621,7 +634,8 @@ class IPython5ProgressBar(ProgressBar):  # pragma: no cover
 
 
 class WriteProgressToFile(ProgressBar):
-    """Writes progress to a file.
+    """
+    Writes progress to a file.
 
     This is useful for remotely and intermittently monitoring progress.
     Note that this file will be overwritten on each update of the progress!
@@ -654,7 +668,8 @@ class WriteProgressToFile(ProgressBar):
 
 
 class AutoProgressBar(ProgressBar):
-    """Suppresses the progress bar unless the ETA exceeds a threshold.
+    """
+    Suppresses the progress bar unless the ETA exceeds a threshold.
 
     Parameters
     ----------
@@ -689,7 +704,8 @@ class AutoProgressBar(ProgressBar):
 
 
 class ProgressTracker:
-    """Tracks the progress of some process with a progress bar.
+    """
+    Tracks the progress of some process with a progress bar.
 
     Parameters
     ----------
@@ -712,7 +728,8 @@ class ProgressTracker:
         self.sub_progress = None
 
     def next_stage(self, name_during="", name_after=None, max_steps=None):
-        """Begin tracking progress of a new stage.
+        """
+        Begin tracking progress of a new stage.
 
         Parameters
         ----------
@@ -756,7 +773,8 @@ class ProgressTracker:
 
 
 def get_default_progressbar():
-    """The default progress bar to use depending on the execution environment.
+    """
+    The default progress bar to use depending on the execution environment.
 
     Returns
     -------
@@ -783,7 +801,8 @@ def get_default_progressbar():
 
 
 def to_progressbar(progress_bar):
-    """Converts to a ``ProgressBar`` instance.
+    """
+    Converts to a ``ProgressBar`` instance.
 
     Parameters
     ----------

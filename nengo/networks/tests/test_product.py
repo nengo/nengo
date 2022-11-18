@@ -11,8 +11,12 @@ def test_sine_waves(Simulator, plt, seed):
     dim = 5
     product = nengo.networks.Product(200, dim, radius, seed=seed)
 
-    func_a = lambda t: np.sqrt(radius) * np.sin(np.arange(1, dim + 1) * 2 * np.pi * t)
-    func_b = lambda t: np.sqrt(radius) * np.sin(np.arange(dim, 0, -1) * 2 * np.pi * t)
+    def func_a(t):
+        return np.sqrt(radius) * np.sin(np.arange(1, dim + 1) * 2 * np.pi * t)
+
+    def func_b(t):
+        return np.sqrt(radius) * np.sin(np.arange(dim, 0, -1) * 2 * np.pi * t)
+
     with product:
         input_a = nengo.Node(func_a)
         input_b = nengo.Node(func_b)
@@ -47,8 +51,12 @@ def test_direct_mode_with_single_neuron(Simulator, plt, seed):
     with config:
         product = nengo.networks.Product(1, dim, radius, seed=seed)
 
-    func_a = lambda t: np.sqrt(radius) * np.sin(np.arange(1, dim + 1) * 2 * np.pi * t)
-    func_b = lambda t: np.sqrt(radius) * np.sin(np.arange(dim, 0, -1) * 2 * np.pi * t)
+    def func_a(t):
+        return np.sqrt(radius) * np.sin(np.arange(1, dim + 1) * 2 * np.pi * t)
+
+    def func_b(t):
+        return np.sqrt(radius) * np.sin(np.arange(dim, 0, -1) * 2 * np.pi * t)
+
     with product:
         input_a = nengo.Node(func_a)
         input_b = nengo.Node(func_b)

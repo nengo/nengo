@@ -123,7 +123,9 @@ def test_constant_vector(Simulator, AnyNeuronType, plt, seed, allclose):
 def test_scalar(Simulator, AnyNeuronType, plt, seed, allclose):
     """A network that represents sin(t)."""
     N = 50
-    f = lambda t: np.sin(2 * np.pi * t)
+
+    def f(t):
+        return np.sin(2 * np.pi * t)
 
     m = nengo.Network(label="test_scalar", seed=seed)
     with m:
@@ -150,7 +152,9 @@ def test_scalar(Simulator, AnyNeuronType, plt, seed, allclose):
 def test_vector(Simulator, AnyNeuronType, plt, seed, allclose):
     """A network that represents sin(t), cos(t), cos(t)**2."""
     N = 100
-    f = lambda t: [np.sin(6.3 * t), np.cos(6.3 * t), np.cos(6.3 * t) ** 2]
+
+    def f(t):
+        return [np.sin(6.3 * t), np.cos(6.3 * t), np.cos(6.3 * t) ** 2]
 
     m = nengo.Network(label="test_vector", seed=seed)
     with m:
@@ -185,7 +189,9 @@ def test_product(Simulator, AnyNeuronType, plt, seed):
     N = 80
     dt2 = 0.002
     scaling = -0.5
-    f = lambda t: np.sin(2 * np.pi * t)
+
+    def f(t):
+        return np.sin(2 * np.pi * t)
 
     m = nengo.Network(seed=seed)
     with m:
@@ -386,7 +392,8 @@ def test_noise_gen(Simulator, NonDirectNeuronType, seed, plt, allclose):
 
 
 def test_noise_copies_ok(Simulator, NonDirectNeuronType, seed, plt, allclose):
-    """Make sure the same noise process works in multiple ensembles.
+    """
+    Make sure the same noise process works in multiple ensembles.
 
     We test this both with the default system and without.
     """
@@ -433,7 +440,7 @@ def test_noise_copies_ok(Simulator, NonDirectNeuronType, seed, plt, allclose):
 
 
 def test_no_norm_encoders(Simulator, allclose):
-    """Confirm encoders are not normalized"""
+    """Confirm encoders are not normalized."""
 
     enc_weight = 5
     with nengo.Network() as model:

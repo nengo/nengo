@@ -14,7 +14,8 @@ def is_sparse(obj):
 
 
 class Signal:
-    """Represents data or views onto data within a Nengo simulation.
+    """
+    Represents data or views onto data within a Nengo simulation.
 
     Signals are tightly coupled to NumPy arrays, which is how live data is
     represented in a Nengo simulation. Signals provide a view onto the
@@ -168,10 +169,11 @@ class Signal:
 
     @property
     def base(self):
-        """(Signal) The base signal, if this signal is a view.
+        """
+        (Signal) The base signal, if this signal is a view.
 
-        Linking the two signals with the ``base`` argument is necessary
-        to ensure that their live data is also linked.
+        Linking the two signals with the ``base`` argument is necessary to ensure
+        that their live data is also linked.
         """
         return self if self._base is None else self._base
 
@@ -192,10 +194,11 @@ class Signal:
 
     @property
     def initial_value(self):
-        """(numpy.ndarray) Initial value of the signal.
+        """
+        (numpy.ndarray) Initial value of the signal.
 
-        Much of the metadata tracked by the Signal is based on this array
-        as well (e.g., dtype).
+        Much of the metadata tracked by the Signal is based on this array as well
+        (e.g., dtype).
         """
         return self._initial_value
 
@@ -215,7 +218,11 @@ class Signal:
 
     @property
     def name(self):
-        """(str) Name of the signal. Primarily used for debugging."""
+        """
+        (str) Name of the signal.
+
+        Primarily used for debugging.
+        """
         return self._name if self._name is not None else (f"0x{id(self):x}")
 
     @name.setter
@@ -234,14 +241,14 @@ class Signal:
 
     @property
     def offset(self):
-        """(int) Offset of data from base in bytes.
+        """
+        (int) Offset of data from base in bytes.
 
         For a signal view this gives the offset of the view from the base
-        ``initial_value`` in bytes. This might differ from the offset
-        of the NumPy array view provided as ``initial_value`` if the base
-        is a view already (in which case the signal base offset will be 0
-        because it starts where the view starts. That NumPy view can have
-        an offset of itself).
+        ``initial_value`` in bytes. This might differ from the offset of the
+        NumPy array view provided as ``initial_value`` if the base is a view
+        already (in which case the signal base offset will be 0 because it starts
+        where the view starts. That NumPy view can have an offset of itself).
         """
         return self._offset
 
@@ -275,7 +282,8 @@ class Signal:
         return is_sparse(self.initial_value)
 
     def may_share_memory(self, other):
-        """Determine if two signals might overlap in memory.
+        """
+        Determine if two signals might overlap in memory.
 
         This comparison is not exact and errs on the side of false positives.
         See `numpy.may_share_memory` for more details.
@@ -291,7 +299,8 @@ class Signal:
         )
 
     def reshape(self, *shape):
-        """Return a view on this signal with a different shape.
+        """
+        Return a view on this signal with a different shape.
 
         Note that ``reshape`` cannot change the overall size of the signal.
         See `numpy.reshape` for more details.
@@ -323,7 +332,8 @@ class Signal:
 
 
 class SignalDict(dict):
-    """Map from Signal -> ndarray.
+    """
+    Map from Signal -> ndarray.
 
     This dict subclass ensures that the ndarray values aren't overwritten,
     and instead data are written into them, which ensures that
@@ -352,12 +362,13 @@ class SignalDict(dict):
                 raise
 
     def __setitem__(self, key, val):
-        """Ensures that ndarrays stay in the same place in memory.
+        """
+        Ensures that ndarrays stay in the same place in memory.
 
-        Unlike normal dicts, this means that you cannot add a new key
-        to a SignalDict using __setitem__. This is by design, to avoid
-        silent typos when debugging Simulator. Every key must instead
-        be explicitly initialized with SignalDict.init.
+        Unlike normal dicts, this means that you cannot add a new key to a
+        SignalDict using __setitem__. This is by design, to avoid silent typos
+        when debugging Simulator. Every key must instead be explicitly
+        initialized with SignalDict.init.
         """
         self[key][...] = val
 

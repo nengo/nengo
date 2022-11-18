@@ -20,10 +20,11 @@ __all__ = [
 
 @contextlib.contextmanager
 def open_atomic(filename, binary=True):
-    '''Open a file for atomic writing. Instead of locking this method allows
-    you to write the entire file and move it to the actual location. Note that
-    this makes the assumption that a rename is atomic on your platform which
-    is generally the case but not a guarantee.
+    """
+    Open a file for atomic writing. Instead of locking this method allows you to write
+    the entire file and move it to the actual location. Note that this makes the
+    assumption that a rename is atomic on your platform which is generally the case but
+    not a guarantee.
 
     http://docs.python.org/library/os.html#os.rename
 
@@ -35,8 +36,7 @@ def open_atomic(filename, binary=True):
     ...     written = fh.write(b'test')
     >>> assert os.path.exists(filename)
     >>> os.remove(filename)
-
-    '''
+    """
     assert not os.path.exists(filename), '%r exists' % filename
     path, name = os.path.split(filename)
 
@@ -68,7 +68,8 @@ class Lock(object):
             self, filename, mode='a', timeout=DEFAULT_TIMEOUT,
             check_interval=DEFAULT_CHECK_INTERVAL, fail_when_locked=False,
             flags=LOCK_METHOD):
-        '''Lock manager with built-in timeout
+        """
+        Lock manager with built-in timeout.
 
         filename -- filename
         mode -- the open mode, 'a' or 'ab' should be used for writing
@@ -85,7 +86,7 @@ class Lock(object):
 
         Note that the file is opened first and locked later. So using 'w' as
         mode will result in truncate _BEFORE_ the lock is checked.
-        '''
+        """
 
         if 'w' in mode:
             truncate = True
@@ -104,7 +105,7 @@ class Lock(object):
 
     def acquire(
             self, timeout=None, check_interval=None, fail_when_locked=None):
-        '''Acquire the locked filehandle'''
+        """Acquire the locked filehandle."""
         if timeout is None:
             timeout = self.timeout
         if timeout is None:
@@ -160,30 +161,31 @@ class Lock(object):
         return fh
 
     def release(self):
-        '''Releases the currently locked file handle'''
+        """Releases the currently locked file handle."""
         if self.fh:
             self.fh.close()
             self.fh = None
 
     def _get_fh(self):
-        '''Get a new filehandle'''
+        """Get a new filehandle."""
         return open(self.filename, self.mode)
 
     def _get_lock(self, fh):
-        '''
-        Try to lock the given filehandle
+        """
+        Try to lock the given filehandle.
 
-        returns LockException if it fails'''
+        returns LockException if it fails
+        """
         portalocker.lock(fh, self.flags)
         return fh
 
     def _prepare_fh(self, fh):
-        '''
-        Prepare the filehandle for usage
+        """
+        Prepare the filehandle for usage.
 
         If truncate is a number, the file will be truncated to that amount of
         bytes
-        '''
+        """
         if self.truncate:
             fh.seek(0)
             fh.truncate(0)

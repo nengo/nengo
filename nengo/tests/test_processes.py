@@ -272,7 +272,8 @@ def test_sampling_shape():
 
 
 def test_x_copy(Simulator, allclose):
-    """Test that process `x` is copied internally.
+    """
+    Test that process `x` is copied internally.
 
     If it is not copied, all elements in `process.queue` will reference the same
     underlying array, and will all be equal to each other.
@@ -309,7 +310,7 @@ def test_reset(Simulator, seed, allclose):
 
 
 def test_frozen():
-    """Test attributes inherited from FrozenObject"""
+    """Test attributes inherited from FrozenObject."""
     a = WhiteNoise(dist=Gaussian(0.3, 0.2))
     b = WhiteNoise(dist=Gaussian(0.3, 0.2))
     c = FilteredNoise(dist=Gaussian(0.3, 0.2), synapse=Lowpass(0.02))

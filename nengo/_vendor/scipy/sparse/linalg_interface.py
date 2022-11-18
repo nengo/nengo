@@ -42,7 +42,8 @@ from .sputils import isintlike, isshape
 
 
 class LinearOperator(object):
-    """Common interface for performing matrix vector products
+    """
+    Common interface for performing matrix vector products.
 
     Many iterative methods (e.g. cg, gmres) do not need to know the
     individual entries of a matrix to solve a linear system A*x=b.
@@ -116,7 +117,6 @@ class LinearOperator(object):
     array([ 2.,  3.])
     >>> A * np.ones(2)
     array([ 2.,  3.])
-
     """
     def __new__(cls, *args, **kwargs):
         if cls is LinearOperator:
@@ -133,10 +133,11 @@ class LinearOperator(object):
             return obj
 
     def __init__(self, dtype, shape):
-        """Initialize this LinearOperator.
+        """
+        Initialize this LinearOperator.
 
-        To be called by subclasses. ``dtype`` may be None; ``shape`` should
-        be convertible to a length-2 tuple.
+        To be called by subclasses. ``dtype`` may be None; ``shape`` should be
+        convertible to a length-2 tuple.
         """
         if dtype is not None:
             dtype = np.dtype(dtype)
@@ -149,14 +150,14 @@ class LinearOperator(object):
         self.shape = shape
 
     def _init_dtype(self):
-        """Called from subclasses at the end of the __init__ routine.
-        """
+        """Called from subclasses at the end of the __init__ routine."""
         if self.dtype is None:
             v = np.zeros(self.shape[-1])
             self.dtype = np.asarray(self.matvec(v)).dtype
 
     def _matmat(self, X):
-        """Default matrix-matrix multiplication handler.
+        """
+        Default matrix-matrix multiplication handler.
 
         Falls back on the user-defined _matvec method, so defining that will
         define matrix multiplication (though in a very suboptimal way).
@@ -164,7 +165,8 @@ class LinearOperator(object):
         return np.hstack([self.matvec(col.reshape(-1, 1)) for col in X.T])
 
     def _matvec(self, x):
-        """Default matrix-vector multiplication handler.
+        """
+        Default matrix-vector multiplication handler.
 
         If self is a linear operator of shape (M, N), then this method will
         be called on a shape (N,) or (N, 1) ndarray, and should return a
@@ -176,7 +178,8 @@ class LinearOperator(object):
         return self.matmat(x.reshape(-1, 1))
 
     def matvec(self, x):
-        """Matrix-vector multiplication.
+        """
+        Matrix-vector multiplication.
 
         Performs the operation y=A*x where A is an MxN linear
         operator and x is a column vector or 1-d array.
@@ -196,7 +199,6 @@ class LinearOperator(object):
         -----
         This matvec wraps the user-specified matvec routine or overridden
         _matvec method to ensure that y has the correct shape and type.
-
         """
 
         x = np.asanyarray(x)
@@ -223,7 +225,8 @@ class LinearOperator(object):
         return y
 
     def rmatvec(self, x):
-        """Adjoint matrix-vector multiplication.
+        """
+        Adjoint matrix-vector multiplication.
 
         Performs the operation y = A^H * x where A is an MxN linear
         operator and x is a column vector or 1-d array.
@@ -243,7 +246,6 @@ class LinearOperator(object):
         -----
         This rmatvec wraps the user-specified rmatvec routine or overridden
         _rmatvec method to ensure that y has the correct shape and type.
-
         """
 
         x = np.asanyarray(x)
@@ -278,7 +280,8 @@ class LinearOperator(object):
             return self.H.matvec(x)
 
     def matmat(self, X):
-        """Matrix-matrix multiplication.
+        """
+        Matrix-matrix multiplication.
 
         Performs the operation y=A*X where A is an MxN linear
         operator and X dense N*K matrix or ndarray.
@@ -298,7 +301,6 @@ class LinearOperator(object):
         -----
         This matmat wraps any user-specified matmat routine or overridden
         _matmat method to ensure that y has the correct type.
-
         """
 
         X = np.asanyarray(X)
@@ -327,7 +329,8 @@ class LinearOperator(object):
         return self.dot(x)
 
     def dot(self, x):
-        """Matrix-matrix or matrix-vector multiplication.
+        """
+        Matrix-matrix or matrix-vector multiplication.
 
         Parameters
         ----------
@@ -339,7 +342,6 @@ class LinearOperator(object):
         Ax : array
             1-d or 2-d array (depending on the shape of x) that represents
             the result of applying this linear operator on x.
-
         """
         if isinstance(x, LinearOperator):
             return _ProductLinearOperator(self, x)
@@ -402,7 +404,8 @@ class LinearOperator(object):
         return '<%dx%d %s with %s>' % (M, N, self.__class__.__name__, dt)
 
     def adjoint(self):
-        """Hermitian adjoint.
+        """
+        Hermitian adjoint.
 
         Returns the Hermitian adjoint of self, aka the Hermitian
         conjugate or Hermitian transpose. For a complex matrix, the
@@ -420,10 +423,11 @@ class LinearOperator(object):
     H = property(adjoint)
 
     def transpose(self):
-        """Transpose this linear operator.
+        """
+        Transpose this linear operator.
 
-        Returns a LinearOperator that represents the transpose of this one.
-        Can be abbreviated self.T instead of self.transpose().
+        Returns a LinearOperator that represents the transpose of this one. Can
+        be abbreviated self.T instead of self.transpose().
         """
         return self._transpose()
 
@@ -638,7 +642,8 @@ class IdentityOperator(LinearOperator):
 
 
 def aslinearoperator(A):
-    """Return A as a LinearOperator.
+    """
+    Return A as a LinearOperator.
 
     'A' may be any of the following types:
      - ndarray
@@ -655,7 +660,6 @@ def aslinearoperator(A):
     >>> M = np.array([[1,2,3],[4,5,6]], dtype=np.int32)
     >>> aslinearoperator(M)
     <2x3 MatrixLinearOperator with dtype=int32>
-
     """
     if isinstance(A, LinearOperator):
         return A

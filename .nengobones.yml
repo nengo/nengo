@@ -65,11 +65,16 @@ setup_py:
     - "Topic :: Scientific/Engineering :: Artificial Intelligence"
 
 setup_cfg:
+  codespell:
+    ignore_words:
+      - bu
+      - inh
   coverage:
     exclude_lines:
       - "^[ \\t]*assert False"
     omit_files:
       - "nengo/_vendor/*"
+      - "nengo/version.py"
       - "nengo/spa/*"
       # omit filter_design.py until it gets moved to nengo/_vendor
       - "nengo/utils/filter_design.py"

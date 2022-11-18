@@ -1,4 +1,5 @@
-"""Configuration system to set defaults and backend-specific info.
+"""
+Configuration system to set defaults and backend-specific info.
 
 The idea here is that a backend can create a Config and ConfigItems to
 define the set of parameters that their backend supports.
@@ -7,8 +8,7 @@ error checking on those parameters.
 
 A good writeup on descriptors (which has an example similar to Parameter)
 can be found at
-https://nbviewer.ipython.org/urls/gist.github.com/ChrisBeaumont/5758381/raw/descriptor_writeup.ipynb
-
+https://nbviewer.org/gist/ChrisBeaumont/5758381/descriptor_writeup.ipynb
 """
 
 import inspect
@@ -21,7 +21,8 @@ from nengo.utils.threading import ThreadLocalStack
 
 
 class ClassParams:
-    """A class to store extra parameters and defaults on configured classes.
+    """
+    A class to store extra parameters and defaults on configured classes.
 
     This is used by `.Config` to associate defaults and new `.Parameter`
     instances with existing objects. It should not be instantiated outside of
@@ -61,7 +62,8 @@ class ClassParams:
         return self.get_param(key).get_default(self)
 
     def __setattr__(self, key, value):
-        """Overridden to handle instance descriptors manually.
+        """
+        Overridden to handle instance descriptors manually.
 
         Everything not starting with _ is assumed to be a parameter.
         """
@@ -158,7 +160,8 @@ class ClassParams:
 
 
 class InstanceParams:
-    """A class to store parameter value on configured objects.
+    """
+    A class to store parameter value on configured objects.
 
     In contrast to `.ClassParams`, the only thing that can be done with
     ``InstanceParams`` is get and set parameter values. Use the corresponding
@@ -252,7 +255,8 @@ class InstanceParams:
 
 
 class Config:
-    """Configures network-level defaults and additional parameters.
+    """
+    Configures network-level defaults and additional parameters.
 
     Every `.Network` contains an associated ``Config`` object which can
     be manipulated to change network-specific defaults, and to store
@@ -317,7 +321,6 @@ class Config:
            label = nengo.params.StringParam('label', default=None)
        gaba.configures(SynapseInfo)
        gaba[SynapseInfo].label = "GABA"  # Set default label
-
     """
 
     context = ThreadLocalStack(maxsize=100)  # static stack of Config objects
@@ -343,8 +346,8 @@ class Config:
         if config is not self:
             raise ConfigError(
                 "Config.context in bad state; was expecting "
-                f"current context to be '{self}' but instead got "
-                f"'{config}'."
+                f"current context to be '{self!r}' but instead got "
+                f"'{config!r}'."
             )
 
     def __contains__(self, key):
@@ -393,7 +396,8 @@ class Config:
 
     @staticmethod
     def all_defaults(nengo_cls=None):
-        """Look up all of the default values in the current context.
+        """
+        Look up all of the default values in the current context.
 
         Parameters
         ----------
@@ -425,13 +429,13 @@ class Config:
 
     @staticmethod
     def default(nengo_cls, param):
-        """Look up the current default value for a parameter.
+        """
+        Look up the current default value for a parameter.
 
         The default is found by going through the config stack, from most
-        specific to least specific. The network that an object is in
-        is the most specific; the top-level network is the least specific.
-        If no default is found there, then the parameter's default value
-        is returned.
+        specific to least specific. The network that an object is in is the most
+        specific; the top-level network is the least specific. If no default is
+        found there, then the parameter's default value is returned.
         """
 
         # Get the descriptor
@@ -461,7 +465,8 @@ class Config:
 
 
 class SupportDefaultsMixin:
-    """Mixin to support assigning ``Default`` to parameters.
+    """
+    Mixin to support assigning ``Default`` to parameters.
 
     Implements ``__setattr__`` to do so. If the inheriting class overrides
     this method, it has to call the mixin's ``__setattr__``.

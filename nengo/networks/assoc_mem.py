@@ -20,7 +20,8 @@ def filtered_step(t, shift=0.5, scale=50, step_val=1):
 
 
 class AssociativeMemory(Network):
-    """Associative memory network.
+    """
+    Associative memory network.
 
     Parameters
     ----------
@@ -126,7 +127,10 @@ class AssociativeMemory(Network):
             self.am_ensembles = []
             label_prefix = "" if label is None else label + "_"
             filt_scale = 15
-            filt_step_func = lambda x: filtered_step(x, 0.0, scale=filt_scale)
+
+            def filt_step_func(x):
+                return filtered_step(x, 0.0, scale=filt_scale)
+
             for i in range(self.n_items):
                 e = Ensemble(n_neurons, 1, label=label_prefix + str(i))
                 self.am_ensembles.append(e)
@@ -203,7 +207,8 @@ class AssociativeMemory(Network):
 
     @with_self
     def add_input_mapping(self, name, input_vectors, input_scales=1.0):
-        """Adds a set of input vectors to the associative memory network.
+        """
+        Adds a set of input vectors to the associative memory network.
 
         Creates a transform with the given input vectors between the
         a named input node and associative memory element input to enable the
@@ -254,7 +259,8 @@ class AssociativeMemory(Network):
 
     @with_self
     def add_output_mapping(self, name, output_vectors):
-        """Adds another output to the associative memory network.
+        """
+        Adds another output to the associative memory network.
 
         Creates a transform with the given output vectors between the
         associative memory element output and a named output node to enable the
@@ -301,7 +307,8 @@ class AssociativeMemory(Network):
         n_neurons=50,
         min_activation_value=0.5,
     ):
-        """Adds a default output vector to the associative memory network.
+        """
+        Adds a default output vector to the associative memory network.
 
         The default output vector is chosen if the input matches none of
         the given input vectors.
@@ -354,7 +361,8 @@ class AssociativeMemory(Network):
 
     @with_self
     def add_wta_network(self, inhibit_scale=1.5, inhibit_synapse=0.005):
-        """Add a winner-take-all (WTA) network to associative memory output.
+        """
+        Add a winner-take-all (WTA) network to associative memory output.
 
         Parameters
         ----------
@@ -380,7 +388,8 @@ class AssociativeMemory(Network):
 
     @with_self
     def add_threshold_to_outputs(self, n_neurons=50, inhibit_scale=10):
-        """Adds a thresholded output to the associative memory.
+        """
+        Adds a thresholded output to the associative memory.
 
         Parameters
         ----------

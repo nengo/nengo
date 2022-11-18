@@ -18,7 +18,8 @@ nullcontext = contextlib.contextmanager(lambda: (yield))
 
 @Builder.register(Network)  # noqa: C901
 def build_network(model, network, progress=None):  # noqa: C901
-    """Builds a `.Network` object into a model.
+    """
+    Builds a `.Network` object into a model.
 
     The network builder does this by mapping each high-level object to its
     associated signals and operators one-by-one, in the following order:
@@ -110,7 +111,8 @@ def build_network(model, network, progress=None):  # noqa: C901
 
 
 def seed_network(network, seeds, seeded, base_rng=np.random):
-    """Populate seeding dictionaries for all objects in a network.
+    """
+    Populate seeding dictionaries for all objects in a network.
 
     This includes all subnetworks.
 

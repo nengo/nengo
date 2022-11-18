@@ -8,7 +8,8 @@ from nengo.node import Node
 
 
 class InputGatedMemory(Network):
-    """Stores a given vector in memory, with input controlled by a gate.
+    """
+    Stores a given vector in memory, with input controlled by a gate.
 
     Parameters
     ----------

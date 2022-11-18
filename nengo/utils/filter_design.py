@@ -62,8 +62,9 @@ class BadCoefficients(UserWarning):
 
 
 def tf2zpk(b, a):
-    """Return zero, pole, gain (z,p,k) representation from a numerator,
-    denominator representation of a linear filter.
+    """
+    Return zero, pole, gain (z,p,k) representation from a numerator, denominator
+    representation of a linear filter.
 
     Parameters
     ----------
@@ -85,7 +86,6 @@ def tf2zpk(b, a):
     -----
     If some values of ``b`` are too close to 0, they are removed. In that case,
     a BadCoefficients warning is emitted.
-
     """
     b, a = normalize(b, a)
     b = (b + 0.0) / a[0]
@@ -98,8 +98,8 @@ def tf2zpk(b, a):
 
 
 def zpk2tf(z, p, k):
-    """Return polynomial transfer function representation from zeros
-    and poles
+    """
+    Return polynomial transfer function representation from zeros and poles.
 
     Parameters
     ----------
@@ -116,7 +116,6 @@ def zpk2tf(z, p, k):
         Numerator polynomial.
     a : ndarray
         Denominator polynomial.
-
     """
     z = atleast_1d(z)
     k = atleast_1d(k)
@@ -134,11 +133,11 @@ def zpk2tf(z, p, k):
 
 
 def normalize(b, a):
-    """Normalize polynomial representation of a transfer function.
+    """
+    Normalize polynomial representation of a transfer function.
 
     If values of ``b`` are too close to 0, they are removed. In that case, a
     BadCoefficients warning is emitted.
-
     """
     b, a = map(atleast_1d, (b, a))
     if len(a.shape) != 1:
@@ -165,7 +164,8 @@ def normalize(b, a):
 
 
 def tf2ss(num, den):
-    """Transfer function to state-space representation.
+    """
+    Transfer function to state-space representation.
 
     Parameters
     ----------
@@ -177,7 +177,6 @@ def tf2ss(num, den):
     -------
     A, B, C, D : ndarray
         State space representation of the system.
-
     """
     # Controller canonical state-space representation.
     #  if M+1 = len(num) and K+1 = len(den) then we must have M <= K
@@ -195,7 +194,7 @@ def tf2ss(num, den):
     if M > K:
         msg = "Improper transfer function. `num` is longer than `den`."
         raise ValueError(msg)
-    if M == 0 or K == 0:  # Null system
+    if M == 0 or K == 0:  # pragma: no cover
         return array([], float), array([], float), array([], float), array([], float)
 
     # pad numerator to have same number of columns has denominator
@@ -203,7 +202,7 @@ def tf2ss(num, den):
 
     if num.shape[-1] > 0:
         D = num[:, 0]
-    else:
+    else:  # pragma: no cover
         D = array([], float)
 
     if K == 1:
@@ -253,7 +252,8 @@ def _restore(M, shape):
 
 
 def abcd_normalize(A=None, B=None, C=None, D=None):
-    """Check state-space matrices and ensure they are rank-2.
+    """
+    Check state-space matrices and ensure they are rank-2.
 
     If enough information on the system is provided, that is, enough
     properly-shaped arrays are passed to the function, the missing ones
@@ -274,7 +274,6 @@ def abcd_normalize(A=None, B=None, C=None, D=None):
     ------
     ValueError
         If not enough information on the system was provided.
-
     """
     A, B, C, D = map(_atleast_2d_or_none, (A, B, C, D))
 
@@ -299,7 +298,8 @@ def abcd_normalize(A=None, B=None, C=None, D=None):
 
 
 def ss2tf(A, B, C, D, input=0):
-    """State-space to transfer function.
+    """
+    State-space to transfer function.
 
     Parameters
     ----------
@@ -317,7 +317,6 @@ def ss2tf(A, B, C, D, input=0):
     den : 1-D ndarray
         Denominator of the resulting transfer function(s). ``den`` is a sequence
         representation of the denominator polynomial.
-
     """
     # transfer function is C (sI - A)**(-1) B + D
     A, B, C, D = map(asarray, (A, B, C, D))
@@ -337,10 +336,12 @@ def ss2tf(A, B, C, D, input=0):
 
     try:
         den = poly(A)
-    except ValueError:
+    except ValueError:  # pragma: no cover
         den = 1
 
-    if (product(B.shape, axis=0) == 0) and (product(C.shape, axis=0) == 0):
+    if (product(B.shape, axis=0) == 0) and (
+        product(C.shape, axis=0) == 0
+    ):  # pragma: no cover
         num = np.ravel(D)
         if (product(D.shape, axis=0) == 0) and (product(A.shape, axis=0) == 0):
             den = []
@@ -357,7 +358,8 @@ def ss2tf(A, B, C, D, input=0):
 
 
 def zpk2ss(z, p, k):
-    """Zero-pole-gain representation to state-space representation
+    """
+    Zero-pole-gain representation to state-space representation.
 
     Parameters
     ----------
@@ -370,13 +372,13 @@ def zpk2ss(z, p, k):
     -------
     A, B, C, D : ndarray
         State-space matrices.
-
     """
     return tf2ss(*zpk2tf(z, p, k))
 
 
 def ss2zpk(A, B, C, D, input=0):
-    """State-space representation to zero-pole-gain representation.
+    """
+    State-space representation to zero-pole-gain representation.
 
     Parameters
     ----------
@@ -391,7 +393,6 @@ def ss2zpk(A, B, C, D, input=0):
         Zeros and poles.
     k : float
         System gain.
-
     """
     return tf2zpk(*ss2tf(A, B, C, D, input=input))
 

@@ -1,9 +1,9 @@
-"""Classes concerned with solving for decoders or full weight matrices.
+"""
+Classes concerned with solving for decoders or full weight matrices.
 
 .. inheritance-diagram:: nengo.solvers
    :parts: 1
    :top-classes: nengo.solvers.Solver, nengo.solvers.SolverParam
-
 """
 
 import time
@@ -20,7 +20,8 @@ from nengo.utils.least_squares_solvers import (
 
 
 class Solver(FrozenObject):
-    """Decoder or weight solver.
+    """
+    Decoder or weight solver.
 
     A solver can have the ``weights`` parameter equal to ``True`` or ``False``.
 
@@ -55,7 +56,8 @@ class Solver(FrozenObject):
         self.weights = weights
 
     def __call__(self, A, Y, rng=np.random):
-        """Call the solver.
+        """
+        Call the solver.
 
         .. note:: ``n_targets`` is ``dimensions`` if ``solver.weights`` is ``False``
                   and ``post.n_neurons`` if ``solver.weights`` is ``True``.
@@ -79,7 +81,6 @@ class Solver(FrozenObject):
             A dictionary of information about the solver. All dictionaries have
             an ``'rmses'`` key that contains RMS errors of the solve (one per
             target). Other keys are unique to particular solvers.
-
         """
         raise NotImplementedError("Solvers must implement '__call__'")
 
@@ -93,7 +94,8 @@ class SolverParam(Parameter):
 
 
 class Lstsq(Solver):
-    """Unregularized least-squares solver.
+    """
+    Unregularized least-squares solver.
 
     Parameters
     ----------
@@ -254,7 +256,8 @@ class LstsqL2nz(LstsqL2):
 
 
 class LstsqL1(Solver):
-    """Least-squares solver with L1 and L2 regularization (elastic net).
+    """
+    Least-squares solver with L1 and L2 regularization (elastic net).
 
     This method is well suited for creating sparse decoders or weight matrices.
 
@@ -327,7 +330,8 @@ class LstsqL1(Solver):
 
 
 class LstsqDrop(Solver):
-    """Find sparser decoders/weights by dropping small values.
+    """
+    Find sparser decoders/weights by dropping small values.
 
     This solver first solves for coefficients (decoders/weights) with
     L2 regularization, drops those nearest to zero, and retrains remaining.
@@ -434,7 +438,8 @@ def _add_nnls_param_docs(l2=False):
 
 @_add_nnls_param_docs(l2=False)
 class Nnls(Solver):
-    """Non-negative least-squares solver without regularization.
+    """
+    Non-negative least-squares solver without regularization.
 
     Similar to `.Lstsq`, except the output values are non-negative.
 
@@ -471,7 +476,8 @@ class Nnls(Solver):
 
 @_add_nnls_param_docs(l2=True)
 class NnlsL2(Nnls):
-    """Non-negative least-squares solver with L2 regularization.
+    """
+    Non-negative least-squares solver with L2 regularization.
 
     Similar to `.LstsqL2`, except the output values are non-negative.
 
@@ -514,7 +520,8 @@ class NnlsL2(Nnls):
 
 @_add_nnls_param_docs(l2=True)
 class NnlsL2nz(NnlsL2):
-    """Non-negative least-squares with L2 regularization on nonzero components.
+    """
+    Non-negative least-squares with L2 regularization on nonzero components.
 
     Similar to `.LstsqL2nz`, except the output values are non-negative.
 
@@ -530,7 +537,8 @@ class NnlsL2nz(NnlsL2):
 
 
 class NoSolver(Solver):
-    """Manually pass in weights, bypassing the decoder solver.
+    """
+    Manually pass in weights, bypassing the decoder solver.
 
     Parameters
     ----------

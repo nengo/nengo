@@ -9,7 +9,8 @@ from nengo.utils.numpy import is_array_like
 
 
 class SimNeurons(Operator):
-    """Set a neuron model output for the given input current.
+    """
+    Set a neuron model output for the given input current.
 
     Implements ``neurons.step(dt, J, **state)``.
 
@@ -101,7 +102,8 @@ class SimNeurons(Operator):
 
 @Builder.register(NeuronType)
 def build_neurons(model, neurontype, neurons, input_sig=None, output_sig=None):
-    """Builds a `.NeuronType` object into a model.
+    """
+    Builds a `.NeuronType` object into a model.
 
     This function adds a `.SimNeurons` operator connecting the input current to the
     neural output signals, and handles any additional state variables defined
@@ -154,7 +156,8 @@ def build_neurons(model, neurontype, neurons, input_sig=None, output_sig=None):
 
 @Builder.register(RatesToSpikesNeuronType)
 def build_rates_to_spikes(model, neurontype, neurons):
-    """Builds a `.RatesToSpikesNeuronType` object into a model.
+    """
+    Builds a `.RatesToSpikesNeuronType` object into a model.
 
     This function adds two `.SimNeurons` operators. The first one handles
     simulating the base_type, converting input signals into rates. The second

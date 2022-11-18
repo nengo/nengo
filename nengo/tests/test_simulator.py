@@ -17,8 +17,8 @@ from nengo.utils.progress import ProgressBar
 
 
 def test_steps(Simulator, allclose):
-    """Tests stepping through a simple simulation, ensuring that
-    steps are tracked and steps take the right amount of time"""
+    """Tests stepping through a simple simulation, ensuring that steps are tracked and
+    steps take the right amount of time."""
     dt = 0.001
     m = nengo.Network(label="test_steps")
     with Simulator(m, dt=dt) as sim:
@@ -182,10 +182,9 @@ def test_warn_on_opensim_del(Simulator):
     with nengo.Network() as net:
         nengo.Ensemble(10, 1)
 
-    sim = Simulator(net)
-    with pytest.warns(ResourceWarning, match="Simulator.*deallocated while open"):
-        sim.__del__()
-    sim.close()
+    with Simulator(net) as sim:
+        with pytest.warns(ResourceWarning, match="Simulator.*deallocated while open"):
+            sim.__del__()  # pylint: disable=unnecessary-dunder-call
 
 
 def test_entry_point(Simulator):
@@ -217,7 +216,7 @@ def test_signal_init_values(Simulator):
 
 
 def test_seeding(Simulator, allclose):
-    """Test that setting the model seed fixes everything"""
+    """Test that setting the model seed fixes everything."""
 
     #  TODO: this really just checks random parameters in ensembles.
     #   Are there other objects with random parameters that should be
@@ -269,7 +268,7 @@ def test_seeding(Simulator, allclose):
 
 
 def test_hierarchical_seeding():
-    """Changes to subnetworks shouldn't affect seeds in top-level network"""
+    """Changes to subnetworks shouldn't affect seeds in top-level network."""
 
     def create(make_extra, seed):
         objs = []

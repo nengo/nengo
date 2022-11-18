@@ -72,8 +72,8 @@ def get_rate_function(n_neurons, neuron_type=nengo.LIF, rng=None):
     gain, bias = neurons.gain_bias(
         rng.uniform(50, 100, n_neurons), rng.uniform(-0.9, 0.9, n_neurons)
     )
-    rates = lambda x: neurons.rates(x, gain, bias)
-    return rates
+
+    return lambda x: neurons.rates(x, gain, bias)
 
 
 def get_system(m, n, d, rng=None, sort=False):
@@ -183,14 +183,12 @@ def test_all_negative_activities(allclose, plt, seed, Simulator, Solver):
 
 @pytest.mark.parametrize("Solver", [LstsqNoise, LstsqL2, LstsqL2nz])
 def test_subsolvers(Solver, seed, rng, tol=1e-2):
-    get_rng = lambda: np.random.RandomState(seed)
-
     A, b = get_system(2000, 100, 5, rng=rng)
-    x0, _ = Solver(solver=lstsq.Cholesky())(A, b, rng=get_rng())
+    x0, _ = Solver(solver=lstsq.Cholesky())(A, b, rng=np.random.RandomState(seed))
 
     subsolvers = [lstsq.Conjgrad(tol=tol), lstsq.BlockConjgrad(tol=tol)]
     for subsolver in subsolvers:
-        x, _ = Solver(solver=subsolver)(A, b, rng=get_rng())
+        x, _ = Solver(solver=subsolver)(A, b, rng=np.random.RandomState(seed))
         rel_rmse = rms(x - x0) / rms(x0)
         assert rel_rmse < 5 * tol
         # the above 5 * tol is just a heuristic; the main purpose of this
@@ -295,11 +293,12 @@ def test_nnls(Solver, plt, rng, allclose):
 
 @pytest.mark.parametrize("Solver", [NnlsL2])
 def test_nnls_weights(Simulator, Solver, seed):
-    """Test NNLS solvers in the context of a network.
+    """
+    Test NNLS solvers in the context of a network.
 
     This also acts as a smoke test for general problems with weight solvers,
-    because it cannot be done by solving for decoders first then multiplying
-    by encoders.
+    because it cannot be done by solving for decoders first then multiplying by
+    encoders.
     """
     pytest.importorskip("scipy.optimize")
 
@@ -469,7 +468,10 @@ def test_regularization(Simulator, NonDirectNeuronType, plt):
     t = sim.trange()
 
     ref = sim.data[up]
-    rmse_buf = lambda a, b: rms(a[t > buf] - b[t > buf])
+
+    def rmse_buf(a, b):
+        return rms(a[t > buf] - b[t > buf])
+
     rmses = np.zeros(probes.shape)
     for i, probe in enumerate(probes.flat):
         rmses.flat[i] = rmse_buf(sim.data[probe], ref)
@@ -501,7 +503,6 @@ def test_eval_points_static(plt, rng):
     eval_points = np.round(eval_points).astype("int")
     max_points = eval_points.max()
     n_trials = 25
-    # n_trials = 100
 
     rmses = np.nan * np.zeros((len(eval_points), n_trials))
 

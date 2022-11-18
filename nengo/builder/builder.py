@@ -11,7 +11,8 @@ from nengo.rc import rc
 
 
 class Model:
-    """Stores artifacts from the build process, which are used by `.Simulator`.
+    """
+    Stores artifacts from the build process, which are used by `.Simulator`.
 
     Parameters
     ----------
@@ -105,14 +106,14 @@ class Model:
         return f"Model: {self.label}"
 
     def add_op(self, op):
-        """Add an operator to the model.
+        """
+        Add an operator to the model.
 
-        In addition to adding the operator, this method performs additional
-        error checking by calling the operator's ``make_step`` function.
-        Calling ``make_step`` catches errors early, such as when signals are
-        not properly initialized, which aids debugging. For that reason,
-        we recommend calling this method over directly accessing
-        the ``operators`` attribute.
+        In addition to adding the operator, this method performs additional error
+        checking by calling the operator's ``make_step`` function. Calling
+        ``make_step`` catches errors early, such as when signals are not properly
+        initialized, which aids debugging. For that reason, we recommend calling
+        this method over directly accessing the ``operators`` attribute.
         """
         self.operators.append(op)
         if rc["nengo.Simulator"].getboolean("fail_fast"):
@@ -122,7 +123,8 @@ class Model:
             op.make_step(signals, self.dt, np.random)
 
     def build(self, obj, *args, **kwargs):
-        """Build an object into this model.
+        """
+        Build an object into this model.
 
         See `.Builder.build` for more details.
 
@@ -137,7 +139,8 @@ class Model:
         return built
 
     def has_built(self, obj):
-        """Returns true if the object has already been built in this model.
+        """
+        Returns true if the object has already been built in this model.
 
         .. note:: Some objects (e.g. synapses) can be built multiple times,
                   and therefore will always result in this method returning
@@ -156,7 +159,8 @@ class Model:
 
 
 class Builder:
-    """Manages the build functions known to the Nengo build process.
+    """
+    Manages the build functions known to the Nengo build process.
 
     Consists of two class methods to encapsulate the build function registry.
     All build functions should use the `.Builder.register` method as a
@@ -204,7 +208,8 @@ class Builder:
 
     @classmethod
     def build(cls, model, obj, *args, **kwargs):
-        """Build ``obj`` into ``model``.
+        """
+        Build ``obj`` into ``model``.
 
         This method looks up the appropriate build function for ``obj`` and
         calls it with the model and other arguments provided.
@@ -242,7 +247,8 @@ class Builder:
 
     @classmethod
     def register(cls, nengo_class):
-        """A decorator for adding a class to the build function registry.
+        """
+        A decorator for adding a class to the build function registry.
 
         Raises a warning if a build function already exists for the class.
 

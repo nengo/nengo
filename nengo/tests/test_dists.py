@@ -24,9 +24,11 @@ from nengo.exceptions import ValidationError
 
 def test_pdf(rng, allclose):
     s = 0.25
-    f = lambda x: (
-        np.exp(-0.5 * (x + 0.5) ** 2 / s**2) + np.exp(-0.5 * (x - 0.5) ** 2 / s**2)
-    )
+
+    def f(x):
+        return np.exp(-0.5 * (x + 0.5) ** 2 / s**2) + np.exp(
+            -0.5 * (x - 0.5) ** 2 / s**2
+        )
 
     xref = np.linspace(-2, 2, 101)
     pref = f(xref)
@@ -261,7 +263,7 @@ def test_scattered_hypersphere(dims, surface, seed, plt):
 
 @pytest.mark.parametrize("weights", [None, [5, 1, 2, 9], [3, 2, 1, 0]])
 def test_choice(weights, rng, allclose):
-    """Tests the choice function with weights"""
+    """Tests the choice function with weights."""
     n = 1000
     choices = [[1, 1], [1, -1], [-1, 1], [-1, -1]]
     N = len(choices)
@@ -489,7 +491,7 @@ def test_distorarrayparam_sample_shape():
 
 
 def test_frozen():
-    """Test attributes inherited from FrozenObject"""
+    """Test attributes inherited from FrozenObject."""
     a = Uniform(-0.3, 0.6)
     b = Uniform(-0.3, 0.6)
     c = Uniform(-0.2, 0.6)

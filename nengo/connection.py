@@ -324,7 +324,8 @@ class ConnectionTransformParam(Parameter):
 
 
 class Connection(NengoObject):
-    """Connects two objects together.
+    """
+    Connects two objects together.
 
     The connection between the two object is unidirectional,
     transmitting information from the first argument, ``pre``,
@@ -423,6 +424,7 @@ class Connection(NengoObject):
     label : str
         A human-readable connection label for debugging and visualization.
         If not overridden, incorporates the labels of the pre and post objects.
+    learning_rule
     learning_rule_type : instance or list or dict of LearningRuleType, optional
         The learning rule types.
     post : Ensemble or Neurons or Node or Probe or ObjView
@@ -439,6 +441,9 @@ class Connection(NengoObject):
         The slice associated with ``pre`` if it is an ObjView, or None.
     seed : int
         The seed used for random number generation.
+    size_in
+    size_mid
+    size_out
     solver : Solver
         The Solver instance that will be used to compute decoders or weights
         (see ``nengo.solvers``).
@@ -447,20 +452,6 @@ class Connection(NengoObject):
         (see ``nengo.synapses``).
     transform : (size_out, size_mid) array_like
         Linear transform mapping the pre function output to the post input.
-
-    Properties
-    ----------
-    learning_rule : LearningRule or iterable of LearningRule
-        Connectable learning rule object(s) associated with this connection.
-    size_in : int
-        The number of output dimensions of the pre object.
-        Also the input size of the function, if one is specified.
-    size_mid : int
-        The number of output dimensions of the function, if specified.
-        If the function is not specified, then ``size_in == size_mid``.
-    size_out : int
-        The number of input dimensions of the post object.
-        Also the number of output dimensions of the transform.
     """
 
     probeable = ("output", "input", "weights")
@@ -581,7 +572,11 @@ class Connection(NengoObject):
 
     @property
     def learning_rule(self):
-        """(LearningRule or iterable) Connectable learning rule object(s)."""
+        """
+        Connectable learning rule object(s) associated with this connection.
+
+        Type: LearningRule or iterable of LearningRule
+        """
         if self.learning_rule_type is None:
             return None
 
@@ -617,7 +612,8 @@ class Connection(NengoObject):
 
     @property
     def size_in(self):
-        """(int) The number of output dimensions of the pre object.
+        """
+        (int) The number of output dimensions of the pre object.
 
         Also the input size of the function, if one is specified.
         """
@@ -625,7 +621,8 @@ class Connection(NengoObject):
 
     @property
     def size_mid(self):
-        """(int) The number of output dimensions of the function, if specified.
+        """
+        (int) The number of output dimensions of the function, if specified.
 
         If the function is not specified, then ``size_in == size_mid``.
         """
@@ -634,7 +631,8 @@ class Connection(NengoObject):
 
     @property
     def size_out(self):
-        """(int) The number of input dimensions of the post object.
+        """
+        (int) The number of input dimensions of the post object.
 
         Also the number of output dimensions of the transform.
         """
@@ -642,7 +640,8 @@ class Connection(NengoObject):
 
 
 class LearningRule:
-    """An interface for making connections to a learning rule.
+    """
+    An interface for making connections to a learning rule.
 
     Connections to a learning rule are to allow elements of the network to
     affect the learning rule. For example, learning rules that use error

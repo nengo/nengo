@@ -6,7 +6,8 @@ from nengo.params import BoolParam, Default, IntParam, NumberParam
 
 
 class Ensemble(NengoObject):
-    """A group of neurons that collectively represent a vector.
+    """
+    A group of neurons that collectively represent a vector.
 
     Parameters
     ----------
@@ -199,7 +200,8 @@ class Ensemble(NengoObject):
 
 
 class Neurons:
-    """An interface for making connections directly to an ensemble's neurons.
+    """
+    An interface for making connections directly to an ensemble's neurons.
 
     This should only ever be accessed through the ``neurons`` attribute of an
     ensemble, as a way to signal to `~nengo.Connection` that the connection
@@ -212,7 +214,6 @@ class Neurons:
            a = nengo.Ensemble(10, 1)
            b = nengo.Ensemble(10, 1)
            nengo.Connection(a.neurons, b.neurons)
-
     """
 
     def __init__(self, ensemble):

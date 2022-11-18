@@ -1,6 +1,6 @@
 # From https://github.com/scipy/scipy/blob/v1.3.0/scipy/special/_comb.pyx
 def comb(N, k):
-    """Compute N choose k"""
+    """Compute N choose k."""
     if k > N or N < 0 or k < 0:
         return 0
 

@@ -8,7 +8,8 @@ from nengo.spa.action_objects import DotProduct, Source, Summation, Symbol
 
 
 class Expression:
-    """Parses an Action expression given a set of module outputs.
+    """
+    Parses an Action expression given a set of module outputs.
 
     Parameters
     ----------
@@ -76,7 +77,8 @@ class Expression:
 
 
 class Effect:
-    """Parses an action effect given a set of module outputs.
+    """
+    Parses an action effect given a set of module outputs.
 
     The following, in an `.Action` string, are valid effects::
 
@@ -120,7 +122,8 @@ class Effect:
 
 
 class Action:
-    """A single action.
+    """
+    A single action.
 
     Consists of a conditional `.Expression` (optional) and an `.Effect`.
 
@@ -157,13 +160,14 @@ class Action:
 
 
 class Actions:
-    """A collection of Action objects.
+    """
+    A collection of Action objects.
 
     The ``*args`` and ``**kwargs`` are treated as unnamed and named actions,
-    respectively. The list of actions are only generated once
-    `~.Actions.process` is called, since it needs access to the list of
-    module inputs and outputs from the SPA object. The ``**kwargs`` are sorted
-    alphabetically before being processed.
+    respectively. The list of actions are only generated once `~.Actions.process`
+    is called, since it needs access to the list of module inputs and outputs
+    from the SPA object. The ``**kwargs`` are sorted alphabetically before being
+    processed.
     """
 
     def __init__(self, *args, **kwargs):

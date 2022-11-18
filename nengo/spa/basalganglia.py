@@ -8,7 +8,8 @@ from nengo.utils.numpy import is_number
 
 
 class BasalGanglia(nengo.networks.BasalGanglia, Module):
-    """A basal ganglia, performing action selection on a set of given actions.
+    """
+    A basal ganglia, performing action selection on a set of given actions.
 
     See `.networks.BasalGanglia` for more details.
 
@@ -52,11 +53,11 @@ class BasalGanglia(nengo.networks.BasalGanglia, Module):
         return self._bias
 
     def on_add(self, spa):
-        """Form the connections into the BG to compute the utility values.
+        """
+        Form the connections into the BG to compute the utility values.
 
-        Each action's condition variable contains the set of computations
-        needed for that action's utility value, which is the input to the
-        basal ganglia.
+        Each action's condition variable contains the set of computations needed
+        for that action's utility value, which is the input to the basal ganglia.
         """
         Module.on_add(self, spa)
         self.spa = spa
@@ -101,7 +102,8 @@ class BasalGanglia(nengo.networks.BasalGanglia, Module):
                     )
 
     def add_bias_input(self, index, value):
-        """Make an input that is just a fixed scalar value.
+        """
+        Make an input that is just a fixed scalar value.
 
         Parameters
         ----------
@@ -119,7 +121,8 @@ class BasalGanglia(nengo.networks.BasalGanglia, Module):
             )
 
     def add_compare_input(self, index, source1, source2, scale):
-        """Make an input that is the dot product of two different sources.
+        """
+        Make an input that is the dot product of two different sources.
 
         This would be used for an input action such as ``dot(vision, memory)``.
         Each source might be transformed before being compared. If the
@@ -144,7 +147,8 @@ class BasalGanglia(nengo.networks.BasalGanglia, Module):
         )
 
     def add_dot_input(self, index, source, symbol, scale):
-        """Make an input that is the dot product of a Source and a Symbol.
+        """
+        Make an input that is the dot product of a Source and a Symbol.
 
         This would be used for an input action such as ``dot(vision, A)``.
         The source may have a transformation applied first.
@@ -177,7 +181,8 @@ class BasalGanglia(nengo.networks.BasalGanglia, Module):
             )
 
     def add_scalar_input(self, index, source):
-        """Add a scalar input that will vary over time.
+        """
+        Add a scalar input that will vary over time.
 
         This is used for the output of the `.Compare` module.
 

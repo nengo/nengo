@@ -48,7 +48,8 @@ class ProbeSolverParam(SolverParam):
 
 
 class Probe(NengoObject):
-    """A probe is an object that collects data from the simulation.
+    """
+    A probe is an object that collects data from the simulation.
 
     This is to be used in any situation where you wish to gather simulation
     data (spike data, represented values, neuron voltages, etc.) for analysis.

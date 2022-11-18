@@ -12,7 +12,8 @@ from nengo.node import Node
 
 
 class SimPES(Operator):
-    r"""Calculate connection weight change according to the PES rule.
+    r"""
+    Calculate connection weight change according to the PES rule.
 
     Implements the PES learning rule of the form
 
@@ -101,7 +102,8 @@ class SimPES(Operator):
 
 
 class SimBCM(Operator):
-    r"""Calculate connection weight change according to the BCM rule.
+    r"""
+    Calculate connection weight change according to the BCM rule.
 
     Implements the Bienenstock-Cooper-Munroe learning rule of the form
 
@@ -199,7 +201,8 @@ class SimBCM(Operator):
 
 
 class SimOja(Operator):
-    r"""Calculate connection weight change according to the Oja rule.
+    r"""
+    Calculate connection weight change according to the Oja rule.
 
     Implements the Oja learning rule of the form
 
@@ -307,7 +310,8 @@ class SimOja(Operator):
 
 
 class SimVoja(Operator):
-    r"""Simulates a simplified version of Oja's rule in the vector space.
+    r"""
+    Simulates a simplified version of Oja's rule in the vector space.
 
     See :doc:`examples/learning/learn-associations` for details.
 
@@ -430,7 +434,8 @@ class SimVoja(Operator):
 
 
 class SimRLS(Operator):
-    r"""Calculate connection weight change according to the RLS rule.
+    r"""
+    Calculate connection weight change according to the RLS rule.
 
     Implements the Recursive Least Squares (RLS) learning rule of the form
 
@@ -538,7 +543,8 @@ def build_or_passthrough(model, obj, signal):
 
 @Builder.register(LearningRule)
 def build_learning_rule(model, rule):
-    """Builds a `.LearningRule` object into a model.
+    """
+    Builds a `.LearningRule` object into a model.
 
     A brief summary of what happens in the learning rule build process,
     in order:
@@ -592,7 +598,8 @@ def build_learning_rule(model, rule):
 
 @Builder.register(BCM)
 def build_bcm(model, bcm, rule):
-    """Builds a `.BCM` object into a model.
+    """
+    Builds a `.BCM` object into a model.
 
     Calls synapse build functions to filter the pre and post activities,
     and adds a `.SimBCM` operator to the model to calculate the delta.
@@ -637,7 +644,8 @@ def build_bcm(model, bcm, rule):
 
 @Builder.register(Oja)
 def build_oja(model, oja, rule):
-    """Builds a `.BCM` object into a model.
+    """
+    Builds a `.BCM` object into a model.
 
     Calls synapse build functions to filter the pre and post activities,
     and adds a `.SimOja` operator to the model to calculate the delta.
@@ -681,7 +689,8 @@ def build_oja(model, oja, rule):
 
 @Builder.register(Voja)
 def build_voja(model, voja, rule):
-    """Builds a `.Voja` object into a model.
+    """
+    Builds a `.Voja` object into a model.
 
     Calls synapse build functions to filter the post activities,
     and adds a `.SimVoja` operator to the model to calculate the delta.
@@ -741,7 +750,8 @@ def build_voja(model, voja, rule):
 
 @Builder.register(PES)
 def build_pes(model, pes, rule):
-    """Builds a `.PES` object into a model.
+    """
+    Builds a `.PES` object into a model.
 
     Calls synapse build functions to filter the pre activities,
     and adds a `.SimPES` operator to the model to calculate the delta.
@@ -815,7 +825,8 @@ def build_pes(model, pes, rule):
 
 @Builder.register(RLS)
 def build_rls(model, rls, rule):
-    """Builds an `.RLS` (Recursive Least Squares) object into a model.
+    """
+    Builds an `.RLS` (Recursive Least Squares) object into a model.
 
     Calls synapse build functions to filter the pre activities,
     and adds a `.SimRLS` operator to the model to calculate the delta.

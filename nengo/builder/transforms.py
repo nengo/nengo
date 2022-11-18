@@ -118,14 +118,15 @@ def build_convolution(
 
 
 def calc_pad(pad, in_siz, out_siz, stride, ksize):
-    """Calculate padding width.
+    """
+    Calculate padding width.
 
     .. note:: Copied from MIT licensed https://github.com/renmengye/np-conv2d
 
-    Arguments
-    ---------
-    pad : str or int
-        Padding method, either "SAME", "VALID", or manually specified.
+    Parameters
+    ----------
+    pad : {"SAME", "VALID"}
+        Padding method, either "SAME" or "VALID".
     ksize : int
         Kernel size [I, J].
 
@@ -134,23 +135,24 @@ def calc_pad(pad, in_siz, out_siz, stride, ksize):
     pad_ : int
         Actual padding width.
     """
-    if pad == "SAME":
+    assert pad.upper() in ["SAME", "VALID"]
+
+    if pad.upper() == "SAME":
         return max((out_siz - 1) * stride + ksize - in_siz, 0)
-    elif pad == "VALID":
+    else:  # "VALID"
         return 0
-    else:
-        return pad
 
 
 def calc_gradx_pad(pad, in_siz, out_siz, stride, ksize):
-    """Calculate padding width on a dilated image.
+    """
+    Calculate padding width on a dilated image.
 
     .. note:: Copied from MIT licensed https://github.com/renmengye/np-conv2d
 
-    Arguments
-    --------
-    pad : str or int
-        Padding method, either "SAME", "VALID", or manually specified.
+    Parameters
+    ----------
+    pad : {"SAME", "VALID"}
+        Padding method, either "SAME" or "VALID".
     ksize : int
         Kernel size [I, J].
 
@@ -159,31 +161,32 @@ def calc_gradx_pad(pad, in_siz, out_siz, stride, ksize):
     pad_ : int
         Actual padding width.
     """
-    if pad == "SAME":
+    assert pad.upper() in ["SAME", "VALID"]
+
+    if pad.upper() == "SAME":
         out_siz_min = (in_siz - 1) * stride + 1
         p = out_siz + ksize - 1 - out_siz_min
         p = max(p, 0)
         p = min(p, (ksize - 1) * 2)
         return p
-    elif pad == "VALID":
+    else:  # "VALID"
         return (ksize - 1) * 2
-    else:
-        return pad
 
 
 def calc_size(h, kh, pad, sh):
-    """Calculate output image size on one dimension.
+    """
+    Calculate output image size on one dimension.
 
     .. note:: Copied from MIT licensed https://github.com/renmengye/np-conv2d
 
-    Arguments
-    ---------
+    Parameters
+    ----------
     h : int
         Input image size.
     kh : int
         Kernel size.
-    pad : str or int
-        Padding strategy.
+    pad : {"SAME", "VALID"}
+        Padding method, either "SAME" or "VALID".
     sh : int
         Stride.
 
@@ -192,28 +195,28 @@ def calc_size(h, kh, pad, sh):
     s : int
         Output size.
     """
+    assert pad.upper() in ["SAME", "VALID"]
 
-    if pad == "VALID":
+    if pad.upper() == "VALID":
         return np.ceil((h - kh + 1) / sh)
-    elif pad == "SAME":
+    else:  # "SAME"
         return np.ceil(h / sh)
-    else:
-        return int(np.ceil((h - kh + pad + 1) / sh))
 
 
-def extract_sliding_windows(x, ksize, pad, stride, floor_first=True):
-    """Converts a tensor to sliding windows.
+def extract_sliding_windows(x, ksize, pad, stride):
+    """
+    Converts a tensor to sliding windows.
 
     .. note:: Copied from MIT licensed https://github.com/renmengye/np-conv2d
 
-    Arguments
-    ---------
+    Parameters
+    ----------
     x : np.array
         Input with shape [N, H, W, C]
     ksize : Tuple
         KH, KW
-    pad : str or int
-        Padding strategy or [PH, PW].
+    pad : {"SAME", "VALID"}
+        Padding method, either "SAME" or "VALID".
     stride : int
         Stride, [SH, SW].
 
@@ -236,12 +239,9 @@ def extract_sliding_windows(x, ksize, pad, stride, floor_first=True):
     pw0 = int(np.floor(pw / 2))
     pw1 = int(np.ceil(pw / 2))
 
-    if floor_first:
-        pph = (ph0, ph1)
-        ppw = (pw0, pw1)
-    else:
-        pph = (ph1, ph0)
-        ppw = (pw1, pw0)
+    # floorfirst
+    pph = (ph0, ph1)
+    ppw = (pw0, pw1)
     x = np.pad(x, ((0, 0), pph, ppw, (0, 0)), mode="constant", constant_values=(0.0,))
 
     x_sn, x_sh, x_sw, x_sc = x.strides  # pylint: disable=unpacking-non-sequence
@@ -256,19 +256,20 @@ def extract_sliding_windows(x, ksize, pad, stride, floor_first=True):
     return y
 
 
-def extract_sliding_windows_gradx(x, ksize, pad, stride, orig_size, floor_first=False):
-    """Extracts windows on a dilated image.
+def extract_sliding_windows_gradx(x, ksize, pad, stride, orig_size):
+    """
+    Extracts windows on a dilated image.
 
     .. note:: Copied from MIT licensed https://github.com/renmengye/np-conv2d
 
-    Arguments
-    ---------
+    Parameters
+    ----------
     x : np.array
         Input with shape [N, H', W', C] (usually dy)
     ksize : Tuple
         KH, KW
-    pad : str or int
-        Padding strategy or [PH, PW].
+    pad : Tuple[int, int]
+        Padding, [PH, PW].
     stride : int
         Stride, [SH, SW].
     orig_size : Tuple
@@ -296,12 +297,9 @@ def extract_sliding_windows_gradx(x, ksize, pad, stride, orig_size, floor_first=
     ph3 = int(np.floor(ph / 2))
     pw2 = int(np.ceil(pw / 2))
     pw3 = int(np.floor(pw / 2))
-    if floor_first:
-        pph = (ph3, ph2)
-        ppw = (pw3, pw2)
-    else:
-        pph = (ph2, ph3)
-        ppw = (pw2, pw3)
+    # not floor first
+    pph = (ph2, ph3)
+    ppw = (pw2, pw3)
     x = np.pad(x, ((0, 0), pph, ppw, (0, 0)), mode="constant", constant_values=(0.0,))
 
     # The following code extracts window without copying the data:
@@ -322,18 +320,19 @@ def extract_sliding_windows_gradx(x, ksize, pad, stride, orig_size, floor_first=
 
 
 def conv2d(x, w, pad="SAME", stride=(1, 1)):
-    """2D convolution (technically speaking, correlation).
+    """
+    2D convolution (technically speaking, correlation).
 
     .. note:: Copied from MIT licensed https://github.com/renmengye/np-conv2d
 
-    Arguments
-    ---------
+    Parameters
+    ----------
     x : np.array
         Input with shape [N, H, W, C]
     w : np.array
         Weights with shape [N, H, W, C]
-    pad : str or int
-        Padding strategy or [PH, PW].
+    pad : {"SAME", "VALID"}
+        Padding method, either "SAME" or "VALID".
     stride : int
         Stride, [SH, SW].
 
@@ -355,18 +354,19 @@ def conv2d(x, w, pad="SAME", stride=(1, 1)):
 
 
 def conv2d_groups(x, w, pad="SAME", stride=(1, 1)):
-    """2D convolution (technically speaking, correlation).
+    """
+    2D convolution (technically speaking, correlation).
 
     Compatible with groups > 1.
 
-    Arguments
-    ---------
+    Parameters
+    ----------
     x : np.array
         Input with shape [N, H, W, C]
     w : np.array
         Weights with shape [I, J, C/G, K]
-    pad : str or int
-        Padding strategy or [PH, PW].
+    pad : {"SAME", "VALID"}
+        Padding method, either "SAME" or "VALID".
     stride : int
         Stride, [SH, SW].
 
@@ -403,16 +403,19 @@ def conv2d_groups(x, w, pad="SAME", stride=(1, 1)):
 
 
 def conv2d_gradx(w, dy, xsize, pad="SAME", stride=(1, 1)):
-    """2D convolution gradient wrt. input.
+    """
+    2D convolution gradient wrt. input.
 
-    Arguments
-    ---------
+    Parameters
+    ----------
     dy : np.array
         Input array with shape ``N, H', W', K``
     w : np.array
         Weights with shape ``I, J, K, C``.
     xsize : Tuple
         Original image size, ``[H, W]``.
+    pad : {"SAME", "VALID"}
+        Padding method, either "SAME" or "VALID".
 
     Returns
     -------
@@ -439,7 +442,8 @@ def conv2d_gradx(w, dy, xsize, pad="SAME", stride=(1, 1)):
 
 
 class GeneralConvInc(Operator):
-    """Apply convolutional weights to input signal.
+    """
+    Apply convolutional weights to input signal.
 
     .. versionadded:: 3.2.0
 
@@ -569,7 +573,8 @@ class GeneralConvInc(Operator):
 
 
 class ConvInc(GeneralConvInc):
-    """Apply convolutional weights to input signal.
+    """
+    Apply convolutional weights to input signal.
 
     .. versionadded:: 3.0.0
 
@@ -613,7 +618,8 @@ class ConvInc(GeneralConvInc):
 
 
 class ConvTransposeInc(GeneralConvInc):
-    """Apply transposed convolutional weights to input signal.
+    """
+    Apply transposed convolutional weights to input signal.
 
     .. versionadded:: 3.2.0
 

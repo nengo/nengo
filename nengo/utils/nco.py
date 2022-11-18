@@ -1,4 +1,5 @@
-"""Implementation of the Nengo cache object (NCO) protocol.
+"""
+Implementation of the Nengo cache object (NCO) protocol.
 
 Nengo cache objects store a Numpy array and some associated, picklable Python
 object in a single, uncompressed file. These files are not platform independent
@@ -44,7 +45,8 @@ from .cache import byte_align
 
 
 class Subfile:
-    """A file-like object for limiting reads to a subrange of a file.
+    """
+    A file-like object for limiting reads to a subrange of a file.
 
     This class only supports reading and seeking. Writing is not supported.
 
@@ -107,7 +109,8 @@ ALIGNMENT = 16
 
 
 def write(fileobj, metadata, array):
-    """Writes a Nengo cache object.
+    """
+    Writes a Nengo cache object.
 
     Parameters
     ----------
@@ -138,7 +141,8 @@ def write(fileobj, metadata, array):
 
 
 def read(fileobj):
-    """Reads a Nengo cache object.
+    """
+    Reads a Nengo cache object.
 
     Parameters
     ----------

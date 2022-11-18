@@ -176,7 +176,7 @@ class TestAutoProgressBar:
 
 
 def test_write_progress_to_file(tmp_path):
-    """Tests the WriteProgressToFile progress bar type"""
+    """Tests the WriteProgressToFile progress bar type."""
 
     def check_file(filename, startstring):
         with open(filename, "r", encoding="utf-8") as fh:

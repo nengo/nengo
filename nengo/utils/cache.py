@@ -1,4 +1,5 @@
-"""Utilities to convert to and from bytes.
+"""
+Utilities to convert to and from bytes.
 
 Used by nengo.rc in order to present file sizes to users in
 human-readable formats.
@@ -10,7 +11,8 @@ under the MIT License.
 
 
 def bytes2human(n, fmt="%(value).1f %(symbol)s"):
-    """Convert from a size in bytes to a human readable string.
+    """
+    Convert from a size in bytes to a human readable string.
 
     Examples
     --------
@@ -26,7 +28,6 @@ def bytes2human(n, fmt="%(value).1f %(symbol)s"):
 
        9.8 KB
        95.4 MB
-
     """
     symbols = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
     prefix = {}
@@ -40,7 +41,8 @@ def bytes2human(n, fmt="%(value).1f %(symbol)s"):
 
 
 def human2bytes(s):
-    """Convert from a human readable string to a size in bytes.
+    """
+    Convert from a human readable string to a size in bytes.
 
     Examples
     --------
@@ -56,7 +58,6 @@ def human2bytes(s):
 
        1048576
        1073741824
-
     """
     symbols = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
 

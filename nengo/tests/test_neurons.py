@@ -216,7 +216,7 @@ def test_alif_rate(Simulator, plt, allclose):
 
 
 def test_alif(Simulator, plt):
-    """Test ALIF and ALIFRate by comparing them to each other"""
+    """Test ALIF and ALIFRate by comparing them to each other."""
 
     n = 100
     max_rates = 50 * np.ones(n)
@@ -265,10 +265,11 @@ def test_alif(Simulator, plt):
 
 
 def test_izhikevich(Simulator, plt, seed):
-    """Smoke test for using Izhikevich neurons.
+    """
+    Smoke test for using Izhikevich neurons.
 
-    Tests that the 6 parameter sets listed in the original paper can be
-    simulated in Nengo (but doesn't test any properties of them).
+    Tests that the 6 parameter sets listed in the original paper can be simulated
+    in Nengo (but doesn't test any properties of them).
     """
     with nengo.Network() as m:
         u = nengo.Node(output=WhiteSignal(0.6, high=10), size_out=1)
@@ -321,7 +322,8 @@ def test_izhikevich(Simulator, plt, seed):
 
 @pytest.mark.parametrize("max_rate,intercept", [(300.0, 0.0), (100.0, 1.1)])
 def test_sigmoid_response_curves(Simulator, max_rate, intercept, allclose):
-    """Check the sigmoid response curve monotonically increases.
+    """
+    Check the sigmoid response curve monotonically increases.
 
     The sigmoid response curve should work fine:
 
@@ -425,7 +427,9 @@ def test_spiking_types(Simulator, base_type, seed, plt, allclose):
 def test_dt_dependence(Simulator, NonDirectNeuronType, plt, seed, allclose):
     """Neurons should not wildly change with different dt."""
     freq = 10 * (2 * np.pi)
-    input_signal = lambda t: [np.sin(freq * t), np.cos(freq * t)]
+
+    def input_signal(t):
+        return [np.sin(freq * t), np.cos(freq * t)]
 
     with nengo.Network(seed=seed) as m:
         m.config[nengo.Ensemble].neuron_type = NonDirectNeuronType()
@@ -557,7 +561,7 @@ def test_neurontypeparam():
 
 
 def test_frozen():
-    """Test attributes inherited from FrozenObject"""
+    """Test attributes inherited from FrozenObject."""
     a = LIF()
     b = LIF()
     c = LIF(tau_rc=0.3)

@@ -5,7 +5,8 @@ from nengo.spa.buffer import Buffer
 
 
 class Memory(Buffer):
-    """A SPA module capable of storing a vector over time.
+    """
+    A SPA module capable of storing a vector over time.
 
     Parameters are the same as `.spa.Buffer`, with the addition of
     ``synapse`` and ``tau``.

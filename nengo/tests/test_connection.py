@@ -245,7 +245,7 @@ def test_neurons_to_neurons(Simulator, PositiveNeuronType, plt, seed, allclose):
 
 
 def test_function_and_transform(Simulator, plt, seed, allclose):
-    """Test using both a function and a transform"""
+    """Test using both a function and a transform."""
 
     model = nengo.Network(seed=seed)
     with model:
@@ -321,7 +321,7 @@ def test_dist_transform(Simulator, seed, allclose):
 
 
 def test_weights(Simulator, AnyNeuronType, plt, seed, allclose):
-    """Tests connections using a solver with weights"""
+    """Tests connections using a solver with weights."""
     n1, n2 = 100, 50
 
     def func(t):
@@ -359,9 +359,11 @@ def test_weights(Simulator, AnyNeuronType, plt, seed, allclose):
     "ignore:For connections to.*setting `weights=True` on a solver has no effect",
 )
 def test_configure_weight_solver(Simulator, seed, plt, allclose):
-    """Ensures that connections that don't use the weight solver ignore it"""
+    """Ensures that connections that don't use the weight solver ignore it."""
     n1, n2 = 100, 101
-    function = lambda x: x**2
+
+    def function(x):
+        return x**2
 
     with nengo.Network(seed=seed) as net:
         net.config[nengo.Connection].solver = nengo.solvers.LstsqL2(weights=True)
@@ -630,7 +632,7 @@ def test_zerofilter(Simulator, seed):
 
 
 def test_function_output_size(Simulator, plt, seed, allclose):
-    """Try a function that outputs both 0-d and 1-d arrays"""
+    """Try a function that outputs both 0-d and 1-d arrays."""
 
     def bad_function(x):
         return x if x > 0 else 0
@@ -658,10 +660,14 @@ def test_function_output_size(Simulator, plt, seed, allclose):
 
 
 def test_slicing_function(Simulator, plt, seed, allclose):
-    """Test using a pre-slice and a function"""
+    """Test using a pre-slice and a function."""
     N = 300
-    f_in = lambda t: [np.cos(3 * t), np.sin(3 * t)]
-    f_x = lambda x: [x, -(x**2)]
+
+    def f_in(t):
+        return [np.cos(3 * t), np.sin(3 * t)]
+
+    def f_x(x):
+        return [x, -(x**2)]
 
     with nengo.Network(seed=seed) as model:
         u = nengo.Node(output=f_in)

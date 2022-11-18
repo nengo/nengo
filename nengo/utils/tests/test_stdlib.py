@@ -28,7 +28,8 @@ def test_checked_call():
     ):  # pylint: disable=keyword-arg-before-vararg
         return a + b + c + sum(args)
 
-    func4 = lambda x=[0]: sum(x)
+    def func4(x=None):
+        return 0 if x is None else sum(x)
 
     class A:
         def __call__(self, a, b):
@@ -126,8 +127,7 @@ class C:
 
 
 def test_weakkeydefaultdict():
-    factory = lambda: "default"
-    d = WeakKeyDefaultDict(factory)
+    d = WeakKeyDefaultDict(lambda: "default")
     o = C()
 
     assert len(d) == 0
@@ -235,7 +235,7 @@ def test_weakkeydict_bad_delitem():
     with pytest.raises(KeyError):
         print(d[o])
 
-    # If a key isn't of a weakly referencable type, __getitem__ and __delitem__ raise
+    # If a key isn't of a weakly referenceable type, __getitem__ and __delitem__ raise
     # keyerror, __setitem__ raises a TypeError
     with pytest.raises(KeyError):
         del d[13]

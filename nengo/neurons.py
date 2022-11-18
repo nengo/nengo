@@ -10,7 +10,8 @@ from nengo.utils.numpy import clip, is_array_like
 
 
 def settled_firingrate(step, J, state, dt=0.001, settle_time=0.1, sim_time=1.0):
-    """Compute firing rates (in Hz) for given vector input, ``x``.
+    """
+    Compute firing rates (in Hz) for given vector input, ``x``.
 
     Unlike the default naive implementation, this approach takes into
     account some characteristics of spiking neurons. We start
@@ -43,7 +44,8 @@ def settled_firingrate(step, J, state, dt=0.001, settle_time=0.1, sim_time=1.0):
 
 
 class NeuronType(FrozenObject):
-    """Base class for Nengo neuron models.
+    """
+    Base class for Nengo neuron models.
 
     Parameters
     ----------
@@ -92,7 +94,8 @@ class NeuronType(FrozenObject):
         return ("output",) + tuple(self.state)
 
     def current(self, x, gain, bias):
-        """Compute current injected in each neuron given input, gain and bias.
+        """
+        Compute current injected in each neuron given input, gain and bias.
 
         Note that ``x`` is assumed to be already projected onto the encoders
         associated with the neurons and normalized to radius 1, so the maximum
@@ -128,7 +131,8 @@ class NeuronType(FrozenObject):
         return gain * x + bias
 
     def gain_bias(self, max_rates, intercepts):
-        """Compute the gain and bias needed to satisfy max_rates, intercepts.
+        """
+        Compute the gain and bias needed to satisfy max_rates, intercepts.
 
         This takes the neurons, approximates their response function, and then
         uses that approximation to find the gain and bias value that will give
@@ -212,7 +216,8 @@ class NeuronType(FrozenObject):
         return state
 
     def max_rates_intercepts(self, gain, bias):
-        """Compute the max_rates and intercepts given gain and bias.
+        """
+        Compute the max_rates and intercepts given gain and bias.
 
         Note that this default implementation is very slow! Whenever possible,
         subclasses should override this with a neuron-specific implementation.
@@ -242,7 +247,8 @@ class NeuronType(FrozenObject):
         return max_rates, intercepts
 
     def rates(self, x, gain, bias):
-        """Compute firing rates (in Hz) for given input ``x``.
+        """
+        Compute firing rates (in Hz) for given input ``x``.
 
         This default implementation takes the naive approach of running the
         step function for a second. This should suffice for most rate-based
@@ -273,7 +279,8 @@ class NeuronType(FrozenObject):
         return out
 
     def step(self, dt, J, output, **state):
-        """Implements the differential equation for this neuron type.
+        """
+        Implements the differential equation for this neuron type.
 
         At a minimum, NeuronType subclasses must implement this method.
         That implementation should modify the ``output`` parameter rather
@@ -310,7 +317,8 @@ class NeuronTypeParam(Parameter):
 
 
 class Direct(NeuronType):
-    """Signifies that an ensemble should simulate in direct mode.
+    """
+    Signifies that an ensemble should simulate in direct mode.
 
     In direct mode, the ensemble represents and transforms signals perfectly,
     rather than through a neural approximation. Note that direct mode ensembles
@@ -331,16 +339,18 @@ class Direct(NeuronType):
         return np.array(x, dtype=float, copy=False, ndmin=1)
 
     def step(self, dt, J, output):
-        """Raises an error if called.
+        """
+        Raises an error if called.
 
-        Rather than calling this function, the simulator will detect that
-        the ensemble is in direct mode, and bypass the neural approximation.
+        Rather than calling this function, the simulator will detect that the
+        ensemble is in direct mode, and bypass the neural approximation.
         """
         raise SimulationError("Direct mode neurons shouldn't be simulated.")
 
 
 class RectifiedLinear(NeuronType):
-    """A rectified linear neuron model.
+    """
+    A rectified linear neuron model.
 
     Each neuron is modeled as a rectified line. That is, the neuron's activity
     scales linearly with current, unless it passes below zero, at which point
@@ -385,7 +395,8 @@ class RectifiedLinear(NeuronType):
 
 
 class SpikingRectifiedLinear(RectifiedLinear):
-    """A rectified integrate and fire neuron model.
+    """
+    A rectified integrate and fire neuron model.
 
     Each neuron is modeled as a rectified line. That is, the neuron's activity
     scales linearly with current, unless the current is less than zero, at
@@ -423,7 +434,8 @@ class SpikingRectifiedLinear(RectifiedLinear):
 
 
 class Sigmoid(NeuronType):
-    """A non-spiking neuron model whose response curve is a sigmoid.
+    """
+    A non-spiking neuron model whose response curve is a sigmoid.
 
     Since the tuning curves are strictly positive, the ``intercepts``
     correspond to the inflection point of each sigmoid. That is,
@@ -479,7 +491,8 @@ class Sigmoid(NeuronType):
 
 
 class Tanh(NeuronType):
-    """A non-spiking neuron model whose response curve is a hyperbolic tangent.
+    """
+    A non-spiking neuron model whose response curve is a hyperbolic tangent.
 
     Parameters
     ----------
@@ -528,7 +541,8 @@ class Tanh(NeuronType):
 
 
 class LIFRate(NeuronType):
-    """Non-spiking version of the leaky integrate-and-fire (LIF) neuron model.
+    """
+    Non-spiking version of the leaky integrate-and-fire (LIF) neuron model.
 
     Parameters
     ----------
@@ -610,7 +624,8 @@ class LIFRate(NeuronType):
 
 
 class LIF(LIFRate):
-    """Spiking version of the leaky integrate-and-fire (LIF) neuron model.
+    """
+    Spiking version of the leaky integrate-and-fire (LIF) neuron model.
 
     Parameters
     ----------
@@ -686,9 +701,10 @@ class LIF(LIFRate):
 
 
 class AdaptiveLIFRate(LIFRate):
-    """Adaptive non-spiking version of the LIF neuron model.
+    """
+    Adaptive non-spiking version of the LIF neuron model.
 
-    Works as the LIF model, except with adapation state ``n``, which is
+    Works as the LIF model, except with adaptation state ``n``, which is
     subtracted from the input current. Its dynamics are::
 
         tau_n dn/dt = -n
@@ -754,9 +770,10 @@ class AdaptiveLIFRate(LIFRate):
 
 
 class AdaptiveLIF(LIF):
-    """Adaptive spiking version of the LIF neuron model.
+    """
+    Adaptive spiking version of the LIF neuron model.
 
-    Works as the LIF model, except with adapation state ``n``, which is
+    Works as the LIF model, except with adaptation state ``n``, which is
     subtracted from the input current. Its dynamics are::
 
         tau_n dn/dt = -n
@@ -832,7 +849,8 @@ class AdaptiveLIF(LIF):
 
 
 class Izhikevich(NeuronType):
-    """Izhikevich neuron model.
+    """
+    Izhikevich neuron model.
 
     This implementation is based on the original paper [1]_;
     however, we rename some variables for clarity.
@@ -987,7 +1005,8 @@ class RatesToSpikesNeuronType(NeuronType):
 
 
 class RegularSpiking(RatesToSpikesNeuronType):
-    """Turn a rate neuron type into a spiking one with regular inter-spike intervals.
+    """
+    Turn a rate neuron type into a spiking one with regular inter-spike intervals.
 
     Spikes at regular intervals based on the rates of the base neuron type. [1]_
 
@@ -1021,7 +1040,8 @@ class RegularSpiking(RatesToSpikesNeuronType):
 
 
 class StochasticSpiking(RatesToSpikesNeuronType):
-    """Turn a rate neuron type into a spiking one using stochastic rounding.
+    """
+    Turn a rate neuron type into a spiking one using stochastic rounding.
 
     The expected number of spikes per timestep ``e = dt * r`` is determined by the
     base type firing rate ``r`` and the timestep ``dt``. Given the fractional part ``f``
@@ -1062,7 +1082,8 @@ class StochasticSpiking(RatesToSpikesNeuronType):
 
 
 class PoissonSpiking(RatesToSpikesNeuronType):
-    """Turn a rate neuron type into a spiking one with Poisson spiking statistics.
+    """
+    Turn a rate neuron type into a spiking one with Poisson spiking statistics.
 
     Spikes with Poisson probability based on the rates of the base neuron type.
 

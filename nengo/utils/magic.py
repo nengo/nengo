@@ -1,4 +1,7 @@
-"""Some generic decorators and a decorator for making better decorators.
+# pylint: disable=unnecessary-dunder-call
+
+"""
+Some generic decorators and a decorator for making better decorators.
 
 Decorators implemented as function closures have important flaws:
     - __name__ and __doc__ are wrong
@@ -48,14 +51,15 @@ import inspect
 
 
 class ObjectProxyMethods:
-    """Properly override __module__ and __doc__.
+    """
+    Properly override __module__ and __doc__.
 
-    If we add these in ObjectProxy, the derived class __dict__ will
-    still be setup to have string variants of these attributes and the
-    rules of descriptors means that they appear to take precedence
-    over the properties in the base class. To avoid that, we copy the
-    properties into the derived class type itself via a meta class. In
-    that way the properties will always take precedence.
+    If we add these in ObjectProxy, the derived class __dict__ will still be
+    setup to have string variants of these attributes and the rules of
+    descriptors means that they appear to take precedence over the properties in
+    the base class. To avoid that, we copy the properties into the derived class
+    type itself via a meta class. In that way the properties will always take
+    precedence.
     """
 
     @property
@@ -73,12 +77,13 @@ class ObjectProxyMethods:
 
 
 class ObjectProxyMeta(type):
-    """Ensure ObjectProxyMethods take precedence.
+    """
+    Ensure ObjectProxyMethods take precedence.
 
-    Copy our special properties into the class so that they always
-    take precedence over attributes of the same name added during
-    construction of a derived class. This is to save duplicating the
-    implementation for them in all derived classes.
+    Copy our special properties into the class so that they always take
+    precedence over attributes of the same name added during construction of a
+    derived class. This is to save duplicating the implementation for them in all
+    derived classes.
     """
 
     def __new__(metacls, name, bases, dictionary):
@@ -87,13 +92,13 @@ class ObjectProxyMeta(type):
 
 
 class ObjectProxy(metaclass=ObjectProxyMeta):
-    """A transparent object proxy for creating decorator descriptors.
+    """
+    A transparent object proxy for creating decorator descriptors.
 
-    This is used in lieu of ``functools.update_wrapper``, which copies
-    a number of properties of the wrapped function in the wrapper.
-    Copying properties can be expensive though, so this is used instead
-    to make the wrapper act like the wrapped function in all cases
-    except ``__call__``.
+    This is used in lieu of ``functools.update_wrapper``, which copies a number
+    of properties of the wrapped function in the wrapper. Copying properties can
+    be expensive though, so this is used instead to make the wrapper act like the
+    wrapped function in all cases except ``__call__``.
     """
 
     __slots__ = ["__wrapped__"]
@@ -144,11 +149,11 @@ class ObjectProxy(metaclass=ObjectProxyMeta):
 
 
 class BoundFunctionWrapper(ObjectProxy):
-    """A descriptor to emulate a bound function.
+    """
+    A descriptor to emulate a bound function.
 
-    This is used to create bound function decorators.
-    It maintains all of the nice introspection that can normally
-    be done on bound functions.
+    This is used to create bound function decorators. It maintains all of the
+    nice introspection that can normally be done on bound functions.
     """
 
     __slots__ = ("instance", "wrapper", "binding", "parent")
@@ -183,11 +188,11 @@ class BoundFunctionWrapper(ObjectProxy):
 
 
 class FunctionWrapper(ObjectProxy):
-    """A descriptor to emulate a function.
+    """
+    A descriptor to emulate a function.
 
-    This is used to create function decorators.
-    It maintains all of the nice introspection that can normally
-    be done on functions.
+    This is used to create function decorators. It maintains all of the nice
+    introspection that can normally be done on functions.
     """
 
     __slots__ = ("wrapper", "binding")
@@ -212,7 +217,8 @@ class FunctionWrapper(ObjectProxy):
 
 
 def decorator(wrapper):
-    """Decorate decorators.
+    """
+    Decorate decorators.
 
     This imposes a particular style of writing descriptors.
     The descriptor must accept four positional arguments:

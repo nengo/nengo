@@ -119,7 +119,7 @@ def test_signal_values(allclose):
 
 
 def test_signal_reshape():
-    """Tests Signal.reshape"""
+    """Tests Signal.reshape."""
     # check proper shape after reshape
     three_d = Signal(np.ones((2, 2, 2)))
     assert three_d.reshape((8,)).shape == (8,)
