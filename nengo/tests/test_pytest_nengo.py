@@ -4,15 +4,14 @@ pytest_plugins = ["pytester"]
 
 
 @pytest.mark.parametrize("xfail", (True, False))
-def test_unsupported(xfail, testdir):
+def test_unsupported(xfail, pytester):
     """Test ``nengo_test_unsupported`` config option and ``--unsupported`` arg."""
 
-    # Set up a dummy nengo package directory, so that `pytest_nengo.is_nengo_test`
-    # returns True
-    nengo_dir = testdir.mkpydir("nengo")
+    # Dir ends with 'nengo' so that `pytest_nengo.is_nengo_test` returns True
+    test_dir = pytester.mkpydir("notnengo")
 
-    # Create a test file with some dummy tests, and move it into nengo_dir
-    test_file_path = testdir.makefile(
+    # Create a test file with some dummy tests, and move it into test_dir
+    test_file_path = pytester.makefile(
         ".py",
         test_file="""
         import pytest
@@ -32,12 +31,12 @@ def test_unsupported(xfail, testdir):
             assert True
         """,
     )
-    test_file_path.move(test_file_path.new(dirname=nengo_dir))
+    test_file_path.rename(test_dir / test_file_path.name)
 
     # Create the .ini file to skip/xfail the failing tests. This will
     # make sure square brackets for parameters just skip that parametrization.
     # We also make sure that both single-line and multiline comments work.
-    testdir.makefile(
+    pytester.makefile(
         ".ini",
         pytest="""
         [pytest]
@@ -47,16 +46,13 @@ def test_unsupported(xfail, testdir):
                 with multiline comment"
             test_file.py::test_unsupported_all*
                 "Two unsupported params with single-line comment"
-
-        # avoid trying to load neurons from dummy nengo package
-        nengo_neurons =
         """,
     )
 
-    args = "-rsx -sv".split()
+    args = f"{test_dir} -rsx -sv".split()
     if xfail:
         args.append("--unsupported")
-    output = testdir.runpytest_subprocess(*args)
+    output = pytester.runpytest_inprocess(*args)
 
     # ensure that these lines appear somewhere in the output
     output.stdout.fnmatch_lines_random(
@@ -91,9 +87,9 @@ class MockSimulator:
     """A Simulator that does not support any tests."""
 
 
-def test_pyargs(testdir):
+def test_pyargs(pytester):
     # mark all the tests as unsupported
-    testdir.makefile(
+    pytester.makefile(
         ".ini",
         pytest="""
         [pytest]
@@ -104,7 +100,7 @@ def test_pyargs(testdir):
         """,
     )
 
-    outcomes = testdir.runpytest_subprocess("--pyargs", "nengo").parseoutcomes()
+    outcomes = pytester.runpytest_inprocess("--pyargs", "nengo").parseoutcomes()
 
     assert "failed" not in outcomes
     assert "passed" not in outcomes
