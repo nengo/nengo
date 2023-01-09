@@ -75,9 +75,9 @@ setup_cfg:
       - "^[ \\t]*assert False"
     omit_files:
       - "/tmp/pytest-*"
-      - "nengo/_vendor/*"
-      - "nengo/version.py"
-      - "nengo/spa/*"
+      - "*/_vendor/*"
+      - "*/version.py"
+      - "*/spa/*"
       # omit filter_design.py until it gets moved to nengo/_vendor
       - "nengo/utils/filter_design.py"
   flake8:
