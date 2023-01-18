@@ -24,6 +24,7 @@ prune .github
 prune .tox
 prune .eggs
 prune .ci
+prune bones-scripts
 
 # Exclude auto-generated files
 recursive-exclude docs *.py
