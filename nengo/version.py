@@ -20,6 +20,6 @@ dev = 0
 # (since this file is parsed in setup.py, before python_requires is applied)
 version = ".".join(str(v) for v in version_info)
 if dev is not None:
-    version += ".dev%d" % dev
+    version += ".dev%d" % dev  # pragma: no cover
 
 copyright = "Copyright (c) 2013-2023 Applied Brain Research"
