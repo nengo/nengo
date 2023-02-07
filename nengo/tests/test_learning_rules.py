@@ -388,7 +388,6 @@ def test_pes_adv_idx(Simulator):
 def test_pes_pre_post_varieties(
     Simulator, pre_neurons, post_neurons, weight_solver, pre_slice, post_slice
 ):
-
     with nengo.Network() as net:
         pre = nengo.Ensemble(10, 12)
         post = nengo.Ensemble(20, 22)
@@ -615,7 +614,7 @@ def test_learningrule_attr(seed):
         for rule, rule_type in zip(c2.learning_rule, r2):
             check_rule(rule, c2, rule_type)
 
-        r3 = dict(oja=Oja(), bcm=BCM())
+        r3 = {"oja": Oja(), "bcm": BCM()}
         c3 = nengo.Connection(a.neurons, b.neurons, learning_rule_type=r3, transform=T)
         assert isinstance(c3.learning_rule, dict)
         assert set(c3.learning_rule) == set(r3)  # assert same keys

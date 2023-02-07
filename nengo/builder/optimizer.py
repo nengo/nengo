@@ -186,7 +186,6 @@ class OpMergePass:
         firstops = [ElementwiseInc, Copy, DotInc, SimNeurons]
         sortedops = firstops + [op for op in by_type if op not in firstops]
         for optype in sortedops:
-
             if OpMerger.is_type_mergeable(optype):
                 self.perform_merges_for_subset(by_type[optype])
 
@@ -264,7 +263,6 @@ class OpMergePass:
             )
 
             for op2 in sorted_subset[start:]:
-
                 if tomerge.not_sequential(op2):
                     # If this check is true the view of op2 does not
                     # immediately follow the view of the operators being

@@ -72,7 +72,6 @@ class Vocabulary:
         include_pairs=False,
         rng=None,
     ):
-
         if not is_integer(dimensions) or dimensions < 1:
             raise ValidationError(
                 "dimensions must be a positive integer", attr="dimensions", obj=self

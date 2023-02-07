@@ -101,7 +101,6 @@ def check_repr(obj):
 
 def test_core_objects():
     with nengo.Network() as net1:
-
         a = nengo.Ensemble(100, 2)
         with nengo.Network(label="net2") as net2:
             b = nengo.Ensemble(100, 2, label="b")

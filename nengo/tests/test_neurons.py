@@ -222,10 +222,13 @@ def test_alif(Simulator, plt):
     max_rates = 50 * np.ones(n)
     intercepts = np.linspace(-0.99, 0.99, n)
     encoders = np.ones((n, 1))
-    nparams = dict(tau_n=1, inc_n=10e-3)
-    eparams = dict(
-        n_neurons=n, max_rates=max_rates, intercepts=intercepts, encoders=encoders
-    )
+    nparams = {"tau_n": 1, "inc_n": 0.01}
+    eparams = {
+        "n_neurons": n,
+        "max_rates": max_rates,
+        "intercepts": intercepts,
+        "encoders": encoders,
+    }
 
     model = nengo.Network()
     with model:
@@ -818,7 +821,7 @@ def test_ratestospikes_state_overlap():
 def test_step_math():
     class CustomNeuronType(NeuronType):
         def step(self, dt, J, output, **state):
-            return dict(dt=dt, J=J, output=output, state=state)
+            return {"dt": dt, "J": J, "output": output, "state": state}
 
     argnames = ["dt", "J", "output", "state1", "state2"]
     args = {argname: object() for argname in argnames}

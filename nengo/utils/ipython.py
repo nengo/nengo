@@ -109,9 +109,9 @@ def hide_input():
             }
         }());
         </script>
-    """ % dict(
-        uuid=uuid
-    )
+    """ % {
+        "uuid": uuid
+    }
 
     return HTML(script)
 

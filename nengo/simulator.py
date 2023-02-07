@@ -224,16 +224,16 @@ class Simulator:
             else {}
         )
         probe_outputs = {probe: self._sim_data[probe] for probe in self.model.probes}
-        return dict(
-            model=self.model,
-            signals=signals,
-            probe_outputs=probe_outputs,
-            dt=self.dt,
-            seed=self.seed,
-            progress_bar=self.progress_bar,
-            optimize=self.optimize,
-            closed=self.closed,
-        )
+        return {
+            "model": self.model,
+            "signals": signals,
+            "probe_outputs": probe_outputs,
+            "dt": self.dt,
+            "seed": self.seed,
+            "progress_bar": self.progress_bar,
+            "optimize": self.optimize,
+            "closed": self.closed,
+        }
 
     def __setstate__(self, state):
         self.__init__(

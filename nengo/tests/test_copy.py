@@ -383,7 +383,7 @@ def test_pickle_model(Simulator, seed, allclose):
     with Simulator(network, seed=simseed) as sim:
         sim.run(t_run)
         t0, u0, a0, b0 = sim.trange(), sim.data[up], sim.data[ap], sim.data[bp]
-        pkls = pickle.dumps(dict(model=sim.model, up=up, ap=ap, bp=bp))
+        pkls = pickle.dumps({"model": sim.model, "up": up, "ap": ap, "bp": bp})
 
     # reload model
     del network, sim, up, ap, bp
@@ -394,7 +394,7 @@ def test_pickle_model(Simulator, seed, allclose):
         sim.run(t_run)
         t1, u1, a1, b1 = sim.trange(), sim.data[up], sim.data[ap], sim.data[bp]
 
-    tols = dict(atol=1e-5)
+    tols = {"atol": 1e-5}
     assert allclose(t1, t0, **tols)
     assert allclose(u1, u0, **tols)
     assert allclose(a1, a0, **tols)
@@ -434,7 +434,7 @@ def test_pickle_sim(Simulator, seed, allclose, optimize, dt, progress_bar):
         network, seed=simseed, dt=dt, optimize=optimize, progress_bar=progress
     ) as sim:
         sim.run(trun0)
-        pkls = pickle.dumps(dict(sim=sim, up=up, ap=ap, bp=bp))
+        pkls = pickle.dumps({"sim": sim, "up": up, "ap": ap, "bp": bp})
 
         sim.run(trun1)
         t0, u0, a0, b0 = sim.trange(), sim.data[up], sim.data[ap], sim.data[bp]
@@ -456,12 +456,12 @@ def test_pickle_sim(Simulator, seed, allclose, optimize, dt, progress_bar):
         sim.run(trun1)
         t1, u1, a1, b1 = sim.trange(), sim.data[up], sim.data[ap], sim.data[bp]
 
-    tols = dict(atol=1e-5)
+    tols = {"atol": 1e-5}
     assert allclose(t1, t0, **tols)
     assert allclose(u1, u0, **tols)
     assert allclose(a1, a0, **tols)
     assert allclose(b1, b0, **tols)
 
     # check that closed status is preserved
-    pkl = pickle.loads(pickle.dumps(dict(sim=sim)))
+    pkl = pickle.loads(pickle.dumps({"sim": sim}))
     assert pkl["sim"].closed

@@ -62,7 +62,6 @@ class InputGatedMemory(Network):
         difference_synapse=None,
         **kwargs,
     ):
-
         if "net" in kwargs:
             raise ObsoleteError("The 'net' argument is no longer supported.")
         kwargs.setdefault("label", "Input gated memory")

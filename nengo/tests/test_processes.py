@@ -351,7 +351,7 @@ def test_seed(Simulator, seed, allclose):
     with Simulator(model) as sim2:
         sim2.run(0.1)
 
-    tols = dict(atol=1e-7, rtol=1e-4)
+    tols = {"atol": 1e-7, "rtol": 1e-4}
     assert allclose(sim1.data[ap], sim2.data[ap], **tols)
     assert allclose(sim1.data[bp], sim2.data[bp], **tols)
     assert not allclose(

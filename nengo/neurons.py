@@ -308,7 +308,6 @@ class NeuronType(FrozenObject):
 
 
 class NeuronTypeParam(Parameter):
-
     equatable = True
 
     def coerce(self, instance, neurons):  # pylint: disable=arguments-renamed

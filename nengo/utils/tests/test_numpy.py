@@ -64,7 +64,6 @@ def test_array_hash_sparse(nnz, rng):
     matrices = [[] for _ in range(6)]
 
     for (rows, cols), data in itertools.product((idxs_a, idxs_b), (data_a, data_b)):
-
         csr = scipy_sparse.csr_matrix((data, (rows, cols)), shape=shape)
         matrices[0].append(csr)
         matrices[1].append(csr.tocsc())

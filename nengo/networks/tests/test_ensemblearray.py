@@ -182,7 +182,7 @@ def test_matrix_mul(Simulator, plt, seed, allclose):
     for d in np.dot(Amat, Bmat).flatten():
         plt.axhline(d, color="k")
 
-    tols = dict(atol=0.1, rtol=0.01)
+    tols = {"atol": 0.1, "rtol": 0.01}
     for i in range(Amat.size):
         assert allclose(sim.data[A_p][tmask, i], Amat.flat[i], **tols)
     for i in range(Bmat.size):

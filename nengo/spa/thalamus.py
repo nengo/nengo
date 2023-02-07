@@ -76,7 +76,6 @@ class Thalamus(nengo.networks.Thalamus, Module):
         seed=None,
         add_to_container=None,
     ):
-
         self.bg = bg
         self.neurons_action = neurons_action
         self.mutual_inhibit = mutual_inhibit
