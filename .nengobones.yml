@@ -4,7 +4,7 @@ repo_name: nengo/nengo
 description: Tools for building and simulating large-scale neural models
 
 copyright_start: 2013
-license: abr-free
+license: gpl-v2
 main_branch: main
 
 license_rst: {}
@@ -228,7 +228,7 @@ pyproject_toml:
     - "_vendor/"
 
 version_py:
-  major: 3
-  minor: 2
-  patch: 1
+  major: 4
+  minor: 0
+  patch: 0
   release: false

@@ -517,13 +517,12 @@ class ScatteredHypersphere(Distribution):
 
     @classmethod
     def spherical_coords_ppf(cls, dims, y, approx=False):
-        if not approx:
-            import scipy.special  # pylint: disable=import-outside-toplevel
-
         y_reflect = np.where(y < 0.5, y, 1 - y)
         if approx:
             z_sq = _betaincinv22.lookup(dims, 2 * y_reflect)
         else:
+            import scipy.special  # pylint: disable=import-outside-toplevel
+
             z_sq = scipy.special.betaincinv(dims / 2.0, 0.5, 2 * y_reflect)
         x = np.arcsin(np.sqrt(z_sq)) / np.pi
         return np.where(y < 0.5, x, 1 - x)

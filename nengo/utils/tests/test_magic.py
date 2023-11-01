@@ -211,8 +211,8 @@ def test_class():
     inst = f("a", "b")
     assert inst.a == "a" and inst.b == "b"
     assert inst.ran
-    assert type(inst) == f.__wrapped__
-    assert type(inst) == f.__wrapped__
+    assert type(inst) is f.__wrapped__
+    assert type(inst) is f.__wrapped__
 
     # Make sure introspection works
     source = inspect.getsource(f)

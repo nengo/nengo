@@ -745,7 +745,7 @@ class ChannelShape:
 
     def __eq__(self, other):
         return (
-            type(self) == type(other)
+            type(self) is type(other)
             and self.shape == other.shape
             and self.channels_last == other.channels_last
         )

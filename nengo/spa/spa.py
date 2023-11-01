@@ -134,11 +134,11 @@ class SPA(Network):
                 value.label = key
             self._modules[key] = value
             for k, (obj, v) in value.inputs.items():
-                if type(v) == int:
+                if isinstance(v, int):
                     value.inputs[k] = (obj, self.get_default_vocab(v))
                 self.config[obj].vocab = value.inputs[k][1]
             for k, (obj, v) in value.outputs.items():
-                if type(v) == int:
+                if isinstance(v, int):
                     value.outputs[k] = (obj, self.get_default_vocab(v))
                 self.config[obj].vocab = value.outputs[k][1]
 

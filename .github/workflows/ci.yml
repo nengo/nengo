@@ -15,6 +15,10 @@ on:
         required: false
         default: false
 
+defaults:
+  run:
+    shell: bash -el {0}
+
 jobs:
   static:
     runs-on: ubuntu-latest
@@ -22,7 +26,7 @@ jobs:
     steps:
       - uses: nengo/nengo-bones/actions/setup@main
         with:
-          python-version: "3.7"
+          python-version: "3.8"
       - uses: nengo/nengo-bones/actions/generate-and-check@main
       - uses: nengo/nengo-bones/actions/run-script@main
         with:
@@ -35,10 +39,10 @@ jobs:
     strategy:
       matrix:
         include:
-          - coverage-name: py37
+          - coverage-name: py38
             script: test-coverage
             test_args: --plots
-            python: "3.7"
+            python: "3.8"
           - coverage-name: py39-scipy
             script: test-coverage-scipy
             test_args: --plots
@@ -101,14 +105,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      GH_TOKEN: ${{ secrets.PUBLIC_GH_TOKEN }}
     steps:
-      - name: Install apt dependencies
-        run: |
-          sudo apt-get install -y graphviz pandoc
       - uses: nengo/nengo-bones/actions/setup@main
         with:
-          python-version: "3.7"
+          python-version: "3.8"
+      - name: Install non-Python dependencies
+        run: |
+          sudo apt-get install -y graphviz
+          micromamba install pandoc
       - uses: nengo/nengo-bones/actions/generate-and-check@main
       - uses: nengo/nengo-bones/actions/run-script@main
         with:

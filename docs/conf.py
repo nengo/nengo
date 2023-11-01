@@ -153,7 +153,7 @@ html_theme_options = {
          var _paq = window._paq = window._paq || [];
          _paq.push(["setDocumentTitle", document.domain + "/" + document.title]);
          _paq.push(["setCookieDomain", "*.appliedbrainresearch.com"]);
-         _paq.push(["setDomains", ["*.appliedbrainresearch.com","*.edge.nengo.ai","*.forum.nengo.ai","*.labs.nengo.ai","*.nengo.ai"]]);
+         _paq.push(["setDomains", ["*.appliedbrainresearch.com","*.edge.nengo.ai","*.forum.nengo.ai","*.nengo.ai"]]);
          _paq.push(["enableCrossDomainLinking"]);
          _paq.push(["setDoNotTrack", true]);
          _paq.push(['trackPageView']);

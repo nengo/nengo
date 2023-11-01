@@ -73,7 +73,7 @@ def human2bytes(s):
 
 
 def byte_align(size, alignment):
-    """Returns the int larger than ``size`` aligned to ``alginment`` bytes."""
+    """Returns the int larger than ``size`` aligned to ``alignment`` bytes."""
     mask = alignment - 1
     if size & mask == 0:
         return size

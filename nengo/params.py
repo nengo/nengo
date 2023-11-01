@@ -638,7 +638,7 @@ class FrozenObject:
     def __eq__(self, other):
         if self is other:  # quick check for speed
             return True
-        return type(self) == type(other) and all(
+        return type(self) is type(other) and all(
             p.equal(self, other) for p in self._params
         )
 

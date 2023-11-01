@@ -12,7 +12,7 @@ for the reusable networks included with Nengo below.
 You may also want to build your own reusable networks.
 Doing so can help encapsulate parts of your model,
 making your code easier to understand,
-easier to re-use, and easier to share.
+easier to reuse, and easier to share.
 
 You may also find the :doc:`config system documentation <config>` useful.
 
