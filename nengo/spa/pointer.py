@@ -107,7 +107,7 @@ class SemanticPointer:
         """
         Multiplication of two SemanticPointers is circular convolution.
 
-        If mutliplied by a scaler, we do normal multiplication.
+        If multiplied by a scaler, we do normal multiplication.
         """
         if isinstance(other, SemanticPointer):
             return self.convolve(other)
@@ -122,7 +122,7 @@ class SemanticPointer:
         """
         Multiplication of two SemanticPointers is circular convolution.
 
-        If mutliplied by a scaler, we do normal multiplication.
+        If multiplied by a scaler, we do normal multiplication.
         """
         if isinstance(other, SemanticPointer):
             self.v = np.fft.ifft(np.fft.fft(self.v) * np.fft.fft(other.v)).real

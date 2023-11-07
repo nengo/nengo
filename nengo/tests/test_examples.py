@@ -38,8 +38,6 @@ too_slow = {
     "learning/learn-unsupervised",
     "learning/lmu",
     "networks/basal-ganglia",
-    "usage/network-design",
-    "usage/network-design-advanced",
 }
 
 files = [

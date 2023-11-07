@@ -94,7 +94,6 @@ Learning
    examples/learning/learn-product
    examples/learning/learn-unsupervised
    examples/learning/learn-associations
-   examples/learning/lmu
 
 Networks
 --------
@@ -105,7 +104,6 @@ Networks
    examples/networks/ensemble-array
    examples/advanced/matrix-multiplication
    examples/networks/basal-ganglia
-   examples/networks/integrator-network
 
 Under the hood
 --------------

@@ -448,7 +448,7 @@ class HtmlProgressBar(ProgressBar):  # pragma: no cover
                     if (Jupyter.version.split(".")[0] < 5) {{
                         var pb = document.getElementById("{uuid}");
                         var text = document.createTextNode(
-                            "HMTL progress bar requires Jupyter Notebook >= " +
+                            "HTML progress bar requires Jupyter Notebook >= " +
                             "5.0 or Jupyter Lab. Alternatively, you can use " +
                             "TerminalProgressBar().");
                         pb.parentNode.insertBefore(text, pb);
@@ -560,7 +560,7 @@ class VdomOrHtmlProgressBar(ProgressBar):  # pragma: no cover
 
     This progress bar will transmit both representations as part of a MIME
     bundle and it is up to the Jupyter client to pick the preferred version.
-    Usually this will be the VDOM if supported, and the HMTL version where VDOM
+    Usually this will be the VDOM if supported, and the HTML version where VDOM
     is not supported.
 
     .. versionadded: 3.0.0
