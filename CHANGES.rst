@@ -19,6 +19,11 @@ Release history
    - Removed
    - Fixed
 
+4.0.1 (unreleased)
+==================
+
+
+
 4.0.0 (November 16, 2023)
 =========================
 
