@@ -19,12 +19,16 @@ Release history
    - Removed
    - Fixed
 
-3.2.1 (unreleased)
-==================
+4.0.0 (November 16, 2023)
+=========================
 
 **Added**
 
 - Added ``groups`` parameter to ``nengo.Convolution``. (`#1675`_, `#1684`_)
+
+**Changed**
+
+- Made NengoCore available under the GPLv2 license. (`#1693`_)
 
 **Fixed**
 
@@ -34,6 +38,7 @@ Release history
 .. _#1675: https://github.com/nengo/nengo/issues/1675
 .. _#1684: https://github.com/nengo/nengo/pull/1684
 .. _#1687: https://github.com/nengo/nengo/pull/1687
+.. _#1693: https://github.com/nengo/nengo/pull/1693
 
 3.2.0 (January 27, 2022)
 ========================

@@ -128,7 +128,7 @@ jobs:
       - uses: nengo/nengo-bones/actions/coverage-report@main
   deploy:
     needs:
-      - test-all
+      - test
       - docs
     if: >-
       startsWith(github.ref_name, 'release-candidate-') ||

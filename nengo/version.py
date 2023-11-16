@@ -14,7 +14,7 @@ tagged with the version.
 version_info = (4, 0, 0)
 
 name = "nengo"
-dev = 0
+dev = None
 
 # use old string formatting, so that this can still run in Python <= 3.5
 # (since this file is parsed in setup.py, before python_requires is applied)
