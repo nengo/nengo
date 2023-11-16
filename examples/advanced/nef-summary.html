@@ -1,0 +1,1851 @@
+
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NEF summary &#8212; Nengo 4.0.0 docs</title>
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/basic.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nbsphinx-code-cells.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nbsphinx-code-cells.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nbsphinx-code-cells.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nbsphinx-code-cells.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nbsphinx-code-cells.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nbsphinx-code-cells.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.2/css/all.css" integrity="sha384-oS3vJWv+0UjzBfQzYUhtDYW+Pj2yciDJxpsK1OYPAYjqT085Qq/1cq5FLXAZQ7Ay" crossorigin="anonymous">
+<link rel="stylesheet" href="https://www.nengo.ai/css/bootstrap.css" type="text/css">
+<style>
+ body .title-bar,
+ body .documentation-source h1:after {
+   background-color: #a8acaf;
+ }
+</style>
+<script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/scrollreveal"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/stickyfill/2.1.0/stickyfill.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js" integrity="sha384-smHYKdLADwkXOn1EmN1qk/HfnUcbVRZyYmZ4qpPea6sjB/pTJ0euyQp0Mk8ck+5T" crossorigin="anonymous"></script>
+<!-- From basic/layout.html -->
+<script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+
+
+<script src="../../_static/underscore.js"></script>
+
+
+<script src="../../_static/doctools.js"></script>
+
+
+<script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+
+
+<script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+<script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "tex2jax_ignore|mathjax_ignore|document", "processClass": "tex2jax_process|mathjax_process|math|output_area"}})</script>
+
+        <!-- Google tag (gtag.js) -->
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-GT8XEDLTMJ"></script>
+        <script>
+         window.dataLayer = window.dataLayer || [];
+         function gtag(){dataLayer.push(arguments);}
+         gtag('js', new Date());
+         gtag('config', 'G-GT8XEDLTMJ');
+        </script>
+        <!-- End Google tag (gtag.js) -->
+        <!-- Matomo -->
+        <script>
+         var _paq = window._paq = window._paq || [];
+         _paq.push(["setDocumentTitle", document.domain + "/" + document.title]);
+         _paq.push(["setCookieDomain", "*.appliedbrainresearch.com"]);
+         _paq.push(["setDomains", ["*.appliedbrainresearch.com","*.edge.nengo.ai","*.forum.nengo.ai","*.nengo.ai"]]);
+         _paq.push(["enableCrossDomainLinking"]);
+         _paq.push(["setDoNotTrack", true]);
+         _paq.push(['trackPageView']);
+         _paq.push(['enableLinkTracking']);
+         (function() {
+           var u="https://appliedbrainresearch.matomo.cloud/";
+           _paq.push(['setTrackerUrl', u+'matomo.php']);
+           _paq.push(['setSiteId', '3']);
+           var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
+           g.async=true; g.src='//cdn.matomo.cloud/appliedbrainresearch.matomo.cloud/matomo.js'; s.parentNode.insertBefore(g,s);
+         })();
+        </script>
+        <!-- End Matomo Code -->
+    
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="The NEF algorithm" href="nef-algorithm.html" />
+    <link rel="prev" title="Adding new objects to Nengo" href="../usage/rectified-linear.html" />
+<link rel="stylesheet" type="text/css" href="../../_static/custom.css">
+
+
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+  </head><body class="bg-dark"><!-- prettier-ignore -->
+
+
+<header class="fixed-top header-top shadow-sm">
+  <nav class="navbar navbar-expand-md navbar-light bg-white">
+    <a class="navbar-brand" href="https://www.nengo.ai/">
+      <img src="https://www.nengo.ai/design/_images/general-full-light.svg" alt="Nengo" class="logo" />
+    </a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapse"
+      aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbar-collapse">
+      <ul class="navbar-nav ml-auto">
+        <li class="nav-item">
+          <a class="nav-link" href="https://www.nengo.ai/">What is Nengo?</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://www.nengo.ai/examples/">Examples</a>
+        </li>
+        <li class="nav-item dropdown active">
+          <a class="nav-link dropdown-toggle text-nowrap" id="navbar-dropdown-docs" data-toggle="dropdown"
+            aria-haspopup="true" aria-expanded="false" href="#">Documentation</a>
+          <div class="dropdown-menu shadow-lg border-0" aria-labelledby="navbar-dropdown-docs">
+            
+            <a class="dropdown-item" href="https://www.nengo.ai/nengo/">Nengo core</a>
+            <a class="dropdown-item" href="https://github.com/nengo/nengo-gui/">NengoGUI</a>
+            <a class="dropdown-item" href="https://www.nengo.ai/nengo-dl/">NengoDL</a>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="https://www.nengo.ai/nengo-spa/">NengoSPA</a>
+            <a class="dropdown-item" href="https://www.nengo.ai/nengo-extras/">NengoExtras</a>
+            <a class="dropdown-item" href="https://arvoelke.github.io/nengolib-docs/">Nengolib</a>
+            <a class="dropdown-item" href="https://www.nengo.ai/keras-spiking">KerasSpiking</a>
+            <a class="dropdown-item" href="https://www.nengo.ai/pytorch-spiking">PyTorchSpiking</a>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="https://www.nengo.ai/nengo-fpga/">NengoFPGA</a>
+            <a class="dropdown-item" href="https://www.nengo.ai/nengo-loihi/">NengoLoihi</a>
+            <a class="dropdown-item" href="https://www.nengo.ai/nengo-ocl/">NengoOCL</a>
+            <a class="dropdown-item" href="https://github.com/project-rig/nengo_spinnaker">NengoSpiNNaker</a>
+            <a class="dropdown-item" href="https://github.com/nengo/nengo-mpi">NengoMPI</a>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="https://www.nengo.ai/documentation/">All documentation</a>
+          </div>
+        </li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle text-nowrap" id="navbar-dropdown-community" data-toggle="dropdown"
+            aria-haspopup="true" aria-expanded="false" href="#">Community</a>
+          <div class="dropdown-menu shadow-lg border-0" aria-labelledby="navbar-dropdown-community">
+            <a class="dropdown-item" href="https://forum.nengo.ai">Forum</a>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="https://www.nengo.ai/people/">People</a>
+            <a class="dropdown-item" href="https://www.nengo.ai/summer-school/">Summer school</a>
+            <a class="dropdown-item" href="https://www.nengo.ai/contributing/">Contributing</a>
+            <a class="dropdown-item" href="https://www.nengo.ai/publications/">Publications</a>
+            <a class="dropdown-item" href="https://www.nengo.ai/videos/">Videos</a>
+            <a class="dropdown-item" href="https://www.nengo.ai/conduct/">Code of conduct</a>
+            <a class="dropdown-item" href="https://www.nengo.ai/caa/">CAA</a>
+          </div>
+        </li>
+      </ul>
+      <ul class="navbar-nav ml-auto">
+        <li class="nav-item">
+          <a class="nav-link btn btn-success btn-sm text-white" href="https://www.nengo.ai/getting-started/">Getting
+            started</a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+</header>
+<div class="main-content gradient-top">
+  <div class="container-fluid">
+    <div class="row"><a class="toggle-sidenav d-block d-md-none" href="#"
+  ><i class="icon-close fa fa-fw fa-arrow-left"></i
+  ><i class="icon-open fa fa-fw fa-arrow-right"></i
+></a>
+<div role="complementary" class="sidenav col-4 col-xl-3 p-0 border-right">
+  <h3 class="pt-5 px-5">
+    <a href="../../index.html">
+      <img
+        class="img-fluid documentation-image"
+        src="https://www.nengo.ai/design/_images/general-full-light.svg"
+        alt="Nengo"
+      />
+    </a>
+  </h3>
+<form class="px-5 py-3 my-0 border-bottom" action="../../search.html" method="get">
+  <div class="form-group form-group-single">
+    <input type="text" name="q" class="form-control" placeholder="Search" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+    <button type="submit" class="btn btn-link">
+      <img src="https://www.nengo.ai/img/icon-search.svg" alt="Go" />
+    </button>
+  </div>
+</form><div class="p-5 toctree">
+  
+    <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../getting-started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide.html">User guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../examples.html">Examples</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../examples.html#introductory-tutorials">Introductory tutorials</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../examples.html#advanced-examples">Advanced examples</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../../examples.html#nodes">Nodes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../examples.html#processes">Processes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../examples.html#ensembles">Ensembles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../examples.html#connections">Connections</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../examples.html#learning">Learning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../examples.html#networks">Networks</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="../../examples.html#under-the-hood">Under the hood</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing to Nengo</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../project.html">Project information</a></li>
+</ul>
+
+  
+  </div>
+  
+  <form class="p-5 my-0 border-top">
+    <div class="form-group">
+      <label class="text-gray">Version:</label>
+      <select class="custom-select" onchange="switchVersion(this);">
+        
+        
+        <option selected>latest</option>
+        
+        
+          
+        <option value="../../v3.2.0/examples/advanced/nef-summary.html">
+          v3.2.0
+        </option>
+          
+        
+          
+        <option value="../../v3.1.0/examples/advanced/nef-summary.html">
+          v3.1.0
+        </option>
+          
+        
+          
+        <option value="../../v3.0.0/examples/advanced/nef-summary.html">
+          v3.0.0
+        </option>
+          
+        
+          
+        <option value="../../v2.8.0/examples/advanced/nef-summary.html">
+          v2.8.0
+        </option>
+          
+        
+      </select>
+    </div>
+  </form>
+  
+</div>
+      
+
+      <div class="col-12 col-md-8 col-xl-9">
+        <div class="container">
+          <div class="row">
+            <div class="col-10 offset-1 pb-5 documentation-source" role="main">
+              
+              
+              <div class="admonition note">
+                  <p class="admonition-title">Note</p>
+                  <p>
+                  This documentation is for a development version.
+                  <a href="../../v3.2.0/examples/advanced/nef-summary.html">
+                  Click here for the latest stable release (v3.2.0).
+                  </a>
+                  </p>
+              </div>
+              
+              
+  <div class="section" id="NEF-summary">
+<h1>NEF summary<a class="headerlink" href="#NEF-summary" title="Permalink to this headline">¶</a></h1>
+<p>The Neural Engineering Framework (NEF) is one set of theoretical methods that are used in Nengo for constructing neural models. The NEF is based on <a class="reference external" href="https://www.amazon.com/Neural-Engineering-Representation-Neurobiological-Computational/dp/0262550601">Eliasmith &amp; Anderson’s (2003) book “Neural Engineering”</a>. This notebook introduces the three main principles discussed in that book and implemented in Nengo.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%</span><span class="k">matplotlib</span> inline
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+<span class="kn">import</span> <span class="nn">nengo</span>
+<span class="kn">from</span> <span class="nn">nengo.dists</span> <span class="kn">import</span> <span class="n">Uniform</span>
+<span class="kn">from</span> <span class="nn">nengo.processes</span> <span class="kn">import</span> <span class="n">WhiteSignal</span>
+<span class="kn">from</span> <span class="nn">nengo.utils.ensemble</span> <span class="kn">import</span> <span class="n">tuning_curves</span>
+<span class="kn">from</span> <span class="nn">nengo.utils.ipython</span> <span class="kn">import</span> <span class="n">hide_input</span>
+<span class="kn">from</span> <span class="nn">nengo.utils.matplotlib</span> <span class="kn">import</span> <span class="n">rasterplot</span>
+
+
+<span class="k">def</span> <span class="nf">aligned</span><span class="p">(</span><span class="n">n_neurons</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mf">0.9</span><span class="p">):</span>
+    <span class="n">intercepts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="n">radius</span><span class="p">,</span> <span class="n">radius</span><span class="p">,</span> <span class="n">n_neurons</span><span class="p">)</span>
+    <span class="n">encoders</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">([[</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span> <span class="p">(</span><span class="n">n_neurons</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="n">intercepts</span> <span class="o">*=</span> <span class="n">encoders</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">intercepts</span><span class="p">,</span> <span class="n">encoders</span>
+
+
+<span class="n">hide_input</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<a id="831752043" href="javascript:toggle_input_831752043()"
+  >Show Input</a>
+
+<script type="text/javascript">
+var toggle_input_831752043;
+(function() {
+    if (typeof jQuery == 'undefined') {
+        // no jQuery
+        var link_831752043 = document.getElementById("831752043");
+        var cell = link_831752043;
+        while (cell.className.split(' ')[0] != "cell"
+               && cell.className.split(' ')[0] != "nboutput") {
+            cell = cell.parentNode;
+        }
+        var input_831752043;
+        if (cell.className.split(' ')[0] == "cell") {
+            for (var i = 0; i < cell.children.length; i++) {
+                if (cell.children[i].className.split(' ')[0]
+                    == "input") {
+                    input_831752043 = cell.children[i];
+                }
+            }
+        } else {
+            input_831752043 = cell.previousElementSibling;
+        }
+        input_831752043.style.display = "none"; // hide
+
+        toggle_input_831752043 = function() {
+            if (input_831752043.style.display == "none") {
+                input_831752043.style.display = ""; // show
+                link_831752043.innerHTML = "Hide Input";
+            } else {
+                input_831752043.style.display = "none"; // hide
+                link_831752043.innerHTML = "Show Input";
+            }
+        }
+
+    } else {
+        // jQuery
+        var link_831752043 = $("a[id='831752043']");
+        var cell_831752043 = link_831752043.parents("div.cell:first");
+        if (cell_831752043.length == 0) {
+            cell_831752043 = link_831752043.parents(
+                "div.nboutput:first");
+        }
+        var input_831752043 = cell_831752043.children("div.input");
+        if (input_831752043.length == 0) {
+            input_831752043 = cell_831752043.prev("div.nbinput");
+        }
+        input_831752043.hide();
+
+        toggle_input_831752043 = function() {
+            if (input_831752043.is(':hidden')) {
+                input_831752043.slideDown();
+                link_831752043[0].innerHTML = "Hide Input";
+            } else {
+                input_831752043.slideUp();
+                link_831752043[0].innerHTML = "Show Input";
+            }
+        }
+    }
+}());
+</script></div>
+</div>
+<div class="section" id="Principle-1:-Representation">
+<h2>Principle 1: Representation<a class="headerlink" href="#Principle-1:-Representation" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="Encoding">
+<h3>Encoding<a class="headerlink" href="#Encoding" title="Permalink to this headline">¶</a></h3>
+<p>Neural populations represent time-varying signals through their spiking responses. A signal is a vector of real numbers of arbitrary length. This example is a 1D signal going from -1 to 1 in 1 second.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Network</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;NEF summary&quot;</span><span class="p">)</span>
+<span class="k">with</span> <span class="n">model</span><span class="p">:</span>
+    <span class="nb">input</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Node</span><span class="p">(</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="n">t</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">input_probe</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Simulator</span><span class="p">(</span><span class="n">model</span><span class="p">)</span> <span class="k">as</span> <span class="n">sim</span><span class="p">:</span>
+    <span class="n">sim</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">(),</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">input_probe</span><span class="p">],</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Input signal&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Time (s)&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">hide_input</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<a id="1992061534" href="javascript:toggle_input_1992061534()"
+  >Show Input</a>
+
+<script type="text/javascript">
+var toggle_input_1992061534;
+(function() {
+    if (typeof jQuery == 'undefined') {
+        // no jQuery
+        var link_1992061534 = document.getElementById("1992061534");
+        var cell = link_1992061534;
+        while (cell.className.split(' ')[0] != "cell"
+               && cell.className.split(' ')[0] != "nboutput") {
+            cell = cell.parentNode;
+        }
+        var input_1992061534;
+        if (cell.className.split(' ')[0] == "cell") {
+            for (var i = 0; i < cell.children.length; i++) {
+                if (cell.children[i].className.split(' ')[0]
+                    == "input") {
+                    input_1992061534 = cell.children[i];
+                }
+            }
+        } else {
+            input_1992061534 = cell.previousElementSibling;
+        }
+        input_1992061534.style.display = "none"; // hide
+
+        toggle_input_1992061534 = function() {
+            if (input_1992061534.style.display == "none") {
+                input_1992061534.style.display = ""; // show
+                link_1992061534.innerHTML = "Hide Input";
+            } else {
+                input_1992061534.style.display = "none"; // hide
+                link_1992061534.innerHTML = "Show Input";
+            }
+        }
+
+    } else {
+        // jQuery
+        var link_1992061534 = $("a[id='1992061534']");
+        var cell_1992061534 = link_1992061534.parents("div.cell:first");
+        if (cell_1992061534.length == 0) {
+            cell_1992061534 = link_1992061534.parents(
+                "div.nboutput:first");
+        }
+        var input_1992061534 = cell_1992061534.children("div.input");
+        if (input_1992061534.length == 0) {
+            input_1992061534 = cell_1992061534.prev("div.nbinput");
+        }
+        input_1992061534.hide();
+
+        toggle_input_1992061534 = function() {
+            if (input_1992061534.is(':hidden')) {
+                input_1992061534.slideDown();
+                link_1992061534[0].innerHTML = "Hide Input";
+            } else {
+                input_1992061534.slideUp();
+                link_1992061534[0].innerHTML = "Show Input";
+            }
+        }
+    }
+}());
+</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_advanced_nef-summary_4_1.png" src="../../_images/examples_advanced_nef-summary_4_1.png" />
+</div>
+</div>
+<p>These signals drive neural populations based on each neuron’s <em>tuning curve</em> (which is similar to the current-frequency curve, if you’re familiar with that).</p>
+<p>The tuning curve describes how much a particular neuron will fire as a function of the input signal.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">intercepts</span><span class="p">,</span> <span class="n">encoders</span> <span class="o">=</span> <span class="n">aligned</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span>  <span class="c1"># Makes evenly spaced intercepts</span>
+<span class="k">with</span> <span class="n">model</span><span class="p">:</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">(</span>
+        <span class="mi">8</span><span class="p">,</span>
+        <span class="n">dimensions</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">intercepts</span><span class="o">=</span><span class="n">intercepts</span><span class="p">,</span>
+        <span class="n">max_rates</span><span class="o">=</span><span class="n">Uniform</span><span class="p">(</span><span class="mi">80</span><span class="p">,</span> <span class="mi">100</span><span class="p">),</span>
+        <span class="n">encoders</span><span class="o">=</span><span class="n">encoders</span><span class="p">,</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Simulator</span><span class="p">(</span><span class="n">model</span><span class="p">)</span> <span class="k">as</span> <span class="n">sim</span><span class="p">:</span>
+    <span class="n">eval_points</span><span class="p">,</span> <span class="n">activities</span> <span class="o">=</span> <span class="n">tuning_curves</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">sim</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">eval_points</span><span class="p">,</span> <span class="n">activities</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Input signal&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;Firing rate (Hz)&quot;</span><span class="p">)</span>
+<span class="n">hide_input</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<a id="1091957712" href="javascript:toggle_input_1091957712()"
+  >Show Input</a>
+
+<script type="text/javascript">
+var toggle_input_1091957712;
+(function() {
+    if (typeof jQuery == 'undefined') {
+        // no jQuery
+        var link_1091957712 = document.getElementById("1091957712");
+        var cell = link_1091957712;
+        while (cell.className.split(' ')[0] != "cell"
+               && cell.className.split(' ')[0] != "nboutput") {
+            cell = cell.parentNode;
+        }
+        var input_1091957712;
+        if (cell.className.split(' ')[0] == "cell") {
+            for (var i = 0; i < cell.children.length; i++) {
+                if (cell.children[i].className.split(' ')[0]
+                    == "input") {
+                    input_1091957712 = cell.children[i];
+                }
+            }
+        } else {
+            input_1091957712 = cell.previousElementSibling;
+        }
+        input_1091957712.style.display = "none"; // hide
+
+        toggle_input_1091957712 = function() {
+            if (input_1091957712.style.display == "none") {
+                input_1091957712.style.display = ""; // show
+                link_1091957712.innerHTML = "Hide Input";
+            } else {
+                input_1091957712.style.display = "none"; // hide
+                link_1091957712.innerHTML = "Show Input";
+            }
+        }
+
+    } else {
+        // jQuery
+        var link_1091957712 = $("a[id='1091957712']");
+        var cell_1091957712 = link_1091957712.parents("div.cell:first");
+        if (cell_1091957712.length == 0) {
+            cell_1091957712 = link_1091957712.parents(
+                "div.nboutput:first");
+        }
+        var input_1091957712 = cell_1091957712.children("div.input");
+        if (input_1091957712.length == 0) {
+            input_1091957712 = cell_1091957712.prev("div.nbinput");
+        }
+        input_1091957712.hide();
+
+        toggle_input_1091957712 = function() {
+            if (input_1091957712.is(':hidden')) {
+                input_1091957712.slideDown();
+                link_1091957712[0].innerHTML = "Hide Input";
+            } else {
+                input_1091957712.slideUp();
+                link_1091957712[0].innerHTML = "Show Input";
+            }
+        }
+    }
+}());
+</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_advanced_nef-summary_7_1.png" src="../../_images/examples_advanced_nef-summary_7_1.png" />
+</div>
+</div>
+<p>We can drive these neurons with our input signal and observe their spiking activity over time.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">model</span><span class="p">:</span>
+    <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span>
+    <span class="n">A_spikes</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">neurons</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Simulator</span><span class="p">(</span><span class="n">model</span><span class="p">)</span> <span class="k">as</span> <span class="n">sim</span><span class="p">:</span>
+    <span class="n">sim</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">rasterplot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">(),</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">A_spikes</span><span class="p">],</span> <span class="n">ax</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Neuron&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Time (s)&quot;</span><span class="p">)</span>
+<span class="n">hide_input</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<a id="1091394787" href="javascript:toggle_input_1091394787()"
+  >Show Input</a>
+
+<script type="text/javascript">
+var toggle_input_1091394787;
+(function() {
+    if (typeof jQuery == 'undefined') {
+        // no jQuery
+        var link_1091394787 = document.getElementById("1091394787");
+        var cell = link_1091394787;
+        while (cell.className.split(' ')[0] != "cell"
+               && cell.className.split(' ')[0] != "nboutput") {
+            cell = cell.parentNode;
+        }
+        var input_1091394787;
+        if (cell.className.split(' ')[0] == "cell") {
+            for (var i = 0; i < cell.children.length; i++) {
+                if (cell.children[i].className.split(' ')[0]
+                    == "input") {
+                    input_1091394787 = cell.children[i];
+                }
+            }
+        } else {
+            input_1091394787 = cell.previousElementSibling;
+        }
+        input_1091394787.style.display = "none"; // hide
+
+        toggle_input_1091394787 = function() {
+            if (input_1091394787.style.display == "none") {
+                input_1091394787.style.display = ""; // show
+                link_1091394787.innerHTML = "Hide Input";
+            } else {
+                input_1091394787.style.display = "none"; // hide
+                link_1091394787.innerHTML = "Show Input";
+            }
+        }
+
+    } else {
+        // jQuery
+        var link_1091394787 = $("a[id='1091394787']");
+        var cell_1091394787 = link_1091394787.parents("div.cell:first");
+        if (cell_1091394787.length == 0) {
+            cell_1091394787 = link_1091394787.parents(
+                "div.nboutput:first");
+        }
+        var input_1091394787 = cell_1091394787.children("div.input");
+        if (input_1091394787.length == 0) {
+            input_1091394787 = cell_1091394787.prev("div.nbinput");
+        }
+        input_1091394787.hide();
+
+        toggle_input_1091394787 = function() {
+            if (input_1091394787.is(':hidden')) {
+                input_1091394787.slideDown();
+                link_1091394787[0].innerHTML = "Hide Input";
+            } else {
+                input_1091394787.slideUp();
+                link_1091394787[0].innerHTML = "Show Input";
+            }
+        }
+    }
+}());
+</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_advanced_nef-summary_10_1.png" src="../../_images/examples_advanced_nef-summary_10_1.png" />
+</div>
+</div>
+</div>
+<div class="section" id="Decoding">
+<h3>Decoding<a class="headerlink" href="#Decoding" title="Permalink to this headline">¶</a></h3>
+<p>We can estimate the input signal originally encoded by decoding the pattern of spikes. To do this, we first filter the spike train with a temporal filter that accounts for postsynaptic current (PSC) activity.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Network</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;NEF summary&quot;</span><span class="p">)</span>
+<span class="k">with</span> <span class="n">model</span><span class="p">:</span>
+    <span class="nb">input</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Node</span><span class="p">(</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="n">t</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">input_probe</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+    <span class="n">intercepts</span><span class="p">,</span> <span class="n">encoders</span> <span class="o">=</span> <span class="n">aligned</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span>  <span class="c1"># Makes evenly spaced intercepts</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">(</span>
+        <span class="mi">8</span><span class="p">,</span>
+        <span class="n">dimensions</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">intercepts</span><span class="o">=</span><span class="n">intercepts</span><span class="p">,</span>
+        <span class="n">max_rates</span><span class="o">=</span><span class="n">Uniform</span><span class="p">(</span><span class="mi">80</span><span class="p">,</span> <span class="mi">100</span><span class="p">),</span>
+        <span class="n">encoders</span><span class="o">=</span><span class="n">encoders</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span>
+    <span class="n">A_spikes</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">neurons</span><span class="p">,</span> <span class="n">synapse</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Simulator</span><span class="p">(</span><span class="n">model</span><span class="p">)</span> <span class="k">as</span> <span class="n">sim</span><span class="p">:</span>
+    <span class="n">sim</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="n">scale</span> <span class="o">=</span> <span class="mi">180</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">n_neurons</span><span class="p">):</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">(),</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">A_spikes</span><span class="p">][:,</span> <span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">i</span> <span class="o">*</span> <span class="n">scale</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="n">scale</span> <span class="o">*</span> <span class="p">(</span><span class="o">-</span><span class="n">A</span><span class="o">.</span><span class="n">n_neurons</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="n">scale</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;Neuron&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">yticks</span><span class="p">(</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">scale</span> <span class="o">/</span> <span class="mf">1.8</span><span class="p">,</span> <span class="p">(</span><span class="o">-</span><span class="n">A</span><span class="o">.</span><span class="n">n_neurons</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">scale</span><span class="p">,</span> <span class="o">-</span><span class="n">scale</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">n_neurons</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="n">hide_input</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<a id="549486805" href="javascript:toggle_input_549486805()"
+  >Show Input</a>
+
+<script type="text/javascript">
+var toggle_input_549486805;
+(function() {
+    if (typeof jQuery == 'undefined') {
+        // no jQuery
+        var link_549486805 = document.getElementById("549486805");
+        var cell = link_549486805;
+        while (cell.className.split(' ')[0] != "cell"
+               && cell.className.split(' ')[0] != "nboutput") {
+            cell = cell.parentNode;
+        }
+        var input_549486805;
+        if (cell.className.split(' ')[0] == "cell") {
+            for (var i = 0; i < cell.children.length; i++) {
+                if (cell.children[i].className.split(' ')[0]
+                    == "input") {
+                    input_549486805 = cell.children[i];
+                }
+            }
+        } else {
+            input_549486805 = cell.previousElementSibling;
+        }
+        input_549486805.style.display = "none"; // hide
+
+        toggle_input_549486805 = function() {
+            if (input_549486805.style.display == "none") {
+                input_549486805.style.display = ""; // show
+                link_549486805.innerHTML = "Hide Input";
+            } else {
+                input_549486805.style.display = "none"; // hide
+                link_549486805.innerHTML = "Show Input";
+            }
+        }
+
+    } else {
+        // jQuery
+        var link_549486805 = $("a[id='549486805']");
+        var cell_549486805 = link_549486805.parents("div.cell:first");
+        if (cell_549486805.length == 0) {
+            cell_549486805 = link_549486805.parents(
+                "div.nboutput:first");
+        }
+        var input_549486805 = cell_549486805.children("div.input");
+        if (input_549486805.length == 0) {
+            input_549486805 = cell_549486805.prev("div.nbinput");
+        }
+        input_549486805.hide();
+
+        toggle_input_549486805 = function() {
+            if (input_549486805.is(':hidden')) {
+                input_549486805.slideDown();
+                link_549486805[0].innerHTML = "Hide Input";
+            } else {
+                input_549486805.slideUp();
+                link_549486805[0].innerHTML = "Show Input";
+            }
+        }
+    }
+}());
+</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_advanced_nef-summary_13_1.png" src="../../_images/examples_advanced_nef-summary_13_1.png" />
+</div>
+</div>
+<p>Then we multiply those filtered spike trains with decoding weights and sum them together to give an estimate of the input based on the spikes.</p>
+<p>The decoding weights are determined by minimizing the squared difference between the decoded estimate and the actual input signal.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">model</span><span class="p">:</span>
+    <span class="n">A_probe</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">synapse</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>  <span class="c1"># 10ms PSC filter</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Simulator</span><span class="p">(</span><span class="n">model</span><span class="p">)</span> <span class="k">as</span> <span class="n">sim</span><span class="p">:</span>
+    <span class="n">sim</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">(),</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">input_probe</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Input signal&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">(),</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">A_probe</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Decoded estimate&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s2">&quot;best&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">hide_input</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<a id="936263495" href="javascript:toggle_input_936263495()"
+  >Show Input</a>
+
+<script type="text/javascript">
+var toggle_input_936263495;
+(function() {
+    if (typeof jQuery == 'undefined') {
+        // no jQuery
+        var link_936263495 = document.getElementById("936263495");
+        var cell = link_936263495;
+        while (cell.className.split(' ')[0] != "cell"
+               && cell.className.split(' ')[0] != "nboutput") {
+            cell = cell.parentNode;
+        }
+        var input_936263495;
+        if (cell.className.split(' ')[0] == "cell") {
+            for (var i = 0; i < cell.children.length; i++) {
+                if (cell.children[i].className.split(' ')[0]
+                    == "input") {
+                    input_936263495 = cell.children[i];
+                }
+            }
+        } else {
+            input_936263495 = cell.previousElementSibling;
+        }
+        input_936263495.style.display = "none"; // hide
+
+        toggle_input_936263495 = function() {
+            if (input_936263495.style.display == "none") {
+                input_936263495.style.display = ""; // show
+                link_936263495.innerHTML = "Hide Input";
+            } else {
+                input_936263495.style.display = "none"; // hide
+                link_936263495.innerHTML = "Show Input";
+            }
+        }
+
+    } else {
+        // jQuery
+        var link_936263495 = $("a[id='936263495']");
+        var cell_936263495 = link_936263495.parents("div.cell:first");
+        if (cell_936263495.length == 0) {
+            cell_936263495 = link_936263495.parents(
+                "div.nboutput:first");
+        }
+        var input_936263495 = cell_936263495.children("div.input");
+        if (input_936263495.length == 0) {
+            input_936263495 = cell_936263495.prev("div.nbinput");
+        }
+        input_936263495.hide();
+
+        toggle_input_936263495 = function() {
+            if (input_936263495.is(':hidden')) {
+                input_936263495.slideDown();
+                link_936263495[0].innerHTML = "Hide Input";
+            } else {
+                input_936263495.slideUp();
+                link_936263495[0].innerHTML = "Show Input";
+            }
+        }
+    }
+}());
+</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_advanced_nef-summary_16_1.png" src="../../_images/examples_advanced_nef-summary_16_1.png" />
+</div>
+</div>
+<p>The accuracy of the decoded estimate increases as the number of neurons increases.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Network</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;NEF summary&quot;</span><span class="p">)</span>
+<span class="k">with</span> <span class="n">model</span><span class="p">:</span>
+    <span class="nb">input</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Node</span><span class="p">(</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="n">t</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">input_probe</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="n">dimensions</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_rates</span><span class="o">=</span><span class="n">Uniform</span><span class="p">(</span><span class="mi">80</span><span class="p">,</span> <span class="mi">100</span><span class="p">))</span>
+    <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span>
+    <span class="n">A_spikes</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">neurons</span><span class="p">)</span>
+    <span class="n">A_probe</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">synapse</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Simulator</span><span class="p">(</span><span class="n">model</span><span class="p">)</span> <span class="k">as</span> <span class="n">sim</span><span class="p">:</span>
+    <span class="n">sim</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mf">3.5</span><span class="p">))</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">eval_points</span><span class="p">,</span> <span class="n">activities</span> <span class="o">=</span> <span class="n">tuning_curves</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">sim</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">eval_points</span><span class="p">,</span> <span class="n">activities</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Input signal&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;Firing rate (Hz)&quot;</span><span class="p">)</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">rasterplot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">(),</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">A_spikes</span><span class="p">],</span> <span class="n">ax</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Time (s)&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;Neuron&quot;</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">(),</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">input_probe</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Input signal&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">(),</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">A_probe</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Decoded estimate&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s2">&quot;best&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Time (s)&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">hide_input</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<a id="324338276" href="javascript:toggle_input_324338276()"
+  >Show Input</a>
+
+<script type="text/javascript">
+var toggle_input_324338276;
+(function() {
+    if (typeof jQuery == 'undefined') {
+        // no jQuery
+        var link_324338276 = document.getElementById("324338276");
+        var cell = link_324338276;
+        while (cell.className.split(' ')[0] != "cell"
+               && cell.className.split(' ')[0] != "nboutput") {
+            cell = cell.parentNode;
+        }
+        var input_324338276;
+        if (cell.className.split(' ')[0] == "cell") {
+            for (var i = 0; i < cell.children.length; i++) {
+                if (cell.children[i].className.split(' ')[0]
+                    == "input") {
+                    input_324338276 = cell.children[i];
+                }
+            }
+        } else {
+            input_324338276 = cell.previousElementSibling;
+        }
+        input_324338276.style.display = "none"; // hide
+
+        toggle_input_324338276 = function() {
+            if (input_324338276.style.display == "none") {
+                input_324338276.style.display = ""; // show
+                link_324338276.innerHTML = "Hide Input";
+            } else {
+                input_324338276.style.display = "none"; // hide
+                link_324338276.innerHTML = "Show Input";
+            }
+        }
+
+    } else {
+        // jQuery
+        var link_324338276 = $("a[id='324338276']");
+        var cell_324338276 = link_324338276.parents("div.cell:first");
+        if (cell_324338276.length == 0) {
+            cell_324338276 = link_324338276.parents(
+                "div.nboutput:first");
+        }
+        var input_324338276 = cell_324338276.children("div.input");
+        if (input_324338276.length == 0) {
+            input_324338276 = cell_324338276.prev("div.nbinput");
+        }
+        input_324338276.hide();
+
+        toggle_input_324338276 = function() {
+            if (input_324338276.is(':hidden')) {
+                input_324338276.slideDown();
+                link_324338276[0].innerHTML = "Hide Input";
+            } else {
+                input_324338276.slideUp();
+                link_324338276[0].innerHTML = "Show Input";
+            }
+        }
+    }
+}());
+</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_advanced_nef-summary_19_1.png" src="../../_images/examples_advanced_nef-summary_19_1.png" />
+</div>
+</div>
+<p>Any smooth signal can be encoded and decoded.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Network</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;NEF summary&quot;</span><span class="p">)</span>
+<span class="k">with</span> <span class="n">model</span><span class="p">:</span>
+    <span class="nb">input</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Node</span><span class="p">(</span><span class="n">WhiteSignal</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mi">5</span><span class="p">),</span> <span class="n">size_out</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">input_probe</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="n">dimensions</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_rates</span><span class="o">=</span><span class="n">Uniform</span><span class="p">(</span><span class="mi">80</span><span class="p">,</span> <span class="mi">100</span><span class="p">))</span>
+    <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span>
+    <span class="n">A_spikes</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">neurons</span><span class="p">)</span>
+    <span class="n">A_probe</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">synapse</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Simulator</span><span class="p">(</span><span class="n">model</span><span class="p">)</span> <span class="k">as</span> <span class="n">sim</span><span class="p">:</span>
+    <span class="n">sim</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mf">3.5</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">(),</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">input_probe</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Input signal&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">(),</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">A_probe</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Decoded estimate&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s2">&quot;best&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Time (s)&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">rasterplot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">(),</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">A_spikes</span><span class="p">],</span> <span class="n">ax</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Time (s)&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;Neuron&quot;</span><span class="p">)</span>
+<span class="n">hide_input</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<a id="1648094114" href="javascript:toggle_input_1648094114()"
+  >Show Input</a>
+
+<script type="text/javascript">
+var toggle_input_1648094114;
+(function() {
+    if (typeof jQuery == 'undefined') {
+        // no jQuery
+        var link_1648094114 = document.getElementById("1648094114");
+        var cell = link_1648094114;
+        while (cell.className.split(' ')[0] != "cell"
+               && cell.className.split(' ')[0] != "nboutput") {
+            cell = cell.parentNode;
+        }
+        var input_1648094114;
+        if (cell.className.split(' ')[0] == "cell") {
+            for (var i = 0; i < cell.children.length; i++) {
+                if (cell.children[i].className.split(' ')[0]
+                    == "input") {
+                    input_1648094114 = cell.children[i];
+                }
+            }
+        } else {
+            input_1648094114 = cell.previousElementSibling;
+        }
+        input_1648094114.style.display = "none"; // hide
+
+        toggle_input_1648094114 = function() {
+            if (input_1648094114.style.display == "none") {
+                input_1648094114.style.display = ""; // show
+                link_1648094114.innerHTML = "Hide Input";
+            } else {
+                input_1648094114.style.display = "none"; // hide
+                link_1648094114.innerHTML = "Show Input";
+            }
+        }
+
+    } else {
+        // jQuery
+        var link_1648094114 = $("a[id='1648094114']");
+        var cell_1648094114 = link_1648094114.parents("div.cell:first");
+        if (cell_1648094114.length == 0) {
+            cell_1648094114 = link_1648094114.parents(
+                "div.nboutput:first");
+        }
+        var input_1648094114 = cell_1648094114.children("div.input");
+        if (input_1648094114.length == 0) {
+            input_1648094114 = cell_1648094114.prev("div.nbinput");
+        }
+        input_1648094114.hide();
+
+        toggle_input_1648094114 = function() {
+            if (input_1648094114.is(':hidden')) {
+                input_1648094114.slideDown();
+                link_1648094114[0].innerHTML = "Hide Input";
+            } else {
+                input_1648094114.slideUp();
+                link_1648094114[0].innerHTML = "Show Input";
+            }
+        }
+    }
+}());
+</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_advanced_nef-summary_22_1.png" src="../../_images/examples_advanced_nef-summary_22_1.png" />
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="Principle-2:-Transformation">
+<h2>Principle 2: Transformation<a class="headerlink" href="#Principle-2:-Transformation" title="Permalink to this headline">¶</a></h2>
+<p>Encoding and decoding allow us to encode signals over time, and decode transformations of those signals.</p>
+<p>In fact, we can decode arbitrary transformations of the input signal, not just the signal itself (as in the previous example).</p>
+<p>Let’s decode the square of our white noise input.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Network</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;NEF summary&quot;</span><span class="p">)</span>
+<span class="k">with</span> <span class="n">model</span><span class="p">:</span>
+    <span class="nb">input</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Node</span><span class="p">(</span><span class="n">WhiteSignal</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mi">5</span><span class="p">),</span> <span class="n">size_out</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">input_probe</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="n">dimensions</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_rates</span><span class="o">=</span><span class="n">Uniform</span><span class="p">(</span><span class="mi">80</span><span class="p">,</span> <span class="mi">100</span><span class="p">))</span>
+    <span class="n">Asquare</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Node</span><span class="p">(</span><span class="n">size_in</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span>
+    <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">Asquare</span><span class="p">,</span> <span class="n">function</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">)</span>
+    <span class="n">A_spikes</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">neurons</span><span class="p">)</span>
+    <span class="n">Asquare_probe</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">Asquare</span><span class="p">,</span> <span class="n">synapse</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Simulator</span><span class="p">(</span><span class="n">model</span><span class="p">)</span> <span class="k">as</span> <span class="n">sim</span><span class="p">:</span>
+    <span class="n">sim</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mf">3.5</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">(),</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">input_probe</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Input signal&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">(),</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">Asquare_probe</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Decoded estimate&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">(),</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">input_probe</span><span class="p">]),</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Input signal squared&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s2">&quot;best&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="s2">&quot;medium&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Time (s)&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">rasterplot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">(),</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">A_spikes</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Time (s)&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;Neuron&quot;</span><span class="p">)</span>
+<span class="n">hide_input</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<a id="1834197707" href="javascript:toggle_input_1834197707()"
+  >Show Input</a>
+
+<script type="text/javascript">
+var toggle_input_1834197707;
+(function() {
+    if (typeof jQuery == 'undefined') {
+        // no jQuery
+        var link_1834197707 = document.getElementById("1834197707");
+        var cell = link_1834197707;
+        while (cell.className.split(' ')[0] != "cell"
+               && cell.className.split(' ')[0] != "nboutput") {
+            cell = cell.parentNode;
+        }
+        var input_1834197707;
+        if (cell.className.split(' ')[0] == "cell") {
+            for (var i = 0; i < cell.children.length; i++) {
+                if (cell.children[i].className.split(' ')[0]
+                    == "input") {
+                    input_1834197707 = cell.children[i];
+                }
+            }
+        } else {
+            input_1834197707 = cell.previousElementSibling;
+        }
+        input_1834197707.style.display = "none"; // hide
+
+        toggle_input_1834197707 = function() {
+            if (input_1834197707.style.display == "none") {
+                input_1834197707.style.display = ""; // show
+                link_1834197707.innerHTML = "Hide Input";
+            } else {
+                input_1834197707.style.display = "none"; // hide
+                link_1834197707.innerHTML = "Show Input";
+            }
+        }
+
+    } else {
+        // jQuery
+        var link_1834197707 = $("a[id='1834197707']");
+        var cell_1834197707 = link_1834197707.parents("div.cell:first");
+        if (cell_1834197707.length == 0) {
+            cell_1834197707 = link_1834197707.parents(
+                "div.nboutput:first");
+        }
+        var input_1834197707 = cell_1834197707.children("div.input");
+        if (input_1834197707.length == 0) {
+            input_1834197707 = cell_1834197707.prev("div.nbinput");
+        }
+        input_1834197707.hide();
+
+        toggle_input_1834197707 = function() {
+            if (input_1834197707.is(':hidden')) {
+                input_1834197707.slideDown();
+                link_1834197707[0].innerHTML = "Hide Input";
+            } else {
+                input_1834197707.slideUp();
+                link_1834197707[0].innerHTML = "Show Input";
+            }
+        }
+    }
+}());
+</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_advanced_nef-summary_25_1.png" src="../../_images/examples_advanced_nef-summary_25_1.png" />
+</div>
+</div>
+<p>Notice that the spike trains are exactly the same. The only difference is how we’re interpreting those spikes. We told Nengo to compute a new set of decoders that estimate the function <span class="math notranslate nohighlight">\(x^2\)</span>.</p>
+<p>In general, the transformation principle determines how we can decode spike trains to compute linear and nonlinear transformations of signals encoded in a population of neurons. We can then project those transformed signals into another population, and repeat the process. Essentially, this provides a means of computing the neural connection weights to compute an arbitrary function between populations.</p>
+<p>Suppose we are representing a sine wave.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Network</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;NEF summary&quot;</span><span class="p">)</span>
+<span class="k">with</span> <span class="n">model</span><span class="p">:</span>
+    <span class="nb">input</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Node</span><span class="p">(</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">t</span><span class="p">))</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="n">dimensions</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_rates</span><span class="o">=</span><span class="n">Uniform</span><span class="p">(</span><span class="mi">80</span><span class="p">,</span> <span class="mi">100</span><span class="p">))</span>
+    <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span>
+    <span class="n">A_spikes</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">neurons</span><span class="p">)</span>
+    <span class="n">A_probe</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">synapse</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Simulator</span><span class="p">(</span><span class="n">model</span><span class="p">)</span> <span class="k">as</span> <span class="n">sim</span><span class="p">:</span>
+    <span class="n">sim</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mf">3.5</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">(),</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">A_probe</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;A&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Time (s)&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">rasterplot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">(),</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">A_spikes</span><span class="p">],</span> <span class="n">ax</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;A&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Time (s)&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;Neuron&quot;</span><span class="p">)</span>
+<span class="n">hide_input</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<a id="1012616764" href="javascript:toggle_input_1012616764()"
+  >Show Input</a>
+
+<script type="text/javascript">
+var toggle_input_1012616764;
+(function() {
+    if (typeof jQuery == 'undefined') {
+        // no jQuery
+        var link_1012616764 = document.getElementById("1012616764");
+        var cell = link_1012616764;
+        while (cell.className.split(' ')[0] != "cell"
+               && cell.className.split(' ')[0] != "nboutput") {
+            cell = cell.parentNode;
+        }
+        var input_1012616764;
+        if (cell.className.split(' ')[0] == "cell") {
+            for (var i = 0; i < cell.children.length; i++) {
+                if (cell.children[i].className.split(' ')[0]
+                    == "input") {
+                    input_1012616764 = cell.children[i];
+                }
+            }
+        } else {
+            input_1012616764 = cell.previousElementSibling;
+        }
+        input_1012616764.style.display = "none"; // hide
+
+        toggle_input_1012616764 = function() {
+            if (input_1012616764.style.display == "none") {
+                input_1012616764.style.display = ""; // show
+                link_1012616764.innerHTML = "Hide Input";
+            } else {
+                input_1012616764.style.display = "none"; // hide
+                link_1012616764.innerHTML = "Show Input";
+            }
+        }
+
+    } else {
+        // jQuery
+        var link_1012616764 = $("a[id='1012616764']");
+        var cell_1012616764 = link_1012616764.parents("div.cell:first");
+        if (cell_1012616764.length == 0) {
+            cell_1012616764 = link_1012616764.parents(
+                "div.nboutput:first");
+        }
+        var input_1012616764 = cell_1012616764.children("div.input");
+        if (input_1012616764.length == 0) {
+            input_1012616764 = cell_1012616764.prev("div.nbinput");
+        }
+        input_1012616764.hide();
+
+        toggle_input_1012616764 = function() {
+            if (input_1012616764.is(':hidden')) {
+                input_1012616764.slideDown();
+                link_1012616764[0].innerHTML = "Hide Input";
+            } else {
+                input_1012616764.slideUp();
+                link_1012616764[0].innerHTML = "Show Input";
+            }
+        }
+    }
+}());
+</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_advanced_nef-summary_28_1.png" src="../../_images/examples_advanced_nef-summary_28_1.png" />
+</div>
+</div>
+<p>Linear transformations of that signal involve solving for the usual decoders, and scaling those decoding weights. Let us flip this sine wave upside down as it is transmitted between two populations (i.e. population A and population -A).</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">model</span><span class="p">:</span>
+    <span class="n">minusA</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="n">dimensions</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_rates</span><span class="o">=</span><span class="n">Uniform</span><span class="p">(</span><span class="mi">80</span><span class="p">,</span> <span class="mi">100</span><span class="p">))</span>
+    <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">minusA</span><span class="p">,</span> <span class="n">function</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="o">-</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">minusA_spikes</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">minusA</span><span class="o">.</span><span class="n">neurons</span><span class="p">)</span>
+    <span class="n">minusA_probe</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">minusA</span><span class="p">,</span> <span class="n">synapse</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Simulator</span><span class="p">(</span><span class="n">model</span><span class="p">)</span> <span class="k">as</span> <span class="n">sim</span><span class="p">:</span>
+    <span class="n">sim</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">(),</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">A_probe</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;A&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(())</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">(),</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">minusA_probe</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;-A&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Time (s)&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">rasterplot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">(),</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">A_spikes</span><span class="p">],</span> <span class="n">ax</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;A&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(())</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;Neuron&quot;</span><span class="p">)</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+<span class="n">rasterplot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">(),</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">minusA_spikes</span><span class="p">],</span> <span class="n">ax</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;-A&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Time (s)&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;Neuron&quot;</span><span class="p">)</span>
+<span class="n">hide_input</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<a id="1260877295" href="javascript:toggle_input_1260877295()"
+  >Show Input</a>
+
+<script type="text/javascript">
+var toggle_input_1260877295;
+(function() {
+    if (typeof jQuery == 'undefined') {
+        // no jQuery
+        var link_1260877295 = document.getElementById("1260877295");
+        var cell = link_1260877295;
+        while (cell.className.split(' ')[0] != "cell"
+               && cell.className.split(' ')[0] != "nboutput") {
+            cell = cell.parentNode;
+        }
+        var input_1260877295;
+        if (cell.className.split(' ')[0] == "cell") {
+            for (var i = 0; i < cell.children.length; i++) {
+                if (cell.children[i].className.split(' ')[0]
+                    == "input") {
+                    input_1260877295 = cell.children[i];
+                }
+            }
+        } else {
+            input_1260877295 = cell.previousElementSibling;
+        }
+        input_1260877295.style.display = "none"; // hide
+
+        toggle_input_1260877295 = function() {
+            if (input_1260877295.style.display == "none") {
+                input_1260877295.style.display = ""; // show
+                link_1260877295.innerHTML = "Hide Input";
+            } else {
+                input_1260877295.style.display = "none"; // hide
+                link_1260877295.innerHTML = "Show Input";
+            }
+        }
+
+    } else {
+        // jQuery
+        var link_1260877295 = $("a[id='1260877295']");
+        var cell_1260877295 = link_1260877295.parents("div.cell:first");
+        if (cell_1260877295.length == 0) {
+            cell_1260877295 = link_1260877295.parents(
+                "div.nboutput:first");
+        }
+        var input_1260877295 = cell_1260877295.children("div.input");
+        if (input_1260877295.length == 0) {
+            input_1260877295 = cell_1260877295.prev("div.nbinput");
+        }
+        input_1260877295.hide();
+
+        toggle_input_1260877295 = function() {
+            if (input_1260877295.is(':hidden')) {
+                input_1260877295.slideDown();
+                link_1260877295[0].innerHTML = "Hide Input";
+            } else {
+                input_1260877295.slideUp();
+                link_1260877295[0].innerHTML = "Show Input";
+            }
+        }
+    }
+}());
+</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_advanced_nef-summary_31_1.png" src="../../_images/examples_advanced_nef-summary_31_1.png" />
+</div>
+</div>
+<p>Nonlinear transformations involve solving for a new set of decoding weights. Let us add a third population connected to the second one and use it to compute <span class="math notranslate nohighlight">\((-A)^2\)</span>.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">model</span><span class="p">:</span>
+    <span class="n">A_squared</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="n">dimensions</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_rates</span><span class="o">=</span><span class="n">Uniform</span><span class="p">(</span><span class="mi">80</span><span class="p">,</span> <span class="mi">100</span><span class="p">))</span>
+    <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="n">minusA</span><span class="p">,</span> <span class="n">A_squared</span><span class="p">,</span> <span class="n">function</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">A_squared_spikes</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">A_squared</span><span class="o">.</span><span class="n">neurons</span><span class="p">)</span>
+    <span class="n">A_squared_probe</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">A_squared</span><span class="p">,</span> <span class="n">synapse</span><span class="o">=</span><span class="mf">0.02</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Simulator</span><span class="p">(</span><span class="n">model</span><span class="p">)</span> <span class="k">as</span> <span class="n">sim</span><span class="p">:</span>
+    <span class="n">sim</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mf">6.5</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">(),</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">A_probe</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;k&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;A&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(())</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">(),</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">minusA_probe</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;k&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;-A&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(())</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">(),</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">A_squared_probe</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;k&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;(-A)^2&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Time (s)&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">rasterplot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">(),</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">A_spikes</span><span class="p">],</span> <span class="n">ax</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;A&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(())</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;Neuron&quot;</span><span class="p">)</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+<span class="n">rasterplot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">(),</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">minusA_spikes</span><span class="p">],</span> <span class="n">ax</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;-A&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(())</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;Neuron&quot;</span><span class="p">)</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+<span class="n">rasterplot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">(),</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">A_squared_spikes</span><span class="p">],</span> <span class="n">ax</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;(-A)^2&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Time (s)&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;Neuron&quot;</span><span class="p">)</span>
+<span class="n">hide_input</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<a id="1104062760" href="javascript:toggle_input_1104062760()"
+  >Show Input</a>
+
+<script type="text/javascript">
+var toggle_input_1104062760;
+(function() {
+    if (typeof jQuery == 'undefined') {
+        // no jQuery
+        var link_1104062760 = document.getElementById("1104062760");
+        var cell = link_1104062760;
+        while (cell.className.split(' ')[0] != "cell"
+               && cell.className.split(' ')[0] != "nboutput") {
+            cell = cell.parentNode;
+        }
+        var input_1104062760;
+        if (cell.className.split(' ')[0] == "cell") {
+            for (var i = 0; i < cell.children.length; i++) {
+                if (cell.children[i].className.split(' ')[0]
+                    == "input") {
+                    input_1104062760 = cell.children[i];
+                }
+            }
+        } else {
+            input_1104062760 = cell.previousElementSibling;
+        }
+        input_1104062760.style.display = "none"; // hide
+
+        toggle_input_1104062760 = function() {
+            if (input_1104062760.style.display == "none") {
+                input_1104062760.style.display = ""; // show
+                link_1104062760.innerHTML = "Hide Input";
+            } else {
+                input_1104062760.style.display = "none"; // hide
+                link_1104062760.innerHTML = "Show Input";
+            }
+        }
+
+    } else {
+        // jQuery
+        var link_1104062760 = $("a[id='1104062760']");
+        var cell_1104062760 = link_1104062760.parents("div.cell:first");
+        if (cell_1104062760.length == 0) {
+            cell_1104062760 = link_1104062760.parents(
+                "div.nboutput:first");
+        }
+        var input_1104062760 = cell_1104062760.children("div.input");
+        if (input_1104062760.length == 0) {
+            input_1104062760 = cell_1104062760.prev("div.nbinput");
+        }
+        input_1104062760.hide();
+
+        toggle_input_1104062760 = function() {
+            if (input_1104062760.is(':hidden')) {
+                input_1104062760.slideDown();
+                link_1104062760[0].innerHTML = "Hide Input";
+            } else {
+                input_1104062760.slideUp();
+                link_1104062760[0].innerHTML = "Show Input";
+            }
+        }
+    }
+}());
+</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_advanced_nef-summary_34_1.png" src="../../_images/examples_advanced_nef-summary_34_1.png" />
+</div>
+</div>
+</div>
+<div class="section" id="Principle-3:-Dynamics">
+<h2>Principle 3: Dynamics<a class="headerlink" href="#Principle-3:-Dynamics" title="Permalink to this headline">¶</a></h2>
+<p>So far, we have been considering the values represented by ensembles as generic “signals.” However, if we think of them instead as state variables in a dynamical system, then we can apply the methods of control theory or dynamic systems theory to brain models. Nengo automatically translates from standard dynamical systems descriptions to descriptions consistent with neural dynamics.</p>
+<p>In order to get interesting dynamics, we can connect populations recurrently (i.e., to themselves).</p>
+<p>Below is a simple harmonic oscillator implemented using this third principle. It needs is a bit of input to get it started.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Network</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;NEF summary&quot;</span><span class="p">)</span>
+<span class="k">with</span> <span class="n">model</span><span class="p">:</span>
+    <span class="nb">input</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Node</span><span class="p">(</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">t</span> <span class="o">&lt;</span> <span class="mf">0.1</span> <span class="k">else</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="n">oscillator</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Ensemble</span><span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="n">dimensions</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="n">oscillator</span><span class="p">)</span>
+    <span class="n">nengo</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="n">oscillator</span><span class="p">,</span> <span class="n">oscillator</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]],</span> <span class="n">synapse</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+    <span class="n">oscillator_probe</span> <span class="o">=</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Probe</span><span class="p">(</span><span class="n">oscillator</span><span class="p">,</span> <span class="n">synapse</span><span class="o">=</span><span class="mf">0.02</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">nengo</span><span class="o">.</span><span class="n">Simulator</span><span class="p">(</span><span class="n">model</span><span class="p">)</span> <span class="k">as</span> <span class="n">sim</span><span class="p">:</span>
+    <span class="n">sim</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mf">3.5</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">trange</span><span class="p">(),</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">oscillator_probe</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="o">-</span><span class="mf">1.2</span><span class="p">,</span> <span class="mf">1.2</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Time (s)&quot;</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">oscillator_probe</span><span class="p">][:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">sim</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">oscillator_probe</span><span class="p">][:,</span> <span class="mi">1</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">axis</span><span class="p">([</span><span class="o">-</span><span class="mf">1.2</span><span class="p">,</span> <span class="mf">1.2</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.2</span><span class="p">,</span> <span class="mf">1.2</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;$x_1$&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;$x_2$&quot;</span><span class="p">)</span>
+<span class="n">hide_input</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<a id="358277315" href="javascript:toggle_input_358277315()"
+  >Show Input</a>
+
+<script type="text/javascript">
+var toggle_input_358277315;
+(function() {
+    if (typeof jQuery == 'undefined') {
+        // no jQuery
+        var link_358277315 = document.getElementById("358277315");
+        var cell = link_358277315;
+        while (cell.className.split(' ')[0] != "cell"
+               && cell.className.split(' ')[0] != "nboutput") {
+            cell = cell.parentNode;
+        }
+        var input_358277315;
+        if (cell.className.split(' ')[0] == "cell") {
+            for (var i = 0; i < cell.children.length; i++) {
+                if (cell.children[i].className.split(' ')[0]
+                    == "input") {
+                    input_358277315 = cell.children[i];
+                }
+            }
+        } else {
+            input_358277315 = cell.previousElementSibling;
+        }
+        input_358277315.style.display = "none"; // hide
+
+        toggle_input_358277315 = function() {
+            if (input_358277315.style.display == "none") {
+                input_358277315.style.display = ""; // show
+                link_358277315.innerHTML = "Hide Input";
+            } else {
+                input_358277315.style.display = "none"; // hide
+                link_358277315.innerHTML = "Show Input";
+            }
+        }
+
+    } else {
+        // jQuery
+        var link_358277315 = $("a[id='358277315']");
+        var cell_358277315 = link_358277315.parents("div.cell:first");
+        if (cell_358277315.length == 0) {
+            cell_358277315 = link_358277315.parents(
+                "div.nboutput:first");
+        }
+        var input_358277315 = cell_358277315.children("div.input");
+        if (input_358277315.length == 0) {
+            input_358277315 = cell_358277315.prev("div.nbinput");
+        }
+        input_358277315.hide();
+
+        toggle_input_358277315 = function() {
+            if (input_358277315.is(':hidden')) {
+                input_358277315.slideDown();
+                link_358277315[0].innerHTML = "Hide Input";
+            } else {
+                input_358277315.slideUp();
+                link_358277315[0].innerHTML = "Show Input";
+            }
+        }
+    }
+}());
+</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../../_images/examples_advanced_nef-summary_37_1.png" src="../../_images/examples_advanced_nef-summary_37_1.png" />
+</div>
+</div>
+</div>
+</div>
+
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div><footer class="text-light footer-main gradient-bottom-center">
+  <p class="text-center">
+    <a class="no-hover-line" href="https://appliedbrainresearch.com">
+      <img class="abr-logo" src="https://www.nengo.ai/img/abr-logo.svg" height="32" />
+    </a>
+    <a href="https://www.nengo.ai/">What is Nengo?</a>
+    <a href="https://www.nengo.ai/examples/">Examples</a>
+    <a href="https://www.nengo.ai/documentation/">Documentation</a>
+    <a href="https://www.nengo.ai/getting-started/">Getting started</a>
+    <a href="https://www.nengo.ai/privacy/">Privacy</a>
+  </p>
+  <p class="small text-center pb-0 mb-0">&copy; Applied Brain Research</p>
+</footer>
+<script>
+  function switchVersion(select) {
+    var option = select.selectedOptions[0];
+    if (option.hasAttribute("value")) {
+      window.location = option.value;
+    }
+  }
+</script>
+
+<script>
+  var elements = document.querySelectorAll('.sidenav');
+  Stickyfill.add(elements);
+</script>
+<script>
+  ScrollReveal().reveal(".fade-in", {
+      scale: 0.85,
+      duration: 1000,
+      delay: 250,
+      interval: 50
+  });
+</script>
+<script>
+  $('a.toggle-sidenav').on('click', function(e) {
+    e.preventDefault();
+    if ( $(this).hasClass('active') ) {
+      $(this).removeClass('active');
+      $('.sidenav').removeClass('open');
+    } else {
+      $(this).addClass('active');
+      $('.sidenav').addClass('open');
+    }
+  });
+</script>
+<script>
+  var lists = document.querySelectorAll('.toctree ul');
+  lists.forEach((ul) => {
+      ul.classList.add("nav");
+  });
+  var links = document.querySelectorAll('.toctree a');
+  links.forEach((link) => {
+      link.classList.add("nav-link");
+  });
+  $("body").scrollspy({target: ".sidenav"});
+</script>
+  </body>
+</html>
