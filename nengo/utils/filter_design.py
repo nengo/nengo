@@ -48,7 +48,7 @@ from numpy import (
     dot,
     eye,
     poly,
-    product,
+    prod,
     r_,
     roots,
     zeros,
@@ -339,11 +339,11 @@ def ss2tf(A, B, C, D, input=0):
     except ValueError:  # pragma: no cover
         den = 1
 
-    if (product(B.shape, axis=0) == 0) and (
-        product(C.shape, axis=0) == 0
+    if (prod(B.shape, axis=0) == 0) and (
+        prod(C.shape, axis=0) == 0
     ):  # pragma: no cover
         num = np.ravel(D)
-        if (product(D.shape, axis=0) == 0) and (product(A.shape, axis=0) == 0):
+        if (prod(D.shape, axis=0) == 0) and (prod(A.shape, axis=0) == 0):
             den = []
         return num, den
 
