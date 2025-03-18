@@ -4,7 +4,7 @@
 Nengo license
 *************
 
-Copyright (c) 2013-2023 Applied Brain Research
+Copyright (c) 2013-2025 Applied Brain Research
 
 **GPL v2 License**
 
