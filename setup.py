@@ -30,7 +30,7 @@ root = pathlib.Path(__file__).parent
 version = runpy.run_path(str(root / "nengo" / "version.py"))["version"]
 
 install_req = [
-    "numpy>=1.19",
+    "numpy>=1.19,<=1.26.4",
 ]
 docs_req = [
     "sphinx>=1.8",
@@ -41,7 +41,7 @@ docs_req = [
     "nengo_sphinx_theme>=1.2.0",
 ]
 optional_req = [
-    "scipy>=0.13",
+    "scipy>=0.13,<1.14.0",
     "scikit-learn",
 ]
 tests_req = [

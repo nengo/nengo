@@ -14,11 +14,14 @@ version_info = (3, 2, 0)
 
 name = "nengo"
 dev = None
+post = 1
 
 # use old string formatting, so that this can still run in Python <= 3.5
 # (since this file is parsed in setup.py, before python_requires is applied)
 version = ".".join(str(v) for v in version_info)
 if dev is not None:
     version += ".dev%d" % dev
+if post is not None:
+    version += ".post%d" % post
 
 copyright = "Copyright (c) 2013-2022 Applied Brain Research"
