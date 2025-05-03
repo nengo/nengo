@@ -43,7 +43,7 @@ docs = [
     "nengo_sphinx_theme>=1.2.0"
 ]
 optional = [
-    "scipy>=0.13,<=1.15.2",
+    "scipy>=0.13,<1.14.0",
     "scikit-learn"
 ]
 tests = [
@@ -61,7 +61,9 @@ reference = "nengo:Simulator"
 
 [tool.setuptools.packages.find]
 where = ["."]
-exclude = ["nengo._vendor"]
+
+[project.entry-points."pytest11"]
+nengo = "pytest_nengo"
 
 [tool.setuptools]
 zip-safe = false
@@ -72,3 +74,4 @@ nengo = ["nengo-data/nengorc"]
 
 [tool.setuptools.dynamic]
 version = { attr = "nengo.version.version" }
+
