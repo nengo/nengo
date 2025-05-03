@@ -342,7 +342,7 @@ def test_sqrt_beta(n, m, rng):
     samples = dist.sample(num_samples, 1, rng=rng)
     histogram, _ = np.histogram(samples, bins=num_bins)
 
-    assert np.all(np.abs(np.asfarray(histogram - expectation) / num_samples) < 0.16)
+    assert np.all(np.abs(np.asarray(histogram - expectation) / num_samples) < 0.16)
 
 
 @pytest.mark.parametrize("n,m", [(4, 1), (10, 5)])
@@ -368,7 +368,7 @@ def test_sqrt_beta_analytical(n, m, rng, allclose):
     bin_points = np.linspace(0, 1, num_bins + 1)
     bin_cdf = dist.cdf(bin_points)
     exp_freq = bin_cdf[1:] - bin_cdf[:-1]
-    assert np.all(np.abs(np.asfarray(act_hist) / num_samples - exp_freq) < 0.1)
+    assert np.all(np.abs(np.asarray(act_hist) / num_samples - exp_freq) < 0.1)
 
     # The cdf should be the accumulated pdf
     assert allclose(cdf, np.cumsum(pdf) * dt, atol=0.01)
@@ -393,7 +393,7 @@ def test_cosine_similarity(d, rng):
     exp_hist, _ = np.histogram(exp, bins=num_bins)
     act_hist, _ = np.histogram(act, bins=num_bins)
 
-    assert np.all(np.abs(np.asfarray(exp_hist - act_hist) / num_samples) < 0.15)
+    assert np.all(np.abs(np.asarray(exp_hist - act_hist) / num_samples) < 0.15)
 
 
 @pytest.mark.parametrize("d", [2, 3, 10])
