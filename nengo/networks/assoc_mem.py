@@ -74,9 +74,9 @@ class AssociativeMemory(Network):
             # (i.e autoassociative memory)
             output_vectors = input_vectors
         if is_iterable(input_vectors):
-            input_vectors = np.array(input_vectors)
+            input_vectors = np.array(input_vectors, ndmin=2)
         if is_iterable(output_vectors):
-            output_vectors = np.array(output_vectors)
+            output_vectors = np.array(output_vectors, ndmin=2)
 
         if input_vectors.shape[0] == 0:
             raise ValidationError(
@@ -228,11 +228,11 @@ class AssociativeMemory(Network):
         # --- Put arguments in canonical form
         n_vectors, d_vectors = input_vectors.shape
         if is_iterable(input_vectors):
-            input_vectors = np.array(input_vectors)
+            input_vectors = np.array(input_vectors, ndmin=2)
         if not is_iterable(input_scales):
             input_scales = input_scales * np.ones((1, n_vectors))
         else:
-            input_scales = np.array(input_scales)
+            input_scales = np.array(input_scales, ndmin=2)
 
         # --- Check some preconditions
         if input_scales.shape[1] != n_vectors:
@@ -276,7 +276,7 @@ class AssociativeMemory(Network):
         """
         # --- Put arguments in canonical form
         if is_iterable(output_vectors):
-            output_vectors = np.array(output_vectors)
+            output_vectors = np.array(output_vectors, ndmin=2)
 
         # --- Check preconditions
         if hasattr(self, name):
@@ -347,7 +347,7 @@ class AssociativeMemory(Network):
             Connection(
                 default_vector_ens,
                 output,
-                transform=np.array(output_vector).T,
+                transform=np.array(output_vector, ndmin=2).T,
                 synapse=None,
             )
 
