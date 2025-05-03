@@ -7,12 +7,14 @@ name = "nengo"
 dynamic = ["version"]
 description = "Tools for building and simulating large-scale neural models"
 readme = "README.rst"
-license = { text = "Free for non-commercial use" }
 authors = [{ name = "Applied Brain Research", email = "info@appliedbrainresearch.com" }]
 requires-python = ">=3.5"
 dependencies = [
     "numpy>=1.13,<=2.2.5"
 ]
+
+[project.license]
+file = "LICENSE.rst"
 
 [project.urls]
 Homepage = "https://www.nengo.ai/nengo"
@@ -71,7 +73,6 @@ py-modules = ["pytest_nengo"]
 
 [tool.setuptools.package-data]
 nengo = ["nengo-data/nengorc"]
-
 
 [tool.setuptools.dynamic]
 version = { attr = "nengo.version.version" }
