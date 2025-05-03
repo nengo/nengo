@@ -316,7 +316,7 @@ def test_decoder_cache_shrink_threadsafe(monkeypatch, tmp_path):
 
         def raise_file_not_found(orig_fn):
             def fn(filename, *args, **kwargs):
-                if filename.endswith(".lock"):
+                if filename.suffix == ".lock":
                     return orig_fn(filename, *args, **kwargs)
                 raise OSError(errno.ENOENT, "File not found.")
 
