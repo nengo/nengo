@@ -48,11 +48,13 @@ from numpy import (
     dot,
     eye,
     poly,
-    product,
     r_,
     roots,
     zeros,
 )
+
+# support older numpy versions
+product = np.prod if hasattr(np, 'prod') else np.product
 
 from nengo._vendor.scipy import expm
 
