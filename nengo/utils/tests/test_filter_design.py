@@ -49,14 +49,12 @@ def test_cont2discrete_zoh(dt, allclose):
     assert allclose(den0, den1)
 
 
-def test_cont2discrete_other_methods():
+def test_cont2discrete_other_methods(allclose):
     dt = 1e-3
 
     # test with len(sys) == 3
-    assert (
-        repr(cont2discrete(([1], [1], [1]), dt))
-        == "(array([1.0010005]), array([1.0010005]), 1.0, 0.001)"
-    )
+    result = cont2discrete(([1], [1], [1]), dt)
+    assert allclose([float(val if np.isscalar(val) else val[0]) for val in result], [1.0010005, 1.0010005, 1.0, 0.001])
 
     # test with len(sys) == 5
     with pytest.raises(ValueError):
@@ -71,16 +69,12 @@ def test_cont2discrete_other_methods():
         cont2discrete(([1], [1], [1]), dt, method="gbt", alpha=2)
 
     # test method bilinear
-    assert (
-        repr(cont2discrete(([1], [1], [1]), dt, method="bilinear"))
-        == "(array([1.0010005]), array([1.0010005]), 1.0, 0.001)"
-    )
+    result = cont2discrete(([1], [1], [1]), dt, method="bilinear")
+    assert allclose([float(val if np.isscalar(val) else val[0]) for val in result], [1.0010005, 1.0010005, 1.0, 0.001])
 
     # test method backward_diff
-    assert (
-        repr(cont2discrete(([1], [1], [1]), dt, method="backward_diff"))
-        == "(array([1.001001]), array([1.001001]), 1.0, 0.001)"
-    )
+    result = cont2discrete(([1], [1], [1]), dt, method="backward_diff")
+    assert allclose([float(val if np.isscalar(val) else val[0]) for val in result], [1.001001, 1.001001, 1.0, 0.001])
 
     # test bad method
     with pytest.raises(ValueError):
@@ -180,6 +174,7 @@ def test_zpk2ss():
     assert repr(zpk2ss([1], [1, 2], 3)) == repr(predicted)
 
 
-def test_ss2zpk():
-    predicted = (np.array([0.0]), np.array([1.0]), 1.0)
-    assert repr(ss2zpk([1], [1], [1], [1])) == repr(predicted)
+def test_ss2zpk(allclose):
+    predicted = [0.0, 1.0, 1.0]
+    result = ss2zpk([1], [1], [1], [1])
+    assert allclose([float(val if np.isscalar(val) else val[0]) for val in result], predicted)
