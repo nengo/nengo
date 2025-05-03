@@ -50,7 +50,8 @@ tests = [
     "pytest>=3.6",
     "pytest-allclose",
     "pytest-plt",
-    "pytest-rng"
+    "pytest-rng",
+    "tomli; python_version < '3.11'",
 ]
 
 [project.entry-points."nengo.backends"]

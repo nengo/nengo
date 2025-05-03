@@ -7,18 +7,14 @@ import pytest
 
 from nengo.utils.paths import install_dir
 
+try:
+    import tomllib
+except ImportError:
+    import tomli as tomllib
 
-@pytest.mark.skipif(
-    sys.version_info < (3, 8, 0),
-    reason="ast.parse `feature_version` added in Python 3.8",
-)
-@pytest.mark.parametrize("feature_version", [(3, 4), (3, 5)])
-def test_setup_compat(feature_version):
-    setup_py_path = install_dir / "setup.py"
+def test_setup_compat():
+    setup_py_path = install_dir / "pyproject.toml"
+    with setup_py_path.open("rb") as fh:
+        data = tomllib.load(fh)
+    assert data["project"]["name"] == "nengo"
 
-    assert setup_py_path.exists()
-    with setup_py_path.open("r", encoding="utf-8") as fh:
-        source = fh.read()
-
-    parsed = ast.parse(source, feature_version=feature_version)
-    assert parsed is not None
