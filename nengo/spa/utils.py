@@ -46,13 +46,13 @@ def similarity(data, vocab, normalize=False):
     if isinstance(vocab, Vocabulary):
         vectors = vocab.vectors
     elif npext.is_iterable(vocab):
-        vectors = np.asarray(vocab, ndmin=2)
+        vectors = np.asarray(vocab)
     else:
         raise ValidationError(
             "%r object is not a valid vocabulary" % (type(vocab).__name__), attr="vocab"
         )
 
-    data = np.asarray(data, ndmin=2)
+    data = np.asarray(data)
     dots = np.dot(data, vectors.T)
 
     if normalize:

@@ -253,7 +253,7 @@ class LinearFilter(Synapse):
         X = np.zeros((A.shape[0],) + shape_out, dtype=dtype)
 
         # initialize X using y0 as steady-state output
-        y0 = np.asarray(y0, ndmin=2)
+        y0 = np.asarray(y0)
         if (y0 == 0).all():
             # just leave X as zeros in this case, so that this value works
             # for unstable systems
@@ -265,7 +265,7 @@ class LinearFilter(Synapse):
         else:
             # Solve for u0 (input) given y0 (output), then X given u0
             assert B.ndim == 1 or B.ndim == 2 and B.shape[1] == 1
-            y0 = np.asarray(y0, ndmin=2)
+            y0 = np.asarray(y0)
             IAB = np.linalg.solve(np.eye(len(A)) - A, B)
             Q = C.dot(IAB) + D  # multiplier from input to output (DC gain)
             assert Q.size == 1
@@ -534,7 +534,7 @@ class Triangle(Synapse):
         Xi = np.zeros(1, dtype=dtype)  # counter for X position
 
         if y0 != 0 and len(X) > 0:
-            y0 = np.asarray(y0, ndmin=1)
+            y0 = np.asarray(y0)
             X[:] = ndiff * y0[None, ...]
             Y[:] = y0
 
