@@ -77,7 +77,7 @@ class OutputParam(Parameter):
                 node.size_out = self.check_callable_output(node, output)
         elif is_array_like(output):
             # Make into correctly shaped numpy array before validation
-            output = npext.array(output, min_dims=1, copy=False, dtype=rc.float_dtype)
+            output = npext.array(output, min_dims=1, dtype=rc.float_dtype)
             self.check_ndarray(node, output)
             if not np.all(np.isfinite(output)):
                 raise ValidationError(

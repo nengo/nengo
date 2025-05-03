@@ -118,7 +118,7 @@ def array(x, dims=None, min_dims=0, readonly=False, **kwargs):
         Additional keyword arguments to pass to ``np.array``.
     """
 
-    y = np.array(x, **kwargs)
+    y = np.asarray(x, **kwargs)
     dims = max(min_dims, y.ndim) if dims is None else dims
 
     if y.ndim < dims:
