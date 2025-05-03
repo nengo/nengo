@@ -30,7 +30,7 @@ root = os.path.dirname(os.path.realpath(__file__))
 version = runpy.run_path(os.path.join(root, "nengo", "version.py"))["version"]
 
 install_req = [
-    "numpy>=1.13",
+    "numpy>=1.13,<=1.26.4",
 ]
 docs_req = [
     "sphinx>=1.8",
@@ -41,7 +41,7 @@ docs_req = [
     "nengo_sphinx_theme>=1.2.0",
 ]
 optional_req = [
-    "scipy>=0.13",
+    "scipy>=0.13,<1.14.0",
     "scikit-learn",
 ]
 tests_req = [
@@ -72,7 +72,7 @@ setup(
         "optional": optional_req,
         "tests": tests_req,
     },
-    python_requires=">=3.5",
+    python_requires=">=3.5,<3.10",
     package_data={"nengo": ["nengo-data/nengorc",],},
     py_modules=["pytest_nengo",],
     entry_points={

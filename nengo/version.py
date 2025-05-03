@@ -9,8 +9,10 @@ a release version. Release versions are git tagged with the version.
 name = "nengo"
 version_info = (3, 0, 0)  # (major, minor, patch)
 dev = None
+post = 1
 
-version = "{v}{dev}".format(
+version = "{v}{dev}{post}".format(
     v=".".join(str(v) for v in version_info),
     dev=(".dev%d" % dev) if dev is not None else "",
+    post=(".post%d" % post) if post is not None else "",
 )
