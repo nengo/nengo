@@ -768,5 +768,5 @@ def _ell(A, m):
 
     alpha = A_abs_onenorm / (_onenorm(A) * abs_c_recip)
     log2_alpha_div_u = np.log2(alpha/u)
-    value = int(np.ceil(log2_alpha_div_u / (2 * m)))
+    value = int(np.ceil(log2_alpha_div_u / (2 * m)).item())
     return max(value, 0)
