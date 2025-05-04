@@ -116,7 +116,7 @@ of the :ref:`developer installation <dev-install>`.
 
 However, one additional requirement for building the Jupyter notebooks
 that we include in the documentation is Pandoc_.
-If you use a package manager (e.g., Homebrew, ``apt``)
+If you use a package manager (e.g., Homebrew, ``apt``, ``conda``)
 you should be able to install Pandoc_ through your package manager.
 Otherwise, see
 `this page <https://pandoc.org/installing.html>`_
@@ -130,7 +130,7 @@ as part of the documentation building process.
 
 .. code-block:: bash
 
-   sphinx-build -vW docs docs/_build
+   sphinx-build -b html docs/ docs/_build
 
 Depending on your environment,
 you might have to set the Jupyter kernel
