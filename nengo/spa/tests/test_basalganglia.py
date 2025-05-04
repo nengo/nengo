@@ -8,9 +8,9 @@ def test_basal_ganglia(Simulator, seed, plt, allclose):
     model = spa.SPA(seed=seed)
 
     with model:
-        model.vision = spa.Buffer(dimensions=16)
-        model.motor = spa.Buffer(dimensions=16)
-        model.compare = spa.Compare(dimensions=16)
+        model.vision = spa.Buffer(dimensions=32)
+        model.motor = spa.Buffer(dimensions=32)
+        model.compare = spa.Compare(dimensions=32)
 
         # test all acceptable condition formats
         actions = spa.Actions(
@@ -72,23 +72,23 @@ def test_errors():
     # dot products between two sources not implemented
     with pytest.raises(NotImplementedError):
         with spa.SPA() as model:
-            model.vision = spa.Buffer(dimensions=16)
-            model.motor = spa.Buffer(dimensions=16)
+            model.vision = spa.Buffer(dimensions=32)
+            model.motor = spa.Buffer(dimensions=32)
             actions = spa.Actions("dot(vision, motor) --> motor=A")
             model.bg = spa.BasalGanglia(actions)
 
     # inversion of sources not implemented both ways
     with pytest.raises(NotImplementedError):
         with spa.SPA() as model:
-            model.vision = spa.Buffer(dimensions=16)
-            model.motor = spa.Buffer(dimensions=16)
+            model.vision = spa.Buffer(dimensions=32)
+            model.motor = spa.Buffer(dimensions=32)
             actions = spa.Actions("dot(~vision, FOO) --> motor=A")
             model.bg = spa.BasalGanglia(actions)
 
     with pytest.raises(NotImplementedError):
         with spa.SPA() as model:
-            model.vision = spa.Buffer(dimensions=16)
-            model.motor = spa.Buffer(dimensions=16)
+            model.vision = spa.Buffer(dimensions=32)
+            model.motor = spa.Buffer(dimensions=32)
             actions = spa.Actions("dot(FOO, ~vision) --> motor=A")
             model.bg = spa.BasalGanglia(actions)
 
