@@ -27,6 +27,8 @@ from nengo.params import (
     Parameter,
 )
 
+def parse_version(version_str):
+    return tuple(int(part) for part in version_str.split('.')[:3])
 
 def format_system(A, Y):
     """Extract data from A/Y matrices."""
@@ -146,12 +148,17 @@ class ConjgradScipy(LeastSquaresSolver):
             def callback(x, i=i):
                 itns[i] += 1
 
-            try:
+            scipy_version = parse_version(scipy.__version__)
+
+            if scipy_version >= (1, 14, 0):
+                X[:, i], infos[i] = scipy.sparse.linalg.cg(
+                    G, B[:, i], rtol=self.tol, callback=callback, atol=self.atol
+                )
+            elif (1, 1, 0) < scipy_version < (1, 4, 0): # no rtol parameter in Scipy < 1.14.0
                 X[:, i], infos[i] = scipy.sparse.linalg.cg(
                     G, B[:, i], tol=self.tol, callback=callback, atol=self.atol
                 )
-            except TypeError as e:  # pragma: no cover
-                # no atol parameter in Scipy < 1.1.0
+            else: # no atol parameter in Scipy < 1.1.0
                 if "atol" not in str(e):
                     raise e
                 X[:, i], infos[i] = scipy.sparse.linalg.cg(

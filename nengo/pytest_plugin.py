@@ -43,7 +43,6 @@ except ImportError:  # pragma: no cover
 
 import pytest
 
-
 def is_sim_overridden(config):
     return config.getini("nengo_simulator") != "nengo.Simulator" or config.getini(
         "nengo_simloader"

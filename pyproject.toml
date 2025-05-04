@@ -27,7 +27,7 @@ all = [
     "nbsphinx",
     "numpydoc>=0.6",
     "nengo_sphinx_theme>=1.2.0",
-    "scipy>=0.13,<1.14.0",
+    "scipy>=0.13",
     "scikit-learn",
     "pytest>=3.6",
     "pytest-allclose",
@@ -43,7 +43,7 @@ docs = [
     "nengo_sphinx_theme>=1.2.0"
 ]
 optional = [
-    "scipy>=0.13,<1.14.0",
+    "scipy>=0.13",
     "scikit-learn"
 ]
 tests = [
@@ -63,7 +63,7 @@ reference = "nengo:Simulator"
 where = ["."]
 
 [project.entry-points."pytest11"]
-nengo = "pytest_nengo"
+nengo = "nengo.pytest_plugin"
 
 [tool.setuptools]
 zip-safe = false
