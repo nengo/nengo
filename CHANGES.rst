@@ -22,7 +22,9 @@ Release history
 4.0.1 (unreleased)
 ==================
 
+**Fixed**
 
+- Support Python 3.13, Numpy>1.26, Scipy>=1.14
 
 4.0.0 (November 16, 2023)
 =========================
