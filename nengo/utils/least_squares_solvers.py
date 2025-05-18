@@ -141,19 +141,23 @@ class ConjgradScipy(LeastSquaresSolver):
         X = np.zeros((n, d), dtype=B.dtype)
         infos = np.zeros(d, dtype="int")
         itns = np.zeros(d, dtype="int")
+
+        scipy_version = tuple(int(part) for part in scipy.__version__.split('.')[:3])
+
         for i in range(d):
             # use the callback to count the number of iterations
             def callback(x, i=i):
                 itns[i] += 1
 
-            try:
+            if scipy_version >= (1, 14, 0):
+                X[:, i], infos[i] = scipy.sparse.linalg.cg(
+                    G, B[:, i], rtol=self.tol, callback=callback, atol=self.atol
+                )
+            elif scipy_version >= (1, 1, 0):
                 X[:, i], infos[i] = scipy.sparse.linalg.cg(
                     G, B[:, i], tol=self.tol, callback=callback, atol=self.atol
                 )
-            except TypeError as e:  # pragma: no cover
-                # no atol parameter in Scipy < 1.1.0
-                if "atol" not in str(e):
-                    raise e
+            else:
                 X[:, i], infos[i] = scipy.sparse.linalg.cg(
                     G, B[:, i], tol=self.tol, callback=callback
                 )
