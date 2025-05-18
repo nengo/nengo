@@ -296,7 +296,9 @@ class VdomProgressBar(ProgressBar):  # pragma: no cover
     def update(self, progress):
         self.progress = progress
         if self._handle is None:
-            self._handle = display(self, display_id=True)  # pylint: disable=possibly-used-before-assignment
+            self._handle = display(
+                self, display_id=True
+            )  # pylint: disable=possibly-used-before-assignment
         else:
             self._handle.update(self)
 
@@ -344,7 +346,7 @@ class VdomProgressBar(ProgressBar):  # pragma: no cover
                         }}"""
                             ],
                         },
-                        "\u00A0",  # non-breaking space
+                        "\u00a0",  # non-breaking space
                     ],
                 },
             ],
