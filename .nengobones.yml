@@ -2,6 +2,8 @@ project_name: Nengo
 pkg_name: nengo
 repo_name: nengo/nengo
 description: Tools for building and simulating large-scale neural models
+author: Nengo Developers
+author_email: terry.stewart@gmail.com
 
 copyright_start: 2013
 license: gpl-v2
@@ -219,12 +221,8 @@ ci_scripts:
   - template: deploy
     wheel: true
 
-pre_commit_config_yaml:
-  exclude:
-    - "_vendor/"
-
 pyproject_toml:
-  exclude:
+  black_exclude:
     - "_vendor/"
 
 version_py:

@@ -54,8 +54,8 @@ tests_req = [
 setup(
     name="nengo",
     version=version,
-    author="Applied Brain Research",
-    author_email="info@appliedbrainresearch.com",
+    author="Nengo Developers",
+    author_email="terry.stewart@gmail.com",
     packages=find_packages(),
     url="https://www.nengo.ai/nengo",
     include_package_data=True,
