@@ -115,9 +115,9 @@ class NeuronType(FrozenObject):
         current : (n_samples, n_neurons)
             Current to be injected in each neuron.
         """
-        x = np.array(x, dtype=float, copy=False, ndmin=1)
-        gain = np.array(gain, dtype=float, copy=False, ndmin=1)
-        bias = np.array(bias, dtype=float, copy=False, ndmin=1)
+        x = np.asarray(np.atleast_1d(x), dtype=float)
+        gain = np.asarray(np.atleast_1d(gain), dtype=float)
+        bias = np.asarray(np.atleast_1d(bias), dtype=float)
 
         if x.ndim == 1:
             x = x[:, np.newaxis]
@@ -155,8 +155,8 @@ class NeuronType(FrozenObject):
         bias : (n_neurons,) array_like
             Bias current associated with each neuron.
         """
-        max_rates = np.array(max_rates, dtype=float, copy=False, ndmin=1)
-        intercepts = np.array(intercepts, dtype=float, copy=False, ndmin=1)
+        max_rates = np.asarray(np.atleast_1d(max_rates), dtype=float)
+        intercepts = np.asarray(np.atleast_1d(intercepts), dtype=float)
 
         J_steps = 101  # Odd number so that 0 is a sample
         max_rate = max_rates.max()
@@ -210,9 +210,9 @@ class NeuronType(FrozenObject):
         initial_state = {} if self.initial_state is None else self.initial_state
         for name, default_value in self.state.items():
             dist = initial_state.get(name, default_value)
-            state[name] = get_samples(dist, n=n_neurons, d=None, rng=rng).astype(
-                dtype, copy=False
-            )
+            state[name] = np.asarray(
+                get_samples(dist, n=n_neurons, d=None, rng=rng), dtype=dtype
+                )
         return state
 
     def max_rates_intercepts(self, gain, bias):
@@ -335,7 +335,7 @@ class Direct(NeuronType):
 
     def rates(self, x, gain, bias):
         """Always returns ``x``."""
-        return np.array(x, dtype=float, copy=False, ndmin=1)
+        return np.asarray(np.atleast_1d(x), dtype=float)
 
     def step(self, dt, J, output):
         """
@@ -376,8 +376,8 @@ class RectifiedLinear(NeuronType):
 
     def gain_bias(self, max_rates, intercepts):
         """Determine gain and bias by shifting and scaling the lines."""
-        max_rates = np.array(max_rates, dtype=float, copy=False, ndmin=1)
-        intercepts = np.array(intercepts, dtype=float, copy=False, ndmin=1)
+        max_rates = np.asarray(np.atleast_1d(max_rates), dtype=float)
+        intercepts = np.asarray(np.atleast_1d(intercepts), dtype=float)
         gain = max_rates / (1 - intercepts)
         bias = -intercepts * gain
         return gain, bias
@@ -460,8 +460,8 @@ class Sigmoid(NeuronType):
 
     def gain_bias(self, max_rates, intercepts):
         """Analytically determine gain, bias."""
-        max_rates = np.array(max_rates, dtype=float, copy=False, ndmin=1)
-        intercepts = np.array(intercepts, dtype=float, copy=False, ndmin=1)
+        max_rates = np.asarray(np.atleast_1d(max_rates), dtype=float)
+        intercepts = np.asarray(np.atleast_1d(intercepts), dtype=float)
 
         inv_tau_ref = 1.0 / self.tau_ref
         if not np.all(max_rates < inv_tau_ref):
@@ -511,8 +511,8 @@ class Tanh(NeuronType):
 
     def gain_bias(self, max_rates, intercepts):
         """Analytically determine gain, bias."""
-        max_rates = np.array(max_rates, dtype=float, copy=False, ndmin=1)
-        intercepts = np.array(intercepts, dtype=float, copy=False, ndmin=1)
+        max_rates = np.asarray(np.atleast_1d(max_rates), dtype=float)
+        intercepts = np.asarray(np.atleast_1d(intercepts), dtype=float)
 
         inv_tau_ref = 1.0 / self.tau_ref
         if not np.all(max_rates < inv_tau_ref):
@@ -573,8 +573,8 @@ class LIFRate(NeuronType):
 
     def gain_bias(self, max_rates, intercepts):
         """Analytically determine gain, bias."""
-        max_rates = np.array(max_rates, dtype=float, copy=False, ndmin=1)
-        intercepts = np.array(intercepts, dtype=float, copy=False, ndmin=1)
+        max_rates = np.asarray(np.atleast_1d(max_rates), dtype=float)
+        intercepts = np.asarray(np.atleast_1d(intercepts), dtype=float)
 
         inv_tau_ref = 1.0 / self.tau_ref if self.tau_ref > 0 else np.inf
         if not np.all(max_rates < inv_tau_ref):
