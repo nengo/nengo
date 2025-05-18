@@ -119,9 +119,7 @@ class NengoObject(SupportDefaultsMixin, metaclass=NetworkMember):
         label = (
             ""
             if not hasattr(self, "label")
-            else " (unlabeled)"
-            if self.label is None
-            else f" '{self.label}'"
+            else " (unlabeled)" if self.label is None else f" '{self.label}'"
         )
         return (
             f"<{type(self).__name__}"

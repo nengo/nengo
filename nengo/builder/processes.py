@@ -169,9 +169,7 @@ def build_process(model, process, sig_in=None, sig_out=None, mode="set"):
     dtype = (
         sig_out.dtype
         if sig_out is not None
-        else sig_in.dtype
-        if sig_in is not None
-        else rc.float_dtype
+        else sig_in.dtype if sig_in is not None else rc.float_dtype
     )
     state_init = process.make_state(shape_in, shape_out, model.dt, dtype=dtype)
     state = {}

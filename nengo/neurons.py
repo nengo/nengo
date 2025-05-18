@@ -212,7 +212,7 @@ class NeuronType(FrozenObject):
             dist = initial_state.get(name, default_value)
             state[name] = np.asarray(
                 get_samples(dist, n=n_neurons, d=None, rng=rng), dtype=dtype
-                )
+            )
         return state
 
     def max_rates_intercepts(self, gain, bias):

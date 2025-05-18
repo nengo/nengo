@@ -266,9 +266,11 @@ def test_signal_initial_value(sig_type, tmp_path, allclose):
 
     # check initial_value equality
     assert allclose(
-        sig.initial_value.toarray()
-        if sig_type.startswith("sparse")
-        else sig.initial_value,
+        (
+            sig.initial_value.toarray()
+            if sig_type.startswith("sparse")
+            else sig.initial_value
+        ),
         dense,
     )
 
@@ -286,12 +288,16 @@ def test_signal_initial_value(sig_type, tmp_path, allclose):
 
     # initial_value still matches after pickle/unpickle
     assert allclose(
-        sig.initial_value.toarray()
-        if sig_type.startswith("sparse")
-        else sig.initial_value,
-        pkl_sig.initial_value.toarray()
-        if sig_type.startswith("sparse")
-        else pkl_sig.initial_value,
+        (
+            sig.initial_value.toarray()
+            if sig_type.startswith("sparse")
+            else sig.initial_value
+        ),
+        (
+            pkl_sig.initial_value.toarray()
+            if sig_type.startswith("sparse")
+            else pkl_sig.initial_value
+        ),
     )
 
 

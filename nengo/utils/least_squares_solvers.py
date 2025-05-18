@@ -142,7 +142,7 @@ class ConjgradScipy(LeastSquaresSolver):
         infos = np.zeros(d, dtype="int")
         itns = np.zeros(d, dtype="int")
 
-        scipy_version = tuple(int(part) for part in scipy.__version__.split('.')[:3])
+        scipy_version = tuple(int(part) for part in scipy.__version__.split(".")[:3])
 
         for i in range(d):
             # use the callback to count the number of iterations

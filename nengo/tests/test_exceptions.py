@@ -216,9 +216,11 @@ def test_spa_module_error():
         [
             (
                 "test_spa_module_error",
-                "with nengo.spa.SPA():"
-                if sys.version_info >= (3, 10)
-                else 'nengo.spa.State(1, label="1")',
+                (
+                    "with nengo.spa.SPA():"
+                    if sys.version_info >= (3, 10)
+                    else 'nengo.spa.State(1, label="1")'
+                ),
             ),
             ("__exit__", "raise SpaModuleError(..."),
         ],
@@ -336,9 +338,11 @@ def test_network_context_error(request):
         [
             (
                 "test_network_context_error",
-                'with nengo.Network(label="net"):'
-                if sys.version_info >= (3, 10)
-                else "nengo.Ensemble(10, 1)",
+                (
+                    'with nengo.Network(label="net"):'
+                    if sys.version_info >= (3, 10)
+                    else "nengo.Ensemble(10, 1)"
+                ),
             ),
             ("__exit__", "raise NetworkContextError(..."),
         ],

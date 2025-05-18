@@ -782,13 +782,15 @@ def build_pes(model, pes, rule):
     acts = build_or_passthrough(
         model,
         pes.pre_synapse,
-        slice_signal(
-            model,
-            model.sig[conn.pre_obj]["out"],
-            conn.pre_slice,
-        )
-        if isinstance(conn.pre_obj, Neurons)
-        else model.sig[conn.pre_obj]["out"],
+        (
+            slice_signal(
+                model,
+                model.sig[conn.pre_obj]["out"],
+                conn.pre_slice,
+            )
+            if isinstance(conn.pre_obj, Neurons)
+            else model.sig[conn.pre_obj]["out"]
+        ),
     )
 
     if conn._to_neurons:

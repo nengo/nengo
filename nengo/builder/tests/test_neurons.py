@@ -14,9 +14,9 @@ def test_spiking_builders(SpikingType):
     # use a base type with its own state(s), to make sure those states get built
     neuron_type = SpikingType(
         nengo.AdaptiveLIFRate(initial_state={"adaptation": np.ones(10) * 2}),
-        initial_state={"voltage": np.ones(10) * 3}
-        if SpikingType is nengo.RegularSpiking
-        else {},
+        initial_state=(
+            {"voltage": np.ones(10) * 3} if SpikingType is nengo.RegularSpiking else {}
+        ),
     )
 
     with nengo.Network() as net:

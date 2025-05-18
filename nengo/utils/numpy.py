@@ -1,4 +1,5 @@
 """Extra functions to extend the capabilities of Numpy."""
+
 import logging
 import warnings
 from collections.abc import Iterable

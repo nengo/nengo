@@ -56,7 +56,7 @@ from numpy import (
 from nengo._vendor.scipy import expm
 
 # support older numpy versions (np.prod was deprecated in numpy 2.0)
-product = np.prod if hasattr(np, 'prod') else np.product
+product = np.prod if hasattr(np, "prod") else np.product
 
 
 class BadCoefficients(UserWarning):

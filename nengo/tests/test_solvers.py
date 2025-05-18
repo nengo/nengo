@@ -3,6 +3,7 @@ TODO:
   - add a test to test each solver many times on different populations,
     and record the error.
 """
+
 import logging
 
 import numpy as np
