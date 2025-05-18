@@ -145,5 +145,5 @@ def export_py(nb, dest_path=None):
 
 
 def iter_cells(nb, cell_type="code"):
-    """Iterate over cells of a notebok."""
+    """Iterate over cells of a notebook."""
     return (cell for cell in nb.cells if cell.cell_type == cell_type)

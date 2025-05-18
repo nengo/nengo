@@ -115,7 +115,7 @@ class ObjectProxy(metaclass=ObjectProxyMeta):
             pass
 
     @property
-    def __annotations__(self):
+    def __annotations__(self):  # pylint: disable=function-redefined
         return self.__wrapped__.__annotations__
 
     @property

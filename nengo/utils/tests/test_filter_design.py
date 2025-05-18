@@ -54,7 +54,8 @@ def test_cont2discrete_other_methods(allclose):
 
     # test with len(sys) == 3
     result = cont2discrete(([1], [1], [1]), dt)
-    assert allclose([float(val if np.isscalar(val) else val[0]) for val in result], [1.0010005, 1.0010005, 1.0, 0.001])
+    assert allclose([float(val if np.isscalar(val) else val[0]) for val in result],
+                    [1.0010005, 1.0010005, 1.0, 0.001])
 
     # test with len(sys) == 5
     with pytest.raises(ValueError):
@@ -70,11 +71,13 @@ def test_cont2discrete_other_methods(allclose):
 
     # test method bilinear
     result = cont2discrete(([1], [1], [1]), dt, method="bilinear")
-    assert allclose([float(val if np.isscalar(val) else val[0]) for val in result], [1.0010005, 1.0010005, 1.0, 0.001])
+    assert allclose([float(val if np.isscalar(val) else val[0]) for val in result],
+                    [1.0010005, 1.0010005, 1.0, 0.001])
 
     # test method backward_diff
     result = cont2discrete(([1], [1], [1]), dt, method="backward_diff")
-    assert allclose([float(val if np.isscalar(val) else val[0]) for val in result], [1.001001, 1.001001, 1.0, 0.001])
+    assert allclose([float(val if np.isscalar(val) else val[0]) for val in result],
+                    [1.001001, 1.001001, 1.0, 0.001])
 
     # test bad method
     with pytest.raises(ValueError):
@@ -177,4 +180,5 @@ def test_zpk2ss():
 def test_ss2zpk(allclose):
     predicted = [0.0, 1.0, 1.0]
     result = ss2zpk([1], [1], [1], [1])
-    assert allclose([float(val if np.isscalar(val) else val[0]) for val in result], predicted)
+    assert allclose([float(val if np.isscalar(val) else val[0]) for val in result],
+                    predicted)

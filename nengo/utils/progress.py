@@ -296,7 +296,7 @@ class VdomProgressBar(ProgressBar):  # pragma: no cover
     def update(self, progress):
         self.progress = progress
         if self._handle is None:
-            self._handle = display(self, display_id=True)
+            self._handle = display(self, display_id=True)  # pylint: disable=possibly-used-before-assignment
         else:
             self._handle.update(self)
 
@@ -515,7 +515,7 @@ class HtmlProgressBar(ProgressBar):  # pragma: no cover
         else:
             finish = ""
 
-        return Javascript(
+        return Javascript(  # pylint: disable=possibly-used-before-assignment
             f"""
               (function () {{
                   var root = document.getElementById('{self._uuid}');
