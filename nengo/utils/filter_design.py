@@ -48,13 +48,16 @@ from numpy import (
     dot,
     eye,
     poly,
-    product,
     r_,
     roots,
     zeros,
 )
 
 from nengo._vendor.scipy import expm
+
+
+# support older numpy versions (np.prod was depricated in numpy 2.0)
+product = np.prod if hasattr(np, 'prod') else np.product
 
 
 class BadCoefficients(UserWarning):
