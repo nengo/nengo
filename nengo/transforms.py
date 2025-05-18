@@ -737,11 +737,11 @@ class ChannelShape:
             if channels_last
             else (n_channels,) + tuple(spatial_shape)
         )
-        shape = tuple([int(s) for s in shape])
+        shape = tuple(int(s) for s in shape)
         return cls(shape, channels_last=channels_last)
 
     def __init__(self, shape, channels_last=True):
-        self.shape = tuple([int(s) for s in shape])
+        self.shape = tuple(int(s) for s in shape)
         self.channels_last = channels_last
 
     def __eq__(self, other):
