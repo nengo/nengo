@@ -19,8 +19,12 @@ Release history
    - Removed
    - Fixed
 
-4.0.1 (unreleased)
+4.1.1 (unreleased)
 ==================
+
+
+4.1.0 (May 29, 2025)
+====================
 
 **Fixed**
 
