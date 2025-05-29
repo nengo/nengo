@@ -227,7 +227,7 @@ pyproject_toml:
 
 version_py:
   major: 4
-  minor: 0
-  patch: 1
-  release: false
+  minor: 1
+  patch: 0
+  release: true
 
