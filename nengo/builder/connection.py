@@ -122,12 +122,13 @@ def build_decoders(model, conn, rng):
     if conn.solver.weights and not conn.solver.compositional:
         # solver is solving for the whole weight matrix, so apply
         # transform/encoders to targets
-        if not isinstance(conn.transform, Dense):
+        if not isinstance(conn.transform, (NoTransform, Dense)):
             raise BuildError(
                 "Non-compositional solvers only work with Dense transforms"
             )
-        transform = conn.transform.sample(rng=rng)
-        targets = np.dot(targets, transform.T)
+        if not isinstance(conn.transform, NoTransform):
+            transform = conn.transform.sample(rng=rng)
+            targets = np.dot(targets, transform.T)
         # weight solvers only allowed on ensemble->ensemble connections
         assert isinstance(conn.post_obj, Ensemble)
         post_enc = model.params[conn.post_obj].scaled_encoders
