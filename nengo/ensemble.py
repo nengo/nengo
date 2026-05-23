@@ -63,7 +63,10 @@ class Ensemble(NengoObject):
     bias : Distribution or (n_neurons,) array_like or None
         The biases associated with each neuron in the ensemble.
     dimensions : int
-        The number of representational dimensions.
+        The number of representational dimensions.  If 0 (default)
+        then there are no encoders or decoders, and the Ensemble
+        can be treated as a simple layer of neurons (connecting
+        with ens.neurons)
     encoders : Distribution or (n_neurons, dimensions) array_like
         The encoders, used to transform from representational space
         to neuron space. Each row is a neuron's encoder, each column is a
@@ -105,7 +108,7 @@ class Ensemble(NengoObject):
     probeable = ("decoded_output", "input", "scaled_encoders")
 
     n_neurons = IntParam("n_neurons", low=1)
-    dimensions = IntParam("dimensions", low=1)
+    dimensions = IntParam("dimensions", low=0, default=0)
     radius = NumberParam("radius", default=1.0, low=1e-10)
     encoders = DistOrArrayParam(
         "encoders",
@@ -143,7 +146,7 @@ class Ensemble(NengoObject):
     def __init__(
         self,
         n_neurons,
-        dimensions,
+        dimensions=Default,
         radius=Default,
         encoders=Default,
         intercepts=Default,
