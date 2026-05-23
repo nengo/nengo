@@ -2,7 +2,7 @@ import logging
 import pickle
 
 import numpy as np
-import pkg_resources
+import importlib
 import pytest
 
 import nengo
@@ -188,7 +188,7 @@ def test_warn_on_opensim_del(Simulator):
 
 
 def test_entry_point(Simulator):
-    sims = [ep.load() for ep in pkg_resources.iter_entry_points(group="nengo.backends")]
+    sims = [ep.load() for ep in importlib.metadata.entry_points(group="nengo.backends")]
     assert Simulator in sims
 
 
