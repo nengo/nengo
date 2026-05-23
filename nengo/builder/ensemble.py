@@ -181,28 +181,32 @@ def build_ensemble(model, ens):
     # Create random number generator
     rng = np.random.RandomState(model.seeds[ens])
 
-    eval_points = gen_eval_points(ens, ens.eval_points, rng=rng, dtype=rc.float_dtype)
+    if ens.dimensions > 0:
+        eval_points = gen_eval_points(ens, ens.eval_points, rng=rng, dtype=rc.float_dtype)
 
-    # Set up signal
-    model.sig[ens]["in"] = Signal(shape=ens.dimensions, name=f"{ens}.signal")
-    model.add_op(Reset(model.sig[ens]["in"]))
+        # Set up signal
+        model.sig[ens]["in"] = Signal(shape=ens.dimensions, name=f"{ens}.signal")
+        model.add_op(Reset(model.sig[ens]["in"]))
 
-    # Set up encoders
-    if isinstance(ens.neuron_type, Direct):
-        encoders = np.identity(ens.dimensions, dtype=rc.float_dtype)
-    elif isinstance(ens.encoders, Distribution):
-        encoders = get_samples(ens.encoders, ens.n_neurons, ens.dimensions, rng=rng)
-        encoders = np.asarray(encoders, dtype=rc.float_dtype)
+        # Set up encoders
+        if isinstance(ens.neuron_type, Direct):
+            encoders = np.identity(ens.dimensions, dtype=rc.float_dtype)
+        elif isinstance(ens.encoders, Distribution):
+            encoders = get_samples(ens.encoders, ens.n_neurons, ens.dimensions, rng=rng)
+            encoders = np.asarray(encoders, dtype=rc.float_dtype)
+        else:
+            encoders = npext.array(ens.encoders, min_dims=2, dtype=rc.float_dtype)
+        if ens.normalize_encoders:
+            encoders /= npext.norm(encoders, axis=1, keepdims=True)
+        if np.any(np.isnan(encoders)):
+            raise BuildError(
+                f"NaNs detected in '{ens}' encoders. This usually means that you had "
+                "zero-length encoders that were normalized, resulting in NaNs. Ensure all "
+                "encoders have non-zero length, or set `normalize_encoders=False`."
+            )
     else:
-        encoders = npext.array(ens.encoders, min_dims=2, dtype=rc.float_dtype)
-    if ens.normalize_encoders:
-        encoders /= npext.norm(encoders, axis=1, keepdims=True)
-    if np.any(np.isnan(encoders)):
-        raise BuildError(
-            f"NaNs detected in '{ens}' encoders. This usually means that you had "
-            "zero-length encoders that were normalized, resulting in NaNs. Ensure all "
-            "encoders have non-zero length, or set `normalize_encoders=False`."
-        )
+        encoders = None
+        eval_points = None
 
     # Build the neurons
     gain, bias, max_rates, intercepts = get_gain_bias(ens, rng, dtype=rc.float_dtype)
@@ -225,29 +229,33 @@ def build_ensemble(model, ens):
         # This adds the neuron's operator and sets other signals
         model.build(ens.neuron_type, ens.neurons)
 
-    # Scale the encoders
-    if isinstance(ens.neuron_type, Direct):
-        scaled_encoders = encoders
-    else:
-        scaled_encoders = encoders * (gain / ens.radius)[:, np.newaxis]
+    if ens.dimensions > 0:
+        # Scale the encoders
+        if isinstance(ens.neuron_type, Direct):
+            scaled_encoders = encoders
+        else:
+            scaled_encoders = encoders * (gain / ens.radius)[:, np.newaxis]
 
-    model.sig[ens]["encoders"] = Signal(
-        scaled_encoders, name=f"{ens}.scaled_encoders", readonly=True
-    )
+        model.sig[ens]["encoders"] = Signal(
+            scaled_encoders, name=f"{ens}.scaled_encoders", readonly=True
+        )
+    else:
+        scaled_encoders = None
 
     # Inject noise if specified
     if ens.noise is not None:
         model.build(ens.noise, sig_out=model.sig[ens.neurons]["in"], mode="inc")
 
-    # Create output signal, using built Neurons
-    model.add_op(
-        DotInc(
-            model.sig[ens]["encoders"],
-            model.sig[ens]["in"],
-            model.sig[ens.neurons]["in"],
-            tag=f"{ens} encoding",
+    if ens.dimensions > 0:
+        # Create output signal, using built Neurons
+        model.add_op(
+            DotInc(
+                model.sig[ens]["encoders"],
+                model.sig[ens]["in"],
+                model.sig[ens.neurons]["in"],
+                tag=f"{ens} encoding",
+            )
         )
-    )
 
     # Output is neural output
     model.sig[ens]["out"] = model.sig[ens.neurons]["out"]

@@ -6,7 +6,7 @@ import pytest
 import nengo
 import nengo.utils.numpy as npext
 from nengo.dists import Choice, Uniform, UniformHypersphere
-from nengo.exceptions import BuildError, NengoWarning, ReadonlyError
+from nengo.exceptions import BuildError, NengoWarning, ReadonlyError, ValidationError
 from nengo.neurons import RegularSpiking
 from nengo.processes import FilteredNoise, WhiteNoise
 from nengo.utils.testing import signals_allclose
@@ -519,3 +519,29 @@ def test_probeable():
     with nengo.Network():
         ens = nengo.Ensemble(10, 1)
         assert ens.probeable == ("decoded_output", "input", "scaled_encoders")
+
+
+def test_no_dimensions():
+    inputs = np.linspace(-1, 10, 100)
+    with nengo.Network() as model:
+        stim = nengo.Node(inputs)
+        ens = nengo.Ensemble(100, neuron_type=nengo.RectifiedLinear(),
+                             gain=[1]*100, bias=[0]*100)
+        nengo.Connection(stim, ens.neurons, synapse=None)
+        p_neurons = nengo.Probe(ens.neurons)
+        output = nengo.Node(None, size_in=1)
+        nengo.Connection(ens.neurons, output, transform=np.ones((1, 100)),
+                         synapse=None)
+        p_output = nengo.Probe(output)
+
+        # make sure NEF-style connections do not work
+        with pytest.raises(ValidationError):
+            nengo.Connection(ens, output)
+        with pytest.raises(ValidationError):
+            nengo.Connection(output, ens)
+
+    with nengo.Simulator(model) as sim:
+        sim.run(0.001)
+    v = sim.data[p_neurons][-1]
+    assert np.allclose(v, np.maximum(inputs, 0))
+    assert np.allclose(sim.data[p_output], np.sum(np.maximum(inputs, 0)))

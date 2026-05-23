@@ -22,6 +22,9 @@ Release history
 4.1.1 (unreleased)
 ==================
 
+** Changed**
+
+- Allowed Ensemble(dimensions=0) and made it default
 
 4.1.0 (May 29, 2025)
 ====================
