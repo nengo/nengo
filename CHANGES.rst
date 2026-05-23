@@ -22,6 +22,10 @@ Release history
 4.1.1 (unreleased)
 ==================
 
+**Fixes**
+
+- RandomizedSVD solver behaviour falls back to SVD in absence of scikit-learn installation
+- Resolve testing failure due to pkg_resources deprecation
 
 4.1.0 (May 29, 2025)
 ====================

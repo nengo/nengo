@@ -111,6 +111,6 @@ def test_randomized_svd_fallback(cond, rng, allclose):
     """Test the specific case where RandomizedSVD falls back to SVD."""
     pytest.importorskip("sklearn")
     m, n = 30, 20
-    solver = RandomizedSVD(n_components=min(m, n))
+    solver = RandomizedSVD(n_components=15)
     x, x2, _ = run_solver(solver, m=m, n=n, d=5, cond=cond, sys_rng=rng, sigma=1e-8)
     assert allclose(x2, x, atol=1e-8, rtol=1e-8)

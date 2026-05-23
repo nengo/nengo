@@ -15,6 +15,7 @@ For example:
 """
 
 import numpy as np
+import warnings
 
 import nengo.utils.numpy as npext
 from nengo.exceptions import ValidationError
@@ -341,6 +342,9 @@ class RandomizedSVD(LeastSquaresSolver):
 
     Useful for solving large matrices quickly, but non-optimally.
 
+    Depends on scikit-learn, but if scikit-learn is unavailable, defaults
+    to SVD.
+
     Parameters
     ----------
     n_components : int, optional
@@ -362,32 +366,30 @@ class RandomizedSVD(LeastSquaresSolver):
     n_iter = IntParam("n_iter", low=0)
 
     def __init__(self, n_components=60, n_oversamples=10, n_iter=0):
-        from sklearn.utils.extmath import (  # pylint: disable=import-outside-toplevel
-            randomized_svd,
-        )
-
-        assert randomized_svd
+        try:
+            from sklearn.utils.extmath import randomized_svd
+            self.r_svd = randomized_svd
+        except ImportError:
+            warnings.warn("Randomized SVD depends on a valid installation of scikit-learn, defaulting to SVD")
+            self.r_svd = None
         super().__init__()
         self.n_components = n_components
         self.n_oversamples = n_oversamples
         self.n_iter = n_iter
 
     def __call__(self, A, Y, sigma, rng=np.random):
-        from sklearn.utils.extmath import (  # pylint: disable=import-outside-toplevel
-            randomized_svd,
-        )
 
         Y, m, n, _, matrix_in = format_system(A, Y)
-        if min(m, n) <= self.n_components + self.n_oversamples:
+        if min(m, n) <= self.n_components + self.n_oversamples or self.r_svd is None:
             # more efficient to do a full SVD
             return SVD()(A, Y, sigma, rng=rng)
 
-        U, s, V = randomized_svd(
+        U, s, V = self.r_svd(
             A,
             self.n_components,
             n_oversamples=self.n_oversamples,
             n_iter=self.n_iter,
-            random_state=rng,
+            random_state=rng.mtrand.RandomState(),
         )
         si = s / (s**2 + m * sigma**2)
         X = np.dot(V.T, si[:, None] * np.dot(U.T, Y))
