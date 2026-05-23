@@ -26,6 +26,7 @@ Release history
 
 - RandomizedSVD solver behaviour falls back to SVD in absence of scikit-learn installation
 - Resolve testing failure due to pkg_resources deprecation
+- Stop using numpy.core for numpy>=2 due to deprecation
 
 4.1.0 (May 29, 2025)
 ====================
