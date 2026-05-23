@@ -27,9 +27,7 @@ except ImportError as e:
 
 maxseed = np.iinfo(np.uint32).max
 maxint = np.iinfo(np.int32).max
-# numpy 1.17 introduced a slowdown to clip, so
-# use np.core.umath.clip instead of np.clip
-clip = np.core.umath.clip
+clip = np.clip
 
 
 def is_integer(obj):
