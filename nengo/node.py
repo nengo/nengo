@@ -157,6 +157,10 @@ class Node(NengoObject):
     output : callable, array_like, or None
         Function that transforms the Node inputs into outputs,
         a constant output value, or None to transmit signals unchanged.
+        If a callable, it must accept the simulation time ``t`` as the first argument.
+        If the node has a ``size_in`` > 0, then the function must also have 
+        a second argument ``x``, which is the NumPy array coming in to the node at 
+        the current time (the size of the array equals ``size_in``).
     size_in : int, optional
         The number of dimensions of the input data parameter.
     size_out : int, optional
