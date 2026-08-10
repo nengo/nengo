@@ -22,6 +22,10 @@ Release history
 4.1.1 (unreleased)
 ==================
 
+**Documentation**
+
+- Clarified the ``nengo.Node`` output parameter documentation, making it more explicit about the expected arguments and return types for callable outputs. 
+
 **Fixes**
 
 - RandomizedSVD solver behaviour falls back to SVD in absence of scikit-learn installation
